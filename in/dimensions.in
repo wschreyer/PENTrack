@@ -1,0 +1,29 @@
+0		   rmin  // outer boundaries of tracking...
+0.6		rmax  // ... volume, not storage volume...
+-0.5		zmin // boundaries any more
+1.7		zmax
+1.15		detpos_z
+0.19		det_rmin
+0.40		det_rmax
+1.15		innenzylmax
+0.6		abszmin
+0.7		abszmax
+0.485	absrmin 0.485 if on
+0.5 		absrmax
+0.0		absphimin
+350.0 	absphimax
+1.00 		lid_of_storage_bottle height
+183.04  FPreNocado stainless
+0.018985481   FPimNocado 0.018985481 
+-8.56 FPrealPE polyethylene -8.56
+0.001912531 FPimPE  			
+-50.76 FPrealTi titanium
+0.024983971 FPimTi			
+169.98 FPreCu 
+0.023134523 FPimCu	
+
+
+for small detector including focusing coils
+1.5375		detpos_z
+0.10		det_rmin
+0.30		det_rmax		

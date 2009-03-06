@@ -1,0 +1,101 @@
+#kommentare bitte immer über die variable und nicht dahinter schreiben sonst darf man keine
+#variablennamen oder bereichnamen verwenden
+[global]
+# expmode: 1 => only single particle, 2 => p+e from same point, 3 => neutron first, then p+e
+expmode 1
+# protneut: 1 => neutron, 2 => proton, 3 => Bfeld, 6 => electrons
+protneut 2
+# filling and emptying slit of PENeLOPE open (1) or closed (0)
+slit 1    
+BruteForce 0
+reflekt 1
+# spinflipcheck 0 => no check, 2 => Validimirsky spinflip check is done, 3 => output more points in trackfile
+spinflipcheck 0
+# runge 1=> Bulirsch-Stoer, 2 => Runge Kutta
+runge 1
+# polarisation: 1 => low field seekers, 2 => high field seekers, 3 => no polarisation, 4 => dice (MC)
+polarisation 1
+# output neutron spacial distribution?
+neutdist 0
+# how thick shall the wall be [cm]
+wanddicke 0.010
+# diffuse: 1 => specular reflection, 2 => only diffuse, 3 => statistical specular and diffuse
+diffuse 3
+# bfeldwahl: 0 => Interpolation, 1 => no field, 2 => test of interpolation against maplefield, 3 => analytic field for ramping tests 
+bfeldwahl 0
+# scaling of B field with respect to input table file
+BFeldSkalGlobal 1
+# scaling of E field with respect to input table file
+EFeldSkal 1
+# ausgabewunsch: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
+# 4 => only endpoints, but BFspin track, 5 => nothing
+ausgabewunsch 2
+# 0=> ordered starting values, 1=>randomly chosen starting parameters, 2=> read in start.in for starting values
+MonteCarlo 1
+# number of particles 
+MonteCarloAnzahl 1000
+
+# absorber choice: 1 => PE, 2 => Ti
+absorber 1
+
+FillingTime 0
+CleaningTime 0
+RampUpTime   0
+FullFieldTime 50
+RampDownTime 100.00
+storagetime 2000.00
+
+# flux density below which the spin will also be tracked, when BF is turned on
+BFTargetB 0.2
+# important, if 1 neutrons will decay and xend will not be regarded
+decay 1
+[/global]
+
+
+[filling]
+BruteForce 0
+reflekt 1
+slit 1
+spinflipcheck 0
+DetOpen 0
+[/filling]
+
+[cleaning]
+BruteForce 0
+reflekt 1
+slit 0
+spinflipcheck 0
+DetOpen 0
+[/cleaning]
+
+[rampup]
+BruteForce 0
+reflekt 1
+slit 0
+spinflipcheck 0
+DetOpen 0
+[/rampup]
+
+[fullfield]
+BruteForce 0  
+reflekt 1
+slit 0
+spinflipcheck 0
+DetOpen 1
+[/fullfield]
+
+[rampdown]
+BruteForce 0
+reflekt 1
+slit 0
+spinflipcheck 0
+DetOpen 1
+[/rampdown]
+
+[counting]
+BruteForce 0
+reflekt 1
+slit 0
+spinflipcheck 0
+DetOpen 1
+[/counting]

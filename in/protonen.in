@@ -1,0 +1,10 @@
+0.  100.  800.         	Energie
+0.00   0.05  1.2		Hoehe	
+0.13   0.02  0.49 		Radius
+0.  30.  360.  Alpha (in x-y-Ebene zu r vector) 0-360	
+0.   30.  180.  Gamma (zu z-Achse) 0-180
+0 10. 360  phi cyl koord 0-360
+0	       0 	      0
+0.    1e-09   1e-2		not used, delx, xend
+0.0	  1	  2250	SpinDangerField, RodFieldMulipl, Ibar
+012345678912345 12345678912345 12345678912345 1234567890
