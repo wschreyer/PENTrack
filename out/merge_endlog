@@ -1,0 +1,16 @@
+#!/bin/sh
+
+if `test -e end.log`; then
+	FIRSTRUN=0
+	echo "I dedected an end.log ... If you don't want me to append you have 5sec to press CRTL+C"
+	sleep 5
+else
+	F=`ls *end.out | head -n 1`
+	head -n 1 $F >> end.log
+fi
+
+for file in `ls *end.out`
+do
+	tail -n $((`cat $file | wc -l`-1)) $file >> end.log 
+	echo $file written
+done
