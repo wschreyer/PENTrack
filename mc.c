@@ -38,6 +38,19 @@ void MCStartwerte(long double delx)
 		}
 	}
 	
+	if(BFeldSkalGlobalSave==-1)
+	{
+		BFeldSkalGlobal=mt_get_double(v_mt_state);
+		cout << "BFeldSkalGlobal:" << BFeldSkalGlobal;
+	}
+	
+	if(EFeldSkalSave==-1)
+	{
+		EFeldSkal=mt_get_double(v_mt_state);
+		cout << "EFeldSkal:" << EFeldSkal;
+	}
+	
+	
 	/*
 	// neutron energy distribution for AbEx @ ILL
 		
