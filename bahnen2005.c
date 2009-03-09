@@ -46,7 +46,7 @@ long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues for pa
 long double delx;                            // initial timestep for the integrator
 long double delx_n=0.0;
 long double LueckeR=0.001, LueckeZ=0.05, Luecke=0.05;      // size of the gap in the outer left corner (m)
-long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der benötigt wird
+long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der bentigt wird
 int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 long double BFeldSkal = 1.0, EFeldSkal = 1.0, BFeldSkalGlobal = 1.0;          // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
 long double H;                               // total energy of particle
@@ -63,7 +63,7 @@ long double **ErTab2 = NULL, **EzTab2 = NULL, **EphiTab2 = NULL, **ErTab12 = NUL
 long double ****Brc  = NULL, ****Bphic  = NULL, ****Bzc  = NULL;
 long double **ya=NULL, *rvec=NULL, *zvec=NULL;
 long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 
-												// cm => m,  Gauss => Tesla,   V/cm => V/m    Bconv temporär von 1e-4 auf 1 gesetzt
+												// cm => m,  Gauss => Tesla,   V/cm => V/m    Bconv temporr von 1e-4 auf 1 gesetzt
 long double rdist, zdist;
 long double conv_rA, conv_rB, conv_zA, conv_zB; 
 long double *ndistr = NULL, *ndistz = NULL, **ndistW = NULL;                                            // matrix for probability of finding particle
@@ -92,7 +92,7 @@ long double EmptyingTime = 100;                        // emptying without field
 long double storagetime = 1500.0;                     // time when ramping down shall start, if xend > storage time, let neutron decay
 long double SwitchTime;                               // not used any more, time before ramping starts
 
-// für Spinverfolgung
+// fr Spinverfolgung
 long double omega0, omegax, omegay, omegaAbs, omega0dot ;        // precession vector
 long double Bx0, By0, Bz0, Bxcoor, Bycoor, Bzcoor, Bcoorabs;    // B-field in cart Labor coord, cart coord of vector for spin coor sys
 long double Wx0, Wy0, Wz0;                            // return value of CylKartCoord
@@ -119,7 +119,7 @@ long double time_temp;
 unsigned short int nodelay, slit = 0, decay = 0, DetOpen=0;                // delays for monte carlo, is there an entrance slit?, do the neutrons decay?;
 long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep=0.001, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator = 0.0;
 long double DiceRodField=0;
-long double epss, epse, EnTest;                         // beginning, end for epsilon, variable für B-Feld berechnungnen
+long double epss, epse, EnTest;                         // beginning, end for epsilon, variable fr B-Feld berechnungnen
 long double Volume[200] = {0.0}, VolumeB[200] = {0.0};   // Volume[E] accessible to neutrons at energy E without and with B-field
 long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
 unsigned short int TrajectoryLength=1;
@@ -216,12 +216,643 @@ mt_state_t *v_mt_state = NULL; //mersenne twister state var
 
 // uebergabe: jobnumber inpath outpath                 paths without last slash
 
-int main(int argc, char **argv){
-	int schritte=0,klauf=0,klaufstart=0,iii=0,ee=0,iMC=0;
-	unsigned short int DetHit=0;
+
+void BruteForceIntegration() {					
+// Array fr BruteForce Integration wird gebildet
+	int klauf, klaufstart;
+	dxsav=1e-9;
+	if (BFBmin<BFTargetB)
+	{
+		BFPolmin=true;          // if at last step there was BFintegration => true
+	}else if (BFBmin>=BFTargetB)
+	{
+		BFPolmin=false;   // if there was no integration => false
+	}
 	
+	BFBmin = 10;                                   // set to a value higher than all real bws values
+	
+	for (klauf=1;klauf<=kount;klauf++)
+	{    // go through intermediate values
+		if(Bp[13][klauf]<BFBmin)
+		{          // write out smallest value of Bws
+			BFBmin = Bp[13][klauf];
+		}
+	}
+	
+	if ((BFBmin>BFTargetB)&&(BFPolmin))
+	{    // output of polarisation after BF int completed
+		BFsurvprob = (BFpol+0.5) * BFsurvprob;
+		BFflipprob = 1-BFsurvprob;		// update spinflip probability after passing low field region
+		// flip the spin with the probability BFflipprob
+		if (flipspin){
+			rando = mt_get_double(v_mt_state);
+			// if (rando < 0.5) { // for testing, remove 
+			if (mt_get_double(v_mt_state) < (1-(BFpol+0.5))) 
+			{
+				hfs *= -1;
+				mu_n=hfs * mu_nSI / ele_e;
+				mumB= mu_n/M;
+				NSF++; 
+				printf("\n BFpol: %LG  The spin has flipped! Number of flips: %i\n",BFpol,NSF);			
+			}
+		}
+		//fprintf(TESTLOG,"%.17LG %.17LG %.17LG\n",BFtime[offset],BFlogpol,(1-BFflipprob));
+	}
+
+	if (BFBmin>BFTargetB)
+	{   // => no BF integration will take place, so for the next one, the polarisation vector will be set parallel to magnetic field
+		firstint = 1;
+	}
+
+	if (BFBmin<BFTargetB)
+	{   // check if this value is worth for Bloch integration 
+		klaufstart = 1;// start with index 1												
+		
+		if (offset>0)
+		{// start with 2 if there are already values in the arrays, because otherwise two values could be the same
+			klaufstart = 2;
+		}			
+		
+		// output start position and velocities of BruteForce
+		if(klaufstart == 1)
+		{
+			gammaend=atan2l(sqrtl(powl(yp[2][2],2)+powl(yp[1][2]*yp[6][2],2)),yp[4][2])/conv;
+			fprintf(LOGSCR,"\n r:%.17LG phi:%.17LG z:%.17LG H:%.17LG alpha:%.17LG gamma:%.17LG \n ",yp[1][2],yp[5][2]/conv,yp[3][2],(M*gravconst*yp[3][2]+0.5*M*fabsl(yp[2][2]*yp[2][2]+yp[1][2]*yp[1][2]*yp[6][2]*yp[6][2]+yp[4][2]*yp[4][2])-mu_n*Bp[13][2])*1E9, atanl(yp[6][2]*yp[1][2]/yp[2][2])/conv, gammaend);
+		}
+		
+													
+		for (klauf=klaufstart;klauf<=kount;klauf++)
+		{    // build array for Bloch integration
+			BFtime[offset+klauf-(klaufstart-1)]=xp[klauf];
+			// transform cylindrical into kartesian lokal coordinates
+			CylKartCoord(Bp[1][klauf], Bp[5][klauf], Bp[9][klauf],  yp[5][klauf], &BFBxcoor, &BFBycoor, &BFBzcoor);
+			BFField[1][offset+klauf-(klaufstart-1)]=BFBxcoor;
+			BFField[2][offset+klauf-(klaufstart-1)]=BFBycoor;
+			BFField[3][offset+klauf-(klaufstart-1)]=BFBzcoor;
+			BFField[4][offset+klauf-(klaufstart-1)]=yp[1][klauf];    // r
+			BFField[5][offset+klauf-(klaufstart-1)]=yp[3][klauf];    // z
+			
+			// exemplary spinflip investigation
+			//BFField[1][offset+klauf-(klaufstart-1)]=10787.1388395727981340375148505*xp[klauf]*xp[klauf]*xp[klauf]-379485.201099151545103425695947*xp[klauf]*xp[klauf]+4425265.48802544343656564311135*xp[klauf]-17089608.2309508308489746319934;
+			//BFField[2][offset+klauf-(klaufstart-1)]=16511.3272584589837067791527764*xp[klauf]*xp[klauf]*xp[klauf]-594543.289553430286823139813885*xp[klauf]*xp[klauf]+7118405.94609221980769652287442*xp[klauf]-28331085.0061183671391854839742;
+			//BFField[3][offset+klauf-(klaufstart-1)]=1944281.06055634049312257407394*xp[klauf]*xp[klauf]*xp[klauf]-69404618.8278242196709266829602*xp[klauf]*xp[klauf]+822964791.430415938909499801820*xp[klauf]-3239972252.28819208686600696119;
+			
+																	// Spinflipper test
+			//BFField[1][offset+klauf-(klaufstart-1)]= B1 * cosl(xp[klauf]*gamma_n * 1.0e-3);
+			//BFField[2][offset+klauf-(klaufstart-1)]= B1 * sinl(xp[klauf]*gamma_n * 1.0e-3);
+			//BFField[3][offset+klauf-(klaufstart-1)]= 1.0e-3;
+		}
+		offset = offset + kount-(klaufstart-1);
+	}
+
+
+	
+	// Perform integration
+	if (((BFBmin>=BFTargetB)&&(offset>=10))||(offset>=2000))
+	{                      
+		if (firstint){
+			BFBws[1] = sqrtl(powl(BFField[1][1],2)+powl(BFField[2][1],2)+powl(BFField[3][1],2));
+			I_n[1]= (BFField[1][1]/BFBws[1])*0.5;
+			I_n[2]= (BFField[2][1]/BFBws[1])*0.5;
+			I_n[3]= (BFField[3][1]/BFBws[1])*0.5;
+			
+			//printf("Bvector before %LG %LG %LG Babs %LG \n",BFField[1][1],BFField[2][1],BFField[3][1],BFBws[1]);
+			//printf("Spinvector before %LG %LG %LG  \n",I_n[1],I_n[2],I_n[3]);													
+			printf(" BFtime %.6LG, offset %i, delx_n %LG, Babs %LG |I| before %LG ",BFtime[offset], offset, delx_n, Bws,sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)));
+		}													
+		
+		/*
+		for(int itmp=1;itmp<=offset;itmp++)
+		{
+			printf("%d t %LG Bx %LG By %LG Bz %LG \n",itmp,BFtime[itmp],BFField[1][itmp],BFField[2][itmp],BFField[3][itmp],BFBws[1]);
+		}
+		*/
+		
+		//    (eingangsvektor,nvar,xbeg,xend,rel.accur,begstepsize,hmin,&nok,&nbad,derivs,bsstep)
+		(*BFodeintrk)(I_n,3,BFtime[1],BFtime[offset],1e-13,1e-5,0,&nok,&nbad,BFderivs,BFrkqs);
+		//(*BFodeintrk) (I_n,3,BFtime[1],2e-7,1e-13,1e-5,0,&nok,&nbad,BFderivs,BFrkqs);
+		printf("|I| after %LG BFflipprob %LG \n",sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)),BFflipprob);
+		firstint = 0;                 // after BF step, it will not be the first BF step any more...		
+		// calculate polarisation at end of step BFpol = (I_n*B/|B|) in [-1/2,1/2]
+		BFpol = 	(BFyp[1][BFkount]* BFypFields[1][BFkount] + 
+						BFyp[2][BFkount]* BFypFields[2][BFkount] + 
+						BFyp[3][BFkount]* BFypFields[3][BFkount])
+							/sqrtl(powl(BFypFields[1][BFkount],2) + 
+										powl(BFypFields[2][BFkount],2) + 
+										powl(BFypFields[3][BFkount],2));
+		//printf("Bvector after %LG %LG %LG Babs %LG \n",BFypFields[1][BFkount],BFypFields[2][BFkount],BFypFields[3][BFkount],sqrtl(powl(BFypFields[1][BFkount],2) + 
+		//								powl(BFypFields[2][BFkount],2) + 
+		//								powl(BFypFields[3][BFkount],2)));
+		//printf("Spinvector after %LG %LG %LG  BFpol %LG \n",I_n[1],I_n[2],I_n[3],BFpol);		
+		
+		
+		
+		// only print interesting values where deviation is > 1e-6 
+		//if ((1-BFpol)>1.0e-6){
+		if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
+		{
+			for (BFcount=2; BFcount<=(BFkount);BFcount++)
+			{
+				BFBws[BFcount] =  sqrtl(BFypFields[1][BFcount]*BFypFields[1][BFcount] + BFypFields[2][BFcount]*BFypFields[2][BFcount] + BFypFields[3][BFcount]*BFypFields[3][BFcount]);
+				BFpol = (BFyp[1][BFcount]* BFypFields[1][BFcount] + BFyp[2][BFcount]* BFypFields[2][BFcount] + BFyp[3][BFcount]* BFypFields[3][BFcount])/sqrtl(BFypFields[1][BFcount]*BFypFields[1][BFcount] + BFypFields[2][BFcount]*BFypFields[2][BFcount] + BFypFields[3][BFcount]*BFypFields[3][BFcount]);
+				if (BFpol<0.5) 
+					BFlogpol = log10l(0.5+BFpol);
+				else if (BFpol==0.5) 
+					BFlogpol = 0.0;
+				fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",BFxp[BFcount],BFBws[BFcount],BFpol,BFlogpol,BFyp[1][BFcount],BFyp[2][BFcount],BFyp[3][BFcount],BFypFields[1][BFcount],BFypFields[2][BFcount],BFypFields[3][BFcount]);
+				
+				BFZeilencount++;
+			}  
+		}
+		//}
+		
+		offset = 0;                       // after BF step start with new array
+													
+	}			
+// END brute force integration
+}
+
+
+void IntegrateParticle(){
+	int schritte=0,iii=0,iMC=0;
+	unsigned short int DetHit=0;
+		// reset some values for new particle
+	stopall=0;
+	kennz=0; // not categorized yet									
+	// initial values for Brute-Force Spinintegration 
+		BFpol = 0.5;
+		I_n[3]=0.5; I_n[2]=I_n[1]=0;
+		offset = 0;
+		BFsurvprob = 1.0;
+		BFflipprob = 0.0;
+	Hmax=0.0;
+	NoAbsorption = 0;
+	AbsorberHits = 0;									
+	x2=x1= 0.;     //set time to zero
+	
+	// randomly chosen start parameters
+	if(MonteCarlo==1)
+	{			
+		int BadParticle=1;
+		while(BadParticle==1)
+		{
+			MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer fr Teilchen festlegen
+			long double ytemp[7]={r_n,0,z_n,0,phi_n,0};
+			BadParticle = GeomCheck(ytemp,r_n,0,z_n,0,phi_n,0,0.0);
+			if (BadParticle==1)
+				cout << "Not within boundaries at start... redicing...!" << endl;
+		}
+		x2=xstart;    // set time starting value										
+	}	
+	
+	// remember starting energy of particle
+	Hstart = Energie;
+	
+	if(BruteForce)
+	{
+		NSF=0;
+		firstint = 0;                 // after BF step, it will not be the first BF step any more...
+		if(protneut == NEUTRON){
+	
+			if(polarisation==POLARISATION_GOOD){
+				hfs = -1;
+				mu_n=hfs * mu_nSI / ele_e;
+				mumB= mu_n/M;  // [c^2/T]
+			}else if(polarisation==POLARISATION_BAD){  // in ev/T
+				hfs = 1;
+				mu_n=hfs * mu_nSI / ele_e;
+				mumB= mu_n/M;  // [c^2/T]
+			} else if (polarisation==POLARISATION_NONE){
+				hfs = 0;
+				mu_n=0;
+				mumB= mu_n/M;  // [c^2/T]
+			}  // in ev/T
+		}
+	}
+	
+	// start parameters from a file with format of end.out file
+	if (MonteCarlo==2)
+	{			
+		do
+		{
+			fgets(msg,250,STARTIN);
+			//sscanf(msg,"%li %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %d %d %LG %LG %d %LG %LG %LG %LG %LG %LG %li %LG %LG %LG\n",&blankint,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&r_n,&phi_n,&z_n,&blanklongdouble,&alpha,&gamma,&blanklongdouble,&Energie,&kennz,&blankint,&RodFieldMultiplicator, &blanklongdouble,&blankint,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blankint, &blanklongdouble, &blanklongdouble, &blanklongdouble);
+		}while(!feof(STARTIN));
+		if(protneut == PROTON)
+		{
+			long double rtmp=r_n, phitmp=phi_n,ztmp=z_n;  // store position values for later 
+			MCStartwerte(delx);  // determine energy and velocity vector of proton randomly...
+			r_n=rtmp; phi_n=phitmp; ztmp=z_n;   // put position values read in back in place
+			
+		}
+	}
+	
+	
+	if (protneut != BF_ONLY)
+	{
+		printf("\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
+		fprintf(LOGSCR,"\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
+	}
+
+	trajlengthsum = 0;
+	nrefl=0;
+	kennz=KENNZAHL_UNKNOWN;  // 0 
+	stopall=0;
+	
+	if (protneut != BF_ONLY){
+		printf("Feldcount = %i\n\n",Feldcount);
+		fprintf(LOGSCR,"Feldcount = %i\n\n",Feldcount);
+	}
+
+	Feldcount=0;
+
+	if (protneut == NEUTRON)
+	{// Spinflipwahrscheinlichkeiten zurcksetzen
+		matoraprob=1.0;
+		matmax=0.0;
+		thumbmax=0.0;
+		rabmax=0.0;
+		vladtotal = 1.0;
+		vladmax=0.0;									
+		BFeld(r_n,phi_n*conv,z_n, 0.0);							
+		Ekin=Energie-M*gravconst*z_n+mu_n*Bws;      // kin Energie = Anfangsen. - Pot Energie + Energie im B-Feld
+		if(Ekin>=0.0)
+		{
+			v_n=powl(2.0/M*(Ekin),0.5);
+			if (bfeldwahl == 3) v_n=1.0;    // for analytic input field set v manually
+			ausgabewunsch=ausgabewunschsave;
+		}else
+		{
+			v_n=0.0;
+			stopall=1;
+			ausgabewunsch=5;
+			printf("\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
+			fprintf(LOGSCR,"\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
+			//iMC--;
+			 if (!nodelay)
+				csleep(1);
+			
+			if (MonteCarlo)
+			{
+				Energie=EnergieE+1;
+				z_n=z_ne+1;
+				r_n=r_ne+1;
+				alpha=alphae+1;
+				gammaa=gammae+1;												
+			}
+				
+			return;
+		}
+	}
+
+	if(protneut == PROTON)
+	{                // Proton
+		v_n=powl(2*Energie/m_p,0.5);     // Gravitiationsenergie vernachlssigbar, auch B-Feld Energie
+		cout << "Proton: Energy: " << Energie << " v= " << v_n << " m/s ";
+	}
+
+	if(protneut == ELECTRONS)
+	{
+		gammarel = Energie/m_e/c_0/c_0 + 1;
+		v_n = c_0 * sqrtl(1-(1/(gammarel*gammarel)));     // relatistic velocity from E_kin in eV
+		//cout << "Energie: " << Energie << " m_e: " << m_e << " v_n: " << v_n << endl;
+		//sleep(5);										
+	}
+	
+	if(protneut != BF_ONLY)
+	{
+		projz= cosl(conv*gammaa);  // projection of velocity on z-axis
+		vz_n= v_n*projz;						// multiplied by the velocity
+		vtemp= v_n*sinl(conv*gammaa);  // projection of velocity on x-y plane
+		vr_n=  vtemp*cosl(conv*(alpha-phi_n));  // 
+		vphi_n=vtemp*sinl(conv*(alpha-phi_n));
+		ystart[1]= r_n; ystart[2]= vr_n;           // fill array for ODEint integrator
+		ystart[3]= z_n; ystart[4]= vz_n;
+		ystart[5]= conv*phi_n;
+		if (TrajectoryLength)
+		{ // Trajectory length
+			ytemp1=ystart[1]; 
+			ytemp3=ystart[3]; 
+			ytemp5=ystart[5];      
+		}
+		if (r_n!=0.) 
+			ystart[6]= vphi_n/r_n;
+		else if (r_n==0.)
+			ystart[6]= 0.;
+		
+										
+		//x2=x1= 12.600989800684586; // only temporary
+		Entkommen(ystart,  x2, H);                 // Test ob das Teilchen am Anfang schon in einem falschen Bereich ist
+	}
+	
+	//Hier wird nur der erste Punkt geschrieben
+	if(protneut == NEUTRON)                // n
+		H= (m_n*gravconst*ystart[3]+0.5*m_n*v_n*v_n-mu_n*Bws)*1E9 ;       // Energie in neV
+	else if(protneut == PROTON)           // p
+	{
+		H= (0.5*m_p*v_n*v_n);                                           // Energie in eV
+		cout << " Energy: " << H << " eV" << endl;
+	}
+	else if(protneut == ELECTRONS)           // e-
+	{
+		H= c_0*c_0  * m_e * ( 1/sqrtl(1-v_n*v_n/(c_0*c_0)) - 1) ;                                        // rel Energie in eV
+		cout << " Energy: " << H << " eV" << endl;
+	}
+	Hmax = H;
+	
+	if(protneut == NEUTRON)
+	{
+		L_n = ystart[6] * ystart[1] * ystart[1];
+		dL_n = L_n - (sqrtl(H * 1.0e-9 * 2 / m_n) * (rmin + wandinnen));
+	}
+	
+	// do integration for neutrons, protons or electrons 
+	if(protneut == NEUTRON || protneut == PROTON || protneut == ELECTRONS)
+	{
+		if(BruteForce)
+		{
+			// set initial value of polarisation vector: parallel to BField, length 0.5
+			I_n[1]= Bxcoor/Bws*0.5;
+			I_n[2]= Bycoor/Bws*0.5;
+			I_n[3]= Bzcoor/Bws*0.5;
+			
+			//I_n[1]=.002326711314962561; I_n[2]=.007738274230667618; I_n[3]=.9999673522302555; // only temporary
+		}
+		
+		
+		printf("Teilchennummer: %i\n",iMC);
+		fprintf(LOGSCR,"Teilchennummer: %i\n",iMC);
+		printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
+		fprintf(LOGSCR,"r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
+
+		schritte = 0;   // zhlt die integrationsschritte mit
+		
+
+		//-----------------------------------------------------
+		// Schleife fr ein Teilchen, bis die Zeit aus ist oder das Teilchen entkommt
+		timetemp = 0;                                    // temporre Variable, Zeit wann letzter Schritt in outs geschrieben wurde
+		deltat = delx;                                   // fr Spin-Schrittweitensteuerung
+		do
+		{
+			 //if(x2 >= 35.5)  OutputState(ystart,1);
+			
+			BFeld(ystart[1],ystart[5],ystart[3], x2);
+
+			if( (Bws<(BFTargetB+0.1) ) && BruteForce)
+				delx_n = delx/10;
+			else if((Bws<BFTargetB) && BruteForce)
+				delx_n = delx/100;
+			else
+				delx_n = delx;
+
+			x1= x2; x2=x1+delx_n;                 // determine start and endtime of step
+			schritte++;
+			if (TrajectoryLength) ytemp1 = ystart[1]; ytemp3 = ystart[3]; ytemp5 = ystart[5];    // for trajectory length calculation
+														
+			// put phi (ystart[5]) back to [-2Pi,2Pi]
+			if(ystart[5]>(2.0*pi))
+				ystart[5]=ystart[5]-2*pi;
+			if(ystart[5]<(-2.0*pi))
+				ystart[5]=ystart[5]+2*pi;
+			
+			//mytime1 = clock();
+			//###################### Integrationsroutine #####################
+			if (runge==2)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,rkqs);           // runge kutta step
+			if (runge==1)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,bsstep);        // bulirsch stoer step
+														// (ystart: input vector | nvar: number of variables | x1, x2: start and end time | eps: precision to be achieved | h1: guess for first stepsize | hmin: mininum stepsize | nok,nbad: number of good and bad steps taken | derivs: function for differential equation to be integrated, rkqs, bsstep: integrator to be used (runge kutta, bulirsch stoer) )
+			//###################### Integrationsroutine #####################
+			nintcalls++;
+			ntotalsteps=ntotalsteps+kount;
+			
+			
+			//mytime2 = clock();
+			//timer2 =( ((long double)mytime2 - (long double)mytime1) / CLOCKS_PER_SEC ) + timer2;
+			
+			//cout << "after step: " << x2 << " KOUNT " << kount << " " << Br << " " << Bz << endl;
+			//cout << " g" << nok << " b" << nbad;
+			
+			
+			vend = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
+			if(protneut == NEUTRON)                // n
+				H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
+			else if(protneut == PROTON || protneut == ELECTRONS)           // p,e
+				H= c_0*c_0  * M *  (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
+		
+			if (H>Hmax) Hmax=H;
+
+			if ((neutdist == 1)&&(protneut == NEUTRON))
+				fillndist(1);
+
+			
+			if ((!BruteForce) && (protneut != PROTON) && (protneut != ELECTRONS))
+				BahnPointSaveTime = 1e-3;
+			else if (BruteForce)
+				BahnPointSaveTime = 1e-4;
+			
+			if(spinflipcheck==3)
+				BahnPointSaveTime = 1e-4;
+			
+
+			if (BruteForce)
+			{
+				BruteForceIntegration();
+			}
+			
+			//Ausgabe der Zwischenwerte aus odeint
+			int klauf;
+			if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)>=BahnPointSaveTime)){
+				for (klauf=2;klauf<=kount;klauf++){
+					if ((xp[klauf]-time_temp)>=BahnPointSaveTime)
+					{
+						
+						printf("-");
+						fflush(stdout);
+						// Ausgabewerte berechnen
+						vend = sqrtl(fabsl(yp[2][klauf]*yp[2][klauf]+yp[1][klauf]*yp[1][klauf]*yp[6][klauf]*yp[6][klauf]+yp[4][klauf]*yp[4][klauf]));
+						if(protneut == NEUTRON)
+							H = (M*gravconst*yp[3][klauf]+0.5*M*vend*vend-mu_n*Bp[13][klauf])*1E9 ;    // mu_n negative for low-field seekers
+						else if(protneut == PROTON || protneut == ELECTRONS)  
+							H= c_0*c_0  * M * (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
+						
+						if (spinflipcheck==2)
+						{
+							if (vlad>1e-99) 
+								logvlad=log10l(vlad);
+							if (frac>1e-99) 
+								logfrac=log10l(frac);
+						}
+						
+						//cout << "Br " << Bp[1][klauf] << endl;
+						fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",	iMC,xp[klauf],yp[1][klauf],yp[2][klauf],yp[3][klauf],yp[4][klauf],yp[5][klauf],yp[6][klauf],yp[1][klauf]*cosl(yp[5][klauf]),yp[1][klauf]*sinl(yp[5][klauf]),vend,H,Bp[1][klauf],Bp[2][klauf],Bp[3][klauf],Bp[4][klauf],Bp[5][klauf],Bp[6][klauf], Bp[7][klauf],Bp[8][klauf],Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac);
+						//fprintf(OUTFILE1,"%LG\n",xp[klauf]);
+						fflush(OUTFILE1);
+						Zeilencount++;
+						time_temp = xp[klauf];
+					}
+				}
+			}else if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)<BahnPointSaveTime)){
+				if((x2-timetemp)>=BahnPointSaveTime){
+					printf(".");
+					fflush(stdout);
+					// Ausgabewerte berechnen
+					BFeld(ystart[1],ystart[5],ystart[3], x2);
+					vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
+					if(protneut == NEUTRON) 
+						H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;    // mu_n negative for low-field seekers
+					else if(protneut == PROTON || protneut == ELECTRONS)  
+						H= c_0*c_0  * M * (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
+					if (spinflipcheck == 2){
+						if (vlad>1e-99) 
+							logvlad=log10l(vlad);
+						if (frac>1e-99) 
+							logfrac=log10l(frac);
+					}
+					fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
+					iMC, x2,ystart[1], ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4],H,Br,
+					dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac);
+					fflush(OUTFILE1);
+					Zeilencount++;
+					timetemp = x2;
+
+				}
+			}//Ende Ausgabe
+	
+			if (Zeilencount>40000)
+			{
+				fclose(OUTFILE1);
+				Filecount++;
+				sprintf(wholetrackfile, "%s/%06dtrack%03d.out", outpath, jobnumber, Filecount);
+				OUTFILE1=fopen(wholetrackfile,mode_w);
+				fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Polar Er Ez timestep Bcheck logvlad logthumb\n");
+				printf(" ##");
+				printf(wholetrackfile);
+				printf("## \n");
+				fprintf(LOGSCR," ##");
+				fprintf(LOGSCR,wholetrackfile);
+				fprintf(LOGSCR,"## \n");
+				Zeilencount=1;
+			}
+
+			if ((BFZeilencount>100000) && BruteForce)
+			{
+				fclose(BFLOG);
+				BFFilecount++;
+				sprintf(BFoutfile1, "%s/%06dBF%03d.out",outpath, jobnumber,BFFilecount);
+				if(!(BFLOG = fopen(BFoutfile1,mode_w))) 
+				{
+					perror("fopen");
+					exit(1);
+				}
+				fprintf(BFLOG,"t Babs Polar logPolar Ix Iy Iz Bx By Bz\n");
+				printf(" ##");
+				printf(BFoutfile1);
+				printf("## \n");
+				fprintf(LOGSCR," ##");
+				fprintf(LOGSCR,BFoutfile1);
+				fprintf(LOGSCR,"## \n");
+				BFZeilencount=1;
+			}
+		
+			Entkommen(ystart,  x2, H);  // check if particle should end!
+			fflush(LOGSCR);
+			
+			//if(!((x2<=xend)&&((ystart[3]>=zmin)||(reflekt==1))&&(ystart[3]<=zmax)&& ((ystart[1]>=rmin)||(ystart[3]>=innenzylmax)||(reflekt==1)) &&((ystart[1]<=rmax)||reflekt==1)&&(stopall==0))) 
+			//	OutputState(ystart,1);
+			
+		}while (((x2-xstart)<=xend)&&(!stopall)); // end integration do - loop
+		// END of loop for one partice
+		
+		
+		timetemp = 0.0;         // set times for points on track to zero for new particle
+		time_temp = 0.0;
+
+		vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
+		phitemp = ((ystart[5])/conv);     // calculate end angle
+		phiend  = fmodl(phitemp, 360.);   // in degree
+		if (phiend<0)                    // from 0 to 360
+			phiend=360.0 + phiend;
+
+		if(protneut == NEUTRON)                // n
+			H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
+		else if(protneut == PROTON || protneut == ELECTRONS)           // p,e
+			H= c_0*c_0  * M * (1/sqrtl(1-v_n*v_n/(c_0*c_0))-1);                                        // rel Energie in eV
+
+		ausgabe(x2,ystart, vend, H);// Endwerte schreiben
+
+		printf("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);
+		fprintf(LOGSCR,"Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);
+		
+		
+		IncrementCodes(kennz);
+
+		R=0;
+		 
+	} // end proton neutron calc
+	
+	 // calculation of electrons only through following field lines and magnetic mirror effect formula
+	// TURNED OFF!!!
+	if (protneut == 99)
+	{
+		BFeld(r_n, phi_n*conv, z_n, 500.0);
+		Bre0=Br; Bphie0 = Bphi; Bze0= Bz;
+		DetHit = CalcFluxLine(r_n,phi_n*conv,z_n, FluxStep);
+		if (DetHit) {
+			CritAngle = CalcCritAngle(r_n,phi_n*conv,z_n,Energie);
+			IncidentAngle = CalcIncidentAngle (r_n, phi_n*conv,z_n, vr_n, vphi_n, vz_n, Bre0, Bphie0,  Bze0, Bemax);
+			DetEnergy = Energie - Vflux;
+		}else if (!DetHit) {
+			CritAngle = 0;
+			IncidentAngle = 0;
+			DetEnergy = 0;
+			ElecAngleB = 0;
+		}
+		fprintf(ENDLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %i %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
+		r_n,z_n,vr_n,vphi_n,vz_n,ElecAngleB,DetHit,CritAngle,Energie,Bre0,Bze0,Be0,Bemax,ystart[1],ystart[3],Bws,Vflux,DetEnergy,IncidentAngle, BFeldSkal, EFeldSkal);
+	}
+
+	
+	if(protneut == BF_ONLY) // B-Feld Ausgabe
+	{
+		//Entkommen(ystart,  x2, H);
+		BFeldSkal = 1.0;
+		BFeld(r_n, phi_n, z_n, 500.0);
+		Bws=sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);
+		//fprintf(ENDLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
+		// x:=r y=0 z:=z
+		fprintf(ENDLOG,"%LG %G %LG %LG %LG %LG %G %G %LG \n",r_n*100,0.0,z_n*100,Br*1e4,Bphi*1e4,Bz*1e4,0.0,0.0,Bws);
+		//printf("B");
+		//printf("%LG %G %LG %LG %LG %LG %G %G %G\n", r_n*100.0,0.0,z_n*100.0,Br*1e4,Bphi*1e4,Bz*1e4,0.0,0.0,0.0);
+		cout << "r= " << r_n << " z= " << z_n << " Br= " << Br << " T, Bz= " << Bz << " T"  << endl;
+		
+		// Ramp Heating Analysis
+		for (Energie = 0; Energie <= EnergieE; Energie++){
+			EnTest = Energie*1.0e-9 - M*gravconst*z_n + mu_n * Bws;
+			if (EnTest >= 0){
+				iii = (int) Energie;
+				// add the volume segment to the volume that is accessible to a neutron with energy Energie
+				VolumeB[iii] = VolumeB[iii] + pi * dz_n * ((r_n+0.5*dr_n)*(r_n+0.5*dr_n) - (r_n-0.5*dr_n)*(r_n-0.5*dr_n));
+			}
+		}
+
+	}// Ende B-Feld Ausgabe
+
+
+	// sorgt dafr, dass bei MonteCarlo die for Schleifen nur 1mal durchlaufen werden
+	if (MonteCarlo){
+		Energie=EnergieE+1;
+		z_n=z_ne+1;
+		r_n=r_ne+1;
+		alpha=alphae+1;
+		gammaa=gammae+1;			
+		phi_n=phie+1;
+	}
+}
+
+
+int main(int argc, char **argv){
+	int ee=0;	
 	time_t mytime;
-	clock_t mytime1, mytime2;
+//	clock_t mytime1, mytime2;
 	
 	//printf("Dies ist 0 durch 1: %.17LG",1.0/0.0);
 
@@ -395,7 +1026,7 @@ int main(int argc, char **argv){
 		ReadMagnets();
 	
 	printf("\n \n Test of integration\n");
-	long double TestInt;
+//	long double TestInt;
 	BFeldSkal=1.0; Ibar = 2250;
 	sign1 = 1, sign2 = 1;
 	for (int a = 0;a<1;a++)
@@ -574,7 +1205,7 @@ int main(int argc, char **argv){
 		
 	}
 //return;*/
-	for(iMC=1; iMC<= MonteCarloAnzahl; iMC++) // Zahl der Durchläufe bei MonteCarlo
+	for(iMC=1; iMC<= MonteCarloAnzahl; iMC++) // Zahl der Durchlufe bei MonteCarlo
 	{      
 		for(Energie=EnergieS; Energie<=EnergieE; Energie+=dEnergie)
 		{
@@ -588,630 +1219,8 @@ int main(int argc, char **argv){
 						{
 							for(phi_n=phis; phi_n<=phie; phi_n+=dphi)
 							{
-									// reset some values for new particle
-									stopall=0;
-									kennz=0; // not categorized yet									
-									// initial values for Brute-Force Spinintegration 
-										BFpol = 0.5;
-										I_n[3]=0.5; I_n[2]=I_n[1]=0;
-										offset = 0;
-										BFsurvprob = 1.0;
-										BFflipprob = 0.0;
-									Hmax=0.0;
-									NoAbsorption = 0;
-									AbsorberHits = 0;									
-									x2=x1= 0.;     //set time to zero
-									
-									// randomly chosen start parameters
-									if(MonteCarlo==1)
-									{			
-										int BadParticle=1;
-										while(BadParticle==1)
-										{
-											MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer für Teilchen festlegen
-											long double ytemp[7]={r_n,0,z_n,0,phi_n,0};
-											BadParticle = GeomCheck(ytemp,r_n,0,z_n,0,phi_n,0,0.0);
-											if (BadParticle==1)
-												cout << "Not within boundaries at start... redicing...!" << endl;
-										}
-										x2=xstart;    // set time starting value										
-									}	
-									
-									// remember starting energy of particle
-									Hstart = Energie;
-									
-									if(BruteForce)
-									{
-										NSF=0;
-										firstint = 0;                 // after BF step, it will not be the first BF step any more...
-										if(protneut == NEUTRON){
-									
-											if(polarisation==POLARISATION_GOOD){
-												hfs = -1;
-												mu_n=hfs * mu_nSI / ele_e;
-												mumB= mu_n/M;  // [c^2/T]
-											}else if(polarisation==POLARISATION_BAD){  // in ev/T
-												hfs = 1;
-												mu_n=hfs * mu_nSI / ele_e;
-												mumB= mu_n/M;  // [c^2/T]
-											} else if (polarisation==POLARISATION_NONE){
-												hfs = 0;
-												mu_n=0;
-												mumB= mu_n/M;  // [c^2/T]
-											}  // in ev/T
-										}
-									}
-									
-									// start parameters from a file with format of end.out file
-									if (MonteCarlo==2)
-									{			
-										do
-										{
-											fgets(msg,250,STARTIN);
-											//sscanf(msg,"%li %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %d %d %LG %LG %d %LG %LG %LG %LG %LG %LG %li %LG %LG %LG\n",&blankint,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&r_n,&phi_n,&z_n,&blanklongdouble,&alpha,&gamma,&blanklongdouble,&Energie,&kennz,&blankint,&RodFieldMultiplicator, &blanklongdouble,&blankint,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blankint, &blanklongdouble, &blanklongdouble, &blanklongdouble);
-										}while(!feof(STARTIN));
-										if(protneut == PROTON)
-										{
-											long double rtmp=r_n, phitmp=phi_n,ztmp=z_n;  // store position values for later 
-											MCStartwerte(delx);  // determine energy and velocity vector of proton randomly...
-											r_n=rtmp; phi_n=phitmp; ztmp=z_n;   // put position values read in back in place
-											
-										}
-									}
-									
-									
-									if (protneut != BF_ONLY)
-									{
-										printf("\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
-										fprintf(LOGSCR,"\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
-									}
-
-									trajlengthsum = 0;
-									nrefl=0;
-									kennz=KENNZAHL_UNKNOWN;  // 0 
-									stopall=0;
-									
-									if (protneut != BF_ONLY){
-										printf("Feldcount = %i\n\n",Feldcount);
-										fprintf(LOGSCR,"Feldcount = %i\n\n",Feldcount);
-									}
-
-									Feldcount=0;
-
-									if (protneut == NEUTRON)
-									{// Spinflipwahrscheinlichkeiten zurücksetzen
-										matoraprob=1.0;
-										matmax=0.0;
-										thumbmax=0.0;
-										rabmax=0.0;
-										vladtotal = 1.0;
-										vladmax=0.0;									
-										BFeld(r_n,phi_n*conv,z_n, 0.0);							
-										Ekin=Energie-M*gravconst*z_n+mu_n*Bws;      // kin Energie = Anfangsen. - Pot Energie + Energie im B-Feld
-										if(Ekin>=0.0)
-										{
-											v_n=powl(2.0/M*(Ekin),0.5);
-											if (bfeldwahl == 3) v_n=1.0;    // for analytic input field set v manually
-											ausgabewunsch=ausgabewunschsave;
-										}else
-										{
-											v_n=0.0;
-											stopall=1;
-											ausgabewunsch=5;
-											printf("\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
-											fprintf(LOGSCR,"\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
-											//iMC--;
-											 if (!nodelay)
-												csleep(1);
-											
-											if (MonteCarlo)
-											{
-												Energie=EnergieE+1;
-												z_n=z_ne+1;
-												r_n=r_ne+1;
-												alpha=alphae+1;
-												gammaa=gammae+1;												
-											}
-												
-											continue;
-										}
-									}
-
-									if(protneut == PROTON)
-									{                // Proton
-										v_n=powl(2*Energie/m_p,0.5);     // Gravitiationsenergie vernachlässigbar, auch B-Feld Energie
-										cout << "Proton: Energy: " << Energie << " v= " << v_n << " m/s ";
-									}
-
-									if(protneut == ELECTRONS)
-									{
-										gammarel = Energie/m_e/c_0/c_0 + 1;
-										v_n = c_0 * sqrtl(1-(1/(gammarel*gammarel)));     // relatistic velocity from E_kin in eV
-										//cout << "Energie: " << Energie << " m_e: " << m_e << " v_n: " << v_n << endl;
-										//sleep(5);										
-									}
-									
-									if(protneut != BF_ONLY)
-									{
-										projz= cosl(conv*gammaa);  // projection of velocity on z-axis
-										vz_n= v_n*projz;						// multiplied by the velocity
-										vtemp= v_n*sinl(conv*gammaa);  // projection of velocity on x-y plane
-										vr_n=  vtemp*cosl(conv*(alpha-phi_n));  // 
-										vphi_n=vtemp*sinl(conv*(alpha-phi_n));
-										ystart[1]= r_n; ystart[2]= vr_n;           // fill array for ODEint integrator
-										ystart[3]= z_n; ystart[4]= vz_n;
-										ystart[5]= conv*phi_n;
-										if (TrajectoryLength)
-										{ // Trajectory length
-											ytemp1=ystart[1]; 
-											ytemp3=ystart[3]; 
-											ytemp5=ystart[5];      
-										}
-										if (r_n!=0.) 
-											ystart[6]= vphi_n/r_n;
-										else if (r_n==0.)
-											ystart[6]= 0.;
-										
-																		
-										//x2=x1= 12.600989800684586; // only temporary
-										Entkommen(ystart,  x2, H);                 // Test ob das Teilchen am Anfang schon in einem falschen Bereich ist
-									}
-									
-									//Hier wird nur der erste Punkt geschrieben
-									if(protneut == NEUTRON)                // n
-										H= (m_n*gravconst*ystart[3]+0.5*m_n*v_n*v_n-mu_n*Bws)*1E9 ;       // Energie in neV
-									else if(protneut == PROTON)           // p
-									{
-										H= (0.5*m_p*v_n*v_n);                                           // Energie in eV
-										cout << " Energy: " << H << " eV" << endl;
-									}
-									else if(protneut == ELECTRONS)           // e-
-									{
-										H= c_0*c_0  * m_e * ( 1/sqrtl(1-v_n*v_n/(c_0*c_0)) - 1) ;                                        // rel Energie in eV
-										cout << " Energy: " << H << " eV" << endl;
-									}
-									Hmax = H;
-									
-									if(protneut == NEUTRON)
-									{
-										L_n = ystart[6] * ystart[1] * ystart[1];
-										dL_n = L_n - (sqrtl(H * 1.0e-9 * 2 / m_n) * (rmin + wandinnen));
-									}
-									
-									// do integration for neutrons, protons or electrons 
-									if(protneut == NEUTRON || protneut == PROTON || protneut == ELECTRONS)
-									{
-										if(BruteForce)
-										{
-											// set initial value of polarisation vector: parallel to BField, length 0.5
-											I_n[1]= Bxcoor/Bws*0.5;
-											I_n[2]= Bycoor/Bws*0.5;
-											I_n[3]= Bzcoor/Bws*0.5;
-											
-											//I_n[1]=.002326711314962561; I_n[2]=.007738274230667618; I_n[3]=.9999673522302555; // only temporary
-										}
-										
-										
-										printf("Teilchennummer: %i\n",iMC);
-										fprintf(LOGSCR,"Teilchennummer: %i\n",iMC);
-										printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
-										fprintf(LOGSCR,"r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
-
-										schritte = 0;   // zählt die integrationsschritte mit
-										
-
-										//-----------------------------------------------------
-										// Schleife für ein Teilchen, bis die Zeit aus ist oder das Teilchen entkommt
-										timetemp = 0;                                    // temporäre Variable, Zeit wann letzter Schritt in outs geschrieben wurde
-										deltat = delx;                                   // für Spin-Schrittweitensteuerung
-										do
-										{
-											 //if(x2 >= 35.5)  OutputState(ystart,1);
-											
-											BFeld(ystart[1],ystart[5],ystart[3], x2);
-			
-											if( (Bws<(BFTargetB+0.1) ) && BruteForce)
-												delx_n = delx/10;
-											else if((Bws<BFTargetB) && BruteForce)
-												delx_n = delx/100;
-											else
-												delx_n = delx;
-			
-											x1= x2; x2=x1+delx_n;                 // determine start and endtime of step
-											schritte++;
-											if (TrajectoryLength) ytemp1 = ystart[1]; ytemp3 = ystart[3]; ytemp5 = ystart[5];    // for trajectory length calculation
-																						
-											// put phi (ystart[5]) back to [-2Pi,2Pi]
-											if(ystart[5]>(2.0*pi))
-												ystart[5]=ystart[5]-2*pi;
-											if(ystart[5]<(-2.0*pi))
-												ystart[5]=ystart[5]+2*pi;
-											
-											//mytime1 = clock();
-											//###################### Integrationsroutine #####################
-											if (runge==2)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,rkqs);           // runge kutta step
-											if (runge==1)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,bsstep);        // bulirsch stoer step
-																						// (ystart: input vector | nvar: number of variables | x1, x2: start and end time | eps: precision to be achieved | h1: guess for first stepsize | hmin: mininum stepsize | nok,nbad: number of good and bad steps taken | derivs: function for differential equation to be integrated, rkqs, bsstep: integrator to be used (runge kutta, bulirsch stoer) )
-											//###################### Integrationsroutine #####################
-											nintcalls++;
-											ntotalsteps=ntotalsteps+kount;
-											
-											
-											//mytime2 = clock();
-											//timer2 =( ((long double)mytime2 - (long double)mytime1) / CLOCKS_PER_SEC ) + timer2;
-											
-											//cout << "after step: " << x2 << " KOUNT " << kount << " " << Br << " " << Bz << endl;
-											//cout << " g" << nok << " b" << nbad;
-											
-											
-											vend = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
-											if(protneut == NEUTRON)                // n
-												H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
-											else if(protneut == PROTON || protneut == ELECTRONS)           // p,e
-												H= c_0*c_0  * M *  (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
-										
-											if (H>Hmax) Hmax=H;
-	
-											if ((neutdist == 1)&&(protneut == NEUTRON))
-												fillndist(1);
-	
-											
-											if ((!BruteForce) && (protneut != PROTON) && (protneut != ELECTRONS))
-												BahnPointSaveTime = 1e-3;
-											else if (BruteForce)
-												BahnPointSaveTime = 1e-4;
-											
-											if(spinflipcheck==3)
-												BahnPointSaveTime = 1e-4;
-											
-
-											// Array für BruteForce Integration wird gebildet
-											if (BruteForce)
-											{
-												
-												dxsav=1e-9;
-												if (BFBmin<BFTargetB)
-												{
-													BFPolmin=true;          // if at last step there was BFintegration => true
-												}else if (BFBmin>=BFTargetB)
-												{
-													BFPolmin=false;   // if there was no integration => false
-												}
-												
-												BFBmin = 10;                                   // set to a value higher than all real bws values
-												
-												for (klauf=1;klauf<=kount;klauf++)
-												{    // go through intermediate values
-													if(Bp[13][klauf]<BFBmin)
-													{          // write out smallest value of Bws
-														BFBmin = Bp[13][klauf];
-													}
-												}
-												
-												if ((BFBmin>BFTargetB)&&(BFPolmin))
-												{    // output of polarisation after BF int completed
-													BFsurvprob = (BFpol+0.5) * BFsurvprob;
-													BFflipprob = 1-BFsurvprob;		// update spinflip probability after passing low field region
-													// flip the spin with the probability BFflipprob
-													if (flipspin){
-														rando = mt_get_double(v_mt_state);
-														// if (rando < 0.5) { // for testing, remove 
-														if (mt_get_double(v_mt_state) < (1-(BFpol+0.5))) 
-														{
-															hfs *= -1;
-															mu_n=hfs * mu_nSI / ele_e;
-															mumB= mu_n/M;
-															NSF++; 
-															printf("\n BFpol: %LG  The spin has flipped! Number of flips: %i\n",BFpol,NSF);			
-														}
-													}
-													//fprintf(TESTLOG,"%.17LG %.17LG %.17LG\n",BFtime[offset],BFlogpol,(1-BFflipprob));
-												}
-
-												if (BFBmin>BFTargetB)
-												{   // => no BF integration will take place, so for the next one, the polarisation vector will be set parallel to magnetic field
-													firstint = 1;
-												}
-	
-												if (BFBmin<BFTargetB)
-												{   // check if this value is worth for Bloch integration 
-													klaufstart = 1;// start with index 1												
-													
-													if (offset>0)
-													{// start with 2 if there are already values in the arrays, because otherwise two values could be the same
-														klaufstart = 2;
-													}			
-													
-													// output start position and velocities of BruteForce
-													if(klaufstart == 1)
-													{
-														gammaend=atan2l(sqrtl(powl(yp[2][2],2)+powl(yp[1][2]*yp[6][2],2)),yp[4][2])/conv;
-														fprintf(LOGSCR,"\n r:%.17LG phi:%.17LG z:%.17LG H:%.17LG alpha:%.17LG gamma:%.17LG \n ",yp[1][2],yp[5][2]/conv,yp[3][2],(M*gravconst*yp[3][2]+0.5*M*fabsl(yp[2][2]*yp[2][2]+yp[1][2]*yp[1][2]*yp[6][2]*yp[6][2]+yp[4][2]*yp[4][2])-mu_n*Bp[13][2])*1E9, atanl(yp[6][2]*yp[1][2]/yp[2][2])/conv, gammaend);
-													}
-													
-																								
-													for (klauf=klaufstart;klauf<=kount;klauf++)
-													{    // build array for Bloch integration
-														BFtime[offset+klauf-(klaufstart-1)]=xp[klauf];
-														// transform cylindrical into kartesian lokal coordinates
-														CylKartCoord(Bp[1][klauf], Bp[5][klauf], Bp[9][klauf],  yp[5][klauf], &BFBxcoor, &BFBycoor, &BFBzcoor);
-														BFField[1][offset+klauf-(klaufstart-1)]=BFBxcoor;
-														BFField[2][offset+klauf-(klaufstart-1)]=BFBycoor;
-														BFField[3][offset+klauf-(klaufstart-1)]=BFBzcoor;
-														BFField[4][offset+klauf-(klaufstart-1)]=yp[1][klauf];    // r
-														BFField[5][offset+klauf-(klaufstart-1)]=yp[3][klauf];    // z
-														
-														// exemplary spinflip investigation
-														//BFField[1][offset+klauf-(klaufstart-1)]=10787.1388395727981340375148505*xp[klauf]*xp[klauf]*xp[klauf]-379485.201099151545103425695947*xp[klauf]*xp[klauf]+4425265.48802544343656564311135*xp[klauf]-17089608.2309508308489746319934;
-														//BFField[2][offset+klauf-(klaufstart-1)]=16511.3272584589837067791527764*xp[klauf]*xp[klauf]*xp[klauf]-594543.289553430286823139813885*xp[klauf]*xp[klauf]+7118405.94609221980769652287442*xp[klauf]-28331085.0061183671391854839742;
-														//BFField[3][offset+klauf-(klaufstart-1)]=1944281.06055634049312257407394*xp[klauf]*xp[klauf]*xp[klauf]-69404618.8278242196709266829602*xp[klauf]*xp[klauf]+822964791.430415938909499801820*xp[klauf]-3239972252.28819208686600696119;
-														
-																												// Spinflipper test
-														//BFField[1][offset+klauf-(klaufstart-1)]= B1 * cosl(xp[klauf]*gamma_n * 1.0e-3);
-														//BFField[2][offset+klauf-(klaufstart-1)]= B1 * sinl(xp[klauf]*gamma_n * 1.0e-3);
-														//BFField[3][offset+klauf-(klaufstart-1)]= 1.0e-3;
-													}
-													offset = offset + kount-(klaufstart-1);
-												}
-
-											
-												
-												// Perform integration
-												if (((BFBmin>=BFTargetB)&&(offset>=10))||(offset>=2000))
-												{                      
-													if (firstint){
-														BFBws[1] = sqrtl(powl(BFField[1][1],2)+powl(BFField[2][1],2)+powl(BFField[3][1],2));
-														I_n[1]= (BFField[1][1]/BFBws[1])*0.5;
-														I_n[2]= (BFField[2][1]/BFBws[1])*0.5;
-														I_n[3]= (BFField[3][1]/BFBws[1])*0.5;
-														
-														//printf("Bvector before %LG %LG %LG Babs %LG \n",BFField[1][1],BFField[2][1],BFField[3][1],BFBws[1]);
-														//printf("Spinvector before %LG %LG %LG  \n",I_n[1],I_n[2],I_n[3]);													
-														printf(" BFtime %.6LG, offset %i, delx_n %LG, Babs %LG |I| before %LG ",BFtime[offset], offset, delx_n, Bws,sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)));
-													}													
-													
-													/*
-													for(int itmp=1;itmp<=offset;itmp++)
-													{
-														printf("%d t %LG Bx %LG By %LG Bz %LG \n",itmp,BFtime[itmp],BFField[1][itmp],BFField[2][itmp],BFField[3][itmp],BFBws[1]);
-													}
-													*/
-													
-													//    (eingangsvektor,nvar,xbeg,xend,rel.accur,begstepsize,hmin,&nok,&nbad,derivs,bsstep)
-													(*BFodeintrk)(I_n,3,BFtime[1],BFtime[offset],1e-13,1e-5,0,&nok,&nbad,BFderivs,BFrkqs);
-													//(*BFodeintrk) (I_n,3,BFtime[1],2e-7,1e-13,1e-5,0,&nok,&nbad,BFderivs,BFrkqs);
-													printf("|I| after %LG BFflipprob %LG \n",sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)),BFflipprob);
-													firstint = 0;                 // after BF step, it will not be the first BF step any more...		
-													// calculate polarisation at end of step BFpol = (I_n*B/|B|) in [-1/2,1/2]
-													BFpol = 	(BFyp[1][BFkount]* BFypFields[1][BFkount] + 
-																	BFyp[2][BFkount]* BFypFields[2][BFkount] + 
-																	BFyp[3][BFkount]* BFypFields[3][BFkount])
-																		/sqrtl(powl(BFypFields[1][BFkount],2) + 
-																					powl(BFypFields[2][BFkount],2) + 
-																					powl(BFypFields[3][BFkount],2));
-													//printf("Bvector after %LG %LG %LG Babs %LG \n",BFypFields[1][BFkount],BFypFields[2][BFkount],BFypFields[3][BFkount],sqrtl(powl(BFypFields[1][BFkount],2) + 
-													//								powl(BFypFields[2][BFkount],2) + 
-													//								powl(BFypFields[3][BFkount],2)));
-													//printf("Spinvector after %LG %LG %LG  BFpol %LG \n",I_n[1],I_n[2],I_n[3],BFpol);		
-													
-													
-													
-													// only print interesting values where deviation is > 1e-6 
-													//if ((1-BFpol)>1.0e-6){
-													if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
-													{
-														for (BFcount=2; BFcount<=(BFkount);BFcount++)
-														{
-															BFBws[BFcount] =  sqrtl(BFypFields[1][BFcount]*BFypFields[1][BFcount] + BFypFields[2][BFcount]*BFypFields[2][BFcount] + BFypFields[3][BFcount]*BFypFields[3][BFcount]);
-															BFpol = (BFyp[1][BFcount]* BFypFields[1][BFcount] + BFyp[2][BFcount]* BFypFields[2][BFcount] + BFyp[3][BFcount]* BFypFields[3][BFcount])/sqrtl(BFypFields[1][BFcount]*BFypFields[1][BFcount] + BFypFields[2][BFcount]*BFypFields[2][BFcount] + BFypFields[3][BFcount]*BFypFields[3][BFcount]);
-															if (BFpol<0.5) 
-																BFlogpol = log10l(0.5+BFpol);
-															else if (BFpol==0.5) 
-																BFlogpol = 0.0;
-															fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",BFxp[BFcount],BFBws[BFcount],BFpol,BFlogpol,BFyp[1][BFcount],BFyp[2][BFcount],BFyp[3][BFcount],BFypFields[1][BFcount],BFypFields[2][BFcount],BFypFields[3][BFcount]);
-															
-															BFZeilencount++;
-														}  
-													}
-													//}
-													
-													offset = 0;                       // after BF step start with new array
-																								
-												}
-											
-											}
-											// END brute force integration
-										
-											
-											//Ausgabe der Zwischenwerte aus odeint
-											if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)>=BahnPointSaveTime)){
-												for (klauf=2;klauf<=kount;klauf++){
-													if ((xp[klauf]-time_temp)>=BahnPointSaveTime)
-													{
-														
-														printf("-");
-														fflush(stdout);
-														// Ausgabewerte berechnen
-														vend = sqrtl(fabsl(yp[2][klauf]*yp[2][klauf]+yp[1][klauf]*yp[1][klauf]*yp[6][klauf]*yp[6][klauf]+yp[4][klauf]*yp[4][klauf]));
-														if(protneut == NEUTRON)
-															H = (M*gravconst*yp[3][klauf]+0.5*M*vend*vend-mu_n*Bp[13][klauf])*1E9 ;    // mu_n negative for low-field seekers
-														else if(protneut == PROTON || protneut == ELECTRONS)  
-															H= c_0*c_0  * M * (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
-														
-														if (spinflipcheck==2)
-														{
-															if (vlad>1e-99) 
-																logvlad=log10l(vlad);
-															if (frac>1e-99) 
-																logfrac=log10l(frac);
-														}
-														
-														//cout << "Br " << Bp[1][klauf] << endl;
-														fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",	iMC,xp[klauf],yp[1][klauf],yp[2][klauf],yp[3][klauf],yp[4][klauf],yp[5][klauf],yp[6][klauf],yp[1][klauf]*cosl(yp[5][klauf]),yp[1][klauf]*sinl(yp[5][klauf]),vend,H,Bp[1][klauf],Bp[2][klauf],Bp[3][klauf],Bp[4][klauf],Bp[5][klauf],Bp[6][klauf], Bp[7][klauf],Bp[8][klauf],Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac);
-														//fprintf(OUTFILE1,"%LG\n",xp[klauf]);
-														fflush(OUTFILE1);
-														Zeilencount++;
-														time_temp = xp[klauf];
-													}
-												}
-											}else if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)<BahnPointSaveTime)){
-												if((x2-timetemp)>=BahnPointSaveTime){
-													printf(".");
-													fflush(stdout);
-													// Ausgabewerte berechnen
-													BFeld(ystart[1],ystart[5],ystart[3], x2);
-													vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
-													if(protneut == NEUTRON) 
-														H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;    // mu_n negative for low-field seekers
-													else if(protneut == PROTON || protneut == ELECTRONS)  
-														H= c_0*c_0  * M * (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
-													if (spinflipcheck == 2){
-														if (vlad>1e-99) 
-															logvlad=log10l(vlad);
-														if (frac>1e-99) 
-															logfrac=log10l(frac);
-													}
-													fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
-													iMC, x2,ystart[1], ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4],H,Br,
-													dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac);
-													fflush(OUTFILE1);
-													Zeilencount++;
-													timetemp = x2;
-
-												}
-											}//Ende Ausgabe
-									
-											if (Zeilencount>40000)
-											{
-												fclose(OUTFILE1);
-												Filecount++;
-												sprintf(wholetrackfile, "%s/%06dtrack%03d.out", outpath, jobnumber, Filecount);
-												OUTFILE1=fopen(wholetrackfile,mode_w);
-												fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Polar Er Ez timestep Bcheck logvlad logthumb\n");
-												printf(" ##");
-												printf(wholetrackfile);
-												printf("## \n");
-												fprintf(LOGSCR," ##");
-												fprintf(LOGSCR,wholetrackfile);
-												fprintf(LOGSCR,"## \n");
-												Zeilencount=1;
-											}
-
-											if ((BFZeilencount>100000) && BruteForce)
-											{
-												fclose(BFLOG);
-												BFFilecount++;
-												sprintf(BFoutfile1, "%s/%06dBF%03d.out",outpath, jobnumber,BFFilecount);
-												if(!(BFLOG = fopen(BFoutfile1,mode_w))) 
-												{
-													perror("fopen");
-													exit(1);
-												}
-												fprintf(BFLOG,"t Babs Polar logPolar Ix Iy Iz Bx By Bz\n");
-												printf(" ##");
-												printf(BFoutfile1);
-												printf("## \n");
-												fprintf(LOGSCR," ##");
-												fprintf(LOGSCR,BFoutfile1);
-												fprintf(LOGSCR,"## \n");
-												BFZeilencount=1;
-											}
-										
-											Entkommen(ystart,  x2, H);  // check if particle should end!
-											fflush(LOGSCR);
-											
-											//if(!((x2<=xend)&&((ystart[3]>=zmin)||(reflekt==1))&&(ystart[3]<=zmax)&& ((ystart[1]>=rmin)||(ystart[3]>=innenzylmax)||(reflekt==1)) &&((ystart[1]<=rmax)||reflekt==1)&&(stopall==0))) 
-											//	OutputState(ystart,1);
-											
-										}while (((x2-xstart)<=xend)&&(!stopall)); // end integration do - loop
-										// END of loop for one partice
-										
-										
-										timetemp = 0.0;         // set times for points on track to zero for new particle
-										time_temp = 0.0;
-
-										vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
-										phitemp = ((ystart[5])/conv);     // calculate end angle
-										phiend  = fmodl(phitemp, 360.);   // in degree
-										if (phiend<0)                    // from 0 to 360°
-											phiend=360.0 + phiend;
-
-										if(protneut == NEUTRON)                // n
-											H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
-										else if(protneut == PROTON || protneut == ELECTRONS)           // p,e
-											H= c_0*c_0  * M * (1/sqrtl(1-v_n*v_n/(c_0*c_0))-1);                                        // rel Energie in eV
-            
-										ausgabe(x2,ystart, vend, H);// Endwerte schreiben
-
-										printf("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);
-										fprintf(LOGSCR,"Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);
-										
-										
-										IncrementCodes(kennz);
-
-										R=0;
-										 
-									} // end proton neutron calc
-									
-									 // calculation of electrons only through following field lines and magnetic mirror effect formula
-									// TURNED OFF!!!
-									if (protneut == 99)
-									{
-										BFeld(r_n, phi_n*conv, z_n, 500.0);
-										Bre0=Br; Bphie0 = Bphi; Bze0= Bz;
-										DetHit = CalcFluxLine(r_n,phi_n*conv,z_n, FluxStep);
-										if (DetHit) {
-											CritAngle = CalcCritAngle(r_n,phi_n*conv,z_n,Energie);
-											IncidentAngle = CalcIncidentAngle (r_n, phi_n*conv,z_n, vr_n, vphi_n, vz_n, Bre0, Bphie0,  Bze0, Bemax);
-											DetEnergy = Energie - Vflux;
-										}else if (!DetHit) {
-											CritAngle = 0;
-											IncidentAngle = 0;
-											DetEnergy = 0;
-											ElecAngleB = 0;
-										}
-										fprintf(ENDLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %i %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
-										r_n,z_n,vr_n,vphi_n,vz_n,ElecAngleB,DetHit,CritAngle,Energie,Bre0,Bze0,Be0,Bemax,ystart[1],ystart[3],Bws,Vflux,DetEnergy,IncidentAngle, BFeldSkal, EFeldSkal);
-									}
-
-									
-									if(protneut == BF_ONLY) // B-Feld Ausgabe
-									{
-										//Entkommen(ystart,  x2, H);
-										BFeldSkal = 1.0;
-										BFeld(r_n, phi_n, z_n, 500.0);
-										Bws=sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);
-										//fprintf(ENDLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
-										// x:=r y=0 z:=z
-										fprintf(ENDLOG,"%LG %G %LG %LG %LG %LG %LG %LG %LG \n",r_n*100,0.0,z_n*100,Br*1e4,Bphi*1e4,Bz*1e4,0.0,0.0,Bws);
-										//printf("B");
-										//printf("%LG %G %LG %LG %LG %LG %G %G %G\n", r_n*100.0,0.0,z_n*100.0,Br*1e4,Bphi*1e4,Bz*1e4,0.0,0.0,0.0);
-										cout << "r= " << r_n << " z= " << z_n << " Br= " << Br << " T, Bz= " << Bz << " T"  << endl;
-										
-										// Ramp Heating Analysis
-										for (Energie = 0; Energie <= EnergieE; Energie++){
-											EnTest = Energie*1.0e-9 - M*gravconst*z_n + mu_n * Bws;
-											if (EnTest >= 0){
-												iii = (int) Energie;
-												// add the volume segment to the volume that is accessible to a neutron with energy Energie
-												VolumeB[iii] = VolumeB[iii] + pi * dz_n * ((r_n+0.5*dr_n)*(r_n+0.5*dr_n) - (r_n-0.5*dr_n)*(r_n-0.5*dr_n));
-											}
-										}
-	
-									}// Ende B-Feld Ausgabe
-
-
-									// sorgt dafür, dass bei MonteCarlo die for Schleifen nur 1mal durchlaufen werden
-									if (MonteCarlo){
-										Energie=EnergieE+1;
-										z_n=z_ne+1;
-										r_n=r_ne+1;
-										alpha=alphae+1;
-										gammaa=gammae+1;			
-										phi_n=phie+1;
-									}
-							}
-							
+								IntegrateParticle();
+							}							
 						}
 					}
 				}
@@ -1230,7 +1239,7 @@ int main(int argc, char **argv){
 		{
 			ee = i;
 			Volume[ee] = ((i * 1.0e-9 / (M * gravconst))-wanddicke) * pi * (r_ne*r_ne-r_ns*r_ns);
-			// isentropische zustandsänderung, kappa=5/3
+			// isentropische zustandsnderung, kappa=5/3
 			fprintf(LOGSCR,"\n%i %.17LG %.17LG %.17LG",i,Volume[i],VolumeB[i],i * powl((Volume[i]/VolumeB[i]),(2.0/3.0)) - i);
 		}
 	}
