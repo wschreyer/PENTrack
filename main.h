@@ -136,6 +136,7 @@ extern long double LueckeR, LueckeZ, Luecke;      // size of the gab in the oute
 extern long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der benötigt wird
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 extern long double BFeldSkal, EFeldSkal, BFeldSkalGlobal;                        // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
+extern long double EFeldSkalSave, BFeldSkalGlobalSave;    // temperorary variables to save initial values
 extern long double H;                               // total energy of particle
 extern long double projz, ystart[7], ysave[7], xstart;       //z-component of velocity, initial and intermediate values of y[9]
 extern long double  x1, x2;                         // start and endtime handed over to integrator
