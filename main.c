@@ -278,6 +278,8 @@ void ConfigInit(void){
 	
 	Efeldwahl=0;
 	ausgabewunschsave=ausgabewunsch;
+	BFeldSkalGlobalSave=BFeldSkalGlobal;
+	EFeldSkalSave=EFeldSkal;
 	free(path);
 	fclose(cfg);
 	return;

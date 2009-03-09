@@ -49,6 +49,7 @@ long double LueckeR=0.001, LueckeZ=0.05, Luecke=0.05;      // size of the gap in
 long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der bentigt wird
 int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 long double BFeldSkal = 1.0, EFeldSkal = 1.0, BFeldSkalGlobal = 1.0;          // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
+long double EFeldSkalSave, BFeldSkalGlobalSave;    // temperorary variables to save initial values
 long double H;                               // total energy of particle
 long double projz, ystart[7], ysave[7], xstart = 0;       //z-component of velocity, initial and intermediate values of y[9]
 long double  x1, x2;                         // start and endtime handed over to integrator
