@@ -83,6 +83,8 @@ using namespace std;
 
 //functions
 extern void derivs(long double x, long double *y, long double *dydx);
+extern void IntegrateParticle(); // integrate particle trajectory
+extern void  BruteForceIntegration(); // integrate spin flip probability
 extern void Startbed(int k);
 extern void ausgabe(long double x2, long double *ystart, long double vend, long double H);
 extern void prepndist(int k);
@@ -133,7 +135,7 @@ extern long double delx;                            // initial timestep for the 
 extern long double delx_n;      // shorter timestep for BruteForce integration
 //extern long double y[9];                            //y: r, dr/dt, z, dz/dt, phi, d(phi)/dt, polarisation, spin phase.
 extern long double LueckeR, LueckeZ, Luecke;      // size of the gab in the outer left corner (m)
-extern long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der benötigt wird
+extern long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der benï¿½tigt wird
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 extern long double BFeldSkal, EFeldSkal, BFeldSkalGlobal;                        // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
 extern long double EFeldSkalSave, BFeldSkalGlobalSave;    // temperorary variables to save initial values
@@ -188,7 +190,7 @@ extern int clslit,clBruteForce,clreflekt,clspinflipcheck,clDetOpen;  // cleaning
 // timing variable
 extern long double timer1, timer2,timer3;
 
-// für Spinverfolgung
+// fï¿½r Spinverfolgung
 extern long double omega0, omegax, omegay, omegaAbs, omega0dot ;        // precession vector
 extern long double Bx0, By0, Bz0, Bxcoor, Bycoor, Bzcoor, Bcoorabs;    // B-field in cart Labor coord, cart coord of vector for spin coor sys
 extern long double Wx0, Wy0, Wz0;                            // return value of CylKartCoord
@@ -214,7 +216,7 @@ extern long double time_temp;
 extern unsigned short int nodelay, slit, DetOpen, decay;                // delays for monte carlo, is there an entrance slit?, do the neutrons decay?;
 extern long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator;
 extern long double DiceRodField;
-extern long double epss, epse, EnTest;                         // beginning, end for epsilon, variable für B-Feld berechnungnen
+extern long double epss, epse, EnTest;                         // beginning, end for epsilon, variable fï¿½r B-Feld berechnungnen
 extern long double Volume[200], VolumeB[200];   // Volume[E] accessible to neutrons at energy E without and with B-field
 extern long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
 extern unsigned short int TrajectoryLength;
