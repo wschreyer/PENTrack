@@ -533,10 +533,10 @@ void PrepIntpol(int k){
 	
 	printf("The interpolation can done from r = %.17LG to %.17LG and from n z = %.17LG to %.17LG\n",rind[3],rind[m-2],zind[3],zind[n-2]);
 	printf("The input table file has values of |B| from %.17LG T to %.17LG T\n and values of |E| from %.17LG V/m to %.17LG V/m\n",Babsmin,Babsmax,Eabsmin,Eabsmax);
-	printf("The minimum energy a low field seeking neutron has to have is %.3LG neV (at r:%.3LG, z: %.3LG).\n",Emin_n,rBabsmin,zBabsmin);
+	printf("The minimum energy a low field seeking neutron has to have is %.3LG eV (at r:%.3LG, z: %.3LG).\n",Emin_n,rBabsmin,zBabsmin);
 	fprintf(LOGSCR,"The interpolation can done from r = %.17LG to %.17LG and from n z = %.17LG to %.17LG\n",rind[3],rind[m-2],zind[3],zind[n-2]);
 	fprintf(LOGSCR,"The input table file has values of |B| from %.17LG T to %.17LG T\n and values of |E| from %.17LG V/m to %.17LG V/m\n",Babsmin,Babsmax,Eabsmin,Eabsmax);
-	fprintf(LOGSCR,"The minimum energy a low field seeking neutron has to have is %.3LG neV (at r:%.3LG, z: %.3LG).\n",Emin_n,rBabsmin,zBabsmin);
+	fprintf(LOGSCR,"The minimum energy a low field seeking neutron has to have is %.3LG eV (at r:%.3LG, z: %.3LG).\n",Emin_n,rBabsmin,zBabsmin);
 	
 	return;
 }
