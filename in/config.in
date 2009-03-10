@@ -29,11 +29,11 @@ BFeldSkalGlobal 1
 EFeldSkal -1
 # ausgabewunsch: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
 # 4 => only endpoints, but BFspin track, 5 => nothing
-ausgabewunsch 2
+ausgabewunsch 1
 # 0=> ordered starting values, 1=>randomly chosen starting parameters, 2=> read in start.in for starting values
 MonteCarlo 1
 # number of particles 
-MonteCarloAnzahl 100
+MonteCarloAnzahl 10
 
 # absorber choice: 1 => PE, 2 => Ti
 absorber 1

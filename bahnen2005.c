@@ -694,8 +694,11 @@ void derivs(long double x, long double *y, long double *dydx){
 	return;
 }
 
+
+
+
 void IntegrateParticle(){
-	int schritte=0,iii=0;
+	int schritte=0,iii=0, perc=0;   // ?? , ??, percentage of particle done counter
 	unsigned short int DetHit=0;
 		// reset some values for new particle
 	stopall=0;
@@ -946,6 +949,23 @@ void IntegrateParticle(){
 			ntotalsteps=ntotalsteps+kount;
 			
 			
+			// write status of particle to console
+			// one point per 2 percent of endtime
+		if((x2-xstart)*100/(xend-xstart)>perc)
+		{
+			perc++;
+			if(perc%10==0)
+			{
+				printf("%i%%",perc);
+				fflush(stdout);
+			}
+			if((perc%10!=0)&&(perc%2==0)) 
+			{
+				printf(".");
+				fflush(stdout);
+			}
+		}
+			
 			//mytime2 = clock();
 			//timer2 =( ((long double)mytime2 - (long double)mytime1) / CLOCKS_PER_SEC ) + timer2;
 			
@@ -956,7 +976,9 @@ void IntegrateParticle(){
 			vend = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
 			if(protneut == NEUTRON)                // n
 				H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
-			else if(protneut == PROTON || protneut == ELECTRONS)           // p,e
+			else if(protneut == PROTON)           // p			
+				H= (0.5*m_p*vend*vend);           // Energie in eV for p						
+			else if(protneut == ELECTRONS)           // e
 				H= c_0*c_0  * M *  (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
 		
 			if (H>Hmax) Hmax=H;
@@ -992,7 +1014,9 @@ void IntegrateParticle(){
 						vend = sqrtl(fabsl(yp[2][klauf]*yp[2][klauf]+yp[1][klauf]*yp[1][klauf]*yp[6][klauf]*yp[6][klauf]+yp[4][klauf]*yp[4][klauf]));
 						if(protneut == NEUTRON)
 							H = (M*gravconst*yp[3][klauf]+0.5*M*vend*vend-mu_n*Bp[13][klauf])*1E9 ;    // mu_n negative for low-field seekers
-						else if(protneut == PROTON || protneut == ELECTRONS)  
+						else if(protneut == PROTON)           // p			
+							H= (0.5*m_p*vend*vend);           // Energie in eV for p		
+						else if(protneut == ELECTRONS)  
 							H= c_0*c_0  * M * (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
 						
 						if (spinflipcheck==2)
@@ -1013,14 +1037,16 @@ void IntegrateParticle(){
 				}
 			}else if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)<BahnPointSaveTime)){
 				if((x2-timetemp)>=BahnPointSaveTime){
-					printf(".");
+					printf(":");
 					fflush(stdout);
 					// Ausgabewerte berechnen
 					BFeld(ystart[1],ystart[5],ystart[3], x2);
 					vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
 					if(protneut == NEUTRON) 
 						H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;    // mu_n negative for low-field seekers
-					else if(protneut == PROTON || protneut == ELECTRONS)  
+					else if(protneut == PROTON)           // p			
+						H= (0.5*m_p*vend*vend);           // Energie in eV for p		
+					else if(protneut == ELECTRONS)  
 						H= c_0*c_0  * M * (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
 					if (spinflipcheck == 2){
 						if (vlad>1e-99) 
@@ -1095,7 +1121,9 @@ void IntegrateParticle(){
 
 		if(protneut == NEUTRON)                // n
 			H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
-		else if(protneut == PROTON || protneut == ELECTRONS)           // p,e
+		else if(protneut == PROTON)           // p			
+				H= (0.5*m_p*vend*vend);           // Energie in eV for p		
+		else if(protneut == ELECTRONS)           // p,e
 			H= c_0*c_0  * M * (1/sqrtl(1-v_n*v_n/(c_0*c_0))-1);                                        // rel Energie in eV
 
 		ausgabe(x2,ystart, vend, H);// Endwerte schreiben
