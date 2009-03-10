@@ -210,7 +210,7 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 			perc++;
 			if(perc%10==0)
 			{
-				printf("%i",perc);
+				printf("%i%%",perc);
 				fflush(stdout);
 			}
 			if((perc%10!=0)&&(perc%2==0)) 
