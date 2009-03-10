@@ -103,6 +103,11 @@ void MCStartwerte(long double delx)
 			// temporary for energy dependence test of proton extraction efficiency 
 			//NeutEnergie =  15e-9+mt_get_double(v_mt_state)*(110.0e-9-15e-9);    // gleich gewichtete Neutronen-Energie
 			// temporary for energy dependence test of proton extraction efficiency END					
+			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(Eabsmin,1.5)) *mt_get_double(v_mt_state) + powl(Eabsmin,1.5) ,2.0/3.0);
+			
+			
+			
+			
 		}
 		// electron
 		else if (protneut == ELECTRONS)
@@ -119,6 +124,9 @@ void MCStartwerte(long double delx)
 				Elvert = sqrtl(Energie/1e6*Energie/1e6+2*Energie/1e6*m_e*c_0*c_0/1e6) * powl(Qvalue/1e6-Energie/1e6,2) * (Energie/1e6+m_e*c_0*c_0/1e6);			
 				cout << "Proton energy dist: E= " << Energie << " decay rate: " << Elvert << " diced value = " << WktTMP << endl; 
 			}while(WktTMP>Elvert);			
+			
+			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(Eabsmin,1.5)) *mt_get_double(v_mt_state) + powl(Eabsmin,1.5) ,2.0/3.0);
+			
 		}
 			
 	
