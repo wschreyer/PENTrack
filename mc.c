@@ -101,7 +101,7 @@ void MCStartwerte(long double delx)
 			}while(WktTMP>Wahrschl);			
 			
 			// temporary for energy dependence test of proton extraction efficiency 
-			NeutEnergie =  15e-9+mt_get_double(v_mt_state)*(110.0e-9-15e-9);    // gleich gewichtete Neutronen-Energie
+			//NeutEnergie =  15e-9+mt_get_double(v_mt_state)*(110.0e-9-15e-9);    // gleich gewichtete Neutronen-Energie
 			// temporary for energy dependence test of proton extraction efficiency END					
 		}
 		// electron
