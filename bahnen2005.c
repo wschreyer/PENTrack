@@ -217,8 +217,6 @@ long double Bars_1r[14],Bars_1phi[14],Bars_1z[14],Bars_2r[14],Bars_2phi[14],Bars
 mt_state_t *v_mt_state = NULL; //mersenne twister state var
 
 // uebergabe: jobnumber inpath outpath                 paths without last slash
-
-
 int main(int argc, char **argv){
 	int ee=0;	
 	time_t mytime;
