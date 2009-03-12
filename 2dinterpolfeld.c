@@ -1091,7 +1091,7 @@ long double Bnull(long double r,long double phi,long double z)
 
 void Preinterpol(int p)
 {
-	int indr, indz; 
+	int indr, indz, perc=0; 
 	long double d1, d2;
 	long double **ctemp;
 	
@@ -1114,6 +1114,26 @@ void Preinterpol(int p)
 	{
 		for (indz=3; indz < n-2; indz++)
 		{
+			
+			
+		// status if read is displayed
+		if(100*indr/(m)>perc)
+		{
+			perc++;
+			if(perc%10==0)
+			{
+				printf("%i%%",perc);
+				fflush(stdout);
+			}
+			if((perc%10!=0)&&(perc%2==0)) 
+			{
+				printf(".");
+				fflush(stdout);
+			}
+		}
+			
+			
+			
 			// fill rectancle with values and derivatives
 			yyy[1] = BrTab[indr][indz];
 			yyy[2] = BrTab[indr+1][indz];
