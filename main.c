@@ -300,22 +300,22 @@ void Startbed(int k){
 	//char tempo[10];
 	if (protneut==PROTON)
 	{
-		path=(char*)malloc((inpathlength+13)*sizeof(char));
+		path=(char*)malloc((inpathlength+20)*sizeof(char));
 		sprintf(path,"%s/protonen.in",inpath);
     }    
     else if (protneut==NEUTRON)
 	{
-		path=(char*)malloc((inpathlength+14)*sizeof(char));
+		path=(char*)malloc((inpathlength+20)*sizeof(char));
 		sprintf(path,"%s/neutronen.in",inpath);
     }
     else if (protneut==BF_ONLY)
 	{
-        path=(char*)malloc((inpathlength+10)*sizeof(char));
+        path=(char*)malloc((inpathlength+20)*sizeof(char));
 		sprintf(path,"%s/bfeld.in",inpath);
 	}
 	 else if (protneut==ELECTRONS)
 	{
-        path=(char*)malloc((inpathlength+14)*sizeof(char));
+        path=(char*)malloc((inpathlength+20)*sizeof(char));
 		sprintf(path,"%s/electrons.in",inpath);
 	}
 	else 
