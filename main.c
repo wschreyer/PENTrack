@@ -290,7 +290,7 @@ void ConfigInit(void){
 
 
 //--------------------------------------------------------------------------------
-// Einlesen der Files protonen.in oder neutronen.in für die Startbedingungen und der Dimensionen des Topfes aus dimensions.in
+// Einlesen der Files protonen.in oder neutronen.in fï¿½r die Startbedingungen und der Dimensionen des Topfes aus dimensions.in
 void Startbed(int k){
     int i = 0, ncont = 0;
     char msg[500];
@@ -300,7 +300,7 @@ void Startbed(int k){
 	//char tempo[10];
 	if (protneut==PROTON)
 	{
-		path=(char*)malloc((inpathlength+12)*sizeof(char));
+		path=(char*)malloc((inpathlength+13)*sizeof(char));
 		sprintf(path,"%s/protonen.in",inpath);
     }    
     else if (protneut==NEUTRON)
@@ -315,24 +315,33 @@ void Startbed(int k){
 	}
 	 else if (protneut==ELECTRONS)
 	{
-        path=(char*)malloc((inpathlength+10)*sizeof(char));
+        path=(char*)malloc((inpathlength+14)*sizeof(char));
 		sprintf(path,"%s/electrons.in",inpath);
 	}
 	else 
 		exit(-1);
 	
 	stream = fopen(path,mode_r);
+	if (stream == NULL){
+		printf("Can't open %s\n",path);
+		free(path);	
+		exit(-1);
+	}   
+	free(path);	
 	
-	free(path);
-    
 	// Abmessungen des Pots aus dimensions.in einlesen
 
 	path=(char*)malloc((inpathlength+15)*sizeof(char));
 	sprintf(path,"%s/dimensions.in",inpath);
-	FILE *DIM = fopen (path,mode_r);
-	free(path);
 	
-	if (DIM == NULL) exit(-1);        // Fehlerbehandlung
+	
+	FILE *DIM = fopen (path,mode_r);
+	if (DIM == NULL){
+		printf("Can't open %s\n",path);
+		free(path);	
+		exit(-1);
+	}   
+	free(path);	
 	
 	//loop over the lines in dimensions.in
 	for(i = 1; i<= 23; i++){
@@ -532,10 +541,10 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 
 
 // Diese Funktionen werten die in yp[][] gespeichterten Werte aus und berechnen daraus die
-// Neutronenverteilung in der r-z-Ebene. Dies wird über die Auswertung der Aufenthalts-
+// Neutronenverteilung in der r-z-Ebene. Dies wird ï¿½ber die Auswertung der Aufenthalts-
 // wahrscheinlichkeit des Neutrons in Quadraten erreicht.
-// Wie bei der Interpolation gibt es einen Vektor für die r-Werte der Ecken der Quadrate,
-// eine für die z-Werte und eine Matrix in der die Verteilung abgespeichert wird
+// Wie bei der Interpolation gibt es einen Vektor fï¿½r die r-Werte der Ecken der Quadrate,
+// eine fï¿½r die z-Werte und eine Matrix in der die Verteilung abgespeichert wird
 
 // Vorbereitung der r und z-Vektoren
 void prepndist(int k)
@@ -549,7 +558,7 @@ ndistr=dvector(0,v);       // r-Werte
 ndistz=dvector(0,w);       // z-Werte
 ndistW=dmatrix(0,v,0,w);   // Verteilung
 
-        // r-Vektor befüllen, er enthält die Ecken der Auswertungsquadrate
+        // r-Vektor befï¿½llen, er enthï¿½lt die Ecken der Auswertungsquadrate
         dooo=0.0;
         for(int i=0;i<=v;i++)
         {
@@ -557,7 +566,7 @@ ndistW=dmatrix(0,v,0,w);   // Verteilung
 			  dooo = dooo + increment;
         }
 
-        // z-Vektor befüllen, er enthält die Ecken der Auswertungsquadrate
+        // z-Vektor befï¿½llen, er enthï¿½lt die Ecken der Auswertungsquadrate
         dooo=-0.5;
         for(int i=0;i<=w;i++)
         {
@@ -576,7 +585,7 @@ ndistW=dmatrix(0,v,0,w);   // Verteilung
 
  }
 
-// Befüllung der Verteilungsmatrix
+// Befï¿½llung der Verteilungsmatrix
 void fillndist(int k)
 {
 	
@@ -593,7 +602,7 @@ void fillndist(int k)
 	for(int klauf=2;klauf<=kount;klauf++)
 	{
 		ir1=ir2; iz1=iz2;
-		hunt(ndistr, v, yp[1][klauf], &ir2);   // Index des nächsten Punktes suchen
+		hunt(ndistr, v, yp[1][klauf], &ir2);   // Index des nï¿½chsten Punktes suchen
 		hunt(ndistz, w, yp[3][klauf], &iz2);
 		//ir2 = (yp[1][klauf] - conv_rA) / (conv_rB);
 		//iz2 = (yp[3][klauf] - conv_zA) / (conv_zB);
@@ -607,8 +616,8 @@ void fillndist(int k)
 		else
 		{
 	
-			ndistW[ir1][iz1]=ndistW[ir1][iz1] + (xp[klauf]-xp[klauf-1])/2;        // Hälfte der Zeit zum ersten Quadrat
-			ndistW[ir2][iz2]=ndistW[ir2][iz2] + (xp[klauf]-xp[klauf-1])/2;        // Hälfte der Zeit zum anderen
+			ndistW[ir1][iz1]=ndistW[ir1][iz1] + (xp[klauf]-xp[klauf-1])/2;        // Hï¿½lfte der Zeit zum ersten Quadrat
+			ndistW[ir2][iz2]=ndistW[ir2][iz2] + (xp[klauf]-xp[klauf-1])/2;        // Hï¿½lfte der Zeit zum anderen
 		}
 	}
 
