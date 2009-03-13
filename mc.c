@@ -41,13 +41,13 @@ void MCStartwerte(long double delx)
 	if(BFeldSkalGlobalSave==-1)
 	{
 		BFeldSkalGlobal=mt_get_double(v_mt_state);
-		cout << "BFeldSkalGlobal:" << BFeldSkalGlobal;
+		cout << "BFeldSkalGlobal:" << BFeldSkalGlobal << endl;
 	}
 	
 	if(EFeldSkalSave==-1)
 	{
 		EFeldSkal=mt_get_double(v_mt_state);
-		cout << "EFeldSkal:" << EFeldSkal;
+		cout << "EFeldSkal:" << EFeldSkal << endl;
 	}
 	
 	
@@ -66,6 +66,9 @@ void MCStartwerte(long double delx)
 		Energie = NeutEnergie = x/1e9;
 		// END AbEX@ILL*/
 		
+		// check if lower neutron energy boundary is possible, if not set to possible value 
+		if(z_ns>=0 && Emin_n>EnergieE)
+			EnergieS=Emin_n+1e-9;
 		
 		// square root neutron energy distribution
 		if ((protneut != PROTON)&&(protneut != ELECTRONS))
@@ -103,7 +106,7 @@ void MCStartwerte(long double delx)
 			// temporary for energy dependence test of proton extraction efficiency 
 			//NeutEnergie =  15e-9+mt_get_double(v_mt_state)*(110.0e-9-15e-9);    // gleich gewichtete Neutronen-Energie
 			// temporary for energy dependence test of proton extraction efficiency END					
-			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(Emin_n,1.5)) *mt_get_double(v_mt_state) + powl(Emin_n,1.5) ,2.0/3.0);
+			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(Emin_n+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(Emin_n+1e-9,1.5) ,2.0/3.0);
 			
 			
 			
@@ -125,7 +128,7 @@ void MCStartwerte(long double delx)
 				cout << "Proton energy dist: E= " << Energie << " decay rate: " << Elvert << " diced value = " << WktTMP << endl; 
 			}while(WktTMP>Elvert);			
 			
-			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(Emin_n,1.5)) *mt_get_double(v_mt_state) + powl(Emin_n,1.5) ,2.0/3.0);
+			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(Emin_n+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(Emin_n+1e-9,1.5) ,2.0/3.0);
 			
 		}
 			
@@ -149,8 +152,8 @@ void MCStartwerte(long double delx)
 			// Test ob Neutron überhaupt da hingekommen wäre (Energy)
 			BFeld(r_n,phi_n*conv,z_n, 0.0);
 			crit = NeutEnergie - m_n*gravconst*z_n + (mu_n)*Bws;
-			printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
-			fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
+			//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
+			//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
 			if((crit<0.0))
 			{   //  Anfangsen. - Pot Energie + Energie im B-Feld
 				printf("Dice anew... \n");
@@ -165,8 +168,8 @@ void MCStartwerte(long double delx)
 		// Test ob Neutron überhaupt da hingekommen wäre (NeutEnergie)
 			BFeld(r_n,phi_n*conv,z_n, 0.0);
 			crit = NeutEnergie - m_n*gravconst*z_n + (mu_n)*Bws;
-			printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
-			fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
+			//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
+			//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
 			if((crit<0.0))
 			{   //  Anfangsen. - Pot Energie + Energie im B-Feld
 				printf("Dice anew... \n");
