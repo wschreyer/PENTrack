@@ -305,22 +305,22 @@ int main(int argc, char **argv){
 	
 	// current bar test
 	// current from outside in
-  Bars_1r[1]=0.6;  Bars_1phi[1]=0.0;    Bars_1z[1]=-0.15; Bars_2r[1]=0.0; Bars_2phi[1]=0.0;    Bars_2z[1]=-0.15;   // lower horizontal 0 deg
-  Bars_1r[2]=0.60;Bars_1phi[2]=pi/2.0;Bars_1z[2]=-0.15; Bars_2r[2]=0.0; Bars_2phi[2]=pi/2.0;Bars_2z[2]=-0.15; // lower horizontal 90 deg
-  Bars_1r[3]=0.60;Bars_1phi[3]=pi;      Bars_1z[3]=-0.15; Bars_2r[3]=0.0; Bars_2phi[3]=pi;      Bars_2z[3]=-0.15; // lower horizontal 180 deg
-  Bars_1r[4]=0.60;Bars_1phi[4]=pi*1.5;Bars_1z[4]=-0.15; Bars_2r[4]=0.0; Bars_2phi[4]=pi*1.5;Bars_2z[4]=-0.15; // lower horizontal 270 deg
-// current from inside out
-  Bars_1r[5]=0.0;Bars_1phi[5]=0.0;    Bars_1z[5]=1.35;Bars_2r[5]=0.6;Bars_2phi[5]=0.0;    Bars_2z[5]=1.35;   // upper horizontal 0 deg
-  Bars_1r[6]=0.0;Bars_1phi[6]=pi/2.0;Bars_1z[6]=1.35;Bars_2r[6]=0.6;Bars_2phi[6]=pi/2.0;Bars_2z[6]=1.35;  // upper horizontal 90 deg
-  Bars_1r[7]=0.0;Bars_1phi[7]=pi;      Bars_1z[7]=1.35;Bars_2r[7]=0.6;Bars_2phi[7]=pi;      Bars_2z[7]=1.35;  // upper horizontal 180 deg
-  Bars_1r[8]=0.0;Bars_1phi[8]=pi*1.5;Bars_1z[8]=1.35;Bars_2r[8]=0.6;Bars_2phi[8]=pi*1.5;Bars_2z[8]=1.35;  // upper horizontal 270 deg
-// current from high to low
-  Bars_1r[9]=0.6;  Bars_1phi[9]=0;        Bars_1z[9]=1.35;  Bars_2r[9]=0.6; Bars_2phi[9]=0;        Bars_2z[9]=-0.15;  //outer current 0 deg
-  Bars_1r[10]=0.6;Bars_1phi[10]=pi/2;   Bars_1z[10]=1.35;Bars_2r[10]=0.6;Bars_2phi[10]=pi/2;  Bars_2z[10]=-0.15; //outer current 90 deg
-  Bars_1r[11]=0.6;Bars_1phi[11]=pi;      Bars_1z[11]=1.35;Bars_2r[11]=0.6;Bars_2phi[11]=pi;      Bars_2z[11]=-0.15; //outer current 180 deg
-  Bars_1r[12]=0.6;Bars_1phi[12]=pi*1.5;Bars_1z[12]=1.35;Bars_2r[12]=0.6;Bars_2phi[12]=pi*1.5;Bars_2z[12]=-0.15; //outer current 270 deg
-  // current from low to high
-  Bars_1r[13]=0.0;Bars_1phi[13]=0.0;   Bars_1z[13]=-0.15;Bars_2r[13]=0; Bars_2phi[13]=0.0;    Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
+	Bars_1r[1]=0.6;  Bars_1phi[1]=0.0;    Bars_1z[1]=-0.15; Bars_2r[1]=0.0; Bars_2phi[1]=0.0;    Bars_2z[1]=-0.15;   // lower horizontal 0 deg
+	Bars_1r[2]=0.60;Bars_1phi[2]=pi/2.0;Bars_1z[2]=-0.15; Bars_2r[2]=0.0; Bars_2phi[2]=pi/2.0;Bars_2z[2]=-0.15; // lower horizontal 90 deg
+	Bars_1r[3]=0.60;Bars_1phi[3]=pi;      Bars_1z[3]=-0.15; Bars_2r[3]=0.0; Bars_2phi[3]=pi;      Bars_2z[3]=-0.15; // lower horizontal 180 deg
+	Bars_1r[4]=0.60;Bars_1phi[4]=pi*1.5;Bars_1z[4]=-0.15; Bars_2r[4]=0.0; Bars_2phi[4]=pi*1.5;Bars_2z[4]=-0.15; // lower horizontal 270 deg
+	// current from inside out
+	Bars_1r[5]=0.0;Bars_1phi[5]=0.0;    Bars_1z[5]=1.35;Bars_2r[5]=0.6;Bars_2phi[5]=0.0;    Bars_2z[5]=1.35;   // upper horizontal 0 deg
+	Bars_1r[6]=0.0;Bars_1phi[6]=pi/2.0;Bars_1z[6]=1.35;Bars_2r[6]=0.6;Bars_2phi[6]=pi/2.0;Bars_2z[6]=1.35;  // upper horizontal 90 deg
+	Bars_1r[7]=0.0;Bars_1phi[7]=pi;      Bars_1z[7]=1.35;Bars_2r[7]=0.6;Bars_2phi[7]=pi;      Bars_2z[7]=1.35;  // upper horizontal 180 deg
+	Bars_1r[8]=0.0;Bars_1phi[8]=pi*1.5;Bars_1z[8]=1.35;Bars_2r[8]=0.6;Bars_2phi[8]=pi*1.5;Bars_2z[8]=1.35;  // upper horizontal 270 deg
+	// current from high to low
+	Bars_1r[9]=0.6;  Bars_1phi[9]=0;        Bars_1z[9]=1.35;  Bars_2r[9]=0.6; Bars_2phi[9]=0;        Bars_2z[9]=-0.15;  //outer current 0 deg
+	Bars_1r[10]=0.6;Bars_1phi[10]=pi/2;   Bars_1z[10]=1.35;Bars_2r[10]=0.6;Bars_2phi[10]=pi/2;  Bars_2z[10]=-0.15; //outer current 90 deg
+	Bars_1r[11]=0.6;Bars_1phi[11]=pi;      Bars_1z[11]=1.35;Bars_2r[11]=0.6;Bars_2phi[11]=pi;      Bars_2z[11]=-0.15; //outer current 180 deg
+	Bars_1r[12]=0.6;Bars_1phi[12]=pi*1.5;Bars_1z[12]=1.35;Bars_2r[12]=0.6;Bars_2phi[12]=pi*1.5;Bars_2z[12]=-0.15; //outer current 270 deg
+	// current from low to high
+	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;   Bars_1z[13]=-0.15;Bars_2r[13]=0; Bars_2phi[13]=0.0;    Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
   
   /*
 	long double err, testr = 0.25, result;
@@ -393,24 +393,24 @@ int main(int argc, char **argv){
 	{
 		ReadMagnets();
 	
-	printf("\n \n Test of integration\n");
-//	long double TestInt;
-	BFeldSkal=1.0; Ibar = 2250;
-	sign1 = 1, sign2 = 1;
-	for (int a = 0;a<1;a++)
-	{
+		printf("\n \n Test of integration\n");
+		//	long double TestInt;
+		BFeldSkal=1.0; Ibar = 2250;
+		sign1 = 1, sign2 = 1;
+		for (int a = 0;a<1;a++)
+		{
 		
-		BFeld(0.3,0,0.1, 500.0);
-		//TestInt = BForbes(0.3, 0, 0.1, 10);
-		//TestInt = OneCoilRoot(0.8, 0, 0.1, C1a, C1b, C1R_0, C1J_0, C1zoffset);
-		cout << "T" << endl;
-	}
-	printf("Br = %.17LG \n",Br);
-	printf("dBrdr = %.17LG \n",dBrdr);
-	printf("dBrdz = %.17LG \n",dBrdz);
-	printf("Bz = %.17LG \n",Bz);
-	printf("dBzdr = %.17LG \n",dBzdr);
-	printf("dBzdz = %.17LG \n",dBzdz);
+			BFeld(0.3,0,0.1, 500.0);
+			//TestInt = BForbes(0.3, 0, 0.1, 10);
+			//TestInt = OneCoilRoot(0.8, 0, 0.1, C1a, C1b, C1R_0, C1J_0, C1zoffset);
+			cout << "T" << endl;
+		}
+		printf("Br = %.17LG \n",Br);
+		printf("dBrdr = %.17LG \n",dBrdr);
+		printf("dBrdz = %.17LG \n",dBrdz);
+		printf("Bz = %.17LG \n",Bz);
+		printf("dBzdr = %.17LG \n",dBzdr);
+		printf("dBzdz = %.17LG \n",dBzdz);
 	
 	}
 	
@@ -420,7 +420,7 @@ int main(int argc, char **argv){
 		MonteCarloAnzahl=1;
 	// read starting values from file start.in
 	// open this file
-	if (MonteCarlo==2)
+	else if (MonteCarlo==2)
 	{
 		path=(char*)malloc((inpathlength+10)*sizeof(char));
 		sprintf(path,"%s/start.in",inpath);
@@ -550,13 +550,18 @@ int main(int argc, char **argv){
 		sprintf(wholetrackfile, "%s/%06dtrack001.out", outpath, jobnumber);
 		OUTFILE1 = fopen(wholetrackfile,mode_w);       // open outfile neut001.out
 		Zeilencount=0;
-		fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
+		fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
+						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
+						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
 	}
 
 	// Endpunkte
 	if (protneut != BF_ONLY) 
 	{
-        fprintf(ENDLOG,"jobnumber protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart gammastart rend phiend zend vend alphaend gammaend t H kennz NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax AbsorberHits BFeldSkal EFeldSkal lossprob\n");
+        fprintf(ENDLOG,"jobnumber protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
+        			   "gammastart rend phiend zend vend alphaend gammaend t H kennz "
+        			   "NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax "
+        			   "AbsorberHits BFeldSkal EFeldSkal lossprob\n");
 	}
 	
 	//end initial step
@@ -1028,7 +1033,12 @@ void IntegrateParticle(){
 						}
 						
 						//cout << "Br " << Bp[1][klauf] << endl;
-						fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",	iMC,xp[klauf],yp[1][klauf],yp[2][klauf],yp[3][klauf],yp[4][klauf],yp[5][klauf],yp[6][klauf],yp[1][klauf]*cosl(yp[5][klauf]),yp[1][klauf]*sinl(yp[5][klauf]),vend,H,Bp[1][klauf],Bp[2][klauf],Bp[3][klauf],Bp[4][klauf],Bp[5][klauf],Bp[6][klauf], Bp[7][klauf],Bp[8][klauf],Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac);
+						fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+										 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+										 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
+										 iMC,xp[klauf],yp[1][klauf],yp[2][klauf],yp[3][klauf],yp[4][klauf],yp[5][klauf],yp[6][klauf],yp[1][klauf]*cosl(yp[5][klauf]),yp[1][klauf]*sinl(yp[5][klauf]),
+										 vend,H,Bp[1][klauf],Bp[2][klauf],Bp[3][klauf],Bp[4][klauf],Bp[5][klauf],Bp[6][klauf], Bp[7][klauf],Bp[8][klauf],
+										 Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac);
 						//fprintf(OUTFILE1,"%LG\n",xp[klauf]);
 						fflush(OUTFILE1);
 						Zeilencount++;
@@ -1054,9 +1064,12 @@ void IntegrateParticle(){
 						if (frac>1e-99) 
 							logfrac=log10l(frac);
 					}
-					fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
-					iMC, x2,ystart[1], ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4],H,Br,
-					dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac);
+					fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+									 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+									 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
+									 iMC,x2,ystart[1],ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),
+									 ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4],H,Br,dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,
+									 Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac);
 					fflush(OUTFILE1);
 					Zeilencount++;
 					timetemp = x2;
@@ -1070,7 +1083,10 @@ void IntegrateParticle(){
 				Filecount++;
 				sprintf(wholetrackfile, "%s/%06dtrack%03d.out", outpath, jobnumber, Filecount);
 				OUTFILE1=fopen(wholetrackfile,mode_w);
-				fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Polar Er Ez timestep Bcheck logvlad logthumb\n");
+				fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
+								 "v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr "
+								 "dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Polar Er Ez "
+								 "timestep Bcheck logvlad logthumb\n");
 				printf(" ##");
 				printf(wholetrackfile);
 				printf("## \n");
@@ -1155,8 +1171,12 @@ void IntegrateParticle(){
 			DetEnergy = 0;
 			ElecAngleB = 0;
 		}
-		fprintf(ENDLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %i %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
-		r_n,z_n,vr_n,vphi_n,vz_n,ElecAngleB,DetHit,CritAngle,Energie,Bre0,Bze0,Be0,Bemax,ystart[1],ystart[3],Bws,Vflux,DetEnergy,IncidentAngle, BFeldSkal, EFeldSkal);
+		fprintf(ENDLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %i %.17LG %.17LG %.17LG "
+					   "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+					   "%.17LG\n",
+					   r_n,z_n,vr_n,vphi_n,vz_n,ElecAngleB,DetHit,CritAngle,Energie,Bre0,
+					   Bze0,Be0,Bemax,ystart[1],ystart[3],Bws,Vflux,DetEnergy,IncidentAngle,BFeldSkal,
+					   EFeldSkal);
 	}
 
 	
@@ -1257,7 +1277,8 @@ void BruteForceIntegration() {
 		if(klaufstart == 1)
 		{
 			gammaend=atan2l(sqrtl(powl(yp[2][2],2)+powl(yp[1][2]*yp[6][2],2)),yp[4][2])/conv;
-			fprintf(LOGSCR,"\n r:%.17LG phi:%.17LG z:%.17LG H:%.17LG alpha:%.17LG gamma:%.17LG \n ",yp[1][2],yp[5][2]/conv,yp[3][2],(M*gravconst*yp[3][2]+0.5*M*fabsl(yp[2][2]*yp[2][2]+yp[1][2]*yp[1][2]*yp[6][2]*yp[6][2]+yp[4][2]*yp[4][2])-mu_n*Bp[13][2])*1E9, atanl(yp[6][2]*yp[1][2]/yp[2][2])/conv, gammaend);
+			fprintf(LOGSCR,"\n r:%.17LG phi:%.17LG z:%.17LG H:%.17LG alpha:%.17LG gamma:%.17LG \n ",
+							yp[1][2],yp[5][2]/conv,yp[3][2],(M*gravconst*yp[3][2]+0.5*M*fabsl(yp[2][2]*yp[2][2]+yp[1][2]*yp[1][2]*yp[6][2]*yp[6][2]+yp[4][2]*yp[4][2])-mu_n*Bp[13][2])*1E9, atanl(yp[6][2]*yp[1][2]/yp[2][2])/conv, gammaend);
 		}
 		
 													
@@ -1339,7 +1360,8 @@ void BruteForceIntegration() {
 					BFlogpol = log10l(0.5+BFpol);
 				else if (BFpol==0.5) 
 					BFlogpol = 0.0;
-				fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",BFxp[BFcount],BFBws[BFcount],BFpol,BFlogpol,BFyp[1][BFcount],BFyp[2][BFcount],BFyp[3][BFcount],BFypFields[1][BFcount],BFypFields[2][BFcount],BFypFields[3][BFcount]);
+				fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
+								BFxp[BFcount],BFBws[BFcount],BFpol,BFlogpol,BFyp[1][BFcount],BFyp[2][BFcount],BFyp[3][BFcount],BFypFields[1][BFcount],BFypFields[2][BFcount],BFypFields[3][BFcount]);
 				
 				BFZeilencount++;
 			}  
