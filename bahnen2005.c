@@ -11,14 +11,9 @@ FILE *LOGSCR = NULL, *OUTFILE1 = NULL, *REFLECTLOG = NULL, *BFLOG = NULL, *TESTL
 
 // files for in/output + paths
 char *wholetrackfile = NULL, *logscrfile = NULL, *BFoutfile1 = NULL, *reflectlogfile = NULL, *testlogfile = NULL, *endlogfile = NULL, *inpath = NULL, *outpath = NULL, *stateoutfile = NULL, *startinfile = NULL;
-
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
-long double hl;
-long double ri= 0.12, ra= 0.48, rm=0.30, z0=0.18;                      //dimensions of torus for Maple field
-long double zmax=1.2, zmin=0.0, ztopfende=1.2, hlinse=0.5, ddet=0.;    //dimensions of torus
-long double hlid;    // height of a possible lid to be put on the storage bottle [m]
-long double theta,thetasave, R, rmax, rmin, innenzylmax;          //innenzylmax: coils on inner cylinder end here
-long double B0= 2.5, Blinse= 5, Ibar= 2250.;                // B-field strength, current through rod
+
+// physical constants
 long double ele_e=1.602176487E-19, Qm0=1.602176487E-19/1.672621637E-27;      //elementary charge in SI, charge/proton mass 																					
 long double gravconst=9.80665, conv=0.01745329251, mu0= 1.25663706144e-6;      //g, Pi/180, permeability,
 long double m_n=1.674927211E-27/1.602176487E-19, mu_n, pi=3.141592655359;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
@@ -27,63 +22,88 @@ long double m_e = 9.10938215e-31/1.602176487E-19, c_0 = 299792458, gammarel, ran
 long double hquer=1.05457266e-34, mu_nSI=0.96623641e-26;          // Neutron magn Mom (in J/T)
 long double gamma_n = 1.83247185e8;            
 long double mumB, tau=885.7;              // magn. moment of neutron/mass,  neutron lifetime [s]
+long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 
+												// cm => m,  Gauss => Tesla,   V/cm => V/m    Bconv temporr von 1e-4 auf 1 gesetzt
+
+// misc configurations
+int MonteCarlo=0, MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
 int reflekt=0, Efeldwahl, bfeldwahl, protneut, expmode=1,Racetracks=1;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
 int reflektlog = 0, SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
-long double dBrdr, dBrdz, dBzdr, dBzdz, Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
-long double dBphidr, dBphidz, dBrdphi=0.0, dBzdphi=0.0, dBphidphi=0.0;
+long double Ibar= 2250.;                // B-field strength, current through rod
+int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
+int diffuse; //diffuse reflection switch
+long double DiffProb = 0.16, diffuprob; // property of diffuse reflection 0.125
+unsigned short int nodelay, slit = 0, decay = 0, DetOpen=0; // delays for monte carlo, is there an entrance slit?, do the neutrons decay?;
+long double lossprob = 5.0e-4, epsi= 0, AbsProb = 0;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
+
+// Fields
+long double dBrdr, dBrdz, dBrdphi=0.0, dBphidr, dBphidz, dBphidphi=0.0, dBzdr, dBzdz, dBzdphi=0.0;
+long double Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
 long double Ez,Er, Ephi, dErdr, dErdz, dEzdr, dEzdz, dEphidr, dEphidz;    // electric field
-long double Babsmax=-999, Babsmin=999, rBabsmin=-999, zBabsmin=-999, Emin_n = 1e30, Babsmaxtmp,Eabsmax, Eabsmin, Eabsmaxtmp;  // for calculating maximum values for B and E
+long double BFeldSkal = 1.0, EFeldSkal = 1.0, BFeldSkalGlobal = 1.0;          // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
+long double EFeldSkalSave, BFeldSkalGlobalSave;    // temperorary variables to save initial values
+int n, m;                               // number of colums and rows in the input B-field matrices
+long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep=0.001, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator = 0.0;
+long double DiceRodField=0;
+long double epss, epse, EnTest;                         // beginning, end for epsilon, variable fr B-Feld berechnungnen
+long double Volume[200] = {0.0}, VolumeB[200] = {0.0};   // Volume[E] accessible to neutrons at energy E without and with B-field
+
+// particles
+long double H;                               // total energy of particle
+long double projz, ystart[7], ysave[7], xstart = 0;       //z-component of velocity, initial and intermediate values of y[9]
+long double  x1, x2;                         // start and endtime handed over to integrator
+int iMC;                             //  counter for MonteCarloSim
+long double  phitemp;                       // to project spin phase back to 0-360 degree
+long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
+unsigned short int TrajectoryLength=1;
+long double Hstart, Hend,Hmax, L_n, dL_n;     //maximum energy, angular momentum, differenz zu maximum possible angular momentum
+
+// inital values of particle
 long double EnergieS,dEnergie, EnergieE, Energie, Ekin=0.0;    //initial energy range
 long double r_n, phi_n, z_n, v_n;                //initial particle coordinates
 long double alpha, gammaa, hmin;                  //initial angle to x-Achse, zo z-Achse, Schrittweite
 long double phis,r_ns, z_ns, v_ns, alphas, gammas;   //initial values from
 long double phie,r_ne, z_ne, v_ne, alphae, gammae;   //initial values to
 long double dphi,dr_n, dz_n, dv_n, dalpha, dgamma;   //initial values step
-long double vr_n, vphi_n, vz_n, vtemp;          //velocity, vtemp: Geschw.komp in xy-Ebene
-int kennz;                                  // ending code
-int stopall=0, Feldcount=0;                            //  if stopall=1: stop particle
-long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues for particle
 long double delx;                            // initial timestep for the integrator
+
+long double vr_n, vphi_n, vz_n, vtemp;          //velocity, vtemp: Geschw.komp in xy-Ebene
 long double delx_n=0.0;
+int stopall=0, Feldcount=0;                            //  if stopall=1: stop particle
+
+// final values of particle
+int kennz;                                  // ending code
+long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues for particle
+long int kennz0=0,kennz1=0,kennz2=0,kennz3=0,kennz4=0,kennz5=0,kennz6=0,kennz7=0,kennz8=0,kennz9=0,kennz10=0, kennz11=0, kennz12=0,kennz99=0,nrefl; // Counter for the particle codes
+
+// geometry of bottle
+long double ri= 0.12, ra= 0.48;                      //dimensions of torus for Maple field
+long double zmax=1.2, zmin=0.0;    //dimensions of torus
+long double hlid;    // height of a possible lid to be put on the storage bottle [m]
+long double R, rmax, rmin, innenzylmax;          //innenzylmax: coils on inner cylinder end here
 long double LueckeR=0.001, LueckeZ=0.05, Luecke=0.05;      // size of the gap in the outer left corner (m)
 long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der bentigt wird
-int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
-long double BFeldSkal = 1.0, EFeldSkal = 1.0, BFeldSkalGlobal = 1.0;          // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
-long double EFeldSkalSave, BFeldSkalGlobalSave;    // temperorary variables to save initial values
-long double H;                               // total energy of particle
-long double projz, ystart[7], ysave[7], xstart = 0;       //z-component of velocity, initial and intermediate values of y[9]
-long double  x1, x2;                         // start and endtime handed over to integrator
 long double detz, detrmin, detrmax;          // where is the detector?
-int n, m;                               // number of colums and rows in the input B-field matrices
-int fehler, i, j, indr, indz ;          // indr, indz: current indices for field interpolation
-long double r_mi, r_ma, z_mi, z_ma; // minimum and maximum values, counter for field calls
-long double *rind = NULL, *zind = NULL, **BrTab = NULL, **BzTab = NULL,**BphiTab = NULL,**BrTab1 = NULL,**BzTab1 = NULL,**BphiTab1 = NULL;  //B Arrays
-long double **BrTab2 = NULL, **BzTab2 = NULL, **BphiTab2 = NULL, **BrTab12 = NULL, **BzTab12 = NULL, **BphiTab12 = NULL;          //B Arrays
-long double *erind = NULL, *ezind = NULL, **ErTab = NULL, **EzTab = NULL, **EphiTab = NULL, **ErTab1 = NULL, **EzTab1 = NULL, **EphiTab1 = NULL;  //E Arrays
-long double **ErTab2 = NULL, **EzTab2 = NULL, **EphiTab2 = NULL, **ErTab12 = NULL, **EzTab12 = NULL, **EphiTab12 = NULL;          //E Arrays
-long double ****Brc  = NULL, ****Bphic  = NULL, ****Bzc  = NULL;
-long double **ya=NULL, *rvec=NULL, *zvec=NULL;
-long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 
-												// cm => m,  Gauss => Tesla,   V/cm => V/m    Bconv temporr von 1e-4 auf 1 gesetzt
-long double rdist, zdist;
-long double conv_rA, conv_rB, conv_zA, conv_zB; 
-long double *ndistr = NULL, *ndistz = NULL, **ndistW = NULL;                                            // matrix for probability of finding particle
-int v=300,w=1200, neutdist;                                                            // dimension of matrix above, user choice for ndist
+long double StorVolrmin=0.129,StorVolrmax=0.488,StorVolzmin=0.01, StorVolzmax=1.345;   // main storage hollow cylinder
+long double FillChannelrmin=0.4935,FillChannelrmax=0.54131,FillChannelzmin=-0.188, FillChannelzmax=0.02543,FillChannelBlockageAngle=6.1;     // filling channel at at outer bottom edge, Angle: 4 times on every corner there is the racetrack coil crossing
+long double Bufferrmin=0,Bufferrmax=0.54131,Bufferzmin=-0.45, Bufferzmax=-0.188;   // buffervolume below, which has filling opening and detector embedded
+long double DetVolrmin=0.0889,DetVolrmax=0.488,DetVolzmin=1.345,DetVolzmax=1.565;  // proton detector volume
+long double DetConerbot=0.488, DetConertop=0.3559,DetConezbot=1.345,DetConeztop=1.565; // cone for focussing coils in this space
+long double FillConerbot=0.54131,FillConertop=0.488,FillConezbot=-0.022,FillConeztop=0.02543; // cone to reflect UCN in filling channel
+long double UCNdetradius=0.06,UCNdetr=0.45,UCNdetphi=0;  // UCN detector in buffer volume - phi in Bogenmass
+long double UCNentrancermax=0.1;  // UCN entrance tube at bottom center of buffer volume
+long double RoundBottomCornerCenterr,RoundBottomCornerCenterz,RoundBottomCornerradius=0.02; // round entrance corner
+
+// particle distribution
+long double *ndistr = NULL, *ndistz = NULL, **ndistW = NULL;    // matrix for probability of finding particle
+int v=300,w=1200, neutdist;                                       // dimension of matrix above, user choice for ndist
 long double *yyy = NULL, *yyy1 = NULL, *yyy2 = NULL, *yyy12 = NULL;        //rectangle with values at the 4 corners for interpolation
-long double dr, dz;                          // distance between field values in r and z-direction
-int spinflipcheck = 0;                          // user choice to check adiabacity
-long double vlad=0.0, vladtotal = 1.0, frac, logvlad, logfrac;                   // adiabacity after Vladimirsky
-long double matoraprob=1.0, matorapartprob;   // Adiabadicity after Matora
-long double zeit1, zeit2, zeitdelta;        // calling times for adiabacity
-long double rabiminprob, rabiplusprob;         // min-Rabi prob for spinflip, plus: the same for no flip
-long double matmax=0.0, rabmax=0.0, vladmax=0.0; // maximum values of spinflip prob
-long double thumbmax=0.0;
-int MonteCarlo=0, MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
-long double  eps, epsspinz, epsspinphase, h1;  // desired accuracy in ODEINT: normal, for polarisation and phase, trial time step
-long double  phitemp;                       // to project spin phase back to 0-360 degree
+
+// integrator params
+long double  eps, h1;  // desired accuracy in ODEINT: normal, for polarisation and phase, trial time step
 int nvar, nok, nbad;                            // in ODEINT: number of variables in Derivs, good und bad steps
-int iMC;                             //  counter for MonteCarloSim
+
 //set the duration of the experiment
 long double FillingTime = 0;										// filling time, entrance open
 long double CleaningTime = 0;                        // cleaning without field
@@ -93,40 +113,34 @@ long double RampDownTime = 5;                        // ramping down coils
 long double EmptyingTime = 100;                        // emptying without field
 long double storagetime = 1500.0;                     // time when ramping down shall start, if xend > storage time, let neutron decay
 long double SwitchTime;                               // not used any more, time before ramping starts
+int ffslit,ffBruteForce,ffreflekt,ffspinflipcheck,ffDetOpen;  // fullfield
+int ruslit,ruBruteForce,rureflekt,ruspinflipcheck,ruDetOpen; // rampup
+int rdslit,rdBruteForce,rdreflekt,rdspinflipcheck,rdDetOpen;  // rampdown
+int fislit,fiBruteForce,fireflekt,fispinflipcheck,fiDetOpen;  // filling
+int coslit,coBruteForce,coreflekt,cospinflipcheck,coDetOpen;  // counting UCN
+int clslit,clBruteForce,clreflekt,clspinflipcheck,clDetOpen;  // cleaning time
+int inpathlength,outpathlength,jobnumber; 
 
-// fr Spinverfolgung
-long double omega0, omegax, omegay, omegaAbs, omega0dot ;        // precession vector
-long double Bx0, By0, Bz0, Bxcoor, Bycoor, Bzcoor, Bcoorabs;    // B-field in cart Labor coord, cart coord of vector for spin coor sys
-long double Wx0, Wy0, Wz0;                            // return value of CylKartCoord
-long double Wx2, Wy2, Wz2;                            // return value of CoordRotSeeger
-long double beta, delta;                              // euler angles for coord rotation
-long double Sx0 , Sy0=0, Sz0=1;                       // neutron spin in cart coord
-long double Sx2, Sy2, Sz2;                            // neutron pin in CoordSys for BlochEq integration
-long double t1, t2;                                   // temp save of times x1, x2
-long double Sxsav, Sysav, Szsav, deltat, deltat0 = 1e-19, bfrac;    // tmp save of spin, smaller timestep, smallest timestep possible, b field parameter
+// Spintracking
+int spinflipcheck = 0;                          // user choice to check adiabacity
+long double vlad=0.0, vladtotal = 1.0, frac, logvlad, logfrac;                   // adiabacity after Vladimirsky
+long double matoraprob=1.0, matorapartprob;   // Adiabadicity after Matora
+long double zeit1, zeit2, zeitdelta;        // calling times for adiabacity
+long double rabiminprob, rabiplusprob;         // min-Rabi prob for spinflip, plus: the same for no flip
+long double matmax=0.0, rabmax=0.0, vladmax=0.0; // maximum values of spinflip prob
+long double thumbmax=0.0;
+long double Bxcoor, Bycoor, Bzcoor;    // B-field in cart Labor coord, cart coord of vector for spin coor sys
+long double deltat;    // tmp save of spin, smaller timestep, smallest timestep possible, b field parameter
 long double timetemp;                                 // tmp variable, time of last outputting in outs
-long double betatmp, deltatmp, S_B;           // coordrotation angle, projection of S on B and deviation from the starting value
-// for spin tracking Sobolev Style END
-
-long Zeilencount;
-int Filecount=1,  diffuse, p;                                   // counts the output files, counter for last line written in outs, diffuse reflection switch, random generator temp value
-long double BahnPointSaveTime = 5.0e-7, DiffProb = 0.16, diffuprob;               // default 2e-7; 0=1e-19 not changed at run time, time between two lines written in outs, property of diffuse reflection 0.125
-char nix;
-char msg[500], *path;
-long int kennz0=0,kennz1=0,kennz2=0,kennz3=0,kennz4=0,kennz5=0,kennz6=0,kennz7=0,kennz8=0,kennz9=0,kennz10=0, kennz11=0, kennz12=0,kennz99=0,nrefl; // Counter for the particle codes
 //long double matoranorm, matoratime, matoratemptimeb, matoratemptimee,
 //            matoratempprob = 1.0;                     // spin flip probabiltiy per second
 //long double directprob = 1.0, directtime = 0.0, writeprob = 1.0,
-long double time_temp;
-unsigned short int nodelay, slit = 0, decay = 0, DetOpen=0;                // delays for monte carlo, is there an entrance slit?, do the neutrons decay?;
-long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep=0.001, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator = 0.0;
-long double DiceRodField=0;
-long double epss, epse, EnTest;                         // beginning, end for epsilon, variable fr B-Feld berechnungnen
-long double Volume[200] = {0.0}, VolumeB[200] = {0.0};   // Volume[E] accessible to neutrons at energy E without and with B-field
-long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
-unsigned short int TrajectoryLength=1;
-long double Hstart, Hend,Hmax, L_n, dL_n;     //maximum energy, angular momentum, differenz zu maximum possible angular momentum
-long double lossprob = 5.0e-4, epsi= 0, AbsProb = 0;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
+
+// file output
+long Zeilencount;
+int Filecount=1, p;                                   // counts the output files, counter for last line written in outs, random generator temp value
+long double BahnPointSaveTime = 5.0e-7;               // default 2e-7; 0=1e-19 not changed at run time, time between two lines written in outs
+char msg[500], *path;
 
 // data for material storage
 long double FPrealNocado = 183.04, FPimNocado = 0.018985481;     // real and imaginary part of fermi potential for milk tubes
@@ -149,26 +163,16 @@ long BFZeilencount; int BFFilecount=1;                  // to control output fil
 long double BFflipprob = 0.0, BFsurvprob=1.0;                // spinflip probability, survival (non-flip) probability
 long double Bxdev = 0,Bydev = 0,Bzdev = 0,maxBxdev = 0,maxBydev = 0,maxBzdev = 0;
 long double B1 = 5.0e-5;    // controlling of polarisation, magnitude of oscillating field
-// variables for BruteForce Bloch integration END
-int ffslit,ffBruteForce,ffreflekt,ffspinflipcheck,ffDetOpen;  // fullfield
-int ruslit,ruBruteForce,rureflekt,ruspinflipcheck,ruDetOpen; // rampup
-int rdslit,rdBruteForce,rdreflekt,rdspinflipcheck,rdDetOpen;  // rampdown
-int fislit,fiBruteForce,fireflekt,fispinflipcheck,fiDetOpen;  // filling
-int coslit,coBruteForce,coreflekt,cospinflipcheck,coDetOpen;  // counting UCN
-int clslit,clBruteForce,clreflekt,clspinflipcheck,clDetOpen;  // cleaning time
-int inpathlength,outpathlength,jobnumber; 
-// timing variable
-long double timer1 = 0, timer2 = 0,timer3 = 0;
+
  // Absorber integrieren
-   long double abszmin = 0.6;
-   long double abszmax = 0.8;
-   long double absrmin = 0.285; // 48.5, if absorber shall be effectiv, 50.0 if not
-   long double absrmax = 0.29;
-   long double absphimin = 0.0;
-   long double absphimax = 360.0;
-   long double Mf = -8.56, Pf = 0.00191;  
-   // real and imaginary part if neutron fermi potential of absorber, absorption cross section [1e-28 m^2]
-   int NoAbsorption = 0, AbsorberHits = 0;
+long double abszmin = 0.6;
+long double abszmax = 0.8;
+long double absrmin = 0.285; // 48.5, if absorber shall be effectiv, 50.0 if not
+long double absrmax = 0.29;
+long double absphimin = 0.0;
+long double absphimax = 360.0;
+long double Mf = -8.56, Pf = 0.00191; // real and imaginary part if neutron fermi potential of absorber, absorption cross section [1e-28 m^2]
+int NoAbsorption = 0, AbsorberHits = 0;
 
 //for the output of intermediate steps
 //#define KMDEF 1000
@@ -194,17 +198,7 @@ int CoilNr=0;   // number of coils read in
 // blank variables
 long int blankint;
 long double blanklongdouble;
-
-// geometry definition
-long double StorVolrmin=0.129,StorVolrmax=0.488,StorVolzmin=0.01, StorVolzmax=1.345;   // main storage hollow cylinder
-long double FillChannelrmin=0.4935,FillChannelrmax=0.54131,FillChannelzmin=-0.188, FillChannelzmax=0.02543,FillChannelBlockageAngle=6.1;     // filling channel at at outer bottom edge, Angle: 4 times on every corner there is the racetrack coil crossing
-long double Bufferrmin=0,Bufferrmax=0.54131,Bufferzmin=-0.45, Bufferzmax=-0.188;   // buffervolume below, which has filling opening and detector embedded
-long double DetVolrmin=0.0889,DetVolrmax=0.488,DetVolzmin=1.345,DetVolzmax=1.565;  // proton detector volume
-long double DetConerbot=0.488, DetConertop=0.3559,DetConezbot=1.345,DetConeztop=1.565; // cone for focussing coils in this space
-long double FillConerbot=0.54131,FillConertop=0.488,FillConezbot=-0.022,FillConeztop=0.02543; // cone to reflect UCN in filling channel
-long double UCNdetradius=0.06,UCNdetr=0.45,UCNdetphi=0;  // UCN detector in buffer volume - phi in Bogenmass
-long double UCNentrancermax=0.1;  // UCN entrance tube at bottom center of buffer volume
-long double RoundBottomCornerCenterr,RoundBottomCornerCenterz,RoundBottomCornerradius=0.02; // round entrance corner
+long double time_temp;
 
 // define racetrack current bars
 // defined by two position vectors (SW1r,SW1phi,SW1z and SW2r,SW2phi,SW2z) lying on the straight wire 
@@ -218,73 +212,8 @@ mt_state_t *v_mt_state = NULL; //mersenne twister state var
 
 // uebergabe: jobnumber inpath outpath                 paths without last slash
 int main(int argc, char **argv){
-	int ee=0;	
 	time_t mytime;
-//	clock_t mytime1, mytime2;
-	
-	//printf("Dies ist 0 durch 1: %.17LG",1.0/0.0);
 
-	if(argc>3) // if user supplied 3 args (outputfilestamp, inpath, outpath)
-	{
-		outpath = argv[3]; // set the output path pointer
-		inpath = argv[2]; // same with input path pointer
-		jobnumber = atoi(argv[1]); // stamp for output filenames
-	}
-	else if(argc>2) // if user supplied 2 args (outputfilestamp, inpath)
-	{
-		inpath = argv[2]; // input path pointer set
-		jobnumber = atoi(argv[1]); 
-		outpath = (char*)malloc(6*sizeof(char)); // getting space for outpath
-		outpath = "./out"; // setting outpath to default
-	}
-	else if(argc==2) // if user supplied 1 arg (outputfilestamp)
-	{
-		jobnumber=atoi(argv[1]);
-		outpath = (char*)malloc(6*sizeof(char)); //same as above with outpath and inpath
-		outpath = "./out";
-		inpath = (char*)malloc(5*sizeof(char));
-		inpath = "./in";
-	}
-	else // no args supplied
-	{
-		jobnumber=0;
-		outpath = (char*)malloc(6*sizeof(char)); //same here
-		outpath = "./out";
-		inpath = (char*)malloc(5*sizeof(char));
-		inpath = "./in";
-	}
-	
-	inpathlength = strlen(inpath); // get the length of the input files path
-	outpathlength = strlen(outpath); // get the length of the output files path
-	
-	// now we're getting memory for all filenames + path
-	logscrfile = (char*)malloc((outpathlength+15)*sizeof(char));
-	reflectlogfile = (char*)malloc((outpathlength+19)*sizeof(char));
-	testlogfile = (char*)malloc((outpathlength+17)*sizeof(char));
-	endlogfile = (char*)malloc((outpathlength+15)*sizeof(char));
-	BFoutfile1 = (char*)malloc((outpathlength+17)*sizeof(char));
-	stateoutfile = (char*)malloc((outpathlength+15)*sizeof(char));
-	startinfile = (char*)malloc((outpathlength+15)*sizeof(char));
-	
-
-	// printing the path into the vars
-	sprintf(logscrfile,"%s/%06dlog.out",outpath,jobnumber);
-	LOGSCR = fopen(logscrfile,mode_w);
-	if(reflektlog == 1){
-		sprintf(reflectlogfile, "%s/%06dreflect.out",outpath,jobnumber);
-		REFLECTLOG = fopen(reflectlogfile,mode_w);
-	}
-	if((ausgabewunsch==3)||(ausgabewunsch==4))
-	{
-		sprintf(BFoutfile1, "%s/%06dBF001.out",outpath, jobnumber);	
-		BFLOG = fopen(BFoutfile1,mode_w);
-	}
-	//sprintf(testlogfile, "%s/%06dtest.out",outpath, jobnumber);
-	//TESTLOG = fopen(testlogfile,mode_w);
-	sprintf(endlogfile, "%s/%06dend.out",outpath, jobnumber);
-	ENDLOG = fopen(endlogfile,mode_w);
-	
-	
 	// for random numbers we need a statevar + we need to set an initial seed
 	mt_state_t mtstate;
 	v_mt_state = &mtstate;
@@ -350,6 +279,39 @@ int main(int argc, char **argv){
 	
 	// globals init end
 	
+	if(argc>3) // if user supplied 3 args (outputfilestamp, inpath, outpath)
+	{
+		outpath = argv[3]; // set the output path pointer
+		inpath = argv[2]; // same with input path pointer
+		jobnumber = atoi(argv[1]); // stamp for output filenames
+	}
+	else if(argc>2) // if user supplied 2 args (outputfilestamp, inpath)
+	{
+		inpath = argv[2]; // input path pointer set
+		jobnumber = atoi(argv[1]); 
+		outpath = (char*)malloc(6*sizeof(char)); // getting space for outpath
+		outpath = "./out"; // setting outpath to default
+	}
+	else if(argc==2) // if user supplied 1 arg (outputfilestamp)
+	{
+		jobnumber=atoi(argv[1]);
+		outpath = (char*)malloc(6*sizeof(char)); //same as above with outpath and inpath
+		outpath = "./out";
+		inpath = (char*)malloc(5*sizeof(char));
+		inpath = "./in";
+	}
+	else // no args supplied
+	{
+		jobnumber=0;
+		outpath = (char*)malloc(6*sizeof(char)); //same here
+		outpath = "./out";
+		inpath = (char*)malloc(5*sizeof(char));
+		inpath = "./in";
+	}
+	
+	inpathlength = strlen(inpath); // get the length of the input files path
+	outpathlength = strlen(outpath); // get the length of the output files path
+	
 	
 	// initial step ... reading userinput, inputfiles etc ...
 	printf(
@@ -357,23 +319,21 @@ int main(int argc, char **argv){
 	" ###                 Welcome to PNTracker,                    ###\n"
 	" ###     the tracking program for neutrons and protons        ###\n"
 	" ################################################################\n");
-	fprintf(LOGSCR,
-	" ################################################################\n"
-	" ###                 Welcome to PNTracker,                    ###\n"
-	" ###     the tracking program for neutrons and protons        ###\n"
-	" ################################################################\n");
+	
 	ConfigInit();
+	OpenFiles(argc, argv);	// Open .in and .out files and write headers
+	
 	//printf("\nMonteCarlo: %i\n MonteCarloAnzahl %i \n", MonteCarlo, MonteCarloAnzahl);
 	
 	// allocate vectors and matrizes for BruteForce only if necessary
 	if(BruteForce||clBruteForce||coBruteForce||fiBruteForce||ruBruteForce||ffBruteForce||rdBruteForce)
 	{
-	BFtime=dvector(0,BFNrIntermediate);		
-	BFField=dmatrix(1,5,0,BFNrIntermediate);
-	BFBws=dvector(0,BFNrIntermediate);
-	BFypFields=dmatrix(1,3,0,BFNrIntermediate);
-	BFxp=dvector(0,BFNrIntermediate);
-	BFyp=dmatrix(1,3,0,BFNrIntermediate);		
+		BFtime=dvector(0,BFNrIntermediate);		
+		BFField=dmatrix(1,5,0,BFNrIntermediate);
+		BFBws=dvector(0,BFNrIntermediate);
+		BFypFields=dmatrix(1,3,0,BFNrIntermediate);
+		BFxp=dvector(0,BFNrIntermediate);
+		BFyp=dmatrix(1,3,0,BFNrIntermediate);		
 	}
 	
 	// allocate vector intermediate values when desired by the user
@@ -386,116 +346,12 @@ int main(int argc, char **argv){
 	}
 	
 	//printconfig();
-	
-	//cout << endl << "logl(2.7) = " << logl(2.7) << endl;
-	
-	if(bfeldwahl==4)
-	{
-		ReadMagnets();
-	
-		printf("\n \n Test of integration\n");
-		//	long double TestInt;
-		BFeldSkal=1.0; Ibar = 2250;
-		sign1 = 1, sign2 = 1;
-		for (int a = 0;a<1;a++)
-		{
 		
-			BFeld(0.3,0,0.1, 500.0);
-			//TestInt = BForbes(0.3, 0, 0.1, 10);
-			//TestInt = OneCoilRoot(0.8, 0, 0.1, C1a, C1b, C1R_0, C1J_0, C1zoffset);
-			cout << "T" << endl;
-		}
-		printf("Br = %.17LG \n",Br);
-		printf("dBrdr = %.17LG \n",dBrdr);
-		printf("dBrdz = %.17LG \n",dBrdz);
-		printf("Bz = %.17LG \n",Bz);
-		printf("dBzdr = %.17LG \n",dBzdr);
-		printf("dBzdz = %.17LG \n",dBzdz);
-	
+	if (bfeldwahl != 1){
+		PrepareBField();	// read fieldval.tab or coils.cond
 	}
-	
-	//return 0;
-	
-	if (MonteCarlo==0)
-		MonteCarloAnzahl=1;
-	// read starting values from file start.in
-	// open this file
-	else if (MonteCarlo==2)
-	{
-		path=(char*)malloc((inpathlength+10)*sizeof(char));
-		sprintf(path,"%s/start.in",inpath);
-		FILE *STARTIN = fopen (path,mode_r);
-		free(path);
-		if (STARTIN == NULL) exit(-1);        // Fehlerbehandlung
-		fgets(msg,500,STARTIN);
-	}
-	
-	
-	if ((bfeldwahl == 0)||(bfeldwahl == 2))
-	{
-        printf("\nPreparing the electromagnetic fields... \n");
-        PrepIntpol(1);          // read input table file with E and B fields
-		printf("allocating space for preinterpolation ... (about %.4LG MB)\n",(long double)n*m*12*16*3/1024/1024);
-		// allocating space for the preinterpolation, we need to cast it to long double ****
-		// The B*c are 4D arrays with m x n x 4 x 4 fields
-		Brc = (long double ****) viertensor(1,m,1,n,1,4,1,4);
-		Bphic = (long double ****) viertensor(1,m,1,n,1,4,1,4);
-		Bzc = (long double ****) viertensor(1,m,1,n,1,4,1,4);
-		// doing the preinterpolation
-		Preinterpol(1);
-		
-		
-		
-		printf("freeing the BField matrix ... (about %.4LG MB)\n",(long double)n*m*12*12/1024/1024);
-		// now we don't need the BF matrix anymore
-		free_dmatrix(BrTab,1,m,1,n);
-		free_dmatrix(BzTab,1,m,1,n);
-		free_dmatrix(BphiTab,1,m,1,n);
-		
-		free_dmatrix(BrTab1,2,m-1,2,n-1);
-		free_dmatrix(BzTab1,2,m-1,2,n-1);
-		free_dmatrix(BphiTab1,2,m-1,2,n-1);
-		
-		free_dmatrix(BrTab2,2,m-1,2,n-1);
-		free_dmatrix(BzTab2,2,m-1,2,n-1);
-		free_dmatrix(BphiTab2,2,m-1,2,n-1);
-		
-		free_dmatrix(BrTab12,2,m-1,2,n-1);
-		free_dmatrix(BzTab12,2,m-1,2,n-1);
-		free_dmatrix(BphiTab12,2,m-1,2,n-1);
-		
-		
-		
-		
-		/*
-		// interpolation test
-		wholetrackfile = (char*)malloc((outpathlength+20)*sizeof(char));
-		sprintf(wholetrackfile, "%s/%06dinterpol.out", outpath, jobnumber);
-		OUTFILE1 = fopen(wholetrackfile,mode_w);       // open outfile neut001.out
-		Zeilencount=0;
-		fprintf(OUTFILE1,"r z Br dBrdr dBrdphi dBrdz Bz dBzdr dBzdphi dBzdz Babs\n");
-		//fprintf(OUTFILE1,"indr indz c11 c12 c13 c14 c21 c22 c23 c24 c31 c32 c33 c34 c41 c42 c43 c44 \n");
-		BFeldSkal=1;
-		long double rtst = 0.45;
-		for(long double ztst = 0.137; ztst<=0.15; ztst=ztst+0.0001)
-		{
-			//BInterpol(rtst,0,ztst);
-			BInterpol(rtst,0,ztst);
-			fprintf(OUTFILE1,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
-													rtst, ztst,Br,dBrdr,dBrdphi,dBrdz,Bz,dBzdr,dBzdphi,dBzdz,Bws);
-			
-		}
-		return 0;
-		// ENDE interpolation test*/
-		
-	}
-	
-	
-		
-	if(reflektlog == 1)
-		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vtang phidot dvabs\n"); // Header for Reflection File
 
-	Startbed(1);          		 // read in starting values of particle
+	Startbed(1); // read in starting values of particle
 	
 	PrintConfig();
 	
@@ -508,7 +364,7 @@ int main(int argc, char **argv){
 			EnergieS=EnergieS*1.e-9;
 			EnergieE=EnergieE*1.e-9;
 			dEnergie=dEnergie*1.e-9;
-			if((ausgabewunsch==3)||(ausgabewunsch==4))
+			if((ausgabewunsch == OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch == OUTPUT_ENDPOINTSandSPIN))
 			{
 				//fprintf(TESTLOG,"t log(pol) spinflipprob\n");
 				fprintf(BFLOG,"t Babs Polar logPolar Ix Iy Iz Bx By Bz\n");
@@ -539,31 +395,6 @@ int main(int argc, char **argv){
 			//fprintf(ENDLOG,"rstart zstart vr vphi vz ElecAngleB Dethit? CritAngle Ekin Br0 Bz0 Babs0 Babsm rend zend Babsend Vdiff EnergyonDet IncAngle\n");
 		break;
 	}
-	
-										
-	
-	if ((ausgabewunsch == OUTPUT_EVERYTHING)||(ausgabewunsch == OUTPUT_EVERYTHINGandSPIN))
-	{ 
-		SaveIntermediate=1; // turn on saving of intermediate values in integrator
-		kmax=KMDEF;
-		wholetrackfile = (char*)malloc((outpathlength+20)*sizeof(char));
-		sprintf(wholetrackfile, "%s/%06dtrack001.out", outpath, jobnumber);
-		OUTFILE1 = fopen(wholetrackfile,mode_w);       // open outfile neut001.out
-		Zeilencount=0;
-		fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
-						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
-						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
-	}
-
-	// Endpunkte
-	if (protneut != BF_ONLY) 
-	{
-        fprintf(ENDLOG,"jobnumber protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
-        			   "gammastart rend phiend zend vend alphaend gammaend t H kennz "
-        			   "NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax "
-        			   "AbsorberHits BFeldSkal EFeldSkal lossprob\n");
-	}
-	
 	//end initial step
 	
 	/*printf("\nm=%i \nn=%i\n",m,n);
@@ -608,10 +439,10 @@ int main(int argc, char **argv){
 	// without B-field is calculated and the heating approximated by thermodynamical means
 	if (protneut == BF_ONLY){
 		fprintf(LOGSCR,"\nEnergie [neV], Volumen ohne B-Feld, mit B-Feld, 'Erwaermung'");
+		int i;
 		for (i = 0; i <= EnergieE; i++) 
 		{
-			ee = i;
-			Volume[ee] = ((i * 1.0e-9 / (M * gravconst))-wanddicke) * pi * (r_ne*r_ne-r_ns*r_ns);
+			Volume[i] = ((i * 1.0e-9 / (M * gravconst))-wanddicke) * pi * (r_ne*r_ne-r_ns*r_ns);
 			// isentropische zustandsnderung, kappa=5/3
 			fprintf(LOGSCR,"\n%i %.17LG %.17LG %.17LG",i,Volume[i],VolumeB[i],i * powl((Volume[i]/VolumeB[i]),(2.0/3.0)) - i);
 		}
@@ -699,6 +530,132 @@ void derivs(long double x, long double *y, long double *dydx){
 	return;
 }
 
+void OpenFiles(int argc, char **argv){
+	// now we're getting memory for all filenames + path
+	logscrfile = (char*)malloc((outpathlength+15)*sizeof(char));
+	reflectlogfile = (char*)malloc((outpathlength+19)*sizeof(char));
+	testlogfile = (char*)malloc((outpathlength+17)*sizeof(char));
+	endlogfile = (char*)malloc((outpathlength+15)*sizeof(char));
+	BFoutfile1 = (char*)malloc((outpathlength+17)*sizeof(char));
+	stateoutfile = (char*)malloc((outpathlength+15)*sizeof(char));
+	startinfile = (char*)malloc((outpathlength+15)*sizeof(char));
+	
+
+	// printing the path into the vars
+	sprintf(logscrfile,"%s/%06dlog.out",outpath,jobnumber);
+	LOGSCR = fopen(logscrfile,mode_w);
+
+	fprintf(LOGSCR,
+	" ################################################################\n"
+	" ###                 Welcome to PNTracker,                    ###\n"
+	" ###     the tracking program for neutrons and protons        ###\n"
+	" ################################################################\n");
+
+
+	if(reflektlog == 1){
+		sprintf(reflectlogfile, "%s/%06dreflect.out",outpath,jobnumber);
+		REFLECTLOG = fopen(reflectlogfile,mode_w);
+		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vtang phidot dvabs\n"); // Header for Reflection File
+	}
+	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
+	{
+		sprintf(BFoutfile1, "%s/%06dBF001.out",outpath, jobnumber);	
+		BFLOG = fopen(BFoutfile1,mode_w);
+	}
+	
+	// Endpunkte
+	sprintf(endlogfile, "%s/%06dend.out",outpath, jobnumber);
+	ENDLOG = fopen(endlogfile,mode_w);
+	if (protneut != BF_ONLY) 
+	{
+        fprintf(ENDLOG,"jobnumber protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
+        			   "gammastart rend phiend zend vend alphaend gammaend t H kennz "
+        			   "NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax "
+        			   "AbsorberHits BFeldSkal EFeldSkal lossprob\n");
+	}		
+	
+	// Print track to file
+	if ((ausgabewunsch == OUTPUT_EVERYTHING)||(ausgabewunsch == OUTPUT_EVERYTHINGandSPIN))
+	{ 
+		SaveIntermediate=1; // turn on saving of intermediate values in integrator
+		kmax=KMDEF;
+		wholetrackfile = (char*)malloc((outpathlength+20)*sizeof(char));
+		sprintf(wholetrackfile, "%s/%06dtrack001.out", outpath, jobnumber);
+		OUTFILE1 = fopen(wholetrackfile,mode_w);       // open outfile neut001.out
+		Zeilencount=0;
+		fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
+						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
+						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
+	}
+
+	// read starting values from file start.in   NOT IMPLEMENTED YET
+	// open this file
+	if (MonteCarlo==2)
+	{
+		path=(char*)malloc((inpathlength+10)*sizeof(char));
+		sprintf(path,"%s/start.in",inpath);
+		FILE *STARTIN = fopen (path,mode_r);
+		free(path);
+		if (STARTIN == NULL) exit(-1);        // Fehlerbehandlung
+		fgets(msg,500,STARTIN);
+	}
+}
+
+void PrepareBField(){
+	if ((bfeldwahl == 0)||(bfeldwahl == 2))
+	{
+        printf("\nPreparing the electromagnetic fields... \n");
+        PrepIntpol(1);          // read input table file with E and B fields
+		printf("allocating space for preinterpolation ... (about %.4LG MB)\n",(long double)n*m*12*16*3/1024/1024);
+
+		// doing the preinterpolation
+		Preinterpol(1);						
+		
+		/*
+		// interpolation test
+		wholetrackfile = (char*)malloc((outpathlength+20)*sizeof(char));
+		sprintf(wholetrackfile, "%s/%06dinterpol.out", outpath, jobnumber);
+		OUTFILE1 = fopen(wholetrackfile,mode_w);       // open outfile neut001.out
+		Zeilencount=0;
+		fprintf(OUTFILE1,"r z Br dBrdr dBrdphi dBrdz Bz dBzdr dBzdphi dBzdz Babs\n");
+		//fprintf(OUTFILE1,"indr indz c11 c12 c13 c14 c21 c22 c23 c24 c31 c32 c33 c34 c41 c42 c43 c44 \n");
+		BFeldSkal=1;
+		long double rtst = 0.45;
+		for(long double ztst = 0.137; ztst<=0.15; ztst=ztst+0.0001)
+		{
+			//BInterpol(rtst,0,ztst);
+			BInterpol(rtst,0,ztst);
+			fprintf(OUTFILE1,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
+													rtst, ztst,Br,dBrdr,dBrdphi,dBrdz,Bz,dBzdr,dBzdphi,dBzdz,Bws);
+			
+		}
+		return 0;
+		// ENDE interpolation test*/
+		
+	}
+	else if(bfeldwahl==4)
+	{
+		ReadMagnets();
+	
+		printf("\n \n Test of integration\n");
+		//	long double TestInt;
+		BFeldSkal=1.0; Ibar = 2250;
+		sign1 = 1, sign2 = 1;
+		for (int a = 0;a<1;a++)
+		{
+		
+			BFeld(0.3,0,0.1, 500.0);
+			cout << "T" << endl;
+		}
+		printf("Br = %.17LG \n",Br);
+		printf("dBrdr = %.17LG \n",dBrdr);
+		printf("dBrdz = %.17LG \n",dBrdz);
+		printf("Bz = %.17LG \n",Bz);
+		printf("dBzdr = %.17LG \n",dBzdr);
+		printf("dBzdz = %.17LG \n",dBzdz);	
+	}	
+}
+
 
 
 
@@ -781,6 +738,8 @@ void IntegrateParticle(){
 	{
 		printf("\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
 		fprintf(LOGSCR,"\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
+		printf("Feldcount = %i\n\n",Feldcount);
+		fprintf(LOGSCR,"Feldcount = %i\n\n",Feldcount);
 	}
 
 	trajlengthsum = 0;
@@ -788,11 +747,6 @@ void IntegrateParticle(){
 	kennz=KENNZAHL_UNKNOWN;  // 0 
 	stopall=0;
 	
-	if (protneut != BF_ONLY){
-		printf("Feldcount = %i\n\n",Feldcount);
-		fprintf(LOGSCR,"Feldcount = %i\n\n",Feldcount);
-	}
-
 	Feldcount=0;
 
 	if (protneut == NEUTRON)
@@ -833,14 +787,12 @@ void IntegrateParticle(){
 			return;
 		}
 	}
-
-	if(protneut == PROTON)
+	else if(protneut == PROTON)
 	{                // Proton
 		v_n=powl(2*Energie/m_p,0.5);     // Gravitiationsenergie vernachlssigbar, auch B-Feld Energie
 		cout << "Proton: Energy: " << Energie << " v= " << v_n << " m/s ";
 	}
-
-	if(protneut == ELECTRONS)
+	else if(protneut == ELECTRONS)
 	{
 		gammarel = Energie/m_e/c_0/c_0 + 1;
 		v_n = c_0 * sqrtl(1-(1/(gammarel*gammarel)));     // relatistic velocity from E_kin in eV
@@ -956,27 +908,20 @@ void IntegrateParticle(){
 			
 			// write status of particle to console
 			// one point per 2 percent of endtime
-		if((x2-xstart)*100/(xend-xstart)>perc)
-		{
-			perc++;
-			if(perc%10==0)
+			if((x2-xstart)*100/(xend-xstart)>perc)
 			{
-				printf("%i%%",perc);
-				fflush(stdout);
+				perc++;
+				if(perc%10==0)
+				{
+					printf("%i%%",perc);
+					fflush(stdout);
+				}
+				if((perc%10!=0)&&(perc%2==0)) 
+				{
+					printf(".");
+					fflush(stdout);
+				}
 			}
-			if((perc%10!=0)&&(perc%2==0)) 
-			{
-				printf(".");
-				fflush(stdout);
-			}
-		}
-			
-			//mytime2 = clock();
-			//timer2 =( ((long double)mytime2 - (long double)mytime1) / CLOCKS_PER_SEC ) + timer2;
-			
-			//cout << "after step: " << x2 << " KOUNT " << kount << " " << Br << " " << Bz << endl;
-			//cout << " g" << nok << " b" << nbad;
-			
 			
 			vend = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
 			if(protneut == NEUTRON)                // n
@@ -1045,7 +990,8 @@ void IntegrateParticle(){
 						time_temp = xp[klauf];
 					}
 				}
-			}else if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)<BahnPointSaveTime)){
+			}
+			else if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)<BahnPointSaveTime)){
 				if((x2-timetemp)>=BahnPointSaveTime){
 					printf(":");
 					fflush(stdout);
@@ -1217,8 +1163,9 @@ void IntegrateParticle(){
 	}
 }
 
-void BruteForceIntegration() {					
-// Array fr BruteForce Integration wird gebildet
+
+void BruteForceIntegration(){
+	// Array fr BruteForce Integration wird gebildet
 	int klauf, klaufstart;
 	dxsav=1e-9;
 	if (BFBmin<BFTargetB)
