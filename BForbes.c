@@ -51,10 +51,10 @@ long double BForbes(long double r, long double phi, long double z, long double t
 	dBzdphi = 0.0;
 	dBzdz = 0;
 	
-	
+	int i;
 	for (i=0;i<CoilNr;i++){
 	//for (i=7;i<8;i++){
-	OneCoilRoot(r, phi, z, aF[i], bF[i], R_0[i], J_0[i], zoffset[i]);	
+		OneCoilRoot(r, phi, z, aF[i], bF[i], R_0[i], J_0[i], zoffset[i]);	
 	//OneCoil(r, phi, z, aF[i], bF[i], R_0[i], J_0[i], zoffset[i]);		
 	}	
 	
@@ -488,8 +488,8 @@ long double trapzd(long double (*func)(long double), long double a, long double 
 //Here EPS is the fractional accuracy desired, as determined by the extrapolation error estimate;
 //JMAX limits the total number of steps; K is the number of points used in the extrapolation.
 long double qromb(long double (*func)(long double), long double a, long double b)
-//Returns the integral of the function func from a to b. Integration is performed by Romberg’s
-//method of order 2K, where, e.g., K=2 is Simpson’s rule.
+//Returns the integral of the function func from a to b. Integration is performed by Rombergï¿½s
+//method of order 2K, where, e.g., K=2 is Simpsonï¿½s rule.
 {
 	void BFpolint(long double xa[], long double ya[], int n, long double x, long double *y, long double *dy);
 	long double trapzd(long double(*func)(long double), long double a, long double b, int n);
@@ -527,7 +527,7 @@ long double qromb(long double (*func)(long double), long double a, long double b
 #define NTAB 10 //Sets maximum size of tableau.
 #define SAFE 2.0 //Return when error is SAFE worse than the best so far.
 long double dfridr(long double (*func)(long double), long double x, long double h, long double *err)
-//Returns the derivative of a function func at a point x by Ridders’ method of polynomial
+//Returns the derivative of a function func at a point x by Riddersï¿½ method of polynomial
 //extrapolation. The value h is input as an estimated initial stepsize; it need not be small, but
 //rather should be an increment in x over which func changes substantially. An estimate of the
 //error in the derivative is returned as err.

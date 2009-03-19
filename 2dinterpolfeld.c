@@ -3,6 +3,18 @@
 
 #include "main.h"
 
+int fehler, indr, indz ;          // indr, indz: current indices for field interpolation
+long double r_mi, r_ma, z_mi, z_ma; // minimum and maximum values, counter for field calls
+long double *rind = NULL, *zind = NULL, **BrTab = NULL, **BzTab = NULL,**BphiTab = NULL,**BrTab1 = NULL,**BzTab1 = NULL,**BphiTab1 = NULL;  //B Arrays
+long double **BrTab2 = NULL, **BzTab2 = NULL, **BphiTab2 = NULL, **BrTab12 = NULL, **BzTab12 = NULL, **BphiTab12 = NULL;          //B Arrays
+long double *erind = NULL, *ezind = NULL, **ErTab = NULL, **EzTab = NULL, **EphiTab = NULL, **ErTab1 = NULL, **EzTab1 = NULL, **EphiTab1 = NULL;  //E Arrays
+long double **ErTab2 = NULL, **EzTab2 = NULL, **EphiTab2 = NULL, **ErTab12 = NULL, **EzTab12 = NULL, **EphiTab12 = NULL;          //E Arrays
+long double ****Brc  = NULL, ****Bphic  = NULL, ****Bzc  = NULL;
+long double **ya=NULL, *rvec=NULL, *zvec=NULL;
+long double rdist, zdist;
+long double conv_rA, conv_rB, conv_zA, conv_zB; 
+
+long double Babsmax=-999, Babsmin=999, rBabsmin=-999, zBabsmin=-999, Emin_n = 1e30, Babsmaxtmp,Eabsmax, Eabsmin, Eabsmaxtmp;  // for calculating maximum values for B and E
 
 // get the size of the array ......................
 void GetDim(int *m, int *n)
@@ -10,7 +22,6 @@ void GetDim(int *m, int *n)
 	int intmuell;
 	long double muell, rtemp = 0, ztemp = 0, Brtemp = 0, Bphitemp=0, Bztemp=0, Ertemp=0, Ephitemp=0, Eztemp=0;	
 	char str[1024];
-	string string[1024];
 	long double rtemptmp=-1e10, ztemptmp=-1e10;  // memory for r and z values in table
 	int ri=1, zi=1;   // indizes
 	
@@ -28,6 +39,7 @@ void GetDim(int *m, int *n)
 	fprintf(LOGSCR,"The header says: \nThe arrays are %i by %i.\n\n",*m,*n);
 	
 	// discard next 10 lines because of header stuff
+	int i;
 	for(i=1; i<=10; i++){
 		fgets(str,1024,FIN);
 	}		
@@ -50,13 +62,13 @@ void GetDim(int *m, int *n)
 		}
 	
 			
-		// Index ri nur erhöhen  wenn sich der r-Wert ändert
+		// Index ri nur erhï¿½hen  wenn sich der r-Wert ï¿½ndert
 		if (rtemp > rtemptmp){
 			ri++;		
 			if(rtemp>r_ma)
 				r_ma=rtemp;
 		}
-		// Index zi nur erhöhen wenn sich der z-Wert ändert
+		// Index zi nur erhï¿½hen wenn sich der z-Wert ï¿½ndert
 		if ( ztemp > ztemptmp){
 			zi++;		
 			if(ztemp>z_ma)
@@ -193,6 +205,7 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 	free(path);
 	
 	// discard first eleven lines with header
+	int i;
 	for(i=1; i<=11; i++)
 	{
 		fgets(str,1024,FIN);
@@ -201,7 +214,7 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 	
 	printf("\nreading fieldval.tab \n");
 	
-   // Schleife über alle Zeilen der Input Datei
+   // Schleife ï¿½ber alle Zeilen der Input Datei
 	do{
 		
 		// status if read is displayed
@@ -233,18 +246,18 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 			rind[ri]=rtemp; zind[zi]=ztemp;
 		}*/
 		
-		// Index ri nur erhöhen  wenn sich der r-Wert ändert
+		// Index ri nur erhï¿½hen  wenn sich der r-Wert ï¿½ndert
 		if ((rtemp > rind[ri])&&(NrValueLines!=1)&&(ri<mtmp)){
 			ri++;
-			zi=1;             // immer wenn sich der r-Wert ändert springt z auch auf Eins
+			zi=1;             // immer wenn sich der r-Wert ï¿½ndert springt z auch auf Eins
 		}
 
-		// Index zi nur erhöhen wenn sich der z-Wert ändert
+		// Index zi nur erhï¿½hen wenn sich der z-Wert ï¿½ndert
 		if ((ztemp > zind[zi])&&(NrValueLines!=1)&&(zi<ntmp)){
 			zi++;
 		}
 		
-		// den Wert nur in die Array schreiben wenn sich der Index geändert hat oder wenn nur eine zeile gelesen wurde bisher
+		// den Wert nur in die Array schreiben wenn sich der Index geï¿½ndert hat oder wenn nur eine zeile gelesen wurde bisher
 		if ((ri != ritemp)||(zi!=zitemp)||(NrValueLines==1)) {
 			rind[ri] = rtemp;
 			zind[zi] = ztemp;
@@ -274,7 +287,7 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 
 
 // Routine um in einer 1D Array xx den Index zu finden, so dass der Wert x in
-// der Array zwischen den Indizes n und n+1 liegt  (jlo ist ein first guess des indexes und der rückgabewert)
+// der Array zwischen den Indizes n und n+1 liegt  (jlo ist ein first guess des indexes und der rï¿½ckgabewert)
 //Given an array
 // xx[1..n], and given a value x,returns a value jlo such that x is between
 //xx[jlo] and xx[jlo+1]. xx[1..n] must be monotonic, either increasing or decreasing.
@@ -328,7 +341,7 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 	}
 }
 
-// Koeffizienten für die spätere bikubische Interpolation berechnen
+// Koeffizienten fï¿½r die spï¿½tere bikubische Interpolation berechnen
 void bcucof(long double y[], long double y1[], long double y2[], long double y12[], long double d1, long double d2,long double **c){
 	static int wt[16][16]=
 		{{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -430,7 +443,7 @@ void bcuint_new(int indr, int indz,long double ****c, long double d1, long doubl
 // Feld Interpolation vorbereiten
 void PrepIntpol(int k){
   //long double muell;
-// Größe der Arrays für das Einlesen der Tabelle bestimmen
+// Grï¿½ï¿½e der Arrays fï¿½r das Einlesen der Tabelle bestimmen
    long double EnTemp;
 	char *path;
 	path=(char*)malloc((inpathlength+14)*sizeof(char));
@@ -442,7 +455,7 @@ void PrepIntpol(int k){
 	GetDim(&m, &n);
 
 
-	// Vektoren der r und z Komponenten, Matrizen für B-Feld Komponenten und deren Ableitungen kreieren
+	// Vektoren der r und z Komponenten, Matrizen fï¿½r B-Feld Komponenten und deren Ableitungen kreieren
 	rind=dvector(1,m);
 	zind=dvector(1,n);
 	
@@ -459,7 +472,7 @@ void PrepIntpol(int k){
 	BzTab12=dmatrix(2,m-1,2,n-1);
 	BphiTab12=dmatrix(2,m-1,2,n-1);
 
-	// Vektoren der r und z Komponenten, Matrizen für B-Feld Komponenten und deren Ableitungen kreieren
+	// Vektoren der r und z Komponenten, Matrizen fï¿½r B-Feld Komponenten und deren Ableitungen kreieren
 	if ((protneut==PROTON)||(protneut==ELECTRONS)){
 		ErTab=dmatrix(1,m,1,n);
 		EzTab=dmatrix(1,m,1,n);
@@ -561,7 +574,7 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 		indz = 1+(int) ((z_n-conv_zA) / (conv_zB));  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
 		//printf("new: indr =  %i, indz = %i \n",indr, indz);
 					
-		// Abstände der Koordinaten voneinander
+		// Abstï¿½nde der Koordinaten voneinander
 		//dr = rind[indr + 1] - rind [indr];
 		//dz = zind[indz + 1] - zind [indz];
 		//cout << "Indizes: " << indr << " " << indz << "\n";
@@ -719,7 +732,7 @@ void BInterpolOld(long double r_n, long double phi, long double z_n){
 		
 		
 				
-		// Abstände der Koordinaten voneinander
+		// Abstï¿½nde der Koordinaten voneinander
 		//dr = rind[indr + 1] - rind [indr];
 		//dz = zind[indz + 1] - zind [indz];
 
@@ -905,14 +918,14 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 		indr = 1 + (int) ((r_n - conv_rA) / (conv_rB));   // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
 		indz = 1 + (int) ((z_n - conv_zA) / (conv_zB));  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
 
-		// Abstände der Koordinaten voneinander
+		// Abstï¿½nde der Koordinaten voneinander
 		//dr = rind[indr + 1] - rind [indr];
 		//dz = zind[indz + 1] - zind [indz];
 
 		// cout << "Indizes: " << indr << " " << indz << "\n";
 
 		if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)){
-			// Rechteck mit den Werten und deren Ableitungen befüllen und Interpolieren
+			// Rechteck mit den Werten und deren Ableitungen befï¿½llen und Interpolieren
 			yyy[1] = ErTab[indr][indz];
 			yyy[2] = ErTab[indr+1][indz];
 			yyy[3] = ErTab[indr+1][indz+1];
@@ -935,7 +948,7 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 			
 			bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Er, &dErdr, &dErdz);
 
-			// Rechteck mit den Werten und deren Ableitungen befüllen und Interpolieren
+			// Rechteck mit den Werten und deren Ableitungen befï¿½llen und Interpolieren
 			yyy[1] = EzTab[indr][indz];
 			yyy[2] = EzTab[indr+1][indz];
 			yyy[3] = EzTab[indr+1][indz+1];
@@ -958,7 +971,7 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 			
 			bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Ez, &dEzdr, &dEzdz);
 
-			// Rechteck mit den Werten und deren Ableitungen befüllen und Interpolieren
+			// Rechteck mit den Werten und deren Ableitungen befï¿½llen und Interpolieren
 			yyy[1] = EphiTab[indr][indz];
 			yyy[2] = EphiTab[indr+1][indz];
 			yyy[3] = EphiTab[indr+1][indz+1];
@@ -1094,6 +1107,12 @@ void Preinterpol(int p)
 	int indr, indz, perc=0; 
 	long double d1, d2;
 	long double **ctemp;
+	
+	// allocating space for the preinterpolation, we need to cast it to long double ****
+	// The B*c are 4D arrays with m x n x 4 x 4 fields
+	Brc = (long double ****) viertensor(1,m,1,n,1,4,1,4);
+	Bphic = (long double ****) viertensor(1,m,1,n,1,4,1,4);
+	Bzc = (long double ****) viertensor(1,m,1,n,1,4,1,4);	
 	
 	printf("\nStart Preinterpolation!\n");
 	
@@ -1243,6 +1262,23 @@ void Preinterpol(int p)
 	free_dmatrix(ctemp,1,4,1,4);
 	
 	printf("\n Done with Preinterpolation!\n");
+	printf("freeing the BField matrix ... (about %.4LG MB)\n",(long double)n*m*12*12/1024/1024);
+	// now we don't need the BF matrix anymore
+	free_dmatrix(BrTab,1,m,1,n);
+	free_dmatrix(BzTab,1,m,1,n);
+	free_dmatrix(BphiTab,1,m,1,n);
+	
+	free_dmatrix(BrTab1,2,m-1,2,n-1);
+	free_dmatrix(BzTab1,2,m-1,2,n-1);
+	free_dmatrix(BphiTab1,2,m-1,2,n-1);
+	
+	free_dmatrix(BrTab2,2,m-1,2,n-1);
+	free_dmatrix(BzTab2,2,m-1,2,n-1);
+	free_dmatrix(BphiTab2,2,m-1,2,n-1);
+	
+	free_dmatrix(BrTab12,2,m-1,2,n-1);
+	free_dmatrix(BzTab12,2,m-1,2,n-1);
+	free_dmatrix(BphiTab12,2,m-1,2,n-1);
 	return;
 }
 
@@ -1677,7 +1713,7 @@ void BarRaceTrack(long double r_current, long double phi_current, long double z_
 #define NTAB 10 //Sets maximum size of tableau.
 #define SAFE 2.0 //Return when error is SAFE worse than the best so far.
 long double dfridr3D(long double (*func)(long double x[4]), int n, long double x[4], long double h, long double *err)
-//Returns the derivative of a function func at a point x by Ridders’ method of polynomial
+//Returns the derivative of a function func at a point x by Riddersï¿½ method of polynomial
 //extrapolation. The value h is input as an estimated initial stepsize; it need not be small, but
 //rather should be an increment in x over which func changes substantially. An estimate of the
 //error in the derivative is returned as err.

@@ -537,7 +537,7 @@ void SwitchField(long double t)
 }
 
 //-----------------------------------------------------------------------------
-// Vektor W (kein Ortsvektor, sondern B-Feld o.ähnliches) von zyl in kart koord xyz umrechnen ## Wr, Wphi, Wz: Eingabewerte ## Wx0, Wy0, Wz0 werden verändert von CylKartCoord
+// Vektor W (kein Ortsvektor, sondern B-Feld o.ï¿½hnliches) von zyl in kart koord xyz umrechnen ## Wr, Wphi, Wz: Eingabewerte ## Wx0, Wy0, Wz0 werden verï¿½ndert von CylKartCoord
 // phi ist dabei die winkelkoordinate des aktuellen ortsvektors
 void CylKartCoord(long double Wr, long double Wphi, long double Wz, long double phi, long double *Wx0, long double *Wy0, long double *Wz0){
 	(*Wx0) = cosl(phi) * Wr - sinl(phi) * Wphi;
@@ -548,7 +548,7 @@ void CylKartCoord(long double Wr, long double Wphi, long double Wz, long double 
 
 
 //-----------------------------------------------------------------------------
-// Vektor W (kein Ortsvektor, sondern B-Feld o.ähnliches) von kart in zyl koord xyz umrechnen ## Wx, Wy, Wz: Eingabewerte ## Wr0, Wphi0, Wz0 werden verändert von KartCylCoord
+// Vektor W (kein Ortsvektor, sondern B-Feld o.ï¿½hnliches) von kart in zyl koord xyz umrechnen ## Wx, Wy, Wz: Eingabewerte ## Wr0, Wphi0, Wz0 werden verï¿½ndert von KartCylCoord
 // phi ist dabei die winkelkoordinate des aktuellen ortsvektors
 void KartCylCoord(long double Wx, long double Wy, long double Wz, long double phi, long double *Wr0, long double *Wphi0, long double *Wz0){
 	(*Wr0) = cosl(phi) * Wx + sinl(phi) * Wy;
@@ -563,12 +563,12 @@ void KartCylCoord(long double Wx, long double Wy, long double Wz, long double ph
 void CoordRotSeeger(long double Wx, long double Wy, long double Wz, long double Bx, long double By, long double Bz, long double *Wx2, long double *Wy2, long double *Wz2, long double *beta, long double *delta){  // Festes Kartesisches Koord.System in B reindrehen
 	// a vector W is being transformed into a system where the z axis points to Bz gedreht
 	long double Wx1, Wy1, Wz1, Wx1a, Wy1a, Wz1a;
-	long double Bx1, Bz1;                  // B-Komponenten im Coordsys nach 1. Drehung, nötig um Winkel für 2. Drehung zu berechnen
+	long double Bx1, Bz1;                  // B-Komponenten im Coordsys nach 1. Drehung, nï¿½tig um Winkel fï¿½r 2. Drehung zu berechnen
 
 	if ((By==0) && (Bx==0)) 
 		*beta=0.0;
 	else 
-		*beta = - atan2l(By,Bx);          // Winkel für Drehung um z-Achse berechnen, so  dass x1 in z, B Ebene liegt
+		*beta = - atan2l(By,Bx);          // Winkel fï¿½r Drehung um z-Achse berechnen, so  dass x1 in z, B Ebene liegt
 
 
 	Wx1 = cosl(*beta) * Wx - sinl(*beta) * Wy;         // Drehung um z-Achse mit Drehwinkel beta
@@ -581,7 +581,7 @@ void CoordRotSeeger(long double Wx, long double Wy, long double Wz, long double 
 	if ((Bx1==0) && (Bz1==0)) 
 		*delta=0.0;
 	else 
-		*delta = - atan2l(Bx1,Bz1);          // Winkel für Drehung um y1-Achse berechnen, so dass z in B Richtung zeigt
+		*delta = - atan2l(Bx1,Bz1);          // Winkel fï¿½r Drehung um y1-Achse berechnen, so dass z in B Richtung zeigt
 
 
 	Wx1a =  cosl(*delta) * Wx1 + sinl(*delta) * Wz1;         // Drehung um y1 Achse mit Drehwinkel delta
@@ -589,7 +589,7 @@ void CoordRotSeeger(long double Wx, long double Wy, long double Wz, long double 
 	Wz1a  = -sinl(*delta) * Wx1 + cosl(*delta) * Wz1;
 
 
-	*Wx2 = cosl(-(*beta)) * Wx1a - sinl(-(*beta)) * Wy1a;         // Zurückdrehung um minus beta
+	*Wx2 = cosl(-(*beta)) * Wx1a - sinl(-(*beta)) * Wy1a;         // Zurï¿½ckdrehung um minus beta
 	*Wy2 = sinl(-(*beta)) * Wx1a + cosl(-(*beta)) * Wy1a;
 	*Wz2 = Wz1a;
 
@@ -598,11 +598,11 @@ void CoordRotSeeger(long double Wx, long double Wy, long double Wz, long double 
 
 
 //-----------------------------------------------------------------------------
-void BackCoordRotSeeger(long double Wx2, long double Wy2, long double Wz2, long double beta, long double delta, long double *Wx0, long double *Wy0, long double *Wz0){  // Rücktrafo, gleiche Winkel wie bei Hintrafo verwenden
+void BackCoordRotSeeger(long double Wx2, long double Wy2, long double Wz2, long double beta, long double delta, long double *Wx0, long double *Wy0, long double *Wz0){  // Rï¿½cktrafo, gleiche Winkel wie bei Hintrafo verwenden
 	// ein Eingabevektor W wird nach W2 gedreht
 	long double Wx1, Wy1, Wz1, Wx1a, Wy1a, Wz1a;
 
-	Wx1a = cosl(beta) * Wx2 - sinl(beta) * Wy2;         // Zurückdrehung um  beta
+	Wx1a = cosl(beta) * Wx2 - sinl(beta) * Wy2;         // Zurï¿½ckdrehung um  beta
 	Wy1a = sinl(beta) * Wx2 + cosl(beta) * Wy2;
 	Wz1a = Wz2;
 	
@@ -618,7 +618,7 @@ void BackCoordRotSeeger(long double Wx2, long double Wy2, long double Wz2, long 
 
 
 
-//Funktion zur Ausgabe des größeren von zwei long double
+//Funktion zur Ausgabe des grï¿½ï¿½eren von zwei long double
 long double RPMax(long double w1, long double w2){
 	if (w1 >= w2)
         return w1;
@@ -716,6 +716,7 @@ int CalcFluxLine(long double r, long double phi, long double z, long double Flux
 	Vflux=  0.0;                             // potential difference to the starting point
 	long double AngleZ = tanl(Br/Bz), Vorzeichen = 1;        // angle of the magnetic field vector with respect to z-axis
 	
+	int i;
 	for (i=1;i<=5000;i++){
 		r = r + Vorzeichen * sinl(AngleZ) * FluxStep;
 		z = z + Vorzeichen * cosl(AngleZ) * FluxStep;
