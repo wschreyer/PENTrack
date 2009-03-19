@@ -294,7 +294,6 @@ void ConfigInit(void){
 void Startbed(int k){
     int i = 0, ncont = 0;
     char msg[500];
-	long double nix;
     FILE *stream = NULL;
 	char *path;
 	//char tempo[10];
