@@ -15,7 +15,7 @@ long double yscal[], long double *hdid, long double *hnext,
 void (*derivs)(long double, long double [], long double []))
 
 /*
-Fifth­order Rung­Kutta step with
+Fifthï¿½order Rungï¿½Kutta step with
 monitoring of local truncation error to ensure accuracy and
 adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
 at the
@@ -23,9 +23,9 @@ starting value of the independent variable x. Also input are the stepsize to be 
 htry, the required accurac eps, and the vector
 yscal[1..n] against which the error is
 scaled. On output, y and x are replaced b their new values, hdid is the stepsize that was
-actuall accomplished, and hnext is the estimated next stepsize. derivs is the user­supplied
+actuall accomplished, and hnext is the estimated next stepsize. derivs is the userï¿½supplied
 routine that computes the
-rig ht­hand side derivatives.     */
+rig htï¿½hand side derivatives.     */
 {
 	
 	//cout << "RK";
@@ -61,16 +61,16 @@ free_vector(ytemp,1,n);
 free_vector(yerr,1,n);
 }
 
-//The routine rkqs calls the routine rkck to take a Cash­Karp Runge­Kutta step:
+//The routine rkqs calls the routine rkck to take a Cashï¿½Karp Rungeï¿½Kutta step:
 #include "nrutil.h"
 void rkck(long double y[], long double dydx[], int n, long double x, long double h, long double yout[],
 long double yerr[], void (*derivs)(long double, long double [], long double []))
 /*
 Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x,use
-the fifth­order Cash­Karp Rung­Kutta method to advance the solution over an interval h
+the fifthï¿½order Cashï¿½Karp Rungï¿½Kutta method to advance the solution over an interval h
 and return the incremented variables as yout[1..n]. Also return an estimate of the local
 truncation error in yout
-using the embedded fourth­order method. The user supplies the routine
+using the embedded fourthï¿½order method. The user supplies the routine
 derivs(x,y,dydx), which returns derivatives dydx at x.    */
 {
 int i;
@@ -131,14 +131,14 @@ small stepsizes or on the dependent variable vector remaining unchanged from ste
 to step. On a personal workstation you guard against it by not taking too long a
 lunch hour while your program is running.)
 
-Here is a full­fledged ``driver'' for Runge­Kutta with adaptive stepsize control. 
+Here is a fullï¿½fledged ``driver'' for Rungeï¿½Kutta with adaptive stepsize control. 
 We warmly recommend this routine, or one like it, for a variety of problems, notably
-including garden­variety ODEs or sets of ODEs, and definite integrals (augmenting
+including gardenï¿½variety ODEs or sets of ODEs, and definite integrals (augmenting
 the methods of Chapter 4). For storage of intermediate results (if you desire to
-inspect them) we assume that the top­level pointer references *xp and **yp have been
+inspect them) we assume that the topï¿½level pointer references *xp and **yp have been
 validly initialized (e.g., by the utilities vector() and matrix()). Because steps
 occur at unequal intervals results are only stored at intervals greater than dxsav. The
-top­level variable kmax indicates the maximum number of steps that can be stored.
+topï¿½level variable kmax indicates the maximum number of steps that can be stored.
 If kmax=0 there is no intermediate storage, and the pointers *xp and **yp need not
 point to valid memory. Storage of steps stops if kmax is exceeded, except that the 
 ending values are always stored. Again, these controls are merely indicative of what 
@@ -162,7 +162,7 @@ long double hmin, int *nok, int *nbad,
 void (*derivs)(long double, long double [], long double []),
 void (*rkqs)(long double [], long double [], int, long double *, long double, long double, long double [],
 long double *, long double *, void (*)(long double, long double [], long double [])))   /*
-Rung­Kutta driver with adaptive stepsize control. Integate
+Rungï¿½Kutta driver with adaptive stepsize control. Integate
 starting values ystart[1..nvar]
 from x1 to x2 with accurac eps,
 storing intermediate results
@@ -170,9 +170,9 @@ ing lobal variables. h1 should
 be set as a gessed first stepsize, hmin as the minimum allowed stepsize (can be zero). On
 output nok and nbad are the number
 ofg ood and bad (but retried and fixed) steps taken, and
-ystart is replaced b values at the end of the integation interval. derivs is the user­supplied
+ystart is replaced b values at the end of the integation interval. derivs is the userï¿½supplied
 routine for
-calculating the rigt­hand side derivative, while rkqs isthenameofthestepper
+calculating the rigtï¿½hand side derivative, while rkqs isthenameofthestepper
 routine to be used.    */
 {
 	int nstp,i;
@@ -529,8 +529,8 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 			// spin flip properties according to Vladimirsky and thumbrule
 			if (spinflipcheck == 2){   
 				// y[6]: phidot
-				vlad = vladimirsky(y[1], Br, Bphi, Bz, dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, y[2], y[6], y[4], zeitdelta);
-				frac = thumbrule(Br, Bphi, Bz, dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, y[2], y[6], y[4], zeitdelta);
+				vlad = vladimirsky(y[1], Br, Bphi, Bz, dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, y[2], y[6], y[4]);
+				frac = thumbrule(Br, Bphi, Bz, dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, y[2], y[6], y[4]);
 				if (vlad > 1e-99){
 					vladtotal = vladtotal * (1-vlad);
 					if (vladtotal < 0.9999)
