@@ -3,16 +3,14 @@
 //#include "vars.h"
 
 /*
-Aus den Grenzen für die Startbedingungen wird ein zufälliger Startwert und eine zufällige
-Zerfallszeit für das Teilchen berechnet
+Aus den Grenzen fï¿½r die Startbedingungen wird ein zufï¿½lliger Startwert und eine zufï¿½llige
+Zerfallszeit fï¿½r das Teilchen berechnet
 */
 
 void MCStartwerte(long double delx)
 {	
 	long double crit;
-	long double x;
 	long double WktTMP;
-	long double mg = 102.5;
 	// examine correlation of fields with proton collection 
 	 // BFeldSkalGlobal = mt_get_double(v_mt_state);
 	 // EFeldSkal = mt_get_double(v_mt_state);
@@ -72,11 +70,11 @@ void MCStartwerte(long double delx)
 		
 		// square root neutron energy distribution
 		if ((protneut != PROTON)&&(protneut != ELECTRONS))
-			{
+		{
 			//Energie = powl(mt_get_double(v_mt_state) * (EnergieE*EnergieE - EnergieS*EnergieS) + EnergieS*EnergieS,0.5);    // quadratisch gewichtete Energie
 			Energie = powl( (powl(EnergieE,1.5)-powl(EnergieS,1.5)) *mt_get_double(v_mt_state) + powl(EnergieS,1.5) ,2.0/3.0);
 			NeutEnergie = Energie;		
-			//cout << "Die gwürfelte Energie ist :" << Energie << endl;
+			//cout << "Die gwï¿½rfelte Energie ist :" << Energie << endl;
 			//sleep(5);
 		}		
 		
@@ -144,12 +142,12 @@ void MCStartwerte(long double delx)
 		/* // z distribution according to rho0*sqrt(1-mgz/e)		
 		z_n = NeutEnergie*1e9/mg* ( powl(mt_get_double(v_mt_state)*(-1)*(powl(1-mg*z_ne/(NeutEnergie*1e9),1.5) - powl(1-mg*z_ns/(NeutEnergie*1e9),1.5)) - powl(1-mg*z_ns/(NeutEnergie*1e9),1.5),2.0/3.0) +1 ); */
 		z_n = z_ns + (mt_get_double(v_mt_state)) * (z_ne-z_ns);
-		//cout << "Die gewürfelte Höhe ist :" << z_n << endl;
+		//cout << "Die gewï¿½rfelte Hï¿½he ist :" << z_n << endl;
 			//sleep(5);
 		
 		if(protneut == NEUTRON)
 		{			
-			// Test ob Neutron überhaupt da hingekommen wäre (Energy)
+			// Test ob Neutron ï¿½berhaupt da hingekommen wï¿½re (Energy)
 			BFeld(r_n,phi_n*conv,z_n, 0.0);
 			crit = NeutEnergie - m_n*gravconst*z_n + (mu_n)*Bws;
 			//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
@@ -165,7 +163,7 @@ void MCStartwerte(long double delx)
 		// proton
 		else if ((protneut == PROTON) ||(protneut == ELECTRONS))
 		{      
-		// Test ob Neutron überhaupt da hingekommen wäre (NeutEnergie)
+		// Test ob Neutron ï¿½berhaupt da hingekommen wï¿½re (NeutEnergie)
 			BFeld(r_n,phi_n*conv,z_n, 0.0);
 			crit = NeutEnergie - m_n*gravconst*z_n + (mu_n)*Bws;
 			//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);

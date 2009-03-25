@@ -13,11 +13,8 @@ int ReadMagnets(void)
 	FILE *cfg = NULL;
 	
 	char line[1024];
-	char *path;
-	
-	path=(char*)malloc((inpathlength+11)*sizeof(char));
-	sprintf(path,"%s/coils.cond",inpath);
-	cfg = fopen(path,mode_r);
+	string path(inpath + "/coils.cond");
+	cfg = fopen(path.c_str(),mode_r);
 	if(cfg == NULL){  
 		printf("File coils.cond could not be opened!!!");
 		fprintf(LOGSCR,"File coils.cond could not be opened!!!");
