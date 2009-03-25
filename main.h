@@ -112,7 +112,7 @@ extern long double ele_e, Qm0;      //elementary charge in SI, charge/proton mas
 extern long double gravconst, conv, mu0;      //g, Pi/180, permeability,
 extern long double m_n, mu_n, pi;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
 extern long double M,m_p;        //proton mass (eV/c^2), tempmass
-extern long double m_e, c_0, gammarel, rando, NeutEnergie; //electron mass, lightspeed, relativistic gamma factor
+extern long double m_e, c_0, gammarel, NeutEnergie; //electron mass, lightspeed, relativistic gamma factor
 extern long double hquer, mu_nSI;          // Neutron magn Mom (in J/T)
 extern long double gamma_n;
 extern long double mumB, tau;              // magn. moment of neutron/mass,  neutron lifetime
@@ -139,22 +139,20 @@ extern long double EFeldSkalSave, BFeldSkalGlobalSave;    // temperorary variabl
 extern int n, m;                               // number of colums and rows in the input B-field matrices
 extern long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator;
 extern long double DiceRodField;
-extern long double epss, epse, EnTest;                         // beginning, end for epsilon, variable f�r B-Feld berechnungnen
-extern long double Volume[200], VolumeB[200];   // Volume[E] accessible to neutrons at energy E without and with B-field
+extern long double VolumeB[200];   // Volume[E] accessible to neutrons at energy E without and with B-field
 
 // particles
 extern long double H;                               // total energy of particle
 extern long double projz, ystart[7], ysave[7], xstart;       //z-component of velocity, initial and intermediate values of y[9]
 extern int iMC;                             //  counter for MonteCarloSim
 extern long double  x1, x2;                         // start and endtime handed over to integrator
-extern long double  phitemp;                       // to project spin phase back to 0-360 degree
 extern long int kennz0,kennz1,kennz2,kennz3,kennz4,kennz5,kennz6,kennz7,kennz8,kennz9,kennz10,kennz11,kennz12, kennz99,nrefl; // Counter for the particle codes
 extern long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
 extern unsigned short int TrajectoryLength;
-extern long double Hstart, Hend, Hmax, L_n, dL_n;     //maximum energy, angular momentum, differenz zu maximum possible angular momentum
+extern long double Hstart, Hend, Hmax;     //maximum energy
 
 // initial values of particle
-extern long double EnergieS,dEnergie, EnergieE, Energie, Ekin;    //initial energy range
+extern long double EnergieS,dEnergie, EnergieE, Energie;    //initial energy range
 extern long double r_n, phi_n, z_n, v_n;                //initial particle coordinates
 extern long double alpha, gammaa,phia, hmin;                  //initial angle to x-Achse, zo z-Achse, Schrittweite
 extern long double phis,r_ns, z_ns, v_ns, alphas, gammas;   //initial values from
@@ -217,15 +215,10 @@ extern int clslit,clBruteForce,clreflekt,clspinflipcheck,clDetOpen;  // cleaning
 
 // Spintracking
 extern int spinflipcheck;                          // user choice to check adiabacity
-extern long double vlad, vladtotal, frac, logvlad, logfrac;                   // adiabacity after Vladimirsky
-extern long double matoraprob, matorapartprob;   // Adiabadicity after Matora
-extern long double zeit1, zeit2, zeitdelta;        // calling times for adiabacity
-extern long double rabiminprob, rabiplusprob;         // min-Rabi prob for spinflip, plus: the same for no flip
-extern long double matmax, rabmax, vladmax; // maximum values of spinflip prob
+extern long double vlad, vladtotal, frac;                   // adiabacity after Vladimirsky
+extern long double vladmax; // maximum values of spinflip prob
 extern long double thumbmax;
 extern long double Bxcoor, Bycoor, Bzcoor;    // B-field in cart Labor coord, cart coord of vector for spin coor sys
-extern long double deltat;    // tmp save of spin, smaller timestep, smallest timestep possible, b field parameter
-extern long double timetemp;                                 // tmp variable, time of last outputting in outs
 //long double matoranorm, matoratime, matoratemptimeb, matoratemptimee,
 //            matoratempprob = 1.0;                     // spin flip probabiltiy per second
 //long double directprob = 1.0, directtime = 0.0, writeprob = 1.0,
@@ -248,16 +241,14 @@ extern int AbsorberChoice;    // 1: PE, 2: Ti
 
 // variables for BruteForce Bloch integration BEGIN
 extern long double *BFtime, **BFField;    // time, Bx, By, Bz, r, z array
-extern int BFcount, offset, BFkount, BFindex;			// counter in BFarray, offset off BFarray, maximum index of intermediate values , index in BFarray;
-extern long double BFpol, BFlogpol, *BFBws;                    // BFpolarisation
+extern int offset, BFkount, BFindex;			// counter in BFarray, offset off BFarray, maximum index of intermediate values , index in BFarray;
+extern long double *BFBws;                    // BFpolarisation
 extern long double BFBmin, BFTargetB;     // smallest value of Babs during step, Babs < BFTargetB => integrate,
 extern long double BFBxcoor, BFBycoor, BFBzcoor;        // cartesian coord of B field
-extern unsigned short int BruteForce, BFPolmin, firstint, alwayscont, flipspin;  // enable BruteForce?, flipthespin?
+extern unsigned short int BruteForce, firstint, alwayscont, flipspin;  // enable BruteForce?, flipthespin?
 extern long double I_n[4], **BFypFields;        // Spinvector, intermediate field values in BFodeint
 extern long BFZeilencount; extern int BFFilecount;                  // to control output filename of BF
 extern long double BFflipprob, BFsurvprob;                         // spinflip pobability
-extern long double Bxdev,Bydev,Bzdev,maxBxdev,maxBydev,maxBzdev;
-extern long double B1;    // magnitude of oscillating field
 
  // Absorber integrieren
 extern long double abszmin;
