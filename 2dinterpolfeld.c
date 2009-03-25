@@ -27,11 +27,8 @@ void GetDim(int *m, int *n)
 	
 	if(FIN != NULL) 
 		fclose(FIN);
-	char *path;
-	path=(char*)malloc((inpathlength+14)*sizeof(char));
-	sprintf(path,"%s/fieldval.tab",inpath);
-	FIN = fopen(path,mode_r);
-	free(path);
+	string path = inpath + "/fieldval.tab";
+	FIN = fopen(path.c_str(),mode_r);
 	
 	// in der ersten zeile stehen die dimensionen auch drin
 	sscanf(fgets(str,1024,FIN),"%d %d %d %LG",m,&intmuell,n,&muell);
@@ -197,12 +194,8 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 	// close file if it already open
 	if(FIN != NULL)  
 		fclose(FIN);
-	char *path;
-	path=(char*)malloc((inpathlength+14)*sizeof(char));
-	//snprintf(path,pathlen,"%s/fieldval.tab",inpath);
-	sprintf(path,"%s/fieldval.tab",inpath);	
-	FIN = fopen(path,mode_r);
-	free(path);
+	string path(inpath + "/fieldval.tab");
+	FIN = fopen(path.c_str(),mode_r);
 	
 	// discard first eleven lines with header
 	int i;
@@ -445,11 +438,8 @@ void PrepIntpol(int k){
   //long double muell;
 // Gr��e der Arrays f�r das Einlesen der Tabelle bestimmen
    long double EnTemp;
-	char *path;
-	path=(char*)malloc((inpathlength+14)*sizeof(char));
-	sprintf(path,"%s/fieldval.tab",inpath);
-	FIN = fopen(path,mode_r);
-	free(path);
+	string path(inpath + "/fieldval.tab");
+	FIN = fopen(path.c_str(),mode_r);
 	if (FIN == NULL) 
 		exit(-1);        // Fehlerbehandlung
 	GetDim(&m, &n);
