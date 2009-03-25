@@ -19,7 +19,7 @@ long double ele_e=1.602176487E-19, Qm0=1.602176487E-19/1.672621637E-27;      //e
 long double gravconst=9.80665, conv=0.01745329251, mu0= 1.25663706144e-6;      //g, Pi/180, permeability,
 long double m_n=1.674927211E-27/1.602176487E-19, mu_n, pi=3.141592655359;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
 long double M,m_p=1.672621637E-27/1.602176487E-19;        //proton mass (eV/c^2), tempmass
-long double m_e = 9.10938215e-31/1.602176487E-19, c_0 = 299792458, gammarel, rando, NeutEnergie; //electron mass (eV/c^2), lightspeed, relativistic gamma factor
+long double m_e = 9.10938215e-31/1.602176487E-19, c_0 = 299792458; //electron mass (eV/c^2), lightspeed
 long double hquer=1.05457266e-34, mu_nSI=0.96623641e-26;          // Neutron magn Mom (in J/T)
 long double gamma_n = 1.83247185e8;            
 long double mumB, tau=885.7;              // magn. moment of neutron/mass,  neutron lifetime [s]
@@ -47,21 +47,20 @@ long double EFeldSkalSave, BFeldSkalGlobalSave;    // temperorary variables to s
 int n, m;                               // number of colums and rows in the input B-field matrices
 long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep=0.001, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator = 0.0;
 long double DiceRodField=0;
-long double epss, epse, EnTest;                         // beginning, end for epsilon, variable fr B-Feld berechnungnen
-long double Volume[200] = {0.0}, VolumeB[200] = {0.0};   // Volume[E] accessible to neutrons at energy E without and with B-field
+long double VolumeB[200] = {0.0};   // Volume[E] accessible to neutrons at energy E without and with B-field
 
 // particles
 long double H;                               // total energy of particle
 long double projz, ystart[7], ysave[7], xstart = 0;       //z-component of velocity, initial and intermediate values of y[9]
 long double  x1, x2;                         // start and endtime handed over to integrator
 int iMC;                             //  counter for MonteCarloSim
-long double  phitemp;                       // to project spin phase back to 0-360 degree
 long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
 unsigned short int TrajectoryLength=1;
-long double Hstart, Hend,Hmax, L_n, dL_n;     //maximum energy, angular momentum, differenz zu maximum possible angular momentum
+long double Hstart, Hend,Hmax;     //maximum energy
+long double gammarel, NeutEnergie;	//relativistic gamma factor, Neutron energy
 
 // inital values of particle
-long double EnergieS,dEnergie, EnergieE, Energie, Ekin=0.0;    //initial energy range
+long double EnergieS,dEnergie, EnergieE, Energie;    //initial energy range
 long double r_n, phi_n, z_n, v_n;                //initial particle coordinates
 long double alpha, gammaa, hmin;                  //initial angle to x-Achse, zo z-Achse, Schrittweite
 long double phis,r_ns, z_ns, v_ns, alphas, gammas;   //initial values from
@@ -124,15 +123,10 @@ int jobnumber;
 
 // Spintracking
 int spinflipcheck = 0;                          // user choice to check adiabacity
-long double vlad=0.0, vladtotal = 1.0, frac, logvlad, logfrac;                   // adiabacity after Vladimirsky
-long double matoraprob=1.0, matorapartprob;   // Adiabadicity after Matora
-long double zeit1, zeit2, zeitdelta;        // calling times for adiabacity
-long double rabiminprob, rabiplusprob;         // min-Rabi prob for spinflip, plus: the same for no flip
-long double matmax=0.0, rabmax=0.0, vladmax=0.0; // maximum values of spinflip prob
+long double vlad=0.0, vladtotal = 1.0, frac;                   // adiabacity after Vladimirsky
+long double vladmax=0.0; // maximum values of spinflip prob
 long double thumbmax=0.0;
 long double Bxcoor, Bycoor, Bzcoor;    // B-field in cart Labor coord, cart coord of vector for spin coor sys
-long double deltat;    // tmp save of spin, smaller timestep, smallest timestep possible, b field parameter
-long double timetemp;                                 // tmp variable, time of last outputting in outs
 //long double matoranorm, matoratime, matoratemptimeb, matoratemptimee,
 //            matoratempprob = 1.0;                     // spin flip probabiltiy per second
 //long double directprob = 1.0, directtime = 0.0, writeprob = 1.0,
@@ -154,16 +148,14 @@ int AbsorberChoice = 1;    // 1: PE, 2: Ti
 
 // variables for BruteForce Bloch integration BEGIN
 long double *BFtime=NULL, **BFField=NULL;   // time, Bx, By, Bz, r, z array
-int BFcount, offset=0, BFkount, BFindex = 3;			// counter in BFarray, offset of BFarray, maximum index of intermediate values , index in BFarray
-long double BFpol, BFlogpol, *BFBws=NULL;                    // BFpolarisation
+int offset=0, BFkount, BFindex = 3;			// counter in BFarray, offset of BFarray, maximum index of intermediate values , index in BFarray
+long double *BFBws=NULL;                    // BFpolarisation
 long double BFBmin = 10.0, BFTargetB=0.1;     // smallest value of Babs during step, Babs < BFTargetB => integrate,
 long double BFBxcoor, BFBycoor, BFBzcoor;        // cartesian coord of B field
-unsigned short int BruteForce = 0, BFPolmin=0, firstint = 1, flipspin=1;  // enable BruteForce?,
+unsigned short int BruteForce = 0, firstint = 1, flipspin=1;  // enable BruteForce?,
 long double I_n[4], **BFypFields=NULL;        // Spinvector, intermediate field values in BFodeint
 long BFZeilencount; int BFFilecount=1;                  // to control output filename of BF
 long double BFflipprob = 0.0, BFsurvprob=1.0;                // spinflip probability, survival (non-flip) probability
-long double Bxdev = 0,Bydev = 0,Bzdev = 0,maxBxdev = 0,maxBydev = 0,maxBzdev = 0;
-long double B1 = 5.0e-5;    // controlling of polarisation, magnitude of oscillating field
 
  // Absorber integrieren
 long double abszmin = 0.6;
@@ -432,11 +424,12 @@ int main(int argc, char **argv){
 	if (protneut == BF_ONLY){
 		fprintf(LOGSCR,"\nEnergie [neV], Volumen ohne B-Feld, mit B-Feld, 'Erwaermung'");
 		int i;
+		long double Volume;
 		for (i = 0; i <= EnergieE; i++) 
 		{
-			Volume[i] = ((i * 1.0e-9 / (M * gravconst))-wanddicke) * pi * (r_ne*r_ne-r_ns*r_ns);
+			Volume = ((i * 1.0e-9 / (M * gravconst))-wanddicke) * pi * (r_ne*r_ne-r_ns*r_ns);
 			// isentropische zustandsnderung, kappa=5/3
-			fprintf(LOGSCR,"\n%i %.17LG %.17LG %.17LG",i,Volume[i],VolumeB[i],i * powl((Volume[i]/VolumeB[i]),(2.0/3.0)) - i);
+			fprintf(LOGSCR,"\n%i %.17LG %.17LG %.17LG",i,Volume,VolumeB[i],i * powl((Volume[i]/VolumeB[i]),(2.0/3.0)) - i);
 		}
 	}
 	//printf("The B field time is:%.17LG\n",timer1);
@@ -643,7 +636,6 @@ void IntegrateParticle(){
 	stopall=0;
 	kennz=0; // not categorized yet									
 	// initial values for Brute-Force Spinintegration 
-		BFpol = 0.5;
 		I_n[3]=0.5; I_n[2]=I_n[1]=0;
 		offset = 0;
 		BFsurvprob = 1.0;
@@ -728,14 +720,11 @@ void IntegrateParticle(){
 
 	if (protneut == NEUTRON)
 	{// Spinflipwahrscheinlichkeiten zurcksetzen
-		matoraprob=1.0;
-		matmax=0.0;
 		thumbmax=0.0;
-		rabmax=0.0;
 		vladtotal = 1.0;
 		vladmax=0.0;									
 		BFeld(r_n,phi_n*conv,z_n, 0.0);							
-		Ekin=Energie-M*gravconst*z_n+mu_n*Bws;      // kin Energie = Anfangsen. - Pot Energie + Energie im B-Feld
+		long double Ekin=Energie-M*gravconst*z_n+mu_n*Bws;      // kin Energie = Anfangsen. - Pot Energie + Energie im B-Feld
 		if(Ekin>=0.0)
 		{
 			v_n=powl(2.0/M*(Ekin),0.5);
@@ -818,12 +807,6 @@ void IntegrateParticle(){
 	}
 	Hmax = H;
 	
-	if(protneut == NEUTRON)
-	{
-		L_n = ystart[6] * ystart[1] * ystart[1];
-		dL_n = L_n - (sqrtl(H * 1.0e-9 * 2 / m_n) * (rmin + wandinnen));
-	}
-	
 	// do integration for neutrons, protons or electrons 
 	if(protneut == NEUTRON || protneut == PROTON || protneut == ELECTRONS)
 	{
@@ -848,8 +831,7 @@ void IntegrateParticle(){
 
 		//-----------------------------------------------------
 		// Schleife fr ein Teilchen, bis die Zeit aus ist oder das Teilchen entkommt
-		timetemp = 0;                                    // temporre Variable, Zeit wann letzter Schritt in outs geschrieben wurde
-		deltat = delx;                                   // fr Spin-Schrittweitensteuerung
+		long double timetemp = 0;                                    // temporre Variable, Zeit wann letzter Schritt in outs geschrieben wurde
 		do
 		{
 			 //if(x2 >= 35.5)  OutputState(ystart,1);
@@ -930,6 +912,7 @@ void IntegrateParticle(){
 			
 			//Ausgabe der Zwischenwerte aus odeint
 			int klauf;
+			long double logvlad, logfrac;
 			if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)>=BahnPointSaveTime)){
 				for (klauf=2;klauf<=kount;klauf++){
 					if ((xp[klauf]-time_temp)>=BahnPointSaveTime)
@@ -1053,7 +1036,7 @@ void IntegrateParticle(){
 		time_temp = 0.0;
 
 		vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
-		phitemp = ((ystart[5])/conv);     // calculate end angle
+		long double phitemp = ((ystart[5])/conv);     // calculate end angle
 		phiend  = fmodl(phitemp, 360.);   // in degree
 		if (phiend<0)                    // from 0 to 360
 			phiend=360.0 + phiend;
@@ -1117,6 +1100,7 @@ void IntegrateParticle(){
 		cout << "r= " << r_n << " z= " << z_n << " Br= " << Br << " T, Bz= " << Bz << " T"  << endl;
 		
 		// Ramp Heating Analysis
+		long double EnTest;
 		for (Energie = 0; Energie <= EnergieE; Energie++){
 			EnTest = Energie*1.0e-9 - M*gravconst*z_n + mu_n * Bws;
 			if (EnTest >= 0){
@@ -1144,6 +1128,7 @@ void BruteForceIntegration(){
 	// Array fr BruteForce Integration wird gebildet
 	int klauf, klaufstart;
 	dxsav=1e-9;
+	bool BFPolmin;
 	if (BFBmin<BFTargetB)
 	{
 		BFPolmin=true;          // if at last step there was BFintegration => true
@@ -1162,13 +1147,13 @@ void BruteForceIntegration(){
 		}
 	}
 	
+	long double BFpol = 0.5;
 	if ((BFBmin>BFTargetB)&&(BFPolmin))
 	{    // output of polarisation after BF int completed
 		BFsurvprob = (BFpol+0.5) * BFsurvprob;
 		BFflipprob = 1-BFsurvprob;		// update spinflip probability after passing low field region
 		// flip the spin with the probability BFflipprob
 		if (flipspin){
-			rando = mt_get_double(v_mt_state);
 			// if (rando < 0.5) { // for testing, remove 
 			if (mt_get_double(v_mt_state) < (1-(BFpol+0.5))) 
 			{
@@ -1275,10 +1260,11 @@ void BruteForceIntegration(){
 		//if ((1-BFpol)>1.0e-6){
 		if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
 		{
-			for (BFcount=2; BFcount<=(BFkount);BFcount++)
+			for (int BFcount=2; BFcount<=(BFkount);BFcount++)
 			{
 				BFBws[BFcount] =  sqrtl(BFypFields[1][BFcount]*BFypFields[1][BFcount] + BFypFields[2][BFcount]*BFypFields[2][BFcount] + BFypFields[3][BFcount]*BFypFields[3][BFcount]);
 				BFpol = (BFyp[1][BFcount]* BFypFields[1][BFcount] + BFyp[2][BFcount]* BFypFields[2][BFcount] + BFyp[3][BFcount]* BFypFields[3][BFcount])/sqrtl(BFypFields[1][BFcount]*BFypFields[1][BFcount] + BFypFields[2][BFcount]*BFypFields[2][BFcount] + BFypFields[3][BFcount]*BFypFields[3][BFcount]);
+				long double BFlogpol;
 				if (BFpol<0.5) 
 					BFlogpol = log10l(0.5+BFpol);
 				else if (BFpol==0.5) 

@@ -1,9 +1,9 @@
 #include "main.h"
 
-// Wahrscheinlichkeit für keinen Spinflip nach Rabi (im Matora Paper)
+// Wahrscheinlichkeit fï¿½r keinen Spinflip nach Rabi (im Matora Paper)
 long double rabiplus(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,double dBzdz,double vr_n,double vz_n,double t)
 {
-        long double t3,t5,t6,t9,t11,t12,t13,t14,t16,t17,t22,t23,t27,t33,t34,dBrdt, dBzdt, rabiplus;
+        long double t3,t5,t6,t9,t11,t12,t13,t14,t16,t17,t22,t23,t27,t33,t34,rabiplus;
         long double gamm = 1.83247188e+8;
 
         t3 = dBrdr*vr_n+dBrdz*vz_n;
@@ -27,10 +27,10 @@ long double rabiplus(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,
    return rabiplus;
       }
 
-// Wahrscheinlichkeit für einen Spinflip nach Rabi (im Matora Paper)
+// Wahrscheinlichkeit fï¿½r einen Spinflip nach Rabi (im Matora Paper)
 long double rabimin(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,double dBzdz,double vr_n,double vz_n,double t)
 {
-        long double t3,t6,t8,t11,t13,t14,t15,t16,t19,t20,t22,t23,t27,t31,t33,dBrdt, dBzdt, rabimin;
+        long double t3,t6,t8,t11,t13,t14,t15,t16,t19,t20,t22,t23,t27,t31,t33,rabimin;
         long double gamm = 1.83247188e+8;
 
 
@@ -56,8 +56,8 @@ long double rabimin(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,d
 	return rabimin;
 }
 
-// Wahrscheinlichkeit für einen Spinflip nach Vladimirsky (Soviet Physics JETP, Volume 12, Number 4, April 1961)
-long double vladimirsky(long double r, long double Br,long double Bphi, long double Bz,long double dBrdr, long double dBrdphi, long double dBrdz, long double dBphidr, long double dBphidphi, long double dBphidz, long double dBzdr, long double dBzdphi, long double dBzdz,long double vr_n, long double phidot, long double vz_n, long double t){
+// Wahrscheinlichkeit fï¿½r einen Spinflip nach Vladimirsky (Soviet Physics JETP, Volume 12, Number 4, April 1961)
+long double vladimirsky(long double r, long double Br,long double Bphi, long double Bz,long double dBrdr, long double dBrdphi, long double dBrdz, long double dBphidr, long double dBphidphi, long double dBphidz, long double dBzdr, long double dBzdphi, long double dBzdz,long double vr_n, long double phidot, long double vz_n){
 	long double vabs, dBdt_par, dBdt_perp, dBdt_r, dBdt_phi, dBdt_z, dBdt_square, W;
 
     dBdt_r =   dBrdr  *vr_n + (dBrdphi-Bphi)*phidot + dBrdz  *vz_n;
@@ -75,13 +75,13 @@ long double vladimirsky(long double r, long double Br,long double Bphi, long dou
 	W = expl(-pi*mu_nSI*Bws*Bws/(hquer*dBdt_perp));
 	
 	if (W>1){
-		printf("Scheiße!!!\n");
+		printf("Scheiï¿½e!!!\n");
 	}
 
     return W;
 }
 
-long double thumbrule(long double Br,long double Bphi, long double Bz,long double dBrdr, long double dBrdphi, long double dBrdz, long double dBphidr, long double dBphidphi, long double dBphidz, long double dBzdr, long double dBzdphi, long double dBzdz,long double vr_n, long double phidot, long double vz_n, long double t){
+long double thumbrule(long double Br,long double Bphi, long double Bz,long double dBrdr, long double dBrdphi, long double dBrdz, long double dBphidr, long double dBphidphi, long double dBphidz, long double dBzdr, long double dBzdphi, long double dBzdz,long double vr_n, long double phidot, long double vz_n){
 
 	long double dBdt, dBdt_r, dBdt_phi, dBdt_z;
 
