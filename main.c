@@ -12,11 +12,10 @@ void ConfigInit(void){
 	FILE *cfg = NULL;
 	int n=0,b=0;
 	char line[1024];
-	char *path;
 	
-	path=(char*)malloc((inpathlength+11)*sizeof(char));
-	sprintf(path,"%s/config.in",inpath);
-	cfg = fopen(path,mode_r);
+	string path;
+	path = inpath + "/config.in";
+	cfg = fopen(path.c_str(),mode_r);
 	if(cfg == NULL){  
 		exit(-1);
 		return;
@@ -280,7 +279,6 @@ void ConfigInit(void){
 	ausgabewunschsave=ausgabewunsch;
 	BFeldSkalGlobalSave=BFeldSkalGlobal;
 	EFeldSkalSave=EFeldSkal;
-	free(path);
 	fclose(cfg);
 	return;
 }
@@ -295,52 +293,34 @@ void Startbed(int k){
     int i = 0, ncont = 0;
     char msg[500];
     FILE *stream = NULL;
-	char *path;
+	string path;
 	//char tempo[10];
 	if (protneut==PROTON)
-	{
-		path=(char*)malloc((inpathlength+20)*sizeof(char));
-		sprintf(path,"%s/protonen.in",inpath);
-    }    
+		path = inpath + "/protonen.in";
     else if (protneut==NEUTRON)
-	{
-		path=(char*)malloc((inpathlength+20)*sizeof(char));
-		sprintf(path,"%s/neutronen.in",inpath);
-    }
+		path = inpath + "/neutronen.in";
     else if (protneut==BF_ONLY)
-	{
-        path=(char*)malloc((inpathlength+20)*sizeof(char));
-		sprintf(path,"%s/bfeld.in",inpath);
-	}
+		path = inpath + "/bfeld.in";
 	 else if (protneut==ELECTRONS)
-	{
-        path=(char*)malloc((inpathlength+20)*sizeof(char));
-		sprintf(path,"%s/electrons.in",inpath);
-	}
+	 	path = inpath + "/electrons.in";
 	else 
 		exit(-1);
 	
-	stream = fopen(path,mode_r);
+	stream = fopen(path.c_str(),mode_r);
 	if (stream == NULL){
-		printf("Can't open %s\n",path);
-		free(path);	
+		cout << "Can't open " << path << "\n";
 		exit(-1);
 	}   
-	free(path);	
 	
 	// Abmessungen des Pots aus dimensions.in einlesen
 
-	path=(char*)malloc((inpathlength+15)*sizeof(char));
-	sprintf(path,"%s/dimensions.in",inpath);
+	path = inpath + "/dimensions.in";	
 	
-	
-	FILE *DIM = fopen (path,mode_r);
+	FILE *DIM = fopen (path.c_str(),mode_r);
 	if (DIM == NULL){
-		printf("Can't open %s\n",path);
-		free(path);	
+		cout << "Can't open " << path << "\n";
 		exit(-1);
 	}   
-	free(path);	
 	
 	//loop over the lines in dimensions.in
 	for(i = 1; i<= 23; i++){
@@ -629,15 +609,12 @@ void outndist(int k)
 {
 	//printf("\nOutputting the particle spacial distribution... \n");
 		
-	char *path = NULL;
-	path=(char*)malloc((outpathlength+17)*(sizeof(char)));
-	sprintf(path,"%s/%06dndist.out",outpath, jobnumber);
-	FILE *NDIST=fopen(path,mode_w);
+	ostringstream path;
+	path << outpath << "/" << jobnumber << "ndist.out";
+	FILE *NDIST=fopen(path.str().c_str(),mode_w);
 	int Treffer = 0;
 	
 	//FILE *NDIST=fopen("ndist.out",mode_w);
-	
-	free(path);
 	
 	fprintf(NDIST,"Rindex Zindex Rmtlpkt Zmtlpkt Whk Treffer\n");
 	long double increment = ndistr[1] - ndistr[0];
@@ -656,9 +633,8 @@ void outndist(int k)
 
 
 void OutputState(long double *y, int l){
-	stateoutfile = (char*)malloc((outpathlength+17)*sizeof(char));
-	sprintf(stateoutfile,"%s/%06dstate.out",outpath,jobnumber);
-	STATEOUT = fopen(stateoutfile,mode_w);	
+	stateoutfile << outpath << "/" << jobnumber << "state.out";
+	STATEOUT = fopen(stateoutfile.str().c_str(),mode_w);	
 	printf("\n \n Something happened! \n \n ");
 	fprintf(STATEOUT,"In this file the state of the programm will be written, when something happens for debug porposes... \n");
 	fprintf(STATEOUT,"Jobnumber: %i \n", jobnumber);

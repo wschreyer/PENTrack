@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <iostream.h>
+#include <sstream>
 
 
 // root stuff
@@ -102,7 +103,8 @@ extern void csleep(int sec);
 extern FILE *LOGSCR, *OUTFILE1, *REFLECTLOG, *BFLOG, *TESTLOG, *ENDLOG, *FIN, *STATEOUT, *STARTIN;
 
 // files for in/output + paths
-extern char *wholetrackfile,*logscrfile,*BFoutfile1,*reflectlogfile,*testlogfile,*endlogfile,*inpath,*outpath, *stateoutfile, *startinfile;
+extern ostringstream wholetrackfile,logscrfile,BFoutfile1,reflectlogfile,testlogfile,endlogfile,stateoutfile, startinfile;
+extern string inpath,outpath;
 extern char mode_r[2],mode_rw[3],mode_w[2];
 
 // physical constants
@@ -229,11 +231,11 @@ extern long double timetemp;                                 // tmp variable, ti
 //long double directprob = 1.0, directtime = 0.0, writeprob = 1.0,
 
 // file output
-extern int inpathlength,outpathlength,jobnumber;
+extern int jobnumber;
 extern long Zeilencount;
 extern int Filecount, p;                                   // counts the output files, counter for last line written in outs, random generator temp value
 extern long double BahnPointSaveTime;               // default 2e-7; 0=1e-19 not changed at run time, time between two lines written in outs
-extern char msg[500], *path;
+extern char msg[500];
 
 // data for material storage
 extern long double FPrealNocado, FPimNocado;     // real and imaginary part of fermi potential for milk tubes

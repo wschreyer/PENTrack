@@ -10,7 +10,8 @@ pnTracker
 FILE *LOGSCR = NULL, *OUTFILE1 = NULL, *REFLECTLOG = NULL, *BFLOG = NULL, *TESTLOG = NULL, *ENDLOG = NULL, *FIN = NULL, *STATEOUT = NULL, *STARTIN = NULL;
 
 // files for in/output + paths
-char *wholetrackfile = NULL, *logscrfile = NULL, *BFoutfile1 = NULL, *reflectlogfile = NULL, *testlogfile = NULL, *endlogfile = NULL, *inpath = NULL, *outpath = NULL, *stateoutfile = NULL, *startinfile = NULL;
+ostringstream wholetrackfile, logscrfile, BFoutfile1, reflectlogfile, testlogfile, endlogfile, stateoutfile, startinfile;
+string inpath, outpath;
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
 // physical constants
@@ -119,7 +120,7 @@ int rdslit,rdBruteForce,rdreflekt,rdspinflipcheck,rdDetOpen;  // rampdown
 int fislit,fiBruteForce,fireflekt,fispinflipcheck,fiDetOpen;  // filling
 int coslit,coBruteForce,coreflekt,cospinflipcheck,coDetOpen;  // counting UCN
 int clslit,clBruteForce,clreflekt,clspinflipcheck,clDetOpen;  // cleaning time
-int inpathlength,outpathlength,jobnumber; 
+int jobnumber; 
 
 // Spintracking
 int spinflipcheck = 0;                          // user choice to check adiabacity
@@ -140,7 +141,7 @@ long double timetemp;                                 // tmp variable, time of l
 long Zeilencount;
 int Filecount=1, p;                                   // counts the output files, counter for last line written in outs, random generator temp value
 long double BahnPointSaveTime = 5.0e-7;               // default 2e-7; 0=1e-19 not changed at run time, time between two lines written in outs
-char msg[500], *path;
+char msg[500];
 
 // data for material storage
 long double FPrealNocado = 183.04, FPimNocado = 0.018985481;     // real and imaginary part of fermi potential for milk tubes
@@ -289,29 +290,20 @@ int main(int argc, char **argv){
 	{
 		inpath = argv[2]; // input path pointer set
 		jobnumber = atoi(argv[1]); 
-		outpath = (char*)malloc(6*sizeof(char)); // getting space for outpath
 		outpath = "./out"; // setting outpath to default
 	}
 	else if(argc==2) // if user supplied 1 arg (outputfilestamp)
 	{
 		jobnumber=atoi(argv[1]);
-		outpath = (char*)malloc(6*sizeof(char)); //same as above with outpath and inpath
 		outpath = "./out";
-		inpath = (char*)malloc(5*sizeof(char));
 		inpath = "./in";
 	}
 	else // no args supplied
 	{
 		jobnumber=0;
-		outpath = (char*)malloc(6*sizeof(char)); //same here
 		outpath = "./out";
-		inpath = (char*)malloc(5*sizeof(char));
 		inpath = "./in";
 	}
-	
-	inpathlength = strlen(inpath); // get the length of the input files path
-	outpathlength = strlen(outpath); // get the length of the output files path
-	
 	
 	// initial step ... reading userinput, inputfiles etc ...
 	printf(
@@ -531,19 +523,9 @@ void derivs(long double x, long double *y, long double *dydx){
 }
 
 void OpenFiles(int argc, char **argv){
-	// now we're getting memory for all filenames + path
-	logscrfile = (char*)malloc((outpathlength+15)*sizeof(char));
-	reflectlogfile = (char*)malloc((outpathlength+19)*sizeof(char));
-	testlogfile = (char*)malloc((outpathlength+17)*sizeof(char));
-	endlogfile = (char*)malloc((outpathlength+15)*sizeof(char));
-	BFoutfile1 = (char*)malloc((outpathlength+17)*sizeof(char));
-	stateoutfile = (char*)malloc((outpathlength+15)*sizeof(char));
-	startinfile = (char*)malloc((outpathlength+15)*sizeof(char));
-	
-
 	// printing the path into the vars
-	sprintf(logscrfile,"%s/%06dlog.out",outpath,jobnumber);
-	LOGSCR = fopen(logscrfile,mode_w);
+	logscrfile << outpath << "/" << jobnumber << "log.out";
+	LOGSCR = fopen(logscrfile.str().c_str(),mode_w);
 
 	fprintf(LOGSCR,
 	" ################################################################\n"
@@ -553,19 +535,19 @@ void OpenFiles(int argc, char **argv){
 
 
 	if(reflektlog == 1){
-		sprintf(reflectlogfile, "%s/%06dreflect.out",outpath,jobnumber);
-		REFLECTLOG = fopen(reflectlogfile,mode_w);
+		reflectlogfile << outpath << "/" << jobnumber << "reflect.out";
+		REFLECTLOG = fopen(reflectlogfile.str().c_str(),mode_w);
 		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vtang phidot dvabs\n"); // Header for Reflection File
 	}
 	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
 	{
-		sprintf(BFoutfile1, "%s/%06dBF001.out",outpath, jobnumber);	
-		BFLOG = fopen(BFoutfile1,mode_w);
+		BFoutfile1 << outpath << "/" << jobnumber << "BF001.out";
+		BFLOG = fopen(BFoutfile1.str().c_str(),mode_w);
 	}
 	
 	// Endpunkte
-	sprintf(endlogfile, "%s/%06dend.out",outpath, jobnumber);
-	ENDLOG = fopen(endlogfile,mode_w);
+	endlogfile << outpath << "/" << jobnumber << "end.out";
+	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
 	if (protneut != BF_ONLY) 
 	{
         fprintf(ENDLOG,"jobnumber protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
@@ -579,9 +561,8 @@ void OpenFiles(int argc, char **argv){
 	{ 
 		SaveIntermediate=1; // turn on saving of intermediate values in integrator
 		kmax=KMDEF;
-		wholetrackfile = (char*)malloc((outpathlength+20)*sizeof(char));
-		sprintf(wholetrackfile, "%s/%06dtrack001.out", outpath, jobnumber);
-		OUTFILE1 = fopen(wholetrackfile,mode_w);       // open outfile neut001.out
+		wholetrackfile << outpath << "/" << jobnumber << "track001.out";
+		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
 		Zeilencount=0;
 		fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
 						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
@@ -592,10 +573,9 @@ void OpenFiles(int argc, char **argv){
 	// open this file
 	if (MonteCarlo==2)
 	{
-		path=(char*)malloc((inpathlength+10)*sizeof(char));
-		sprintf(path,"%s/start.in",inpath);
-		FILE *STARTIN = fopen (path,mode_r);
-		free(path);
+		string path;
+		path = inpath + "/start.in";
+		FILE *STARTIN = fopen (path.c_str(),mode_r);
 		if (STARTIN == NULL) exit(-1);        // Fehlerbehandlung
 		fgets(msg,500,STARTIN);
 	}
@@ -655,9 +635,6 @@ void PrepareBField(){
 		printf("dBzdz = %.17LG \n",dBzdz);	
 	}	
 }
-
-
-
 
 void IntegrateParticle(){
 	int schritte=0,iii=0, perc=0;   // ?? , ??, percentage of particle done counter
@@ -1027,17 +1004,17 @@ void IntegrateParticle(){
 			{
 				fclose(OUTFILE1);
 				Filecount++;
-				sprintf(wholetrackfile, "%s/%06dtrack%03d.out", outpath, jobnumber, Filecount);
-				OUTFILE1=fopen(wholetrackfile,mode_w);
+				wholetrackfile << outpath << "/" << jobnumber << "track" << Filecount << ".out";
+				OUTFILE1=fopen(wholetrackfile.str().c_str(),mode_w);
 				fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
 								 "v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr "
 								 "dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Polar Er Ez "
 								 "timestep Bcheck logvlad logthumb\n");
 				printf(" ##");
-				printf(wholetrackfile);
+				printf(wholetrackfile.str().c_str());
 				printf("## \n");
 				fprintf(LOGSCR," ##");
-				fprintf(LOGSCR,wholetrackfile);
+				fprintf(LOGSCR,wholetrackfile.str().c_str());
 				fprintf(LOGSCR,"## \n");
 				Zeilencount=1;
 			}
@@ -1046,18 +1023,18 @@ void IntegrateParticle(){
 			{
 				fclose(BFLOG);
 				BFFilecount++;
-				sprintf(BFoutfile1, "%s/%06dBF%03d.out",outpath, jobnumber,BFFilecount);
-				if(!(BFLOG = fopen(BFoutfile1,mode_w))) 
+				BFoutfile1 << outpath << "/" << jobnumber << "BF" << BFFilecount << ".out";
+				if(!(BFLOG = fopen(BFoutfile1.str().c_str(),mode_w))) 
 				{
 					perror("fopen");
 					exit(1);
 				}
 				fprintf(BFLOG,"t Babs Polar logPolar Ix Iy Iz Bx By Bz\n");
 				printf(" ##");
-				printf(BFoutfile1);
+				printf(BFoutfile1.str().c_str());
 				printf("## \n");
 				fprintf(LOGSCR," ##");
-				fprintf(LOGSCR,BFoutfile1);
+				fprintf(LOGSCR,BFoutfile1.str().c_str());
 				fprintf(LOGSCR,"## \n");
 				BFZeilencount=1;
 			}
@@ -1162,7 +1139,6 @@ void IntegrateParticle(){
 		phi_n=phie+1;
 	}
 }
-
 
 void BruteForceIntegration(){
 	// Array fr BruteForce Integration wird gebildet
