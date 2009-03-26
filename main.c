@@ -634,6 +634,7 @@ void outndist(int k)
 
 
 void OutputState(long double *y, int l){
+	ostringstream stateoutfile;
 	stateoutfile << outpath << "/" << jobnumber << "state.out";
 	STATEOUT = fopen(stateoutfile.str().c_str(),mode_w);	
 	printf("\n \n Something happened! \n \n ");
