@@ -6,11 +6,8 @@ pnTracker
 #include "main.h"
  
 
-// global file descriptors
-FILE *LOGSCR = NULL, *OUTFILE1 = NULL, *REFLECTLOG = NULL, *BFLOG = NULL, *TESTLOG = NULL, *ENDLOG = NULL, *FIN = NULL, *STATEOUT = NULL, *STARTIN = NULL;
-
 // files for in/output + paths
-ostringstream wholetrackfile, logscrfile, BFoutfile1, reflectlogfile, testlogfile, endlogfile, stateoutfile, startinfile;
+FILE *LOGSCR = NULL, *OUTFILE1 = NULL, *REFLECTLOG = NULL, *BFLOG = NULL, *TESTLOG = NULL, *ENDLOG = NULL, *FIN = NULL, *STATEOUT = NULL, *STARTIN = NULL;
 string inpath, outpath;
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
@@ -527,6 +524,7 @@ void derivs(long double x, long double *y, long double *dydx){
 
 void OpenFiles(int argc, char **argv){
 	// printing the path into the vars
+	ostringstream logscrfile;
 	logscrfile << outpath << "/" << jobnumber << "log.out";
 	LOGSCR = fopen(logscrfile.str().c_str(),mode_w);
 
@@ -538,17 +536,20 @@ void OpenFiles(int argc, char **argv){
 
 
 	if(reflektlog == 1){
+		ostringstream reflectlogfile;
 		reflectlogfile << outpath << "/" << jobnumber << "reflect.out";
 		REFLECTLOG = fopen(reflectlogfile.str().c_str(),mode_w);
 		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vtang phidot dvabs\n"); // Header for Reflection File
 	}
 	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
 	{
+		ostringstream BFoutfile1;
 		BFoutfile1 << outpath << "/" << jobnumber << "BF001.out";
 		BFLOG = fopen(BFoutfile1.str().c_str(),mode_w);
 	}
 	
 	// Endpunkte
+	ostringstream endlogfile;
 	endlogfile << outpath << "/" << jobnumber << "end.out";
 	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
 	if (protneut != BF_ONLY) 
@@ -564,7 +565,8 @@ void OpenFiles(int argc, char **argv){
 	{ 
 		SaveIntermediate=1; // turn on saving of intermediate values in integrator
 		kmax=KMDEF;
-		wholetrackfile << outpath << "/" << jobnumber << "track001.out";
+		ostringstream wholetrackfile;
+		wholetrackfile << outpath << "/" << jobnumber << "track1.out";
 		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
 		Zeilencount=0;
 		fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
@@ -819,7 +821,7 @@ void IntegrateParticle(){
 	// do integration for neutrons, protons or electrons 
 	if(protneut == NEUTRON || protneut == PROTON || protneut == ELECTRONS)
 	{
-		if(BruteForce)
+/*		if(BruteForce)
 		{
 			// set initial value of polarisation vector: parallel to BField, length 0.5
 			I_n[1]= Bxcoor/Bws*0.5;
@@ -828,7 +830,7 @@ void IntegrateParticle(){
 			
 			//I_n[1]=.002326711314962561; I_n[2]=.007738274230667618; I_n[3]=.9999673522302555; // only temporary
 		}
-		
+*/		
 		
 		printf("Teilchennummer: %i\n",iMC);
 		fprintf(LOGSCR,"Teilchennummer: %i\n",iMC);
@@ -983,7 +985,7 @@ void IntegrateParticle(){
 									 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
 									 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
 									 iMC,x2,ystart[1],ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),
-									 ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4],H,Br,dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,
+									 sqrtl(ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4]),H,Br,dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,
 									 Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac);
 					fflush(OUTFILE1);
 					Zeilencount++;
@@ -996,6 +998,7 @@ void IntegrateParticle(){
 			{
 				fclose(OUTFILE1);
 				Filecount++;
+				ostringstream wholetrackfile;
 				wholetrackfile << outpath << "/" << jobnumber << "track" << Filecount << ".out";
 				OUTFILE1=fopen(wholetrackfile.str().c_str(),mode_w);
 				fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
@@ -1015,6 +1018,7 @@ void IntegrateParticle(){
 			{
 				fclose(BFLOG);
 				BFFilecount++;
+				ostringstream BFoutfile1;
 				BFoutfile1 << outpath << "/" << jobnumber << "BF" << BFFilecount << ".out";
 				if(!(BFLOG = fopen(BFoutfile1.str().c_str(),mode_w))) 
 				{

@@ -103,7 +103,6 @@ extern void csleep(int sec);
 extern FILE *LOGSCR, *OUTFILE1, *REFLECTLOG, *BFLOG, *TESTLOG, *ENDLOG, *FIN, *STATEOUT, *STARTIN;
 
 // files for in/output + paths
-extern ostringstream wholetrackfile,logscrfile,BFoutfile1,reflectlogfile,testlogfile,endlogfile,stateoutfile, startinfile;
 extern string inpath,outpath;
 extern char mode_r[2],mode_rw[3],mode_w[2];
 
