@@ -79,7 +79,7 @@ void MCStartwerte(long double delx)
 		}		
 		
 		// proton energy distribution
-		if (protneut == PROTON)
+		else if (protneut == PROTON)
 		{            // energy distribution of protons 0 < Energie < 750eV			
 			// proton recoil spectrum aus Diplomarbeit M. Simson
 			long double Wahrschl;

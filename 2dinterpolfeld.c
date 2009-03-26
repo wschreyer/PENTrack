@@ -42,9 +42,8 @@ void GetDim(int *m, int *n)
 	}		
 		
 	// read all lines until the end of the file
-	do
+	while (!feof(FIN) && (sscanf(fgets(str,1024,FIN),"%LG %LG %LG %LG %LG %LG %LG %LG %LG",&rtemp,&muell,&ztemp,&Brtemp,&Bphitemp,&Bztemp,&Ertemp,&Ephitemp,&Eztemp) == 9))
 	{	
-		sscanf(fgets(str,1024,FIN),"%LG %LG %LG %LG %LG %LG %LG %LG %LG",&rtemp,&muell,&ztemp,&Brtemp,&Bphitemp,&Bztemp,&Ertemp,&Ephitemp,&Eztemp);		
 		rtemp = rtemp * lengthconv; ztemp = ztemp * lengthconv; Brtemp = Brtemp * Bconv; Bphitemp = Bphitemp * Bconv;    // Einheiten
 		Bztemp = Bztemp * Bconv; Ertemp = Ertemp * Econv; Ephitemp = Ephitemp * Econv; Eztemp = Eztemp * Econv;          // ausgleichen
 	
@@ -87,7 +86,7 @@ void GetDim(int *m, int *n)
 		}
 		
 		rtemptmp = rtemp;  ztemptmp = ztemp;	 // memorize current r and z for later comparison
-	}while (!feof(FIN));
+	}
 	
 	*m=ri; *n=zi; // set to maximum index values found in file
 	
@@ -1026,7 +1025,7 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 
 // TH: Dokumentation !!!!!!!
 char *stripws(char *string,char *retstr){
-	int pws_i=0,pws_n=0,pws_ws=0;
+	unsigned pws_i=0,pws_n=0,pws_ws=0;
 	
 	for(pws_i=0;pws_i<strlen(string)-1;pws_i++){
 		if((string[pws_i]==' ')||(string[pws_i]=='	')){       //????????
