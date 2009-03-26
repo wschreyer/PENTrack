@@ -447,9 +447,9 @@ void Startbed(int k){
 	"%.15LG %.15LG %.15LG\n" 
 	"%.15LG %.15LG %.15LG\n" 
 	"%.15LG %.15LG %.15LG\n"
-	"%.15LG %.15LG %.15LG\n" 
-	"%.15LG %.15LG %.15LG\n",
-	EnergieS,dEnergie,EnergieE,z_ns,dz_n,z_ne,phis, dphi  , phie,r_ns,dr_n,r_ne,alphas,dalpha,alphae,gammas,dgamma,gammae,SwitchTime,delx,xend,blanklongdouble,RodFieldMultiplicator,Ibar);
+	"%.15LG %.15LG\n" 
+	"%.15LG %.15LG\n",
+	EnergieS,dEnergie,EnergieE,  z_ns,dz_n,z_ne,  phis,dphi,phie, r_ns,dr_n,r_ne, alphas,dalpha,alphae, gammas,dgamma,gammae, delx,xend, RodFieldMultiplicator,Ibar);
 	
     
 

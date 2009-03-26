@@ -201,7 +201,6 @@ int CoilNr=0;   // number of coils read in
 
 // blank variables
 long int blankint;
-long double blanklongdouble;
 long double time_temp;
 
 // define racetrack current bars
@@ -702,7 +701,6 @@ void IntegrateParticle(){
 		do
 		{
 			fgets(msg,250,STARTIN);
-			//sscanf(msg,"%li %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %d %d %LG %LG %d %LG %LG %LG %LG %LG %LG %li %LG %LG %LG\n",&blankint,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&r_n,&phi_n,&z_n,&blanklongdouble,&alpha,&gamma,&blanklongdouble,&Energie,&kennz,&blankint,&RodFieldMultiplicator, &blanklongdouble,&blankint,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blanklongdouble,&blankint, &blanklongdouble, &blanklongdouble, &blanklongdouble);
 		}while(!feof(STARTIN));
 		if(protneut == PROTON)
 		{
