@@ -282,7 +282,6 @@ extern int CoilNr;   // number of coils read in
 
 // blank variables
 extern long int blankint;
-extern long double blanklongdouble;
 extern long double time_temp;
 
 // define racetrack current bars
