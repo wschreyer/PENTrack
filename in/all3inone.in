@@ -1,3 +1,5 @@
+======== common =========================
+0 1 2250			DiceRodField | RodFieldMultiplicator | Ibar
 ======== neutron.in =====================
 0 10.0 61.5			E [neV]
 -0.45 0.1 0.6		z [m] (cylindrical coorditate)
@@ -6,9 +8,7 @@
 0 1.0e-5 360		alpha [°] (in x-y-plane relative to r-vector) <0°..360°>
 0 45. 180			gamma [°] (relative to z'-axis) <0°..180°>
 0.9 0.1 0.9	        polarisation
-10 1e-3 300			RampTime (not used) | delx | xend
-0 1 2250			DiceRodField | RodFieldMultiplicator | Ibar
-12.60132			??
+1e-3 300			delx | xend
 ======== proton.in ======================
 0 100 800			E [neV]
 0 0.05 1.2			z [m] (cylindrical coorditate)
@@ -16,8 +16,7 @@
 0 10 360			phi [°] (cylindrical coorditate) <0°..360°>
 0 30 360			alpha [°] (in x-y-plane relative to r-vector) <0°..360°>
 0 30 180			gamma [°] (betwenn z'-axis) <0°..180°>
-0 1e-09 1e-2		(not used) | delx | xend
-0 1 2250			SpinDangerField | RodFieldMuliplicator | Ibar
+1e-09 1e-2			delx | xend
 ======== electron.in ====================
 0 100 782			E [keV]
 0.01 0.05 1.2		z [m] (cylindrical coorditate)
@@ -25,11 +24,4 @@
 0 10 360			phi [°] (cylindrical coordiante) <0°..360°>
 0 30 360			alpha [°] (in x-y-plane relative to r-vector) <0°..360°>
 0 30 180			gamma [°] (relative to z'-axis) <0°..180°>
-0 2e-12 1e-6		(not used) | delx | xend
-0 1 2250			SpinDangerField | RodFieldMulipl | Ibar
--------- special particle ---------------
-500 100 500			E [keV]
-0.3 0.05 0.3		z [m] (cylindrical coorditate)
-0.3 0.02 0.3		r [m] (cylindrical coorditate)
-0 30 0				alpha [°] (in x-y-plane relative to r-vector) <0°..360°>
-160 30 160			gamma [°] (relative to z'-axis) <0°..180°>
+2e-12 1e-6			delx | xend

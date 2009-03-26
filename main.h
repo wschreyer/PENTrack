@@ -164,6 +164,9 @@ extern long double vr_n, vphi_n, vz_n, vtemp;          //velocity, vtemp: Geschw
 extern long double delx_n;      // shorter timestep for BruteForce integration
 extern int stopall;                            //  if stopall=1: stop particle
 
+//extern struct initial;				// record for initial values of all 3 particle types
+extern struct initial nini, pini, eini;	// one 'initial' for each particle type
+
 // final values of particle
 extern int kennz;                                  // ending code
 extern long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues for particle
@@ -205,7 +208,6 @@ extern long double FullFieldTime;                       // storing in full field
 extern long double RampDownTime;                        // ramping down coils
 extern long double EmptyingTime;                        // emptying without field
 extern long double storagetime;                     // time when ramping down shall start, if xend > storage time, let neutron decay
-extern long double SwitchTime;                               // not used any more, time before ramping starts
 extern int ffslit,ffBruteForce,ffreflekt,ffspinflipcheck,ffDetOpen;  // fullfield
 extern int ruslit,ruBruteForce,rureflekt,ruspinflipcheck,ruDetOpen; // rampup
 extern int rdslit,rdBruteForce,rdreflekt,rdspinflipcheck,rdDetOpen;  // rampdown
