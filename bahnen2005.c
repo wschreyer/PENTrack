@@ -124,7 +124,6 @@ long double FullFieldTime = 1000;                       // storing in full field
 long double RampDownTime = 5;                        // ramping down coils
 long double EmptyingTime = 100;                        // emptying without field
 long double storagetime = 1500.0;                     // time when ramping down shall start, if xend > storage time, let neutron decay
-long double SwitchTime;                               // not used any more, time before ramping starts
 int ffslit,ffBruteForce,ffreflekt,ffspinflipcheck,ffDetOpen;  // fullfield
 int ruslit,ruBruteForce,rureflekt,ruspinflipcheck,ruDetOpen; // rampup
 int rdslit,rdBruteForce,rdreflekt,rdspinflipcheck,rdDetOpen;  // rampdown

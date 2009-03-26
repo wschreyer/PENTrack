@@ -405,6 +405,7 @@ void Startbed(int k){
     if(rmin <= 0.0) 
 		wandinnen=0.0;
     
+    long double SwitchTime;
 	// einlesen der einzelnen Zeilen des inputfiles *.in
 	for(i=1; i<=9; i++){
 		fgets(msg,150, stream);
