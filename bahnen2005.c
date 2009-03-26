@@ -429,7 +429,7 @@ int main(int argc, char **argv){
 		{
 			Volume = ((i * 1.0e-9 / (M * gravconst))-wanddicke) * pi * (r_ne*r_ne-r_ns*r_ns);
 			// isentropische zustandsnderung, kappa=5/3
-			fprintf(LOGSCR,"\n%i %.17LG %.17LG %.17LG",i,Volume,VolumeB[i],i * powl((Volume[i]/VolumeB[i]),(2.0/3.0)) - i);
+			fprintf(LOGSCR,"\n%i %.17LG %.17LG %.17LG",i,Volume,VolumeB[i],i * powl((Volume/VolumeB[i]),(2.0/3.0)) - i);
 		}
 	}
 	//printf("The B field time is:%.17LG\n",timer1);
