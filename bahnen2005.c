@@ -72,6 +72,18 @@ long double vr_n, vphi_n, vz_n, vtemp;          //velocity, vtemp: Geschw.komp i
 long double delx_n=0.0;
 int stopall=0, Feldcount=0;                            //  if stopall=1: stop particle
 
+struct initial												// record for initial values of all 3 particle types (for more details see "all3inone.in")
+{	long double EnergieS, dEnergie, EnergieE;				// E
+	long double zs, dz, ze;									// z
+	long double rs, dr, re;									// r
+	long double phis, dphi, phie;							// phi
+	long double alphas, dalpha, alphae;						// alpha
+	long double gammas, dgamma, gammae;						// gamma
+	long double delx, xend;									// delx | xend
+};
+initial nini, pini, eini;							// one 'initial' for each particle type
+//long double DiceRodField, RodFieldMultiplicator, Ibar;		// DiceRodField | RodFieldMultiplicator | Ibar
+
 // final values of particle
 int kennz;                                  // ending code
 long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues for particle
