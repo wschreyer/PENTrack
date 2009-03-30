@@ -88,6 +88,7 @@ extern void OpenFiles(int argc, char **argv); // Open in files
 extern void PrepareBField(); // Read fieldval tab and preinterpolated or read coils.cond
 extern void IntegrateParticle(); // integrate particle trajectory
 extern void BruteForceIntegration(); // integrate spin flip probability
+extern void initialStartbed();
 extern void Startbed(int k);
 extern void ausgabe(long double x2, long double *ystart, long double vend, long double H);
 extern void prepndist(int k);
@@ -163,8 +164,16 @@ extern long double vr_n, vphi_n, vz_n, vtemp;          //velocity, vtemp: Geschw
 extern long double delx_n;      // shorter timestep for BruteForce integration
 extern int stopall;                            //  if stopall=1: stop particle
 
-//extern struct initial;				// record for initial values of all 3 particle types
-extern struct initial nini, pini, eini;	// one 'initial' for each particle type
+struct initial												// record for initial values of all 3 particle types (for more details see "all3inone.in")
+{	long double EnergieS, dEnergie, EnergieE;				// E
+	long double zs, dz, ze;									// z
+	long double rs, dr, re;									// r
+	long double phis, dphi, phie;							// phi
+	long double alphas, dalpha, alphae;						// alpha
+	long double gammas, dgamma, gammae;						// gamma
+	long double delx, xend;									// delx | xend
+};
+extern struct initial nini, pini, eini;						// one 'initial' for each particle type
 
 // final values of particle
 extern int kennz;                                  // ending code
@@ -174,7 +183,7 @@ extern long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues
 extern long double ri, ra;                      //dimensions of torus for Maple Field
 extern long double zmax, zmin;    //dimensions of torus
 extern long double hlid;    // height of a possible lid to be put on the storage bottle [m]
-extern long double R, rmax, rmin, innenzylmax;          //innenzylmax: coils on inner cylinder end here
+extern long double R, rmax, rmin;
 extern long double LueckeR, LueckeZ, Luecke;      // size of the gab in the outer left corner (m)
 extern long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der ben�tigt wird
 extern long double detz, detrmin, detrmax;          // where is the detector?
