@@ -285,212 +285,301 @@ void ConfigInit(void){
 
 
 
-
-
-//--------------------------------------------------------------------------------
-// Einlesen der Files protonen.in oder neutronen.in f�r die Startbedingungen und der Dimensionen des Topfes aus dimensions.in
-void Startbed(int k){
-    int i = 0, ncont = 0;
-    char msg[500];
-    FILE *stream = NULL;
-	string path;
-	//char tempo[10];
-	if (protneut==PROTON)
-		path = inpath + "/protonen.in";
-    else if (protneut==NEUTRON)
-		path = inpath + "/neutronen.in";
-    else if (protneut==BF_ONLY)
-		path = inpath + "/bfeld.in";
-	 else if (protneut==ELECTRONS)
-	 	path = inpath + "/electrons.in";
-	else 
-		exit(-1);
-	
-	stream = fopen(path.c_str(),mode_r);
-	if (stream == NULL){
-		cout << "Can't open " << path << "\n";
-		exit(-1);
-	}   
-	
-	// Abmessungen des Pots aus dimensions.in einlesen
-
-	path = inpath + "/dimensions.in";	
-	
-	FILE *DIM = fopen (path.c_str(),mode_r);
-	if (DIM == NULL){
-		cout << "Can't open " << path << "\n";
-		exit(-1);
-	}   
-	
-	//loop over the lines in dimensions.in
-	for(i = 1; i<= 23; i++){
-		fgets(msg,250,DIM);
-		switch(i){
-			case 1:
-				ncont = sscanf(msg,"%4LG",&rmin);
-			break;
-			case 2:
-				ncont = sscanf(msg,"%4LG",&rmax);
-			break;
-			case 3:
-				ncont = sscanf(msg,"%4LG",&zmin);
-			break;
-			case 4:
-				ncont = sscanf(msg,"%8LG",&zmax);
-			break;
-			case 5:
-				ncont = sscanf(msg,"%8LG",&detz);
-			break;
-			case 6:
-				ncont = sscanf(msg,"%8LG",&detrmin);
-			break;
-			case 7:
-				ncont = sscanf(msg,"%8LG",&detrmax);
-			break;
-			case 8:
-				ncont = sscanf(msg,"%8LG",&innenzylmax);
-			break;
-			case 9:
-				ncont = sscanf(msg,"%8LG",&abszmin);
-			break;
-			case 10:
-				ncont = sscanf(msg,"%8LG",&abszmax);
-			break;
-			case 11:
-				ncont = sscanf(msg,"%8LG",&absrmin);
-			break;
-			case 12:
-				ncont = sscanf(msg,"%8LG",&absrmax);
-			break;
-			case 13:
-				ncont = sscanf(msg,"%8LG",&absphimin);
-			break;
-			case 14:
-				ncont = sscanf(msg,"%8LG",&absphimax);
-			break;
-			case 15:
-				ncont = sscanf(msg,"%8LG",&hlid);			
-			break;
-			case 16:
-				ncont = sscanf(msg,"%15LG",&FPrealNocado);				
-			break;
-			case 17:
-				ncont = sscanf(msg,"%15LG",&FPimNocado);
-			break;
-			case 18:
-				ncont = sscanf(msg,"%15LG",&FPrealPE);
-			break;
-			case 19:
-				ncont = sscanf(msg,"%15LG",&FPimPE);
-			break;
-			case 20:
-				ncont = sscanf(msg,"%15LG",&FPrealTi);
-			break;
-			case 21:
-				ncont = sscanf(msg,"%15LG",&FPimTi);
-			break;
-			case 22:
-				ncont = sscanf(msg,"%15LG",&FPrealCu);
-			break;
-			case 23:
-				ncont = sscanf(msg,"%15LG",&FPimCu);
-			break;
-		}
-		if(!ncont)printf("Fehler %i im auslesen von dimensions.in\n",ncont);
+//======== initalizes initial values from record to used variables ==============================================
+void initialStartbed()
+{	switch(protneut)
+	{	case NEUTRON:	EnergieS = nini.EnergieS;
+						dEnergie = nini.dEnergie;
+						EnergieE = nini.EnergieE;
+						z_ns = nini.zs;
+						dz_n = nini.dz;
+						z_ne = nini.ze;
+						r_ns = nini.rs;
+						dr_n = nini.dr;
+						r_ne = nini.re;						
+						phis = nini.phis;
+						dphi = nini.dphi;
+						phie = nini.phie;
+						alphas = nini.alphas;
+						dalpha = nini.dalpha;
+						alphae = nini.alphae;
+						gammas = nini.gammas;
+						dgamma = nini.dgamma;
+						gammae = nini.gammae;
+						delx = nini.delx;
+						xend = nini.xend;
+						break;	
+		case PROTON:	EnergieS = pini.EnergieS;
+						dEnergie = pini.dEnergie;
+						EnergieE = pini.EnergieE;
+						z_ns = pini.zs;
+						dz_n = pini.dz;
+						z_ne = pini.ze;
+						r_ns = pini.rs;
+						dr_n = pini.dr;
+						r_ne = pini.re;						
+						phis = pini.phis;
+						dphi = pini.dphi;
+						phie = pini.phie;
+						alphas = pini.alphas;
+						dalpha = pini.dalpha;
+						alphae = pini.alphae;
+						gammas = pini.gammas;
+						dgamma = pini.dgamma;
+						gammae = pini.gammae;
+						delx = pini.delx;
+						xend = pini.xend;
+						break;
+		case ELECTRONS:	EnergieS = eini.EnergieS;
+						dEnergie = eini.dEnergie;
+						EnergieE = eini.EnergieE;
+						z_ns = eini.zs;
+						dz_n = eini.dz;
+						z_ne = eini.ze;
+						r_ns = eini.rs;
+						dr_n = eini.dr;
+						r_ne = eini.re;
+						phis = eini.phis;
+						dphi = eini.dphi;
+						phie = eini.phie;
+						alphas = eini.alphas;
+						dalpha = eini.dalpha;
+						alphae = eini.alphae;
+						gammas = eini.gammas;
+						dgamma = eini.dgamma;
+						gammae = eini.gammae;
+						delx = eini.delx;
+						xend = eini.xend;
+						break;
 	}
-	fclose(DIM);
-	fprintf(LOGSCR,"dimensions.in: rmin = %.17LG, rmax = %.17LG, zmin = %.17LG, zmax = %.17LG\n detz = %.17LG, detrmin = %.17LG, detrmax = %.17LG, innenzylmax = %.17LG\n, hlid = %.17LG",rmin,rmax,zmin,zmax,detz,detrmin,detrmax,innenzylmax, hlid);
+	//return;
+}
+//======== end of innitialStartbed ==============================================================================
+
+//======== Read in of the initial values (out of all3inone.in) and the dimensions (out of dimensions.in) ========
+void Startbed(int k)
+{	int i = 0, ncont = 0;
+    char cline[200];    
+	string path;
+
+	// setting path for all3inone.in
+	if(protneut==PROTON || protneut==NEUTRON || protneut==ELECTRONS)
+	{	path = inpath + "/all3inone.in";
+	}
+    else
+    {	exit(-1);
+    }
+
+	// creating 'inistream' to all3inone.in
+	FILE *inistream = fopen(path.c_str(), mode_r);
+	if(inistream == NULL)
+	{	cout << "Can't open " << path << "\n";
+		exit(-1);
+	}
+	
+	// looping  over the lines of all3inone.in and reading them in
+	for(i = 1; i < 27; i++)
+	{	fgets(cline, 200, inistream);
+		switch (i)
+		{	case  2:	ncont = sscanf(cline, "%LG %LG %LG ", &DiceRodField, &RodFieldMultiplicator, &Ibar);
+						break;
+			case  4:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.EnergieS, &nini.dEnergie, &nini.EnergieE);
+						break;
+			case  5:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.zs, &nini.dz, &nini.ze);
+						break;
+			case  6:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.rs, &nini.dr , &nini.re);
+						break;
+			case  7:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.phis, &nini.dphi, &nini.phie);
+						break;			
+			case  8:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.alphas, &nini.dalpha, &nini.alphae);
+						break;
+			case  9:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.gammas, &nini.dgamma, &nini.gammae);
+						break;
+			case 10:	ncont = sscanf(cline, "%LG %LG ", &nini.delx, &nini.xend);
+						break;
+			case 12:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.EnergieS, &pini.dEnergie, &pini.EnergieE);
+						break;
+			case 13:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.zs, &pini.dz, &pini.ze);
+						break;
+			case 14:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.rs, &pini.dr , &pini.re);
+						break;
+			case 15:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.phis, &pini.dphi, &pini.phie);
+						break;			
+			case 16:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.alphas, &pini.dalpha, &pini.alphae);
+						break;
+			case 17:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.gammas, &pini.dgamma, &pini.gammae);
+						break;
+			case 18:	ncont = sscanf(cline, "%LG %LG ", &pini.delx, &pini.xend);
+						break;
+			case 20:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.EnergieS, &eini.dEnergie, &eini.EnergieE);
+						break;
+			case 21:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.zs, &eini.dz, &eini.ze);
+						break;
+			case 22:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.rs, &eini.dr , &eini.re);
+						break;
+			case 23:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.phis, &eini.dphi, &eini.phie);
+						break;			
+			case 24:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.alphas, &eini.dalpha, &eini.alphae);
+						break;
+			case 25:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.gammas, &eini.dgamma, &eini.gammae);
+						break;
+			case 26:	ncont = sscanf(cline, "%LG %LG ", &eini.delx, &eini.xend);
+						break;
+		}
+		if(ncont < 1) printf("an error occourd while reading the %i. item in line %i of all3inone.in", ncont, i);
+    }
+    
+    // closing 'inistream' to all3inone.in
+ 	fclose(inistream);
+	
+	// setting path for dimensions.in
+	path = inpath + "/dimensions.in";
+	
+	// creating 'dimstream' to dimensions.in	
+	FILE *dimstream = fopen (path.c_str(), mode_r);
+	if (dimstream == NULL)
+	{	cout << "Can't open " << path << "\n";
+		exit(-1);
+	}   
+	
+	// looping  over the lines of dimensions.in and reading them in
+	for(i = 1; i < 29; i++)
+	{	fgets(cline, 200, dimstream);
+		switch(i)
+		{	case  2:	ncont = sscanf(cline, "%LG %LG ", &zmin, &zmax);
+						break;
+			case  3:	ncont = sscanf(cline, "%LG %LG ", &rmin, &rmax);
+						break;
+			case  4:	ncont = sscanf(cline, "%LG ", &detz);
+						break;
+			case  5:	ncont = sscanf(cline, "%LG %LG ", &detrmin, &detrmax);
+						break;
+			case  6:	ncont = sscanf(cline, "%LG %LG ", &abszmin, &abszmax);
+						break;
+			case  7:	ncont = sscanf(cline, "%LG %LG ", &absrmin, &absrmax);
+						break;
+			case  8:	ncont = sscanf(cline, "%LG &LG ", &absphimin, &absphimax);
+						break;
+			case  9:	ncont = sscanf(cline, "%LG ", &hlid);	
+						break;
+			case 11:	ncont = sscanf(cline, "%LG %LG", &FPrealNocado, &FPimNocado);
+						break;
+			case 12:	ncont = sscanf(cline, "%LG %LG", &FPrealPE, &FPimPE);
+						break;
+			case 13:	ncont = sscanf(cline, "%LG %LG", &FPrealTi, &FPimTi);
+						break;
+			case 14:	ncont = sscanf(cline, "%LG %LG", &FPrealCu, &FPimCu);
+						break;
+			case 15:	ncont = sscanf(cline, "%LG %LG", &FPrealCsI, &FPimCsI);
+						break;
+			case 16:	ncont = sscanf(cline, "%LG %LG", &FPrealDLC, &FPimDLC);
+						break;						
+		}
+		if(ncont < 1) printf("an error occourd while reading the %i. item in line %i of dimensions.in", ncont, i);				
+	}
+	
+	// closing 'dimstream' to all3inone.in
+	fclose(dimstream);
+	
+	// initalizes initial values from record to used variables
+	initialStartbed();
+
+
+	
+	//????????????????????????????????????????????????????????????????????????????????????????????????????????
     // wenn Innenradius=0, dann braucht man auch keinen Platz dort... ansonsten soll dort auch wanddicke herrschen
 	wandinnen=wanddicke;
     if(rmin <= 0.0) 
 		wandinnen=0.0;
-    
-    long double SwitchTime;
-	// einlesen der einzelnen Zeilen des inputfiles *.in
-	for(i=1; i<=9; i++){
-		fgets(msg,150, stream);
-		switch (i){                                              // variablenzuordnung fuer protonen und neutronen
-			case 1 : 
-				ncont = sscanf(msg,"%LG %LG %LG ", &EnergieS, &dEnergie, &EnergieE);
-			break;
-			case 2 : 
-				ncont = sscanf(msg,"%LG %LG %LG ", &z_ns    , &dz_n    , &z_ne);
-			break;
-			case 3 : 
-				ncont = sscanf(msg,"%LG %LG %LG ", &r_ns    , &dr_n    , &r_ne);
-			break;
-			case 4 : 
-				ncont = sscanf(msg,"%LG %LG %LG ", &alphas  , &dalpha  , &alphae);
-			break;
-			case 5 : 
-				ncont = sscanf(msg,"%LG %LG %LG ",&gammas  , &dgamma  , &gammae);
-			break;
-			case 6 : 
-				ncont = sscanf(msg,"%LG %LG %LG ",&phis  , &dphi  , &phie);
-			break;
-			case 7 : 
-				cout << "Obsolete now";
-			break;
-			case 8 : 
-				ncont = sscanf(msg,"%LG %LG %LG ",&SwitchTime,&delx,&xend);
-			break;
-			case 9 : 
-				ncont = sscanf(msg,"%LG %LG %LG ",&DiceRodField,&RodFieldMultiplicator,&Ibar);
-			break;
-		}
-		if (ncont<1) printf("Something went wrong with the input %i\n",ncont);
-    }
+   //????????????????????????????????????????????????????????????????????????????????????????????????????????
 
-	fprintf(LOGSCR,"%.15LG %.15LG %.15LG\n"
-	"%.15LG %.15LG %.15LG\n"
-	"%.15LG %.15LG %.15LG\n"
-	"%.15LG %.15LG %.15LG\n" 
-	"%.15LG %.15LG %.15LG\n" 
-	"%.15LG %.15LG %.15LG\n"
-	"%.15LG %.15LG\n" 
-	"%.15LG %.15LG\n",
-	EnergieS,dEnergie,EnergieE,  z_ns,dz_n,z_ne,  phis,dphi,phie, r_ns,dr_n,r_ne, alphas,dalpha,alphae, gammas,dgamma,gammae, delx,xend, RodFieldMultiplicator,Ibar);
-	
-    
 
-    fclose(stream);
-    
-	
-		printf("\nStart parameters: \n"
-		"Energy (min, step, max): %17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
-        "Maximum runtime: %.17LG s\n"
-		"r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-		"phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-		"z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-        "Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-        "Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-		"Filling time: %LG s\n"
-		"Cleaning time: %.17LG s\n "
-		"Ramp up time: %.17LG s\n "
-        "Full field time: %.17LG s\n "
-        "RampDownTime: %.17LG s\n "
-		  "B field scaling factor: %.17LG s\n "
-		  "E field scaling factor: %.17LG s\n ",
-		EnergieS,dEnergie,EnergieE,xend,r_ns,dr_n,r_ne,phis,dphi,phie,z_ns,dz_n,z_ne,alphas,dalpha,alphae,gammas,dgamma,gammae,FillingTime,CleaningTime,RampUpTime,FullFieldTime,RampDownTime, BFeldSkalGlobal,EFeldSkal);
-		
-		fprintf(LOGSCR,"\nStart parameters: \n"
-		"Energy (min, step, max): %.17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
-        "Maximum runtime: %.17LG s\n"
-		"r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-		"phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-		"z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-        "Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-        "Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-		"Filling time %LG s\n"
-		"Cleaning time: %.17LG s\n "
-		"Ramp up time: %.17LG s\n "
-        "Full field time: %.17LG s\n "
-        "RampDownTime: %.17LG s\n "
-		  "B field scaling factor: %.17LG s\n "
-		  "E field scaling factor: %.17LG s\n ",
-		EnergieS,dEnergie,EnergieE,xend,r_ns,dr_n,r_ne,phis,dphi,phie,z_ns,dz_n,z_ne,alphas,dalpha,alphae,gammas,dgamma,gammae,FillingTime,CleaningTime,RampUpTime,FullFieldTime,RampDownTime, BFeldSkalGlobal,EFeldSkal);
-	
+
+	// logging initial values to *log.out ???????????????????????????????????????????????????????????????????????
+	fprintf(LOGSCR, "%.15LG %.15LG %.15LG\n"
+	                "%.15LG %.15LG %.15LG\n"
+	                "%.15LG %.15LG %.15LG\n"
+	                "%.15LG %.15LG %.15LG\n"
+	                "%.15LG %.15LG %.15LG\n"
+	                "%.15LG %.15LG %.15LG\n"
+	                "%.15LG %.15LG\n"
+	                "%.15LG %.15LG\n",
+	                EnergieS, dEnergie, EnergieE,
+	                z_ns, dz_n, z_ne,
+	                r_ns, dr_n, r_ne,
+	                phis, dphi, phie,
+	                alphas, dalpha, alphae,
+	                gammas, dgamma, gammae,
+	                delx, xend,
+	                RodFieldMultiplicator,Ibar);
+
+	// logging dimensions to *log.out
+	fprintf(LOGSCR, "dimensions.in: rmin = %.17LG, rmax = %.17LG, zmin = %.17LG, zmax = %.17LG\n detz = %.17LG, detrmin = %.17LG, detrmax = %.17LG, hlid = %.17LG",
+	                rmin, rmax, zmin, zmax, detz, detrmin, detrmax, hlid);
+
+	// writing parameters to screen
+	printf("\nStart parameters: \n"
+	       "Energy (min, step, max): %17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
+	       "Maximum runtime: %.17LG s\n"
+	       "r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	       "z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	       "phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	       "Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	       "Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	       "Filling time: %LG s\n"
+	       "Cleaning time: %.17LG s\n "
+	       "Ramp up time: %.17LG s\n "
+	       "Full field time: %.17LG s\n "
+	       "RampDownTime: %.17LG s\n "
+	       "B field scaling factor: %.17LG s\n "
+	       "E field scaling factor: %.17LG s\n ",
+	       EnergieS, dEnergie, EnergieE,
+	       xend,
+	       r_ns, dr_n, r_ne,
+	       z_ns, dz_n, z_ne,
+	       phis, dphi, phie,
+	       alphas, dalpha, alphae,
+	       gammas, dgamma, gammae,
+	       FillingTime,
+	       CleaningTime,
+	       RampUpTime,
+	       FullFieldTime,
+	       RampDownTime,
+	       BFeldSkalGlobal,
+	       EFeldSkal);
+
+	// logging parameters to *log.out
+	fprintf(LOGSCR, "\nStart parameters: \n"
+	                "Energy (min, step, max): %.17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
+	                "Maximum runtime: %.17LG s\n"
+	                "r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	                "z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	                "phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	                "Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	                "Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	                "Filling time %LG s\n"
+	                "Cleaning time: %.17LG s\n "
+	                "Ramp up time: %.17LG s\n "
+	                "Full field time: %.17LG s\n "
+	                "RampDownTime: %.17LG s\n "
+	                "B field scaling factor: %.17LG s\n "
+	                "E field scaling factor: %.17LG s\n ",
+	                EnergieS, dEnergie, EnergieE,
+	                xend,
+	                r_ns, dr_n, r_ne,
+	                z_ns, dz_n, z_ne,
+	                phis, dphi, phie,
+	                alphas, dalpha, alphae,
+	                gammas, dgamma, gammae,
+	                FillingTime,
+	                CleaningTime,
+	                RampUpTime,
+	                FullFieldTime,
+	                RampDownTime,
+	                BFeldSkalGlobal,
+	                EFeldSkal);	
 }
+//======== end of Startbed ======================================================================================
 
 
 
