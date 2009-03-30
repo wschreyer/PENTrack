@@ -69,17 +69,7 @@ long double vr_n, vphi_n, vz_n, vtemp;          //velocity, vtemp: Geschw.komp i
 long double delx_n=0.0;
 int stopall=0, Feldcount=0;                            //  if stopall=1: stop particle
 
-struct initial												// record for initial values of all 3 particle types (for more details see "all3inone.in")
-{	long double EnergieS, dEnergie, EnergieE;				// E
-	long double zs, dz, ze;									// z
-	long double rs, dr, re;									// r
-	long double phis, dphi, phie;							// phi
-	long double alphas, dalpha, alphae;						// alpha
-	long double gammas, dgamma, gammae;						// gamma
-	long double delx, xend;									// delx | xend
-};
-initial nini, pini, eini;							// one 'initial' for each particle type
-//long double DiceRodField, RodFieldMultiplicator, Ibar;		// DiceRodField | RodFieldMultiplicator | Ibar
+struct initial nini, pini, eini; 	// one 'initial' for each particle type
 
 // final values of particle
 int kennz;                                  // ending code
@@ -90,7 +80,7 @@ long int kennz0=0,kennz1=0,kennz2=0,kennz3=0,kennz4=0,kennz5=0,kennz6=0,kennz7=0
 long double ri= 0.12, ra= 0.48;                      //dimensions of torus for Maple field
 long double zmax=1.2, zmin=0.0;    //dimensions of torus
 long double hlid;    // height of a possible lid to be put on the storage bottle [m]
-long double R, rmax, rmin, innenzylmax;          //innenzylmax: coils on inner cylinder end here
+long double R, rmax, rmin;
 long double LueckeR=0.001, LueckeZ=0.05, Luecke=0.05;      // size of the gap in the outer left corner (m)
 long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der bentigt wird
 long double detz, detrmin, detrmax;          // where is the detector?
@@ -1038,7 +1028,7 @@ void IntegrateParticle(){
 			Entkommen(ystart,  x2, H);  // check if particle should end!
 			fflush(LOGSCR);
 			
-			//if(!((x2<=xend)&&((ystart[3]>=zmin)||(reflekt==1))&&(ystart[3]<=zmax)&& ((ystart[1]>=rmin)||(ystart[3]>=innenzylmax)||(reflekt==1)) &&((ystart[1]<=rmax)||reflekt==1)&&(stopall==0))) 
+			//if(!((x2<=xend)&&((ystart[3]>=zmin)||(reflekt==1))&&(ystart[3]<=zmax)&& ((ystart[1]>=rmin)||(reflekt==1)) &&((ystart[1]<=rmax)||reflekt==1)&&(stopall==0))) 
 			//	OutputState(ystart,1);
 			
 		}while (((x2-xstart)<=xend)&&(!stopall)); // end integration do - loop
