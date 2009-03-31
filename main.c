@@ -458,7 +458,7 @@ void Startbed(int k)
 						break;
 			case  7:	ncont = sscanf(cline, "%LG %LG ", &absrmin, &absrmax);
 						break;
-			case  8:	ncont = sscanf(cline, "%LG &LG ", &absphimin, &absphimax);
+			case  8:	ncont = sscanf(cline, "%LG %LG ", &absphimin, &absphimax);
 						break;
 			case  9:	ncont = sscanf(cline, "%LG ", &hlid);	
 						break;
