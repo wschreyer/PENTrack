@@ -11,7 +11,7 @@
 #include <string.h>
 #include <iostream.h>
 #include <sstream>
-
+#include <algorithm>
 
 // root stuff
 #include "TROOT.h"/*
