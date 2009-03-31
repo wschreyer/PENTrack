@@ -514,11 +514,13 @@ void Startbed(int k)
 	                RodFieldMultiplicator,Ibar);
 
 	// logging dimensions to *log.out
-	fprintf(LOGSCR, "dimensions.in: rmin = %.17LG, rmax = %.17LG, zmin = %.17LG, zmax = %.17LG\n detz = %.17LG, detrmin = %.17LG, detrmax = %.17LG, hlid = %.17LG",
-	                rmin, rmax, zmin, zmax, detz, detrmin, detrmax, hlid);
+	fprintf(LOGSCR, "dimensions.in: rmin = %.17LG, rmax = %.17LG, zmin = %.17LG, zmax = %.17LG\n"
+	                "detz = %.17LG, detrmin = %.17LG, detrmax = %.17LG, hlid = %.17LG",
+	                rmin, rmax, zmin, zmax,
+	                detz, detrmin, detrmax, hlid);
 
 	// writing parameters to screen
-	printf("\nStart parameters: \n"
+	printf("\nStart parameters:\n"
 	       "Energy (min, step, max): %17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
 	       "Maximum runtime: %.17LG s\n"
 	       "r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
@@ -527,12 +529,12 @@ void Startbed(int k)
 	       "Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
 	       "Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
 	       "Filling time: %LG s\n"
-	       "Cleaning time: %.17LG s\n "
-	       "Ramp up time: %.17LG s\n "
-	       "Full field time: %.17LG s\n "
-	       "RampDownTime: %.17LG s\n "
-	       "B field scaling factor: %.17LG s\n "
-	       "E field scaling factor: %.17LG s\n ",
+	       "Cleaning time: %.17LG s\n"
+	       "Ramp up time: %.17LG s\n"
+	       "Full field time: %.17LG s\n"
+	       "RampDownTime: %.17LG s\n"
+	       "B field scaling factor: %.17LG s\n"
+	       "E field scaling factor: %.17LG s\n",
 	       EnergieS, dEnergie, EnergieE,
 	       xend,
 	       r_ns, dr_n, r_ne,
@@ -558,12 +560,12 @@ void Startbed(int k)
 	                "Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
 	                "Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
 	                "Filling time %LG s\n"
-	                "Cleaning time: %.17LG s\n "
-	                "Ramp up time: %.17LG s\n "
-	                "Full field time: %.17LG s\n "
-	                "RampDownTime: %.17LG s\n "
-	                "B field scaling factor: %.17LG s\n "
-	                "E field scaling factor: %.17LG s\n ",
+	                "Cleaning time: %.17LG s\n"
+	                "Ramp up time: %.17LG s\n"
+	                "Full field time: %.17LG s\n"
+	                "RampDownTime: %.17LG s\n"
+	                "B field scaling factor: %.17LG s\n"
+	                "E field scaling factor: %.17LG s\n",
 	                EnergieS, dEnergie, EnergieE,
 	                xend,
 	                r_ns, dr_n, r_ne,
