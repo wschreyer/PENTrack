@@ -1,13 +1,13 @@
 #!/bin/sh
 
 if `test -e end.log`; then
-	FIRSTRUN=0
-	echo "I dedected an end.log ... If you don't want me to append you have 5sec to press CRTL+C"
+	FIRSTRUN=1	
+	echo "I dedected an end.log ... If you don't want me to delete it you have 5sec to press CRTL+C"
 	sleep 5
-else
-	F=`ls *end.out | head -n 1`
-	head -n 1 $F >> end.log
+	rm end.log
 fi
+F=`ls *end.out | head -n 1`
+	head -n 1 $F >> end.log
 
 for file in `ls *end.out`
 do
