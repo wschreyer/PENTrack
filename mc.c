@@ -8,7 +8,7 @@ Zerfallszeit f�r das Teilchen berechnet
 */
 
 void MCStartwerte(long double delx)
-{	
+{	long double nEnerg; // dummy for energie of neutron
 	long double crit;
 	long double WktTMP;
 	// examine correlation of fields with proton collection 
@@ -103,11 +103,11 @@ void MCStartwerte(long double delx)
 			
 			// temporary for energy dependence test of proton extraction efficiency 
 			//NeutEnergie =  15e-9+mt_get_double(v_mt_state)*(110.0e-9-15e-9);    // gleich gewichtete Neutronen-Energie
-			// temporary for energy dependence test of proton extraction efficiency END					
-			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(Emin_n+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(Emin_n+1e-9,1.5) ,2.0/3.0);
+			// temporary for energy dependence test of proton extraction efficiency END
 			
-			
-			
+			nEnerg = max(Emin_n, (nini.EnergieS * 1e-9));	
+			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);
+						
 			
 		}
 		// electron
@@ -126,7 +126,8 @@ void MCStartwerte(long double delx)
 				cout << "Proton energy dist: E= " << Energie << " decay rate: " << Elvert << " diced value = " << WktTMP << endl; 
 			}while(WktTMP>Elvert);			
 			
-			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(Emin_n+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(Emin_n+1e-9,1.5) ,2.0/3.0);
+			nEnerg = max(Emin_n, (nini.EnergieS * 1e-9));
+			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);
 			
 		}
 			

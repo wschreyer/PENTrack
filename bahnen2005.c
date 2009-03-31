@@ -559,7 +559,7 @@ void OpenFiles(int argc, char **argv){
 		wholetrackfile << outpath << "/" << jobnumber << "track1.out";
 		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
 		Zeilencount=0;
-		fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
+		fprintf(OUTFILE1,"Teilchen protneut t r drdt z dzdt phi dphidt x y "
 						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
 						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
 	}
@@ -939,10 +939,10 @@ void IntegrateParticle(){
 						}
 						
 						//cout << "Br " << Bp[1][klauf] << endl;
-						fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+						fprintf(OUTFILE1,"%d %d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
 										 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
 										 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
-										 iMC,xp[klauf],yp[1][klauf],yp[2][klauf],yp[3][klauf],yp[4][klauf],yp[5][klauf],yp[6][klauf],yp[1][klauf]*cosl(yp[5][klauf]),yp[1][klauf]*sinl(yp[5][klauf]),
+										 iMC,protneut,xp[klauf],yp[1][klauf],yp[2][klauf],yp[3][klauf],yp[4][klauf],yp[5][klauf],yp[6][klauf],yp[1][klauf]*cosl(yp[5][klauf]),yp[1][klauf]*sinl(yp[5][klauf]),
 										 vend,H,Bp[1][klauf],Bp[2][klauf],Bp[3][klauf],Bp[4][klauf],Bp[5][klauf],Bp[6][klauf], Bp[7][klauf],Bp[8][klauf],
 										 Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac);
 						//fprintf(OUTFILE1,"%LG\n",xp[klauf]);
@@ -971,10 +971,10 @@ void IntegrateParticle(){
 						if (frac>1e-99) 
 							logfrac=log10l(frac);
 					}
-					fprintf(OUTFILE1,"%d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+					fprintf(OUTFILE1,"%d %d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
 									 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
 									 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
-									 iMC,x2,ystart[1],ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),
+									 iMC,protneut,x2,ystart[1],ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),
 									 sqrtl(ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4]),H,Br,dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,
 									 Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac);
 					fflush(OUTFILE1);
@@ -991,7 +991,7 @@ void IntegrateParticle(){
 				ostringstream wholetrackfile;
 				wholetrackfile << outpath << "/" << jobnumber << "track" << Filecount << ".out";
 				OUTFILE1=fopen(wholetrackfile.str().c_str(),mode_w);
-				fprintf(OUTFILE1,"Teilchen t r drdt z dzdt phi dphidt x y "
+				fprintf(OUTFILE1,"Teilchen protneut t r drdt z dzdt phi dphidt x y "
 								 "v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr "
 								 "dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Polar Er Ez "
 								 "timestep Bcheck logvlad logthumb\n");
