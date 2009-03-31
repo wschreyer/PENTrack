@@ -1,12 +1,12 @@
 ======== common =========================
 0 1 2250			DiceRodField | RodFieldMultiplicator | Ibar
 ======== neutron.in =====================
-0 10 61.5			E [neV]
--0.45 0.1 0.6		z [m] (cylindrical coorditate)
-0 0.1 0.55			r [m] (cylindrical coorditate)
-0 10 360			phi [°] (cylindrical coordinate) <0°..360°>
+0 10.0108			E [neV]
+0 0.1 1.2		z [m] (cylindrical coorditate)
+0.12 0.1 0.5			r [m] (cylindrical coorditate)
+0 10. 360			phi [°] (cylindrical coordinate) <0°..360°>
 0 1.0e-5 360		alpha [°] (in x-y-plane relative to r-vector) <0°..360°>
-0 45 180			gamma [°] (relative to z'-axis) <0°..180°>
+0 45. 180			gamma [°] (relative to z'-axis) <0°..180°>
 1e-3 300			delx | xend
 ======== proton.in ======================
 0 100 800			E [neV]
