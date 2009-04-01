@@ -106,7 +106,7 @@ void MCStartwerte(long double delx)
 			// temporary for energy dependence test of proton extraction efficiency END
 			
 			nEnerg = max(Emin_n, (nini.EnergieS * 1e-9));	
-			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);
+			NeutEnergie  = powl( (powl(nini.EnergieE*1e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);
 						
 			
 		}
@@ -127,7 +127,7 @@ void MCStartwerte(long double delx)
 			}while(WktTMP>Elvert);			
 			
 			nEnerg = max(Emin_n, (nini.EnergieS * 1e-9));
-			NeutEnergie  = powl( (powl(108e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);
+			NeutEnergie  = powl( (powl(nini.EnergieE*1e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);
 			
 		}
 			
