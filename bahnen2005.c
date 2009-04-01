@@ -913,7 +913,7 @@ void IntegrateParticle(){
 			
 			//Ausgabe der Zwischenwerte aus odeint
 			int klauf;
-			long double logvlad, logfrac;
+			long double logvlad = 0.0, logfrac = 0.0;
 			if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)>=BahnPointSaveTime)){
 				for (klauf=2;klauf<=kount;klauf++){
 					if ((xp[klauf]-time_temp)>=BahnPointSaveTime)
