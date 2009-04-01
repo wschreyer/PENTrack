@@ -356,7 +356,7 @@ void initialStartbed()
 }
 //======== end of innitialStartbed ==============================================================================
 
-//======== Read in of the initial values (out of all3inone.in) and the dimensions (out of dimensions.in) ========
+//======== read in of the initial values (out of all3inone.in) and the dimensions (out of dimensions.in) ========
 void Startbed(int k)
 {	int i = 0, ncont = 0;
     char cline[200];    
