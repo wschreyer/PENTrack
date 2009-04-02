@@ -638,7 +638,7 @@ void IntegrateParticle(){
 	stopall=0;
 	kennz=0; // not categorized yet									
 	// initial values for Brute-Force Spinintegration 
-		long double BFpol = 0.5;
+		BFpol = 0.5;
 		I_n[3]=0.5; I_n[2]=I_n[1]=0;
 		offset = 0;
 		BFsurvprob = 1.0;
