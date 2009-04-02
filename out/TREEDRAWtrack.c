@@ -1,12 +1,13 @@
 //
-//	TREEDRAWtrack.c is a ROOT scipt that reads and edits a data files first line to refine the branch descriptor in order
-//	to construct a ROOT tree named "[filename].root", restores the first line to its original and finally three plots are
-//	drawn and saved to hard disc as a macro. For each variable will a branch be created in the tree contianing the data
-//	as double type by default. The Plots will show z versus r, z versus x and x-y-z.
+//	TREEDRAWtrack.c is a ROOT (5.23/01) scipt that reads and edits a data files first line to refine the branch
+//	descriptor in order to construct a ROOT tree named "[filename].root", restores the first line to its original and
+//	finally three plots are drawn and saved to hard disc as a macros and PNGs. For each variable will a branch be created
+//	in the tree contianing the data as double type by default. The Plots will show z versus r, z versus x and x-y-z.
 //
 //	User Instructions:
 //	(1) Make sure the data files first line contains the names of the variables seperated by '[SPACE]' (e.g. "x y z")!
 //	(2) Make sure that the data in the following lines are seperated by '[SPACE]', too (e.g. "0.42 0.42 0.42")!
+//	(3) Make sure that the data are compatible to the type D / Double_t (a 64 bit floating point)!
 //	(3) Make sure the data files first line contains at least "x", "y", "z" and "r", otherwise the script will fail to
 //	    draw the plots!
 //	(4) Run the script in ROOT like this: root [0] .x TREEDRAWtrack.c("[filename]");
@@ -15,8 +16,9 @@
 //	(1) Any occurrence of errors may possibly lead to a loss of data.
 //	(2) If the tree file (or a file with the same name) allready exists, it will by overwriten by default.
 //	(3) The ROOT code allows the first line and in consequence the branch descriptor to be of 10000 characters at maximum.
-//	(4) The created macros are named "[filename].root_[vnamec].C" (e.g. "[filename].root_z-y-x.C").
-//	(5) If the macro files (or files with the same name) allready exist, they will by overwriten.
+//	(4) The created macros are named "[filename].root_[plotname].cxx" (e.g. "[filename].root_z-y-x.cxx").
+//	(5) The created PNGs are named "[filename].root_[plotname]_[counter].png" (e.g. "[filename].root_z-y-x_0.png").
+//	(5) If the macro or PNG files (or files with the same name) allready exist, they will by overwriten.
 //	(6) Alterable options in the script are marked with at least 8 '+' characters.
 //
 //	 ___________  __________  __________  __________  ________    __________  ________    ____      ____    ____  ____
@@ -138,7 +140,10 @@ void TREEDRAWtrack(TString filename)
 	g12->GetHistogram()->SetXTitle("x [m]");
 	g12->GetHistogram()->SetYTitle("z [m]");
 
-	c1->SaveAs(rootfilename + "_z-r_z-x.C"); // saving canvas
+	c1->SaveAs(rootfilename + "_z-r_z-x.cxx");     // saving canvas as macro
+	c1->SaveAs(rootfilename + "_z-r_z-x_0.png");   // saving canvas as PNG
+	c1_1->SaveAs(rootfilename + "_z-r_z-x_1.png"); // saving pad 1 as PNG
+	c1_2->SaveAs(rootfilename + "_z-r_z-x_2.png"); // saving pad 2 as PNG
 /*
 	delete c1; // closing canvas window
 	delete g11; // deleting graph
@@ -157,7 +162,8 @@ void TREEDRAWtrack(TString filename)
 	g2->SetLineColor(4);
 	g2->Draw("P"); //++++++++ options: "P" ~ markers, "LINE" ~ a 3D polyline between the points +++++++++++++++++++++++++
 
-	c2->SaveAs(rootfilename + "_z-y-x.C"); // saving canvas
+	c2->SaveAs(rootfilename + "_z-y-x.cxx");   // saving canvas as macro
+	c2->SaveAs(rootfilename + "_z-y-x_0.png"); // saving canvas as PNG
 /*	
 	delete c2; // closing canvas window
 	delete g2; // deleting graph	
