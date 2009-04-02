@@ -147,7 +147,7 @@ int AbsorberChoice = 1;    // 1: PE, 2: Ti
 // variables for BruteForce Bloch integration BEGIN
 long double *BFtime=NULL, **BFField=NULL;   // time, Bx, By, Bz, r, z array
 int offset=0, BFkount, BFindex = 3;			// counter in BFarray, offset of BFarray, maximum index of intermediate values , index in BFarray
-long double *BFBws=NULL;                    // BFpolarisation
+long double BFpol, *BFBws=NULL;                    // BFpolarisation
 long double BFBmin = 10.0, BFTargetB=0.1;     // smallest value of Babs during step, Babs < BFTargetB => integrate,
 long double BFBxcoor, BFBycoor, BFBzcoor;        // cartesian coord of B field
 unsigned short int BruteForce = 0, firstint = 1, flipspin=1;  // enable BruteForce?,
@@ -638,6 +638,7 @@ void IntegrateParticle(){
 	stopall=0;
 	kennz=0; // not categorized yet									
 	// initial values for Brute-Force Spinintegration 
+		long double BFpol = 0.5;
 		I_n[3]=0.5; I_n[2]=I_n[1]=0;
 		offset = 0;
 		BFsurvprob = 1.0;
@@ -1150,7 +1151,6 @@ void BruteForceIntegration(){
 		}
 	}
 	
-	long double BFpol = 0.5;
 	if ((BFBmin>BFTargetB)&&(BFPolmin))
 	{    // output of polarisation after BF int completed
 		BFsurvprob = (BFpol+0.5) * BFsurvprob;
