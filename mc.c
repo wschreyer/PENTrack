@@ -9,6 +9,7 @@ Zerfallszeit f�r das Teilchen berechnet
 
 void MCStartwerte(long double delx)
 {	long double nEnerg; // dummy for energie of neutron
+	long int nroll = 0; // counter for the number of rolled dices 
 	long double crit;
 	long double WktTMP;
 	// examine correlation of fields with proton collection 
@@ -130,82 +131,80 @@ void MCStartwerte(long double delx)
 			NeutEnergie  = powl( (powl(nini.EnergieE*1e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);
 			
 		}
-			
-	
-	// repeat dicing for starting point until particle is valid (energy is possible at this specific point)
-	// because neutrons are filled in according to the energy spectrum above, the points in the trap that are reachable are determined by that
+
+
+
+
+	printf("Dice starting position ... (Please be patient!)\n");
+	fprintf(LOGSCR,"Dice starting position ... (Please be patient!)\n");
+	// repeat dicing for starting point until particle is valid (energy is possible at this specific point) because neutrons
+	// are filled in according to the energy spectrum above, the points in the trap that are reachable are determined by that
+	nroll = 0;
 	while(1)
-	{		
-		
+	{	nroll++;
 		// starting point
-		r_n = powl(mt_get_double(v_mt_state)*(r_ne*r_ne - r_ns*r_ns) + r_ns*r_ns,0.5); // Wichtung da Volumenelement und damit Whk nach aussen mit r^2 steigt
-		phi_n = phis + mt_get_double(v_mt_state) * (phie-phis);   // dice starting coordinate phi
-		/* // z distribution according to rho0*sqrt(1-mgz/e)		
-		z_n = NeutEnergie*1e9/mg* ( powl(mt_get_double(v_mt_state)*(-1)*(powl(1-mg*z_ne/(NeutEnergie*1e9),1.5) - powl(1-mg*z_ns/(NeutEnergie*1e9),1.5)) - powl(1-mg*z_ns/(NeutEnergie*1e9),1.5),2.0/3.0) +1 ); */
+		r_n = powl(mt_get_double(v_mt_state) * (r_ne * r_ne - r_ns * r_ns) + r_ns * r_ns, 0.5); // weighting because of the volume element and a r^2 probability outwards
+		phi_n = phis + mt_get_double(v_mt_state) * (phie - phis); // dice starting coordinate phi
+		/*
+		// z distribution according to (rho0 * sqrt(1 - mgz / e))
+		z_n = NeutEnergie*1e9 / mg * (powl(mt_get_double(v_mt_state) * (-1) * (powl(1 - mg * z_ne / (NeutEnergie*1e9), 1.5) - powl(1 - mg * z_ns / (NeutEnergie*1e9), 1.5)) - powl(1 - mg * z_ns / (NeutEnergie*1e9), 1.5), 2.0/3.0) + 1);
+		*/
 		z_n = z_ns + (mt_get_double(v_mt_state)) * (z_ne-z_ns);
 		//cout << "Die gew�rfelte H�he ist :" << z_n << endl;
-			//sleep(5);
 		
 		if(protneut == NEUTRON)
-		{			
-			// Test ob Neutron �berhaupt da hingekommen w�re (Energy)
-			BFeld(r_n,phi_n*conv,z_n, 0.0);
-			crit = NeutEnergie - m_n*gravconst*z_n + (mu_n)*Bws;
-			//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
-			//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
-			if((crit<0.0))
-			{   //  Anfangsen. - Pot Energie + Energie im B-Feld
-				printf("Dice anew... \n");
+		{
+			// check if neutron could possiblly reached this positon by its own energy
+			BFeld(r_n, phi_n * conv, z_n, 0.0);
+			crit = NeutEnergie - m_n * gravconst * z_n + mu_n * Bws; // crit = initial energie - potenial energy by gravitation + potential energie by B-field
+			//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n", NeutEnergie*1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
+			//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie * 1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
+			
+			/*if(crit < 0.0) // crit = initial energie - potenial energy by gravitation + potential energie by B-field
+			{	printf("Dice anew... \n");
 				fprintf(LOGSCR,"Dice anew... \n");
 			}
-			else if (crit>=0) 
-					break;		
+			else*/ if (crit >= 0.0) 
+				break;		
 		}
-		// proton
 		else if ((protneut == PROTON) ||(protneut == ELECTRONS))
-		{      
-		// Test ob Neutron �berhaupt da hingekommen w�re (NeutEnergie)
-			BFeld(r_n,phi_n*conv,z_n, 0.0);
-			crit = NeutEnergie - m_n*gravconst*z_n + (mu_n)*Bws;
-			//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
-			//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie*1.0e9,m_n*gravconst*z_n*1.0e9,(mu_nSI/ele_e)*Bws*1.0e9,crit*1.0e9);
-			if((crit<0.0))
-			{   //  Anfangsen. - Pot Energie + Energie im B-Feld
-				printf("Dice anew... \n");
+		{   
+			// check if neutron could possiblly reached this positon by its own energy
+			BFeld(r_n, phi_n * conv, z_n, 0.0);
+			crit = NeutEnergie - m_n * gravconst * z_n + mu_n * Bws; // crit = initial energie - potenial energy by gravitation + potential energie by B-field
+			//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n", NeutEnergie*1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
+			//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n", NeutEnergie *1.0e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
+
+			/*if(crit < 0.0) // crit = initial energie - potenial energy by gravitation + potential energie by B-field
+			{	printf("Dice anew... \n");
 				fprintf(LOGSCR,"Dice anew... \n");
 			}
-			else if (crit>=0) 
-					break;		
+			else*/ if (crit >= 0.0) 
+				break;		
 		}
-		
 	}
+	printf("... %li dice(s) rolled\n", nroll);
+	fprintf(LOGSCR,"... %li dice(s) rolled\n", nroll);
 
-	alpha = alphas + (mt_get_double(v_mt_state)) * (alphae-alphas);      // constant angular distribution
-	gammaa = acosl( cosl(gammas*conv) - mt_get_double(v_mt_state) * (cosl(gammas*conv) - cosl(gammae*conv)) ) / conv;   // isotropic emission characteristics
-	
-	
+
+	alpha = alphas + (mt_get_double(v_mt_state)) * (alphae - alphas); // constant angular distribution
+	gammaa = acosl(cosl(gammas*conv) - mt_get_double(v_mt_state) * (cosl(gammas * conv) - cosl(gammae * conv))) / conv; // isotropic emission characteristics
+
 	// for checking the dependence of spin flip on inner rod current
-	if((protneut==NEUTRON)&&(DiceRodField==1))
+	if((protneut == NEUTRON) && (DiceRodField == 1))
 		RodFieldMultiplicator = (mt_get_double(v_mt_state));
-	
-	
-	
-	
-	// random start times from 0 to 2e-5 for protons
-	if(protneut==(PROTON||ELECTRONS))
-		xstart =  (mt_get_double(v_mt_state))*2e-5;
-	
-	// start randomly in time during filling period
-	if((FillingTime>0)&&(r_ne<0.12)&&(protneut==NEUTRON))
-	{
+
+	// random start time from 0 to 2e-5 for protons
+	if(protneut == (PROTON || ELECTRONS))
+		xstart = (mt_get_double(v_mt_state))*2e-5;
+
+	// random start time during filling period
+	if((FillingTime > 0) && (r_ne < 0.12) && (protneut == NEUTRON))
 		xstart = FillingTime * (mt_get_double(v_mt_state));
-	}
-		
-	if((decay)&&(protneut==NEUTRON))
-	{
-		xend = - tau * log(mt_get_double(v_mt_state)) +xstart;            // Zeit nach der das Neutron zerfallen soll
-	}	
-	
-		
+
+	// set time span till decay
+	if((decay) && (protneut == NEUTRON))
+		xend = - tau * log(mt_get_double(v_mt_state)) + xstart; // time span till neutron decay	
+
 	return ;
 }
