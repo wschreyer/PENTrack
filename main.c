@@ -358,7 +358,7 @@ void initialStartbed()
 
 //======== read in of the initial values (out of all3inone.in) and the dimensions (out of dimensions.in) ========
 void Startbed(int k)
-{	int i = 0, ncont = 0;
+{	int i = 0, ncont = 42;
     char cline[200];    
 	string path;
 
