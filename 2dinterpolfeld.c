@@ -1250,7 +1250,7 @@ void Preinterpol(int p)
 	free_dvector(yyy12,1,4);
 	free_dmatrix(ctemp,1,4,1,4);
 	
-	printf("\n Done with Preinterpolation!\n");
+	printf("100%%\nDone with Preinterpolation!\n");
 	printf("freeing the BField matrix ... (about %.4LG MB)\n",(long double)n*m*12*12/1024/1024);
 	// now we don't need the BF matrix anymore
 	free_dmatrix(BrTab,1,m,1,n);
