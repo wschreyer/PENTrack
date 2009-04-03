@@ -1,6 +1,6 @@
 //
-//	DRAWendlog.c is a ROOT scipt that draws a few plots from a ROOT tree named "[filename].root" and saves them as macros.
-//	It is highly recommended to run TREEendlog.c before with the same data file.
+//	DRAWendlog.c is a ROOT (5.23/01) scipt that draws a few plots from a ROOT tree named "[filename].root" and saves them
+//	as macros and PNGs. It is highly recommended to run TREEendlog.c before with the same data file.
 //	The followong Plots will be created:
 //	(1) 'kennz' versus 'zstart' versus 'rstart'
 //	(2) histogram of 't'
@@ -12,19 +12,22 @@
 //	(8) 'NeutEnergie' versus 't'
 //	(9) histograms of 'EFeldSkal' and 'BFeldSkal'
 //	(10) histogram of 'kennz'
+//	(11) 'zstart' versus 'rstart'
+//	(12) spin-flip loss lifetime versus 'RodFieldMult'/'BFflipprob'
 //
 //	User Instructions:
 //	(1) Make sure the ROOT tree exists and is named "mytree"!
 //	(2) Make sure the ROOT tree contains at least the branches named in the list of plots above!
-//	(3) Make sure the branches contain doubles!
+//	(3) Make sure the branches contain leaves compatible to the type D / Double_t (a 64 bit floating point)!
 //	(4) Run the script in ROOT like this: root [0] .x DRAWendlog.c("[filename]");
 //
 //	Note:
 //	(1) Any occurrence of errors may possibly lead to a loss of data.
-//	(2) The created macros are named "[filename].root_[vnamec].C" (e.g. "[filename].root_kennz.C").
-//	(3) If the macro files (or files with the same name) allready exist, they will by overwriten.
-//	(4) Alterable options in the script are marked with at least 8 '+' characters.
-//	(5) At the beginning of each draw routine you can find the assignment of a few dummies, which offer an easy way to
+//	(2) The created macros are named "[filename].root_[plotname].cxx" (e.g. "[filename].root_kennz.cxx").
+//	(3) The created PNGs are named "[filename].root_[plotname]_[counter].cxx" (e.g. "[filename].root_kennz.png").
+//	(4) If the macro or PNG files (or files with the same name) allready exist, they will by overwriten.
+//	(5) Alterable options in the script are marked with at least 8 '+' characters.
+//	(6) At the beginning of each draw routine you can find the assignment of a few dummies, which offer an easy way to
 //	    modify the routine without altering the hole code.
 //
 //	     ________    __________  ________    ____      ____    ____  ____
@@ -36,6 +39,7 @@
 //
 
 #include <iostream>
+#include <cmath>
 
 void DRAWendlog(TString filename)
 {	gROOT->Reset();
@@ -54,10 +58,20 @@ void DRAWendlog(TString filename)
 	//file->cd();
 
 	const Long_t nentries = mytree->GetEntries(); // total number of entries in 'mytree'
-
+	
+	const Int_t ncolors = gROOT->GetListOfColors()->LastIndex(); // number of the last idicated colour
+	//-------- Generating a gray scale palette with 20 shades -----------------------------------------------------------
+	Int_t grayscale[20];
+	{	for(int i = 0; i < 20; i++) // filling the gray scale with 20 shades of gray
+		{	TColor *color = new TColor(ncolors + i, 1 - Float_t(i)/20, 1 - Float_t(i)/20, 1 - Float_t(i)/20, "mygray" + i);
+			grayscale[i] = ncolors + i;
+		}
+	}
+	//-------- Finished -------------------------------------------------------------------------------------------------
+	
 	std::cout << "Drawing ..." << std::endl;
 
-	//======== (1) Drawing and saving the histogram of 'kennz' versus 'zstart' versus 'rstart' ==========================
+	//======== (1) Drawing and saving 'kennz' versus 'zstart' versus 'rstart' ===========================================
 	vnamex = "rstart"; // dummy ~ x-variable
 	vnamey = "zstart"; // dummy ~ y-variable
 	vnamec = "kennz";  // dummy ~ z-variable
@@ -70,16 +84,17 @@ void DRAWendlog(TString filename)
 	                                                                // graphical output
 	g1 = new TGraph2D(nentries, mytree->GetV3(), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving
 	                                                                                // data from the draw command above
-	gStyle->SetPalette(1);
-	//c1->UseCurrentStyle();
-	//g1->UseCurrentStyle();
-	g1->SetTitle("kennz:zstart:rstart;rstart [m];zstart [m];kennz"); // setting title (including axis titles seperated by ";")
+	g1->SetTitle(vnamec + ":" + vnamey + ":" + vnamex + ";" + vnamex + " [m];" + vnamey + " [m];" + vnamec);
+	// setting title (including axis titles seperated by ";")
 	g1->SetMarkerStyle(21);
 	g1->SetMarkerSize(0.4);
+	gStyle->SetPalette(1, 0); //++++++++ options: 1, 0 ~ coloured palette +++++++++++++++++++++++++++++++++++++++++++++++
+	                          //+++++++++++++++++ 20, grayscale ~ gray scale palette with 20 shades +++++++++++++++++++++
 	g1->Draw("PCOL"); //++++++++ options: "P" ~ markers, "COL" ~ coloured z-values, "Z" ~ colour palette ++++++++++++++++
 
-	vnamec = rootfilename + "_" + vnamec + "-" + vnamey + "-" + vnamex + ".C";
-	c1->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamec + "-" + vnamey + "-" + vnamex;
+	c1->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c1->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c1; // closing canvas window
 //	delete g1; // deleting graph
 	//======== (1) Finished =============================================================================================
@@ -102,8 +117,9 @@ void DRAWendlog(TString filename)
 	h2->SetFillColor(17);
 	h2->Draw();	
 	
-	vnamec = rootfilename + "_" + vnamex + ".C";
-	c2->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamex;
+	c2->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c2->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c2; // closing canvas window
 //	delete h2; // deleting histogram
 	//======== (2) Finished =============================================================================================
@@ -126,8 +142,9 @@ void DRAWendlog(TString filename)
 	h3->SetFillColor(17);
 	h3->Draw();
 	
-	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}.C";
-	c3->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}";
+	c3->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c3->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c3; // closing canvas window
 //	delete h3; // deleting histogram
 	//======== (3) Finished =============================================================================================
@@ -155,8 +172,9 @@ void DRAWendlog(TString filename)
 	h4->SetFillColor(17);
 	h4->Draw();
 
-	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}.C";
-	c4->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}";
+	c4->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c4->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c4; // closing canvas window
 //	delete h4; // deleting histogram
 	//======== (4) Finished =============================================================================================
@@ -184,8 +202,9 @@ void DRAWendlog(TString filename)
 	h5->SetFillColor(17);
 	h5->Draw();
 
-	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}.C";
-	c5->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}";
+	c5->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c5->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c5; // closing canvas window
 //	delete h5; // deleting histogram
 	//======== (5) Finished =============================================================================================
@@ -207,8 +226,9 @@ void DRAWendlog(TString filename)
 	h6->SetFillColor(17);
 	h6->Draw();
 
-	vnamec = rootfilename + "_" + vnamex + ".C";
-	c6->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamex;
+	c6->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c6->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c6; // closing canvas window
 //	delete h6; // deleting histogram
 	//======== (6) Finished =============================================================================================
@@ -230,8 +250,9 @@ void DRAWendlog(TString filename)
 	h7->SetFillColor(17);
 	h7->Draw();
 
-	vnamec = rootfilename + "_" + vnamex + ".C";
-	c7->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamex;
+	c7->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c7->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c7; // closing canvas window
 //	delete h7; // deleting histogram
 	//======== (7) Finished =============================================================================================
@@ -259,8 +280,9 @@ void DRAWendlog(TString filename)
 	g8->GetHistogram()->SetXTitle(vnamex + " [s]");
 	g8->GetHistogram()->SetYTitle(vnamey + " [neV]");
 
-	vnamec = rootfilename + "_" + vnamey + "-" + vnamex + "_{" + vnamec + "}.C";
-	c8->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamey + "-" + vnamex + "_{" + vnamec + "}";
+	c8->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c8->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c8; // closing canvas window
 //	delete g8; // deleting graph
 	//======== (8) Finished =============================================================================================
@@ -277,7 +299,7 @@ void DRAWendlog(TString filename)
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c9->Divide(2,2); // dividing 'c9' into 2*2 pads (numbered like text read)
 	c9->cd(1); // select pad 1
-	TH1D *h91 = new TH1D("h91",  vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
+	TH1D *h91 = new TH1D("h91", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
 	mytree->Draw(vnamex + ">>+h91", vnamec); // drawing "[vnamex]" (if "[vnamec]") and storing the result in 'h91'
@@ -339,7 +361,6 @@ void DRAWendlog(TString filename)
 	h94->GetYaxis()->SetTitleOffset(2.0);
 	h94->GetYaxis()->SetRangeUser(xmin, xmax);
 	h94->GetZaxis()->SetTitle("percentage [%]");
-	//h94->GetZaxis()->SetTitleOffset(2.0);
 	//h94->GetZaxis()->SetRangeUser(0, 100);
 	h94->SetFillColor(17);
 	for(int i = 1; i < (nbins + 1); i++) // resize to percent of total entries
@@ -348,9 +369,15 @@ void DRAWendlog(TString filename)
 		}
 	}
 	h94->Draw("LEGO1"); //++++++++ options: "LEGO1" ~ lego plot with hidden surface removal +++++++++++++++++++++++++++++
+	                    //+++++++++++++++++ "LEGO2" ~ lego plot using colours to show the cell contents +++++++++++++++++
 
-	vnamec = rootfilename + "_" + vnamex + "_" + vnamey + ".C";
-	c9->SaveAs(vnamec); // saving canvas
+	vnamec = rootfilename + "_" + vnamex + "_" + vnamey;
+	c9->SaveAs(vnamec + ".cxx");     // saving canvas as macro
+	c9->SaveAs(vnamec + "_0.png");   // saving canvas as PNG
+	c9_1->SaveAs(vnamec + "_1.png"); // saving pad 1 as PNG
+	c9_2->SaveAs(vnamec + "_2.png"); // saving pad 2 as PNG
+	c9_3->SaveAs(vnamec + "_3.png"); // saving pad 3 as PNG
+	c9_4->SaveAs(vnamec + "_4.png"); // saving pad 4 as PNG
 //	delete c9; // closing canvas window
 //	delete h91; // deleting histograms
 //	delete h92; 
@@ -382,13 +409,115 @@ void DRAWendlog(TString filename)
 	}
 	h10->Draw();
 
-	vnamec = rootfilename + "_" + vnamec + ".C";
-	c9->SaveAs(vnamec); // saving canvas
-//	delete c9; // closing canvas window
+	vnamec = rootfilename + "_" + vnamec;
+	c10->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c10->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
+//	delete c10; // closing canvas window
 //	delete h10; // deleting histogram
-	//======== (10) Finished ============================================================
+	//======== (10) Finished ============================================================================================
 
+	//======== (11) Drawing and saving 'zstart' versus 'rstart' =========================================================
+	vnamex = "rstart";   // dummy ~ x-variable
+	vnamey = "zstart";   // dummy ~ y-variable
+	vnamec = "kennz==6"; // dummy ~ selection criterion
+	nbins = 75;          // dummy ~ number of bins
+	xmin = 0.1;          // dummy ~ x-minimum
+	xmax = 0.5;          // dummy ~ x-maximum
+
+	TCanvas *c11 = new TCanvas("c11", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + rootfilename, 200, 200, 800, 600);
+	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	TH2D *h110 = new TH2D("h110", "reference histogram", nbins, xmin, xmax * 1.0001, nbins, 0, 1.2 * 1.0001);
+	// creating a new TH2D([histogramname], [histogramtitle], number of x-bins, lower edge of the first x-bin, excluded!
+	// upper edge of the last x-bin, number of y-bins, lower edge y-bin, excluded! upper edge y-bin)
+	mytree->Draw(vnamey + ":" + vnamex + ">>+h110", "", "goff"); // drawing "[vnamey]:[vnamex]" and storing the result in 'h110'
+
+	c11->cd(); // select pad
+	TH2D *h111 = new TH2D("h111", vnamey + ":" + vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001, nbins, 0, 1.2 * 1.0001);
+	TH2D *h112 = new TH2D("h112", vnamey + ":" + vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001, nbins, 0, 1.2 * 1.0001);
+	// creating two new TH2D([histogramname], [histogramtitle], number of x-bins, lower edge of the first x-bin, excluded!
+	// upper edge of the last x-bin, number of y-bins, lower edge y-bin, excluded! upper edge y-bin)
+	mytree->Draw(vnamey + ":" + vnamex + ">>+h111", vnamec); // drawing "[vnamey]:[vnamex]" (if "[vnamec]") and storing
+	                                                         // the result in 'h111'
+	h111->SetStats(0);
+	h111->GetXaxis()->SetTitle(vnamex + " [m]");
+	h111->GetXaxis()->SetRangeUser(xmin, xmax);
+	h111->GetYaxis()->SetTitle(vnamey + " [m]");
+	h111->GetYaxis()->SetRangeUser(0, 1.2);
+	h111->GetZaxis()->SetTitle("percentage per bin [%]");
+	h111->GetZaxis()->SetTitleColor(0);
+	h111->GetZaxis()->SetTitleOffset(-0.35);
+	for(int i = 1; i < (nbins + 1); i++) // resize to percent of bin entries without selection criterion
+	{	for(int j = 1; j < (nbins + 1); j++)
+		{	if(h111->GetBinContent(i, j) > 0)
+			{	h111->SetCellContent(i, j, (h111->GetBinContent(i, j))/(h110->GetBinContent(i, j))*100);
+				// resize the content of bin 'i,j' to percent
+			}
+			h112->SetCellContent(i, j, h111->GetBinContent(i, j));
+		}
+	}
+	gStyle->SetPalette(20, grayscale);
+	h111->Draw("CONT4Z"); //++++++++ options: "CONT" ~ contour plot, "CONT4" ~ analog, "Z" ~ colour palette +++++++++++++
+
+	vnamec = rootfilename + "_" + vnamey + "-" + vnamex + "_{" + vnamec + "}";	
+	c11->SaveAs(vnamec + "_0g.png"); // saving canvas as PNG ("g" ~ gray scale palette)
+
+	h112->SetStats(0);
+	h112->GetXaxis()->SetTitle(vnamex + " [m]");
+	h112->GetXaxis()->SetRangeUser(xmin, xmax);
+	h112->GetYaxis()->SetTitle(vnamey + " [m]");
+	h112->GetYaxis()->SetRangeUser(0, 1.2);
+	h112->GetZaxis()->SetTitle("percentage per bin [%]");
+	h112->GetZaxis()->SetTitleColor(1);
+	h112->GetZaxis()->SetTitleOffset(-0.35);
+	gStyle->SetPalette(1, 0);
+	h112->Draw("CONT4Z"); //++++++++ options: "CONT" ~ contour plot, "CONT4" ~ analog, "Z" ~ colour palette +++++++++++++
+
+	c11->SaveAs(vnamec + ".cxx");    // saving canvas as macro
+	c11->SaveAs(vnamec + "_0c.png"); // saving canvas as PNG ("c" ~ coloured palette)
+//	delete c11; // closing canvas window
+//	delete h111; // deleting histograms
+//	delete h112;
+	//======== (11) Finished ============================================================================================
+/*
+	//======== (12) Drawing and saving spin-flip loss lifetime versus 'RodFieldMult'/'BFflipprob' =======================
+	vnamex = "RodFieldMult/BFflipprob"; // dummy ~ x-variable
+	vnamey = "(-t)/log(1-BFflipprob)";  // dummy ~ y-variable (spin-flip loss lifetime)
+	vnamec = "";                        // dummy ~ selection criterion
+
+	TCanvas *c12 = new TCanvas("c12", "spin-flip loss lifetime:" + vnamex + " {" + vnamec + "} data from " + rootfilename, 220, 220, 800, 600);
+	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c12->cd(); // select pad
+	mytree->SetEstimate(mytree->GetEntries(vnamec)); // setting the estimated lenght of V1 and V2
+	mytree->Draw(vnamey + ":" + vnamex, vnamec, "goff"); // drawing "[vnamey]:[vnamey]" (if "[vnamec]")
+	                                                     // without graphical output
+	g12 = new TGraph(mytree->GetEntries(vnamec), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving
+	                                                                                // data from the draw command above
+	g12->SetTitle("spin-flip loss lifetime:" + vnamex + " {" + vnamec + "}");
+	c12->SetLogy(1); // defining a logarithmical y-axis
+	g12->SetMarkerStyle(21);
+	g12->SetMarkerSize(0.4);
+	g12->SetMarkerColor(4);
+	g12->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points ++++++++++++++
+
+	c12->Update(); // necessary command for setting the axis titles
+	g12->GetHistogram()->SetXTitle(vnamex);
+	g12->GetHistogram()->SetYTitle("spin-flip loss lifttime [s]");
+
+	vnamec = rootfilename + "_spin-flip loss lifetime_{" + vnamec + "}";
+	c12->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c12->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
+//	delete c12; // closing canvas window
+//	delete g12; // deleting graph
+	//======== (12) Finished ============================================================================================
+*/
 	std::cout << "Drawing done." << std::endl;
-
+	
+	//-------- Removing the 20 gray shades from the list of colours -----------------------------------------------------
+	{	for(int i = 0; i < 20; i++) // filling the gray scale with 20 shades of gray
+		{	gROOT->GetListOfColors()->RemoveLast();
+		}
+	}
+	//-------- Finished -------------------------------------------------------------------------------------------------
+	
 //	file->Close();  // closing the file
 }
