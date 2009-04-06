@@ -1420,327 +1420,242 @@ t37)-t8*t23*t42;
 // produce center current rod field 
 void CenterCurrent(long double r,long double phi,long double z, long double I_rt){
 	
-	
-	long double vorfaktor = mu0 * I_rt / (2 * pi);
-	
+	long double vorfaktor = mu0 * I_rt / (2 * pi);	
 		
 	// only Bphi is present
-	Bphi = Bphi + vorfaktor/r;
-	
-	
+	Bphi = Bphi + vorfaktor/r;	
 	
 	// dBphidr
-	dBphidr = dBphidr - vorfaktor/(r*r);
-		
+	dBphidr = dBphidr - vorfaktor/(r*r);		
 	
-	// dBphidphi =0
-		
-	
-	return;
-	
-}
-
-// produce B-field at position r,phi,z of a straight wire with current I_rt 
-// defined by two position vectors (SW1r,SW1phi,SW1z and SW2r,SW2phi,SW2z) lying on the ends of the straight wire 
-void StraightWireField(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z)
-{
-	long double vorfaktor = mu0 * I_rt / (2 * pi);
-	long double SW1x = cosl(SW1phi) * SW1r, SW1y = sinl(SW1phi) * SW1r;   // cart coord of first vector on line
-	long double SW2x = cosl(SW2phi) * SW2r, SW2y = sinl(SW2phi) * SW2r;   // cart coord of second vector on line
-	long double x = cosl(phi) * r, y = sinl(phi) * r;													// cart coord of position vector
-	
-	// cross product of vector (current position to vector on current 1) with (vector along current line)
-	// determines direction of magnetic field vector
-	long double BSWdirx,BSWdiry,BSWdirz;
-	KartCrossProd(x-SW1x,y-SW1y,z-SW1z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z,&BSWdirx,&BSWdiry,&BSWdirz);
-	
-	long double absBSWdir = AbsValueCart(BSWdirx,BSWdiry,BSWdirz);
-		if(absBSWdir==0) cout << "Problems with absBSWdir at " << r << " " << phi << " " << z << endl;
-	long double BarLength = AbsValueCart(SW2x-SW1x,SW2y-SW1y,SW2z-SW1z);
-	long double dabs =  absBSWdir / BarLength;   // absolute value of distance from position vector to current line  |(point-SW1)x(SW2-SW1)|/|(SW1-SW2)|
-		if(dabs==0) cout << "Problems with dabs at " << r << " " << phi << " " << z << endl;
-	long double Bxtmp =    vorfaktor * BSWdirx/absBSWdir / dabs;   
-	long double Bytmp =  	vorfaktor * BSWdiry/absBSWdir / dabs;  
-	long double BztmpC =  vorfaktor * BSWdirz/absBSWdir / dabs;   
-	
-	//  consider now the finiteness of the current bar through multiplying with (sin alpha2 - sin alpha 1), with alpha 1 and 2 the angles between the normal on the line
-	// through the point r,phi,z and the ends of the current bar SW1, SW2
-	long double finitecorr =  	1.0 /  BarLength * (  KartScalarProd(SW2x-x,SW2y-y,SW2z-z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z) / AbsValueCart(SW2x-x,SW2y-y,SW2z-z) 
-																				- 	KartScalarProd(SW1x-x,SW1y-y,SW1z-z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z) / AbsValueCart(SW1x-x,SW1y-y,SW1z-z) );
-		
-		Bxtmp = Bxtmp * finitecorr;
-	Bytmp = Bytmp * finitecorr;
-	BztmpC = BztmpC * finitecorr;
-	
-	long double Brtmp, Bphitmp, Bztmp;
-	KartCylCoord(Bxtmp, Bytmp,BztmpC,phi,&Brtmp,&Bphitmp,&Bztmp);
-	
-	Br = Br + Brtmp;
-	Bphi = Bphi + Bphitmp;
-	Bz = Bz + Bztmp;			
+	// dBphidphi =0		
 	
 	return;	
 }
 
-// same as above only returning r component of B
-long double StraightWireField_r(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z)
-{
-	long double vorfaktor = mu0 * I_rt / (2 * pi);
-	long double SW1x = cosl(SW1phi) * SW1r, SW1y = sinl(SW1phi) * SW1r;   // cart coord of first vector on line
-	long double SW2x = cosl(SW2phi) * SW2r, SW2y = sinl(SW2phi) * SW2r;   // cart coord of second vector on line
-	long double x = cosl(phi) * r, y = sinl(phi) * r;													// cart coord of position vector
-	
-	// cross product of vector (current position to vector on current 1) with (vector along current line)
-	// determines direction of magnetic field vector
-	long double BSWdirx,BSWdiry,BSWdirz;
-	KartCrossProd(x-SW1x,y-SW1y,z-SW1z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z,&BSWdirx,&BSWdiry,&BSWdirz);
-	long double absBSWdir = AbsValueCart(BSWdirx,BSWdiry,BSWdirz);
-	long double BarLength = AbsValueCart(SW2x-SW1x,SW2y-SW1y,SW2z-SW1z);
-	long double dabs =  absBSWdir / BarLength;   // absolute value of distance from position vector to current line  |(point-SW1)x(SW2-SW1)|/|(SW1-SW2)|
-	long double Bxtmp = vorfaktor * BSWdirx/absBSWdir / dabs;   
-	long double Bytmp =  	vorfaktor * BSWdiry/absBSWdir / dabs;  
-	long double BztmpC = vorfaktor * BSWdirz/absBSWdir / dabs;   
-	
-	//  consider now the finiteness of the current bar through multiplying with (sin alpha2 - sin alpha 1), with alpha 1 and 2 the angles between the normal on the line
-	// through the point r,phi,z and the ends of the current bar SW1, SW2
-	long double finitecorr =  	1.0 /  BarLength * (  KartScalarProd(SW2x-x,SW2y-y,SW2z-z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z) / AbsValueCart(SW2x-x,SW2y-y,SW2z-z) 
-																				- 	KartScalarProd(SW1x-x,SW1y-y,SW1z-z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z) / AbsValueCart(SW1x-x,SW1y-y,SW1z-z) );
-		
-	Bxtmp = Bxtmp * finitecorr;
-	Bytmp = Bytmp * finitecorr;
-	BztmpC = BztmpC * finitecorr;
-	
-	long double Brtmp, Bphitmp, Bztmp;
-	KartCylCoord(Bxtmp, Bytmp,BztmpC,phi,&Brtmp,&Bphitmp,&Bztmp);
-	
-	return Brtmp;	
-}
 
-// same as above only returning phi component of B
-long double StraightWireField_phi(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z)
+// produce B-field at position r,phi,z of a straight wire with current I_rt 
+// defined by two position vectors (SW1r,SW1phi,SW1z and SW2r,SW2phi,SW2z) lying on the ends of the straight wire 
+// code generated by Maple ("FiniteWireDiffs.mw") with formula http://de.wikipedia.org/wiki/Biot-Savart#Gerader_Linienleiter
+void StraightWireField(const long double r,const long double phi,const long double z, const long double I_rt, 
+						const long double SW1r, const long double SW1phi, const long double SW1z, 
+						const long double SW2r, const long double SW2phi, const long double SW2z)
 {
-	long double vorfaktor = mu0 * I_rt / (2 * pi);
-	long double SW1x = cosl(SW1phi) * SW1r, SW1y = sinl(SW1phi) * SW1r;   // cart coord of first vector on line
-	long double SW2x = cosl(SW2phi) * SW2r, SW2y = sinl(SW2phi) * SW2r;   // cart coord of second vector on line
-	long double x = cosl(phi) * r, y = sinl(phi) * r;													// cart coord of position vector
-	
-	// cross product of vector (current position to vector on current 1) with (vector along current line)
-	// determines direction of magnetic field vector
-	long double BSWdirx,BSWdiry,BSWdirz;
-	KartCrossProd(x-SW1x,y-SW1y,z-SW1z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z,&BSWdirx,&BSWdiry,&BSWdirz);
-	long double absBSWdir = AbsValueCart(BSWdirx,BSWdiry,BSWdirz);
-	long double BarLength = AbsValueCart(SW2x-SW1x,SW2y-SW1y,SW2z-SW1z);
-	long double dabs =  absBSWdir / BarLength;   // absolute value of distance from position vector to current line  |(point-SW1)x(SW2-SW1)|/|(SW1-SW2)|
-	long double Bxtmp = vorfaktor * BSWdirx/absBSWdir / dabs;   
-	long double Bytmp =  	vorfaktor * BSWdiry/absBSWdir / dabs;  
-	
-	//  consider now the finiteness of the current bar through multiplying with (sin alpha2 - sin alpha 1), with alpha 1 and 2 the angles between the normal on the line
-	// through the point r,phi,z and the ends of the current bar SW1, SW2
-	long double finitecorr =  	1.0 /  BarLength * (  KartScalarProd(SW2x-x,SW2y-y,SW2z-z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z) / AbsValueCart(SW2x-x,SW2y-y,SW2z-z) 
-																				- 	KartScalarProd(SW1x-x,SW1y-y,SW1z-z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z) / AbsValueCart(SW1x-x,SW1y-y,SW1z-z) );
-		
-	Bxtmp = Bxtmp * finitecorr;
-	Bytmp = Bytmp * finitecorr;	
-	
-	long double Bphitmp = (-1) * sinl(phi) * Bxtmp + cosl(phi) * Bytmp;
-	
-	return Bphitmp;	
-}
+	long double vorfaktor = mu0 * I_rt / (4 * pi);
 
-// same as above only returning z component of B
-long double StraightWireField_z(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z)
-{
-	long double vorfaktor = mu0 * I_rt / (2 * pi);
-	long double SW1x = cosl(SW1phi) * SW1r, SW1y = sinl(SW1phi) * SW1r;   // cart coord of first vector on line
-	long double SW2x = cosl(SW2phi) * SW2r, SW2y = sinl(SW2phi) * SW2r;   // cart coord of second vector on line
-	long double x = cosl(phi) * r, y = sinl(phi) * r;													// cart coord of position vector
-	
-	// cross product of vector (current position to vector on current 1) with (vector along current line)
-	// determines direction of magnetic field vector
-	long double BSWdirx,BSWdiry,BSWdirz;
-	KartCrossProd(x-SW1x,y-SW1y,z-SW1z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z,&BSWdirx,&BSWdiry,&BSWdirz);
-	long double absBSWdir = AbsValueCart(BSWdirx,BSWdiry,BSWdirz);
-	long double BarLength = AbsValueCart(SW2x-SW1x,SW2y-SW1y,SW2z-SW1z);
-	long double dabs =  absBSWdir / BarLength;   // absolute value of distance from position vector to current line  |(point-SW1)x(SW2-SW1)|/|(SW1-SW2)|
-	
-	long double BztmpC = vorfaktor * BSWdirz/absBSWdir / dabs;   
-	
-	//  consider now the finiteness of the current bar through multiplying with (sin alpha2 - sin alpha 1), with alpha 1 and 2 the angles between the normal on the line
-	// through the point r,phi,z and the ends of the current bar SW1, SW2
-	long double finitecorr =  	1.0 /  BarLength * (  KartScalarProd(SW2x-x,SW2y-y,SW2z-z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z) / AbsValueCart(SW2x-x,SW2y-y,SW2z-z) 
-																				- 	KartScalarProd(SW1x-x,SW1y-y,SW1z-z,SW2x-SW1x,SW2y-SW1y,SW2z-SW1z) / AbsValueCart(SW1x-x,SW1y-y,SW1z-z) );
-		
-	
-	BztmpC = BztmpC * finitecorr;	
-	return BztmpC;	
-}
-
-
-// here the r component magnetic field for all current bars in the race track coils is returned
-long double BarRaceTrack_Br(long double r_current, long double phi_current, long double z_current, long double I_bar)
-{
-	long double Brvorl = 0;
-	
-	// first calculate flux density at point r_current, phi_current, z_current
-	// for all single current bars
-	for(int cobar=1;cobar<=12;cobar++)
-	{
-		Brvorl= Brvorl + StraightWireField_r(r_current,phi_current,z_current, Ibar, Bars_1r[cobar],Bars_1phi[cobar], Bars_1z[cobar],Bars_2r[cobar], Bars_2phi[cobar], Bars_2z[cobar]);			
-		
+	if (protneut != NEUTRON){
+		long double t1 = cosl(SW1phi);
+		long double t2 = t1 * SW1r;
+		long double t3 = cosl(phi);
+		long double t4 = t3 * r;
+		long double t5 = t2 - t4;
+		long double t6 = t5 * t5;
+		long double t7 = sinl(SW1phi);
+		long double t8 = t7 * SW1r;
+		long double t9 = sinl(phi);
+		long double t10 = t9 * r;
+		long double t11 = t8 - t10;
+		long double t12 = t11 * t11;
+		long double t13 = SW1z - z;
+		long double t14 = t13 * t13;
+		long double t15 = t6 + t12 + t14;
+		long double t16 = sqrtl(t15);
+		long double t17 = 0.1e1 / t16;
+		long double t20 = SW1r * SW1r;
+		long double t21 = t1 * t1;
+		long double t23 = cosl(SW2phi);
+		long double t24 = t23 * SW2r;
+		long double t28 = t7 * t7;
+		long double t30 = sinl(SW2phi);
+		long double t31 = t30 * SW2r;
+		long double t37 = SW2z - SW1z;
+		long double t39 = -t21 * t20 + t1 * (t24 + t4) * SW1r - t28 * t20 + t7 * (t10 + t31) * SW1r - t24 * t4 - t31 * t10 + t37 * t13;
+		long double t40 = t39 * t39;
+		long double t42 = t24 - t2;
+		long double t43 = t42 * t42;
+		long double t44 = t31 - t8;
+		long double t45 = t44 * t44;
+		long double t46 = t37 * t37;
+		long double t47 = t43 + t45 + t46;
+		long double t51 = sqrtl(0.1e1 - 0.1e1 / t47 * t40 / t15);
+		long double t53 = 0.1e1 / t51 * t17 * vorfaktor;
+		long double t54 = SW2r * SW2r;
+		long double t55 = t23 * t23;
+		long double t60 = t30 * t30;
+		long double t67 = SW2z - z;
+		long double t71 = powl(t24 - t4, 0.2e1);
+		long double t73 = powl(t31 - t10, 0.2e1);
+		long double t74 = t67 * t67;
+		long double t76 = sqrtl(t71 + t73 + t74);
+		long double t79 = sqrtl(t47);
+		long double t80 = 0.1e1 / t79;
+		long double t87 = -t37 * t11 + t44 * t13;
+		long double t88 = t87 * t87;
+		long double t91 = -t42 * t13 + t37 * t5;
+		long double t92 = t91 * t91;
+		long double t95 = -t44 * t5 + t42 * t11;
+		long double t96 = t95 * t95;
+		long double t98 = sqrtl(t88 + t92 + t96);
+		long double t100 = 0.1e1 / t98 * (t80 / t76 * (t55 * t54 - t23 * (t2 + t4) * SW2r + t60 * t54 - t30 * (t8 + t10) * SW2r + t4 * t2 + t10 * t8 + t37 * t67) - t80 * t39 * t17);
+		Br += t3 * t87 * t100 * t53 + t9 * t91 * t100 * t53;
+		Bphi += -t9 * t87 * t100 * t53 + t3 * t91 * t100 * t53;
+		Bz += t95 * t100 * t53;
 	}
-	// then for the center bar (4x current)   
-	return Brvorl+StraightWireField_r(r_current,phi_current,z_current, 4.0*Ibar, Bars_1r[13],Bars_1phi[13], Bars_1z[13],Bars_2r[13], Bars_2phi[13], Bars_2z[13]);
-	
-}
-
-// the same just with a 4 vector
-long double BarRaceTrack_Br(long double x[4])
-{
-		return BarRaceTrack_Br(x[0],x[1],x[2],x[3]);
-}
-
-// here the phi component magnetic field for all current bars in the race track coils is returned
-long double BarRaceTrack_Bphi(long double r_current, long double phi_current, long double z_current, long double I_bar)
-{
-	long double Bphivorl = 0;
-	
-	// first calculate flux density at point r_current, phi_current, z_current
-	// for all single current bars
-	for(int cobar=1;cobar<=12;cobar++)
-	{
-		Bphivorl= Bphivorl + StraightWireField_phi(r_current,phi_current,z_current, Ibar, Bars_1r[cobar],Bars_1phi[cobar], Bars_1z[cobar],Bars_2r[cobar], Bars_2phi[cobar], Bars_2z[cobar]);			
-		
+	else{
+		long double t1 = cosl(SW1phi);
+		long double t2 = t1 * SW1r;
+		long double t3 = cosl(phi);
+		long double t4 = t3 * r;
+		long double t5 = t2 - t4;
+		long double t6 = t5 * t5;
+		long double t7 = sinl(SW1phi);
+		long double t8 = t7 * SW1r;
+		long double t9 = sinl(phi);
+		long double t10 = t9 * r;
+		long double t11 = t8 - t10;
+		long double t12 = t11 * t11;
+		long double t13 = SW1z - z;
+		long double t14 = t13 * t13;
+		long double t15 = t6 + t12 + t14;
+		long double t16 = sqrtl(t15);
+		long double t18 = 0.1e1 / t16 / t15;
+		long double t19 = t18 * vorfaktor;
+		long double t20 = 0.1e1 / t15;
+		long double t21 = SW1r * SW1r;
+		long double t22 = t1 * t1;
+		long double t24 = cosl(SW2phi);
+		long double t25 = t24 * SW2r;
+		long double t29 = t7 * t7;
+		long double t31 = sinl(SW2phi);
+		long double t32 = t31 * SW2r;
+		long double t38 = SW2z - SW1z;
+		long double t40 = -t22 * t21 + t1 * (t25 + t4) * SW1r - t29 * t21 + t7 * (t10 + t32) * SW1r - t25 * t4 - t32 * t10 + t38 * t13;
+		long double t41 = t40 * t40;
+		long double t43 = t25 - t2;
+		long double t44 = t43 * t43;
+		long double t45 = t32 - t8;
+		long double t46 = t45 * t45;
+		long double t47 = t38 * t38;
+		long double t48 = t44 + t46 + t47;
+		long double t49 = 0.1e1 / t48;
+		long double t51 = 0.1e1 - t49 * t41 * t20;
+		long double t52 = sqrtl(t51);
+		long double t53 = 0.1e1 / t52;
+		long double t54 = SW2r * SW2r;
+		long double t55 = t24 * t24;
+		long double t60 = t31 * t31;
+		long double t67 = SW2z - z;
+		long double t69 = t55 * t54 - t24 * (t2 + t4) * SW2r + t60 * t54 - t31 * (t8 + t10) * SW2r + t4 * t2 + t10 * t8 + t38 * t67;
+		long double t70 = t25 - t4;
+		long double t71 = t70 * t70;
+		long double t72 = t32 - t10;
+		long double t73 = t72 * t72;
+		long double t74 = t67 * t67;
+		long double t75 = t71 + t73 + t74;
+		long double t76 = sqrtl(t75);
+		long double t77 = 0.1e1 / t76;
+		long double t79 = sqrtl(t48);
+		long double t80 = 0.1e1 / t79;
+		long double t82 = 0.1e1 / t16;
+		long double t85 = t80 * t77 * t69 - t80 * t40 * t82;
+		long double t86 = t85 * t53;
+		long double t87 = t86 * t19;
+		long double t90 = -t38 * t11 + t45 * t13;
+		long double t91 = t90 * t90;
+		long double t94 = -t43 * t13 + t38 * t5;
+		long double t95 = t94 * t94;
+		long double t98 = -t45 * t5 + t43 * t11;
+		long double t99 = t98 * t98;
+		long double t100 = t91 + t95 + t99;
+		long double t101 = sqrtl(t100);
+		long double t102 = 0.1e1 / t101;
+		long double t103 = t90 * t102;
+		long double t106 = -t3 * t5 - t9 * t11;
+		long double t107 = 0.2e1 * t106 * t3;
+		long double t111 = t82 * vorfaktor;
+		long double t113 = 0.1e1 / t52 / t51;
+		long double t115 = t85 * t113 * t111;
+		long double t116 = t15 * t15;
+		long double t118 = t41 / t116;
+		long double t121 = t40 * t20;
+		long double t130 = t1 * t3 * SW1r + t7 * t9 * SW1r - t24 * SW2r * t3 - t31 * SW2r * t9;
+		long double t134 = 0.2e1 * t106 * t49 * t118 - 0.2e1 * t130 * t49 * t121;
+		long double t135 = t134 * t3;
+		long double t139 = t53 * t111;
+		long double t144 = 0.1e1 / t76 / t75 * t69;
+		long double t151 = t40 * t18;
+		long double t158 = t102 * (t80 * t77 * t130 - (-t3 * t70 - t9 * t72) * t80 * t144 + t106 * t80 * t151 - t80 * t130 * t82);
+		long double t159 = t3 * t90;
+		long double t162 = t86 * t111;
+		long double t164 = 0.1e1 / t101 / t100;
+		long double t165 = t90 * t164;
+		long double t166 = t9 * t90;
+		long double t168 = t3 * t94;
+		long double t171 = t43 * t9;
+		long double t172 = t45 * t3 - t171;
+		long double t174 = t38 * t166 - t38 * t168 + t172 * t98;
+		long double t175 = 0.2e1 * t174 * t3;
+		long double t179 = t94 * t102;
+		long double t180 = 0.2e1 * t106 * t9;
+		long double t184 = t134 * t9;
+		long double t188 = t9 * t94;
+		long double t191 = t94 * t164;
+		long double t192 = 0.2e1 * t174 * t9;
+		long double t201 = t9 * r * t5 - t3 * r * t11;
+		long double t202 = 0.2e1 * t201 * t3;
+		long double t208 = SW1r * r;
+		long double t215 = -t1 * t9 * t208 + t7 * t3 * t208 + t25 * t10 - t32 * t4;
+		long double t219 = 0.2e1 * t201 * t49 * t118 - 0.2e1 * t215 * t49 * t121;
+		long double t220 = t219 * t3;
+		long double t240 = t102 * (t80 * t77 * t215 - (t9 * r * t70 - t3 * r * t72) * t80 * t144 + t201 * t80 * t151 - t80 * t215 * t82);
+		long double t251 = -t45 * t10 - t43 * t4;
+		long double t253 = t38 * t3 * r * t90 + t38 * t9 * r * t94 + t251 * t98;
+		long double t254 = 0.2e1 * t253 * t3;
+		long double t258 = r * t102;
+		long double t259 = t3 * t3;
+		long double t260 = t38 * t259;
+		long double t263 = t102 * t85;
+		long double t266 = 0.2e1 * t201 * t9;
+		long double t270 = t219 * t9;
+		long double t276 = 0.2e1 * t253 * t9;
+		long double t280 = t9 * t9;
+		long double t281 = t38 * t280;
+		long double t286 = -t202 * t103 * t87 / 0.2e1 - t220 * t103 * t115 / 0.2e1 + t159 * t240 * t139 - t254 * t165 * t162 / 0.2e1 + t260 * t258 * t162 - t166 * t263 * t139 - t266 * t179 * t87 / 0.2e1 - t270 * t179 * t115 / 0.2e1 + t188 * t240 * t139 - t276 * t191 * t162 / 0.2e1 + t281 * t258 * t162 + t168 * t263 * t139;
+		long double t287 = -0.2e1 * t13 * t3;
+		long double t296 = -0.2e1 * t13 * t49 * t118 + 0.2e1 * t38 * t49 * t121;
+		long double t297 = t296 * t3;
+		long double t312 = t102 * (-t80 * t77 * t38 + t67 * t80 * t144 - t13 * t80 * t151 + t80 * t38 * t82);
+		long double t317 = -t45 * t90 + t43 * t94;
+		long double t318 = 0.2e1 * t317 * t3;
+		long double t325 = -0.2e1 * t13 * t9;
+		long double t329 = t296 * t9;
+		long double t335 = 0.2e1 * t317 * t9;
+		long double t425 = t53 * t19;
+		long double t430 = t113 * t111;
+		long double t437 = t164 * t85;
+		dBrdr += -t107 * t103 * t87 / 0.2e1 - t135 * t103 * t115 / 0.2e1 + t159 * t158 * t139 - t175 * t165 * t162 / 0.2e1 - t180 * t179 * t87 / 0.2e1 - t184 * t179 * t115 / 0.2e1 + t188 * t158 * t139 - t192 * t191 * t162 / 0.2e1;
+		dBrdphi += t286;
+		dBrdz += -t287 * t103 * t87 / 0.2e1 - t297 * t103 * t115 / 0.2e1 + t159 * t312 * t139 - t318 * t165 * t162 / 0.2e1 - t45 * t3 * t263 * t139 - t325 * t179 * t87 / 0.2e1 - t329 * t179 * t115 / 0.2e1 + t188 * t312 * t139 - t335 * t191 * t162 / 0.2e1 + t171 * t263 * t139;
+		dBphidr += t180 * t103 * t87 / 0.2e1 + t184 * t103 * t115 / 0.2e1 - t166 * t158 * t139 + t192 * t165 * t162 / 0.2e1 - t281 * t263 * t139 - t107 * t179 * t87 / 0.2e1 - t135 * t179 * t115 / 0.2e1 + t168 * t158 * t139 - t175 * t191 * t162 / 0.2e1 - t260 * t263 * t139;
+		dBphidphi += t266 * t103 * t87 / 0.2e1 + t270 * t103 * t115 / 0.2e1 - t166 * t240 * t139 + t276 * t165 * t162 / 0.2e1 - t159 * t263 * t139 - t202 * t179 * t87 / 0.2e1 - t220 * t179 * t115 / 0.2e1 + t168 * t240 * t139 - t254 * t191 * t162 / 0.2e1 - t188 * t263 * t139;
+		dBphidz += t325 * t103 * t87 / 0.2e1 + t329 * t103 * t115 / 0.2e1 - t166 * t312 * t139 + t335 * t165 * t162 / 0.2e1 + t9 * t45 * t263 * t139 - t287 * t179 * t87 / 0.2e1 - t297 * t179 * t115 / 0.2e1 + t168 * t312 * t139 - t318 * t191 * t162 / 0.2e1 + t3 * t43 * t263 * t139;
+		dBzdr += -t106 * t98 * t263 * t425 - t134 * t98 * t263 * t430 / 0.2e1 + t98 * t158 * t139 - t174 * t98 * t437 * t139 + t172 * t263 * t139;
+		dBzdphi += -t201 * t98 * t263 * t425 - t219 * t98 * t263 * t430 / 0.2e1 + t98 * t240 * t139 - t253 * t98 * t437 * t139 + t251 * t263 * t139;
+		dBzdz += t13 * t98 * t263 * t425 - t296 * t98 * t263 * t430 / 0.2e1 + t98 * t312 * t139 - t317 * t98 * t437 * t139;
 	}
-	// then for the center bar (4x current)   
-	return Bphivorl+StraightWireField_phi(r_current,phi_current,z_current, 4.0*Ibar, Bars_1r[13],Bars_1phi[13], Bars_1z[13],Bars_2r[13], Bars_2phi[13], Bars_2z[13]);
-	
-}
-
-// the same just with a 4 vector
-long double BarRaceTrack_Bphi(long double x[4])
-{
-		return BarRaceTrack_Bphi(x[0],x[1],x[2],x[3]);
-}
-
-// here the phi component magnetic field for all current bars in the race track coils is returned
-long double BarRaceTrack_Bz(long double r_current, long double phi_current, long double z_current, long double I_bar)
-{
-	long double Bzvorl = 0;
-	
-	// first calculate flux density at point r_current, phi_current, z_current
-	// for all single current bars
-	for(int cobar=1;cobar<=12;cobar++)
-	{
-		Bzvorl= Bzvorl + StraightWireField_z(r_current,phi_current,z_current, Ibar, Bars_1r[cobar],Bars_1phi[cobar], Bars_1z[cobar],Bars_2r[cobar], Bars_2phi[cobar], Bars_2z[cobar]);			
-		
-	}
-	// then for the center bar (4x current)   
-	return Bzvorl+StraightWireField_z(r_current,phi_current,z_current, 4.0*Ibar, Bars_1r[13],Bars_1phi[13], Bars_1z[13],Bars_2r[13], Bars_2phi[13], Bars_2z[13]);
-	
-}
-
-// the same just with a 4 vector
-long double BarRaceTrack_Bz(long double x[4])
-{
-		return BarRaceTrack_Bz(x[0],x[1],x[2],x[3]);
+	return;	
 }
 
 
 // here the magnetic field for all current bars in the race track coils is generated and added to the current field
 void BarRaceTrack(long double r_current, long double phi_current, long double z_current, long double I_bar)
 {
-	long double dBrd[3]={0},dBphid[3]={0},dBzd[3]={0},position[4]={r_current,phi_current,z_current,I_bar},err;
-	// first calculate flux density at point r_current, phi_current, z_current
+	// calculate flux density at point r_current, phi_current, z_current
 	// for all single current bars
-	
-	// B field vector itself not necessary for neutron
-	if(protneut!=NEUTRON)
+	for(int cobar=1;cobar<=12;cobar++)
 	{
-		for(int cobar=1;cobar<=12;cobar++)
-		{
-			StraightWireField(r_current,phi_current,z_current, Ibar, Bars_1r[cobar],Bars_1phi[cobar], Bars_1z[cobar],Bars_2r[cobar], Bars_2phi[cobar], Bars_2z[cobar]);			
-		}
-		// then for the center bar (4x current)   
-		StraightWireField(r_current,phi_current,z_current, 4.0*Ibar, Bars_1r[13],Bars_1phi[13], Bars_1z[13],Bars_2r[13], Bars_2phi[13], Bars_2z[13]);
+		StraightWireField(r_current,phi_current,z_current, Ibar, Bars_1r[cobar],Bars_1phi[cobar], Bars_1z[cobar],Bars_2r[cobar], Bars_2phi[cobar], Bars_2z[cobar]);					
 	}
-	
-	// derivatives only necessary for neutron
-	if(protneut==NEUTRON)
-	{
-		// differentiate all three field components with respect to r,phi,z
-		for(int var=0;var<=2;var++)
-		{
-			dBrd[var] = dfridr3D(BarRaceTrack_Br, var,position, 0.01, &err);
-			dBphid[var] = dfridr3D(BarRaceTrack_Bphi, var,position, 0.01, &err);
-			dBzd[var] = dfridr3D(BarRaceTrack_Bz, var,position, 0.01, &err);
-		}
-	
-		dBrdr = dBrdr + dBrd[0];
-		dBrdphi = dBrdphi + dBrd[1];
-		dBrdz = dBrdz + dBrd[2];
-	
-		dBphidr = dBphidr + dBphid[0];
-		dBphidphi = dBphidphi + dBphid[1];
-		dBphidz = dBphidz + dBphid[2];
-	
-		dBzdr = dBzdr + dBzd[0];
-		dBzdphi = dBzdphi + dBzd[1];
-		dBzdz = dBzdz + dBzd[2];
-	
-	}
-		
-}
-
-
-
-
-// partial differentiation of a scalar function in 3 dimensions and a 4th variable used for straight bar current right now
-// n: variable of differentialtion 0,1,2
-#define CON 1.4 //Stepsize is decreased by CON at each iteration.
-#define CON2 (CON*CON)
-#define BIG 1.0e30
-#define NTAB 10 //Sets maximum size of tableau.
-#define SAFE 2.0 //Return when error is SAFE worse than the best so far.
-long double dfridr3D(long double (*func)(long double x[4]), int n, long double x[4], long double h, long double *err)
-//Returns the derivative of a function func at a point x by Ridders� method of polynomial
-//extrapolation. The value h is input as an estimated initial stepsize; it need not be small, but
-//rather should be an increment in x over which func changes substantially. An estimate of the
-//error in the derivative is returned as err.
-{
-int i,j;
-long double errt,fac,hh,**a,ans,xtmpp[4],xtmpm[4];
-if (h == 0.0) nrerror("h must be nonzero in dfridr.");
-a=matrix(1,NTAB,1,NTAB);
-hh=h;
-for(int co=0;co<=3;co++)
-  xtmpp[co]=xtmpm[co]=x[co];
-
-xtmpp[n]=x[n]+hh;
-xtmpm[n]=x[n]-hh;
-a[1][1]=((*func)(xtmpp)-(*func)(xtmpm))/(2.0*hh);
-*err=BIG;
-for (i=2;i<=NTAB;i++) {
-//Successive columns in the Neville tableau will go to smaller stepsizes and higher orders of
-//extrapolation.
-hh /= CON;
-a[1][i]=((*func)(xtmpp)-(*func)(xtmpm))/(2.0*hh); //Try new, smaller stepsize
-fac=CON2; 
-for (j=2;j<=i;j++) { //Compute extrapolations of various orders, requiring
-				//no new function evaluations.
-a[j][i]=(a[j-1][i]*fac-a[j-1][i-1])/(fac-1.0);
-fac=CON2*fac;
-errt=fmaxl(fabsl(a[j][i]-a[j-1][i]),fabsl(a[j][i]-a[j-1][i-1]));
-	
-//The error strategy is to compare each new extrapolation to one order lower, both
-//at the present stepsize and the previous one.
-if (errt <= *err) { //If error is decreased, save the improved answer.
-*err=errt;
-ans=a[j][i];
-}
-}
-if (fabsl(a[i][i]-a[i-1][i-1]) >= SAFE*(*err)) break;
-//If higher order is worse by a significant factor SAFE, then quit early.
-}
-free_matrix(a,1,NTAB,1,NTAB);
-return ans;
+	// then for the center bar (4x current)   
+	StraightWireField(r_current,phi_current,z_current, 4.0*Ibar, Bars_1r[13],Bars_1phi[13], Bars_1z[13],Bars_2r[13], Bars_2phi[13], Bars_2z[13]);
 }

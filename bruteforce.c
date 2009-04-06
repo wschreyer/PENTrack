@@ -132,7 +132,8 @@ return;
 
 void BFderivs(long double x, long double *y, long double *dydx){
 
-	long double Bx, By, Bz, tmptime;
+	long double Bx, By, Bz;
+//	long double tmptime;
 	//tmptime = clock();
 	BFinterpol(x, &Bx, &By, &Bz);
 	//timer3 += (long double)(((long double)clock() - (long double)tmptime)  / CLOCKS_PER_SEC);
@@ -153,10 +154,10 @@ void BFderivs(long double x, long double *y, long double *dydx){
 
 /*
 Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x,use
-the fifth­order Cash­Karp Rung­Kutta method to advance the solution over an interval h
+the fifthï¿½order Cashï¿½Karp Rungï¿½Kutta method to advance the solution over an interval h
 and return the incremented variables as yout[1..n]. Also return an estimate of the local
 truncation error in yout
-using the embedded fourth­order method. The user supplies the routine
+using the embedded fourthï¿½order method. The user supplies the routine
 derivs(x,y,dydx), which returns derivatives dydx at x.    */
 
 void BFrkck(long double y[], long double dydx[], int n, long double x, long double h, long double yout[],long double yerr[], void (*BFderivs)(long double, long double [], long double [])){
@@ -208,7 +209,7 @@ void BFrkck(long double y[], long double dydx[], int n, long double x, long doub
 
 
 /*
-Fifth­order Rung­Kutta step with
+Fifthï¿½order Rungï¿½Kutta step with
 monitoring of local truncation error to ensure accuracy and
 adjust stepsize. Input are the dependent variable vector y[1..n] and its derivative dydx[1..n]
 at the
@@ -216,9 +217,9 @@ starting value of the independent variable x. Also input are the stepsize to be 
 htry, the required accurac eps, and the vector
 yscal[1..n] against which the error is
 scaled. On output, y and x are replaced b their new values, hdid is the stepsize that was
-actuall accomplished, and hnext is the estimated next stepsize. derivs is the user­supplied
+actuall accomplished, and hnext is the estimated next stepsize. derivs is the userï¿½supplied
 routine that computes the
-rig ht­hand side derivatives.     */
+rig htï¿½hand side derivatives.     */
 
 void BFrkqs(long double y[], long double dydx[], int n, long double *x, long double htry, long double eps,long double yscal[], long double *hdid, long double *hnext, void (*BFderivs)(long double, long double [], long double [])){
 	int i;
@@ -259,18 +260,18 @@ void BFrkqs(long double y[], long double dydx[], int n, long double *x, long dou
 
 
 /*
-Rung­Kutta driver with adaptive stepsize control. Integrate
+Rungï¿½Kutta driver with adaptive stepsize control. Integrate
 starting values ystart[1..nvar] from x1 to x2 with accurac eps, storing intermediate results in global variables. h1 should
 be set as a gessed first stepsize, hmin as the minimum allowed stepsize (can be zero). On output nok and nbad are the number of good 
-and bad (but retried and fixed) steps taken, and ystart is replaced b values at the end of the integation interval. derivs is the user­supplied
-routine for calculating the rigt­hand side derivative, while rkqs isthenameofthestepper routine to be used.
+and bad (but retried and fixed) steps taken, and ystart is replaced b values at the end of the integation interval. derivs is the userï¿½supplied
+routine for calculating the rigtï¿½hand side derivative, while rkqs isthenameofthestepper routine to be used.
 */
 void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, long double eps, long double h1,long double hmin, int *nok, int *nbad,void (*BFderivs)(long double, long double [], long double []),void (*integrator)(long double [], long double [], int, long double *, long double, long double, long double [],long double *, long double *, void (*)(long double, long double [], long double [])))
 {
 	int nstp,i;
 	long double xsav = 0,x = 0,hnext = 0,hdid = 0,h = 0;
 	long double *yscal,*y,*dydx;
-	long double tmptime;
+//	long double tmptime;
 	yscal=dvector(1,nvar);
 	y=dvector(1,nvar);
 	dydx=dvector(1,nvar);
