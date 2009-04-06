@@ -25,7 +25,7 @@ long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus f
 
 // misc configurations
 int MonteCarlo=0, MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
-int reflekt=0, Efeldwahl, bfeldwahl, protneut, expmode=1,Racetracks=1;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
+int reflekt=0, Efeldwahl, bfeldwahl, protneut, expmode=1,Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
 int reflektlog = 0, SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
 long double Ibar= 2250.;                // B-field strength, current through rod
@@ -475,7 +475,7 @@ void derivs(long double x, long double *y, long double *dydx){
 	if (protneut == NEUTRON)
 	{ // neutron equations of motion
 		// Bahnverfolgung ausgeschaltet => gerade Bahn der Teilchen
-		/*                         
+		/*                      
 		dydx[1]= y[2];
 		dydx[2]= 0;
 		dydx[3]= y[4];
@@ -483,12 +483,14 @@ void derivs(long double x, long double *y, long double *dydx){
 		dydx[5]= y[6];
 		dydx[6]= 0;
 		*/
+		
 		dydx[1]= y[2];
 		dydx[2]= y[1]*(y[6]*y[6])+mumB*dBdr;
 		dydx[3]= y[4];
 		dydx[4]= mumB*dBdz-gravconst;
 		dydx[5]= y[6];
-		dydx[6]= -2*y[2]*y[6]/y[1]+mumB/y[1]*dBdphi/y[1];	   
+		dydx[6]= -2*y[2]*y[6]/y[1]+mumB/y[1]*dBdphi/y[1];
+		
 	}
 	else if(protneut == PROTON)
 	{ // equations for the proton
@@ -534,7 +536,7 @@ void OpenFiles(int argc, char **argv){
 	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
 	{
 		ostringstream BFoutfile1;
-		BFoutfile1 << outpath << "/" << jobnumber << "BF001.out";
+		BFoutfile1 << outpath << "/" << jobnumber << "BF1.out";
 		BFLOG = fopen(BFoutfile1.str().c_str(),mode_w);
 	}
 	

@@ -17,15 +17,6 @@ extern void bcuint_new(int indr, int indz,long double ****c, long double d1, lon
 extern void Racetrack(long double r,long double phi,long double z,  long double lx, long double ly, long double I_rt);
 extern void CenterCurrent(long double r,long double phi,long double z,  long double I_rt);
 extern void StraightWireField(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z);
-extern long double StraightWireField_r(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z);
-extern long double StraightWireField_phi(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z);
-extern long double StraightWireField_z(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z);
-extern long double BarRaceTrack_Br(long double r_current, long double phi_current, long double z_current, long double I_bar);
-extern long double BarRaceTrack_Bphi(long double r_current, long double phi_current, long double z_current, long double I_bar);
-extern long double BarRaceTrack_Bz(long double r_current, long double phi_current, long double z_current, long double I_bar);
-extern long double BarRaceTrack_Br(long double x[4]);
-extern long double BarRaceTrack_Bphi(long double x[4]);
-extern long double BarRaceTrack_Bz(long double x[4]);
 extern void BarRaceTrack(long double r_current, long double phi_current, long double z_current, long double I_bar);
-extern long double dfridr3D(long double (*func)(long double x[4]), int n, long double x[4], long double h, long double *err);
+
 extern long double Babsmax, Babsmin,  rBabsmin, zBabsmin, Emin_n, Babsmaxtmp,Eabsmax, Eabsmin, Eabsmaxtmp;  // for calculating maximum values for B and E
