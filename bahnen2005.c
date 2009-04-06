@@ -657,6 +657,7 @@ void IntegrateParticle(){
 		while(BadParticle==1)
 		{
 			MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer fr Teilchen festlegen
+			if(noparticle) break;
 			long double ytemp[7]={r_n,0,z_n,0,phi_n,0};
 			BadParticle = GeomCheck(ytemp,r_n,0,z_n,0,phi_n,0,0.0);
 			if (BadParticle==1)
@@ -706,6 +707,48 @@ void IntegrateParticle(){
 		}
 	}
 	
+	//-------- If there is no particle to be simulated, make a note in the ENDLOG and go on with the next particle. --------
+	if(noparticle)
+	{	xstart = 0.0;
+		r_n = 0.0;
+		phi_n = 0.0;
+		z_n = 0.0;
+		v_n = 0.0;
+		alpha  = 0.0;
+		gammaa = 0.0;
+		ystart[1] = 0.0;
+		ystart[2] = 0.0;
+		phiend = 0.0;
+		ystart[3] = 0.0;
+		vend = 0.0;
+		alphaend = 0.0;
+		gammaend = 0.0;
+		x2 = 0.0;
+		H = 0.0;
+		NSF = 0;
+		nrefl = 0;
+		vladmax = 0.0;
+		thumbmax = 0.0;
+		trajlengthsum = 0.0;
+		Hstart = 0.0;
+		Hmax = 0.0;
+		AbsorberHits = 0;
+		// output in the ENDLOG
+		ausgabe(0.0, ystart, 0.0, 0.0);
+		// to ensure only ONE loop
+		if (MonteCarlo)
+		{	Energie = EnergieE + 1;
+			z_n = z_ne + 1;
+			r_n = r_ne + 1;
+			alpha = alphae + 1;
+			gammaa = gammae + 1;
+			phi_n = phie + 1;
+		}
+		// reset 'noparticle' to false 		
+		noparticle = false;
+		return;
+	}
+	//-------- Finished ----------------------------------------------------------------------------------------------------
 	
 	if (protneut != BF_ONLY)
 	{
