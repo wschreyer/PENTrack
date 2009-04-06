@@ -145,6 +145,7 @@ extern long double VolumeB[200];   // Volume[E] accessible to neutrons at energy
 extern long double H;                               // total energy of particle
 extern long double projz, ystart[7], ysave[7], xstart;       //z-component of velocity, initial and intermediate values of y[9]
 extern int iMC;                             //  counter for MonteCarloSim
+extern bool noparticle; // true if there was NO particle simulated
 extern long double  x1, x2;                         // start and endtime handed over to integrator
 extern long int kennz0,kennz1,kennz2,kennz3,kennz4,kennz5,kennz6,kennz7,kennz8,kennz9,kennz10,kennz11,kennz12, kennz99,nrefl; // Counter for the particle codes
 extern long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
