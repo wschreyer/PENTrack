@@ -1443,7 +1443,7 @@ void StraightWireField(const long double r,const long double phi,const long doub
 {
 	long double vorfaktor = mu0 * I_rt / (4 * pi);
 
-	if (protneut != NEUTRON){
+	if ((protneut != NEUTRON) || (BruteForce)){
 		long double t1 = cosl(SW1phi);
 		long double t2 = t1 * SW1r;
 		long double t3 = cosl(phi);
