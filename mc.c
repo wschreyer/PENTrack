@@ -9,8 +9,7 @@ bool noparticle = false;
  */
 
 void MCStartwerte(long double delx)
-{	long double nEnerg; // dummy for energie of neutron
-	long int nroll = 0; // counter for the number of rolled dices 
+{	long int nroll = 0; // counter for the number of rolled dices 
 	long double crit;   // crit = initial energie - potenial energy by gravitation + potential energie by B-field 
 	long double WktTMP;
 
@@ -70,16 +69,10 @@ void MCStartwerte(long double delx)
 	*/
 
 
-	// check if lower neutron energy boundary is possible, if not set to possible value 
-	if((z_ns >= 0) && (Emin_n > EnergieE))
-		EnergieS = Emin_n + 1e-9;
-		//nini.EnergieS = Emin_n*1e9 + 1;
-
-	
 	// square root neutron energy distribution
 	if ((protneut != PROTON)&&(protneut != ELECTRONS))
 	{	//Energie = powl(mt_get_double(v_mt_state) * (EnergieE * EnergieE - EnergieS * EnergieS) + EnergieS * EnergieS, 0.5); // squared weighted energy
-		Energie = powl((powl(EnergieE, 1.5) - powl(EnergieS, 1.5)) * mt_get_double(v_mt_state) + powl(EnergieS, 1.5), 2.0/3.0);
+		Energie = powl((powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS*1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS*1e-9, 1.5), 2.0/3.0);
 		NeutEnergie = Energie;
 	}		
 
@@ -91,7 +84,7 @@ void MCStartwerte(long double delx)
 		// dice as long as point is above curve
 		do
 		{	//cout << "above distribution... dicing on..." << endl;
-			Energie = EnergieS + mt_get_double(v_mt_state) * (EnergieE - EnergieS); // constant distribution between 0 and 800 eV
+			Energie = pini.EnergieS + mt_get_double(v_mt_state) * (pini.EnergieE - pini.EnergieS); // constant distribution between 0 and 800 eV
 			WktTMP = mt_get_double(v_mt_state)*2;
 			
 			long double DeltaM = m_n - m_p;
@@ -108,9 +101,8 @@ void MCStartwerte(long double delx)
 		// temporary for energy dependence test of proton extraction efficiency 
 		//NeutEnergie =  15.0e-9 + mt_get_double(v_mt_state) * (110.0e-9 - 15.0e-9); // equal weighted neutron energy		
 		// END temporary for energy dependence test of proton extraction efficiency
-
-		nEnerg = max(Emin_n, (nini.EnergieS * 1e-9)); // higher minimum energy of the neutron	
-		NeutEnergie  = powl( (powl(nini.EnergieE*1e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);
+	
+		NeutEnergie  = powl((powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS + 1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS + 1e-9, 1.5), 2.0/3.0);
 	}
 	
 	// electron energy distribution
@@ -122,7 +114,7 @@ void MCStartwerte(long double delx)
 		// dice as long as point is above curve
 		do
 		{
-			Energie = EnergieS*1e3 + mt_get_double(v_mt_state) * (EnergieE - EnergieS)*1e3; // constant distribution between 0 and 800 keV
+			Energie = eini.EnergieS*1e3 + mt_get_double(v_mt_state) * (eini.EnergieE - eini.EnergieS)*1e3; // constant distribution between 0 and 800 keV
 			WktTMP = mt_get_double(v_mt_state) * 0.12;
 
 			Elvert = sqrtl(Energie*1e-6 * Energie*1e-6 + 2*Energie*1e-6 * m_e * c_0 * c_0*1e-6) * powl(Qvalue*1e-6 - Energie*1e-6, 2) * (Energie*1e-6 + m_e * c_0 * c_0*1e-6);			
@@ -130,13 +122,12 @@ void MCStartwerte(long double delx)
  
 		}while(WktTMP > Elvert);
 
-		nEnerg = max(Emin_n, (nini.EnergieS * 1e-9)); // higher energy of the neutron
-		NeutEnergie  = powl( (powl(nini.EnergieE*1e-9,1.5)-powl(nEnerg+1e-9,1.5)) *mt_get_double(v_mt_state) + powl(nEnerg+1e-9,1.5) ,2.0/3.0);			
+		NeutEnergie  = powl( (powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS + 1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS + 1e-9, 1.5), 2.0/3.0);			
 	}
 
 
-	printf("Dice starting position ... (Please be patient!)\n");
-	fprintf(LOGSCR,"Dice starting position ... (Please be patient!)\n");
+	printf("\nDice starting position ... (Please be patient!)\n");
+	fprintf(LOGSCR,"\nDice starting position ... (Please be patient!)\n");
 	// repeat dicing for starting point until particle is valid (energy is possible at this specific point) because neutrons
 	// are filled in according to the energy spectrum above, the points in the trap that are reachable are determined by that
 	nroll = 0;
@@ -167,8 +158,8 @@ void MCStartwerte(long double delx)
 		if(nroll == 42000000)
 		{	kennz = 99;
 			noparticle = true;
-			printf("... Abort: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
-			fprintf(LOGSCR,"... Abort: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
+			printf("... ABORT: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
+			fprintf(LOGSCR,"... ABORT: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
 			return;
 		}		
 	}
