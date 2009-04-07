@@ -358,7 +358,7 @@ void initialStartbed()
 
 //======== read in of the initial values (out of all3inone.in) and the dimensions (out of dimensions.in) ========
 void Startbed(int k)
-{	int i = 0, ncont = 42;
+{	int i = 0, ncont;
     char cline[200];    
 	string path;
 
@@ -380,6 +380,7 @@ void Startbed(int k)
 	// looping  over the lines of all3inone.in and reading them in
 	for(i = 1; i < 27; i++)
 	{	fgets(cline, 200, inistream);
+		ncont = 42;
 		switch (i)
 		{	case  2:	ncont = sscanf(cline, "%LG %LG %LG ", &DiceRodField, &RodFieldMultiplicator, &Ibar);
 						break;
@@ -445,6 +446,7 @@ void Startbed(int k)
 	// looping  over the lines of dimensions.in and reading them in
 	for(i = 1; i < 29; i++)
 	{	fgets(cline, 200, dimstream);
+		ncont = 42;
 		switch(i)
 		{	case  2:	ncont = sscanf(cline, "%LG %LG ", &zmin, &zmax);
 						break;
@@ -480,10 +482,56 @@ void Startbed(int k)
 	
 	// closing 'dimstream' to all3inone.in
 	fclose(dimstream);
-	
+
 	// initalizes initial values from record to used variables
 	initialStartbed();
-	
+
+	// Emin_n > nini.EnergieE ?? EXIT !!
+	if(Emin_n*1e9 > nini.EnergieE)
+	{	printf("\n\n\nERROR: Emin_n (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
+		             "       Check the energy range of the neutrons and / or the B-field configuration!\n\n"
+		             "EXIT!!\n", (Emin_n*1e9), nini.EnergieE);
+		fprintf(LOGSCR, "\n\n\nERROR: Emin_n (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
+		                      "       Check the energy range of the neutrons and / or the B-field configuration!\n\n"
+		                      "EXIT!!\n", (Emin_n*1e9), nini.EnergieE);
+		exit(-1);
+	}
+	// check if lower neutron energy boundary is possible, if not set to possible value
+	if((z_ns >= 0) && ((FillingTime = 0) && (CleaningTime = 0) && (RampUpTime = 0) && ((FullFieldTime != 0) || (RampDownTime != 0))))
+	{	nini.EnergieS = max(Emin_n*1e9, nini.EnergieS); // higher energy of the neutron
+		if(protneut == NEUTRON) EnergieS = nini.EnergieS; // reinitializes initial value
+	}
+
+	// EnergieS > EnergieE?? EXIT!!
+	if(nini.EnergieS > nini.EnergieE)
+	{	printf("\n\n\nERROR: nini.EnergieS (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
+		             "       Check the energy range of the neutrons!\n\n"
+		             "EXIT!!\n", nini.EnergieS, nini.EnergieE);
+		fprintf(LOGSCR, "\n\n\nERROR: nini.EnergieS (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
+		                      "       Check the energy range of the neutrons!\n\n"
+		                      "EXIT!!\n", nini.EnergieS, nini.EnergieE);
+		exit(-1);
+	}
+	else if(pini.EnergieS > pini.EnergieE)
+	{	printf("\n\n\nERROR: pini.EnergieS (= %.5LG neV) > pini.EnergieE (= %.5LG neV)\n"
+		             "       Check the energy range of the protons!\n\n"
+		             "EXIT!!\n", pini.EnergieS, pini.EnergieE);
+		fprintf(LOGSCR, "\n\n\nERROR: pini.EnergieS (= %.5LG neV) > pini.EnergieE (= %.5LG neV)\n"
+		                      "       Check the energy range of the protons!\n\n"
+		                      "EXIT!!\n", pini.EnergieS, pini.EnergieE);
+		exit(-1);
+	}
+	else if(eini.EnergieS > eini.EnergieE)
+	{	printf("\n\n\nERROR: eini.EnergieS (= %.5LG keV) > eini.EnergieE (= %.5LG keV)\n"
+		             "       Check the energy range of the electrons!\n\n"
+		             "EXIT!!\n", eini.EnergieS, eini.EnergieE);
+		fprintf(LOGSCR, "\n\n\nERROR: eini.EnergieS (= %.5LG keV) > eini.EnergieE (= %.5LG keV)\n"
+		                      "       Check the energy range of the electrons!\n\n"
+		                      "EXIT!!\n", eini.EnergieS, eini.EnergieE);
+		exit(-1);
+	}
+	// ??
+
 	// the inner wall thickness is set to the same size then the outer, but if there is no inner wall (/coils) the thickness is set to zero.
 	// (mainly used for AbEx)
 	wandinnen = wanddicke;
