@@ -140,6 +140,7 @@ extern int n, m;                               // number of colums and rows in t
 extern long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator;
 extern long double DiceRodField;
 extern long double VolumeB[200];   // Volume[E] accessible to neutrons at energy E without and with B-field
+extern long double BCutPlanePoint[3], BCutPlaneNormal[3];
 
 // particles
 extern long double H;                               // total energy of particle

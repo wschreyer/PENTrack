@@ -24,3 +24,6 @@
 0		30		360				alpha [�] (in x-y-plane relative to r-vector) <0�..360�>
 0		30		180				gamma [�] (relative to z'-axis) <0�..180�>
 2e-12	1e-6					delx | xend
+======== cut through B-field =============
+0		0		0				point on cut plane (r phi z)
+0		0		1				normal on cut plane (r phi z)

@@ -389,7 +389,7 @@ void Entkommen(long double *ystart, long double t, long double H)        //Klass
 
 void BFeld (long double rloc, long double philoc, long double zloc, long double t){      //B-Feld am Ort des Teilchens berechnen
 	//clock_t mytime1, mytime2;
-	long double Brtemp,Bztemp,Bwstemp,dBdrtemp,dBdztemp;
+	long double Brtemp,Bztemp,dBdrtemp,dBdztemp;
 	
 	if (protneut == NEUTRON) // switching of field only for neutrons valid
 		SwitchField(t);
@@ -397,7 +397,7 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 		BFeldSkal=BFeldSkalGlobal;
 		
 	
-	//BInterpol(rloc, philoc, zloc);
+	Bnull();
 	switch (bfeldwahl)
 	{
 		
@@ -407,22 +407,32 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 						//timer1 =( ((long double)mytime2 - (long double)mytime1) / CLOCKS_PER_SEC ) + timer1;
 						
 						break;
-		case 1: Bnull(rloc,philoc,zloc);  break;
 		case 2:	//mytime1 = clock(); 
 						BInterpol(rloc, philoc, zloc);
 						//mytime2 = clock();
 						//timer1 =( ((long double)mytime2 - (long double)mytime1) / CLOCKS_PER_SEC ) + timer1;
-						Brtemp=Br; Bztemp=Bz;Bwstemp=Bws;dBdrtemp=dBdr;dBdztemp=dBdz;
+						Brtemp=Br; Bztemp=Bz;dBdrtemp=dBdr;dBdztemp=dBdz;
 						Bwsomaple(rloc, philoc, zloc);
 						printf("BrI BrM deltaBr %17LG %17LG %17LG \n", Brtemp, Br, (Brtemp-Br)/Br);
 						printf("BzI BzM deltaBz %17LG %17LG %17LG \n", Bztemp, Bz, (Bztemp-Bz)/Bz);						
-						Br=(Brtemp-Br)/Br; Bz=(Bztemp-Bz)/Bz; Bws=(Bwstemp-Bws)/Bws; dBdr=(dBdrtemp-dBdr)/dBdr; dBdz=(dBdztemp-dBdz)/dBdz;
+						Br=(Brtemp-Br)/Br; Bz=(Bztemp-Bz)/Bz; dBdr=(dBdrtemp-dBdr)/dBdr; dBdz=(dBdztemp-dBdz)/dBdz;
 						
 		case 3: Banalytic(rloc, philoc, zloc, t);
 						break;
 		case 4: BForbes(rloc, philoc, zloc, t);
 						break;
 	}   
+	
+	Bws = sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);			
+	if (Bws>1e-31)
+	{			
+		dBdr   = (Br*dBrdr + Bphi*dBphidr + Bz*dBzdr)  /Bws;
+		dBdz   = (Br*dBrdz + Bphi*dBphidz + Bz*dBzdz)  /Bws;
+		dBdphi = (Br*dBrdphi + Bphi*dBphidphi + Bz*dBzdphi)/Bws;
+	}
+//	else
+//		Bnull();
+	
 	Feldcount++;
 	return;
 }
@@ -555,84 +565,6 @@ void KartCylCoord(long double Wx, long double Wy, long double Wz, long double ph
 }
 
  
-
-//-----------------------------------------------------------------------------
-void CoordRotSeeger(long double Wx, long double Wy, long double Wz, long double Bx, long double By, long double Bz, long double *Wx2, long double *Wy2, long double *Wz2, long double *beta, long double *delta){  // Festes Kartesisches Koord.System in B reindrehen
-	// a vector W is being transformed into a system where the z axis points to Bz gedreht
-	long double Wx1, Wy1, Wz1, Wx1a, Wy1a, Wz1a;
-	long double Bx1, Bz1;                  // B-Komponenten im Coordsys nach 1. Drehung, n�tig um Winkel f�r 2. Drehung zu berechnen
-
-	if ((By==0) && (Bx==0)) 
-		*beta=0.0;
-	else 
-		*beta = - atan2l(By,Bx);          // Winkel f�r Drehung um z-Achse berechnen, so  dass x1 in z, B Ebene liegt
-
-
-	Wx1 = cosl(*beta) * Wx - sinl(*beta) * Wy;         // Drehung um z-Achse mit Drehwinkel beta
-	Wy1 = sinl(*beta) * Wx + cosl(*beta) * Wy;
-	Wz1 = Wz;
-	
-	Bx1 = cosl(*beta) * Bx - sinl(*beta) * By;         // B Vektor in transformieren
-	Bz1 = Bz;
-
-	if ((Bx1==0) && (Bz1==0)) 
-		*delta=0.0;
-	else 
-		*delta = - atan2l(Bx1,Bz1);          // Winkel f�r Drehung um y1-Achse berechnen, so dass z in B Richtung zeigt
-
-
-	Wx1a =  cosl(*delta) * Wx1 + sinl(*delta) * Wz1;         // Drehung um y1 Achse mit Drehwinkel delta
-	Wy1a = Wy1;
-	Wz1a  = -sinl(*delta) * Wx1 + cosl(*delta) * Wz1;
-
-
-	*Wx2 = cosl(-(*beta)) * Wx1a - sinl(-(*beta)) * Wy1a;         // Zur�ckdrehung um minus beta
-	*Wy2 = sinl(-(*beta)) * Wx1a + cosl(-(*beta)) * Wy1a;
-	*Wz2 = Wz1a;
-
-	return;
-}
-
-
-//-----------------------------------------------------------------------------
-void BackCoordRotSeeger(long double Wx2, long double Wy2, long double Wz2, long double beta, long double delta, long double *Wx0, long double *Wy0, long double *Wz0){  // R�cktrafo, gleiche Winkel wie bei Hintrafo verwenden
-	// ein Eingabevektor W wird nach W2 gedreht
-	long double Wx1, Wy1, Wz1, Wx1a, Wy1a, Wz1a;
-
-	Wx1a = cosl(beta) * Wx2 - sinl(beta) * Wy2;         // Zur�ckdrehung um  beta
-	Wy1a = sinl(beta) * Wx2 + cosl(beta) * Wy2;
-	Wz1a = Wz2;
-	
-	Wx1 =  cosl(-delta) * Wx1a + sinl(-delta) * Wz1a;         // Drehung um y1 Achse mit Drehwinkel -delta
-	Wy1 = Wy1a;
-	Wz1  = -sin(-delta) * Wx1a + cosl(-delta) * Wz1a;
-	
-	*Wx0 = cosl(-beta) * Wx1 - sinl(-beta) * Wy1;         // Drehung um z-Achse mit Drehwinkel -beta
-	*Wy0 = sinl(-beta) * Wx1 + cosl(-beta) * Wy1;
-	*Wz0 = Wz1;
-	return;
-}
-
-
-
-//Funktion zur Ausgabe des gr��eren von zwei long double
-long double RPMax(long double w1, long double w2){
-	if (w1 >= w2)
-        return w1;
-	else if (w2 > w1)
-        return w2;
-	exit(-1);
-}
-
-//Funktion zur Ausgabe des kleineren von zwei long double
-long double RPMin(long double w1, long double w2){
-	if (w1 <= w2)
-		return w1;
-	else if (w2 < w1)
-        return w2;
-	exit(-1);
-}
-
 // The endcodes of trajectories are added up here
 void IncrementCodes(int kennz){
 	switch (kennz){
@@ -779,20 +711,5 @@ long double CalcIncidentAngle(long double r, long double phi, long double z, lon
 long double AbsValueCart(long double x, long double y, long double z)
 {
 	return sqrtl(powl(x,2)+powl(y,2)+powl(z,2));
-}
-
-// calculate crossproduct c of two three vectors a and b in cartesian coordinates c =  a x b
-void KartCrossProd(long double Ax, long double Ay, long double Az, long double Bx, long double By, long double Bz , long double *Cx, long double *Cy, long double *Cz)
-{
-	(*Cx) = Ay*Bz-Az*By;
-	(*Cy) = Az*Bx-Ax*Bz;
-	(*Cz) = Ax*By-Ay*Bx;
-	return;
-}
-
-// returns scalarproduct of two three vectors a and b in cartesian coordinates  a * b
-long double KartScalarProd(long double Ax, long double Ay, long double Az, long double Bx, long double By, long double Bz)
-{
-	return Ax*Bx+Ay*By+Az*Bz;
 }
 
