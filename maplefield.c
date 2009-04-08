@@ -91,56 +91,29 @@ long double mapleBzdz(long double r,long double z)
 
 void Bwsomaple(long double r,long double phi,long double z)
 {
-  long double dBbdphi, dBphidr, dBphidz, dBphidphi;
-  long double pi= 3.14159, twopi=2.*pi;
-
-
-  dBphidphi=0;
-  R=0;
-
-  if((z>=0) & (z<=1.2) )
-   {
-
-    if ((r<=ra) & (r>=ri))
-      {
-
-      Br= BFeldSkal * mapleBrp(r,z);
-      Bz= BFeldSkal * mapleBzp(r,z);
-      dBrdr= BFeldSkal * mapleBrdr(r,z);
-      dBrdz= BFeldSkal * mapleBrdz(r,z);
-      dBzdr= BFeldSkal * mapleBzdr(r,z);
-      dBzdz= BFeldSkal * mapleBzdz(r,z);
-
-      }
+	if((z>=0) & (z<=1.2) ){
+		if ((r<=ra) & (r>=ri)){
+      		Br= BFeldSkal * mapleBrp(r,z);
+      		Bz= BFeldSkal * mapleBzp(r,z);
+      		dBrdr= BFeldSkal * mapleBrdr(r,z);
+      		dBrdz= BFeldSkal * mapleBrdz(r,z);
+      		dBzdr= BFeldSkal * mapleBzdr(r,z);
+      		dBzdz= BFeldSkal * mapleBzdz(r,z);
+      	}
     }
 
-   else
-     {
-     
-     dBrdr=0.0;
-     dBrdz=0.0;
-     dBzdr=0.0;
-     dBzdz=0.0;
-     dBbdphi=0.0;
-     }
+   else{     
+     	dBrdr=0.0;
+     	dBrdz=0.0;
+     	dBzdr=0.0;
+     	dBzdz=0.0;
+  	}
 
-  Bphi= Ibar*mu0/(twopi*r);
-  dBphidr= -Bphi/r;
-  dBphidz=0.0;
-  dBdphi= 0.0;
-  Bws= sqrt(Br*Br+Bz*Bz+Bphi*Bphi);
+  	Bphi= Ibar*mu0/(2*pi*r);
+  	dBphidr= -Bphi/r;
+  	dBphidz=0.0;
+  	dBdphi= 0.0;
 
-  if (Bws>0.000001)
-   {
-   dBdr   = (Bphi*dBphidr   + Br*dBrdr + Bz*dBzdr)  /Bws;
-   dBdz   = (Bphi*dBphidz   + Br*dBrdz + Bz*dBzdz)  /Bws;
-   dBdphi = (Bphi*dBphidphi )/Bws;
-   }
-  else
-   {
-   dBdr=0; dBdphi=0; dBdz=0;
-   }
-
-  return;
-  }
+  	return;
+}
 

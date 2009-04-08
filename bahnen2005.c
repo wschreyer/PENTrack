@@ -45,6 +45,7 @@ int n, m;                               // number of colums and rows in the inpu
 long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep=0.001, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator = 0.0;
 long double DiceRodField=0;
 long double VolumeB[200] = {0.0};   // Volume[E] accessible to neutrons at energy E without and with B-field
+long double BCutPlanePoint[3], BCutPlaneNormal[3];
 
 // particles
 long double H;                               // total energy of particle
@@ -80,7 +81,7 @@ long int kennz0=0,kennz1=0,kennz2=0,kennz3=0,kennz4=0,kennz5=0,kennz6=0,kennz7=0
 long double ri= 0.12, ra= 0.48;                      //dimensions of torus for Maple field
 long double zmax=1.2, zmin=0.0;    //dimensions of torus
 long double hlid;    // height of a possible lid to be put on the storage bottle [m]
-long double R, rmax, rmin;
+long double rmax, rmin;
 long double LueckeR=0.001, LueckeZ=0.05, Luecke=0.05;      // size of the gap in the outer left corner (m)
 long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der bentigt wird
 long double detz, detrmin, detrmax;          // where is the detector?
@@ -475,7 +476,7 @@ void derivs(long double x, long double *y, long double *dydx){
 	if (protneut == NEUTRON)
 	{ // neutron equations of motion
 		// Bahnverfolgung ausgeschaltet => gerade Bahn der Teilchen
-		/*                      
+		/*                    
 		dydx[1]= y[2];
 		dydx[2]= 0;
 		dydx[3]= y[4];
@@ -1105,7 +1106,6 @@ void IntegrateParticle(){
 		
 		IncrementCodes(kennz);
 
-		R=0;
 		 
 	} // end proton neutron calc
 	
