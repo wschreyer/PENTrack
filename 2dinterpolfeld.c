@@ -104,36 +104,6 @@ void GetDim(int *m, int *n)
 }
 
 
-// Zu den Arrays BrTab, BzTab, BphiTab werden die entsprechenden Ableitungen berechnet:
-// z.B: BrTab1 = dBrTab / dr
-void CalcDeriv(long double rind[], long double zind[], long double **BrTab, long double **BzTab, long double **BphiTab, long double **BrTab1, long double **BrTab2,long double **BrTab12, long double **BzTab1, long double **BzTab2, long double **BzTab12, long double **BphiTab1, long double **BphiTab2,long double **BphiTab12,int m, int n)
-{
-
-	int j, k;
-
-	for (j=2; j < m; j++)
-	{
-			for (k=2; k < n; k++)
-			{
-			BrTab1[j][k] = ( BrTab[j+1][k] - BrTab[j-1][k] ) / ( rind[j+1] - rind[j-1] );   // derivative in r direction
-			BrTab2[j][k] = ( BrTab[j][k+1] - BrTab[j][k-1] ) / ( zind[k+1] - zind[k-1] );  // derivative in z direction
-			BrTab12[j][k] = ( BrTab[j+1][k+1] - BrTab[j+1][k-1] - BrTab[j-1][k+1] + BrTab[j-1][k-1]) / ((rind[j+1] - rind[j-1]) * (zind[k+1] - zind[k-1]));  // cross derivative
-			  
-			BzTab1[j][k] = ( BzTab[j+1][k] - BzTab[j-1][k] ) / ( rind[j+1] - rind[j-1] ); 
-			BzTab2[j][k] = ( BzTab[j][k+1] - BzTab[j][k-1] ) / ( zind[k+1] - zind[k-1] );
-			BzTab12[j][k] = ( BzTab[j+1][k+1] - BzTab[j+1][k-1] - BzTab[j-1][k+1] + BzTab[j-1][k-1] ) / ( (rind[j+1] - rind[j-1]) * (zind[k+1] - zind[k-1]) );
-			  
-			BphiTab1[j][k] = ( BphiTab[j+1][k] - BphiTab[j-1][k] ) / ( rind[j+1] - rind[j-1] );
-			BphiTab2[j][k] = ( BphiTab[j][k+1] - BphiTab[j][k-1] ) / ( zind[k+1] - zind[k-1] );
-			BphiTab12[j][k] = ( BphiTab[j+1][k+1] - BphiTab[j+1][k-1] - BphiTab[j-1][k+1] + BphiTab[j-1][k-1] ) / ( (rind[j+1] - rind[j-1]) * (zind[k+1] - zind[k-1]) );
-        }
-	}
-
-	
-	printf("\nDerivatives calculated.  \n");
-	fprintf(LOGSCR,"\nDerivatives calculated.  \n");
-}
-
 // Zu den Arrays BrTab, BphiTab, BphiTab werden die entsprechenden Ableitungen berechnet:
 // z.B: BrTab1 = dBrTab / dr
 void CalcDeriv4th(long double rind[], long double zind[], long double **BrTab, long double **BzTab, long double **BphiTab, long double **BrTab1, long double **BrTab2,long double **BrTab12, long double **BzTab1, long double **BzTab2, long double **BzTab12, long double **BphiTab1, long double **BphiTab2,long double **BphiTab12,int m, int n)
@@ -557,7 +527,7 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 		//hunt(rind, m, r_n, &indr);
 		//hunt(zind, n, z_n, &indz);		
 		//printf("hunt: indr =  %i, indz = %i \n ",indr, indz);
-		
+	
 		// new calculation of indexes
 		indr = 1+(int) ((r_n- conv_rA)/(conv_rB));    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!		
 		indz = 1+(int) ((z_n-conv_zA) / (conv_zB));  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
@@ -568,63 +538,36 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 		//dz = zind[indz + 1] - zind [indz];
 		//cout << "Indizes: " << indr << " " << indz << "\n";
 
-		if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3) ){			
-									
-			// 2D polynomial interpolation
-			// for field interpolation tests 
-			/*if(indr-ordleft<2) indr = 2+ordleft*2;
-			if(indr+ordright>(m-1)) indr = m-(1+ordright)*2;
-			if(indz-ordleft<2) indz = 2+ordleft*2;
-			if(indz+ordright>(n-1)) indz = n-(1+ordright)*2;	*/
+		if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)  ){			
+			if (BFeldSkal != 0){
+										
+				// 2D polynomial interpolation
+				// for field interpolation tests 
+				/*if(indr-ordleft<2) indr = 2+ordleft*2;
+				if(indr+ordright>(m-1)) indr = m-(1+ordright)*2;
+				if(indz-ordleft<2) indz = 2+ordleft*2;
+				if(indz+ordright>(n-1)) indz = n-(1+ordright)*2;	*/
 			
-			if(BFeldSkal!=0)
-			{
 				// bicubic interpolation
 				bcuint_new(indr, indz, Brc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Br, &dBrdr, &dBrdz);
 				//bcuint_new(indr, indz, Bphic, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bphi, &dBphidr, &dBphidz);
 				bcuint_new(indr, indz, Bzc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bz, &dBzdr, &dBzdz);
+
+				Br = BFeldSkal * Br;
+				dBrdr = BFeldSkal * dBrdr;
+				dBrdz = BFeldSkal * dBrdz;
+				Bz = BFeldSkal * Bz;
+				dBzdr = BFeldSkal * dBzdr;
+				dBzdz = BFeldSkal * dBzdz;
 			}
-			else if (BFeldSkal == 0)
-			{
-				Br = 0.0;
-				dBrdr = 0.0;
-				//dBrdphi = 0.0;
-				dBrdz = 0;
-				//Bphi=0.0;
-				//dBphidr = 0.0;
-				//dBphidphi = 0.0;
-				//dBphidz = 0.0;
-				Bz = 0.0;
-				dBzdr = 0.0;
-				//dBzdphi = 0.0;
-				dBzdz = 0.0;
-			}			
-						
 		} 
-		else 
+		else
 		{
 			printf("\n The array index has left boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n ,indz);
 			fprintf(LOGSCR,"\n The array index has left boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n, indz);
 			OutputState(ystart,1);
 		}
-				
-			Br = BFeldSkal * Br;
-			dBrdr = BFeldSkal * dBrdr;
-			dBrdphi = 0.0;
-			dBrdz = BFeldSkal * dBrdz;
-			//Bphi = RodFieldMultiplicator * BFeldSkal * Bphi;
-			Bphi=0.0;
-			//dBphidr = RodFieldMultiplicator * BFeldSkal * dBphidr;
-			dBphidr = 0.0;
-			dBphidphi = 0.0;
-			//dBphidz = RodFieldMultiplicator * BFeldSkal * dBphidz;
-			dBphidz = 0.0;
-			Bz = BFeldSkal * Bz;
-			dBzdr = BFeldSkal * dBzdr;
-			dBzdphi = 0.0;
-			dBzdz = BFeldSkal * dBzdz;
-		
-		
+
 		// add fields and field derivations of racetrack coils
 		
 		if((Ibar>0)&&(RodFieldMultiplicator>0))
@@ -638,44 +581,14 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 			Racetrack(r_n, phi, z_n, 0.424264, 0.424264, RodFieldMultiplicator*Ibar); 
 			CenterCurrent(r_n, phi, z_n, -4.0*RodFieldMultiplicator*Ibar);
 		}
-		if(Racetracks==2)
+		else if(Racetracks==2)
 		{			
 			// new but slow implementation of racetracks including horizontal parts
 			BarRaceTrack(r_n, phi, z_n, RodFieldMultiplicator*Ibar);   // here B field is only calculated for charged particles and derivatives only for neutrons
 		}
 			
 		}  		
-		
-		
-		
-		Bws = sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);
-		
-		if (Bws>1e-31)
-		{			
-			dBdr   = (Br*dBrdr + Bphi*dBphidr + Bz*dBzdr)  /Bws;
-			//dBdr = (Br*dBrdr +  Bz*dBzdr)  /Bws;
-			dBdz   = (Br*dBrdz + Bphi*dBphidz + Bz*dBzdz)  /Bws;
-			//dBdphi = 0.0; // intrinsic cylindrical symmetry => not any more!!!
-			dBdphi = (Br*dBrdphi + Bphi*dBphidphi + Bz*dBzdphi)/Bws;
-		}
-		else
-		{
-			//if(BFeldSkal!=0&&RodFieldMultiplicator!=0)
-			//	OutputState(ystart,1);
-			Br = 0.;
-			dBrdr = 0.;
-			dBrdz = 0.;
-			Bphi = 0.;
-			dBphidr = 0.;
-			dBphidz = 0.;
-			Bz = 0.;
-			dBzdr = 0.;
-			dBzdz = 0.;
-			dBdr   = 0.;
-			dBdz   = 0.;
-			dBdphi = 0.;
-		}		
-		
+			
 	}
 	else
 	{
@@ -697,197 +610,6 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 			//	OutputState(ystart,1);
 }
 
-
-void BInterpolOld(long double r_n, long double phi, long double z_n){
-	yyy=dvector(1,4);
-	yyy1=dvector(1,4);
-	yyy2=dvector(1,4);
-	yyy12=dvector(1,4);
-	
-	if ((r_n >= r_mi) && (r_n <= r_ma) && (z_n >= z_mi) && (z_n <= z_ma)){
-		//Indizes indr und indz in der Array finden, der zu r_n und z_n passt
-		//hunt(rind, m, r_n, &indr);
-		//hunt(zind, n, z_n, &indz);		
-		//printf("hunt: indr =  %i, indz = %i \n ",indr, indz);
-		
-		// new calculation of indexes
-		indr = 1+(int) ((r_n- conv_rA)/(conv_rB));    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
-		
-		// for field interpolation tests if(indr % 2 != 0) indr-=1; 
-		indz = 1+(int) ((z_n-conv_zA) / (conv_zB));  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
-				// for field interpolation tests if(indz % 2 != 0) indz-=1;
-		//printf("new: indr =  %i, indz = %i \n",indr, indz);
-		//scanf("%LG",&muell);
-		
-		
-				
-		// Abst�nde der Koordinaten voneinander
-		//dr = rind[indr + 1] - rind [indr];
-		//dz = zind[indz + 1] - zind [indz];
-
-		//cout << "Indizes: " << indr << " " << indz << "\n";
-
-		if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3) ){
-			
-					
-						
-			// 2D polynomial interpolation
-			// for field interpolation tests 
-			/*if(indr-ordleft<2) indr = 2+ordleft*2;
-			if(indr+ordright>(m-1)) indr = m-(1+ordright)*2;
-			if(indz-ordleft<2) indz = 2+ordleft*2;
-			if(indz+ordright>(n-1)) indz = n-(1+ordright)*2;	*/
-			
-			if(BFeldSkal!=0)
-			{
-				
-			yyy[1] = BrTab[indr][indz];
-			yyy[2] = BrTab[indr+1][indz];
-			yyy[3] = BrTab[indr+1][indz+1];
-			yyy[4] = BrTab[indr][indz+1];			
-			yyy1[1] = BrTab1[indr][indz];
-			yyy1[2] = BrTab1[indr+1][indz];
-			yyy1[3] = BrTab1[indr+1][indz+1];
-			yyy1[4] = BrTab1[indr][indz+1];			
-			yyy2[1] = BrTab2[indr][indz];
-			yyy2[2] = BrTab2[indr+1][indz];
-			yyy2[3] = BrTab2[indr+1][indz+1];
-			yyy2[4] = BrTab2[indr][indz+1];			
-			yyy12[1] = BrTab12[indr][indz];
-			yyy12[2] = BrTab12[indr+1][indz];
-			yyy12[3] = BrTab12[indr+1][indz+1];
-			yyy12[4] = BrTab12[indr][indz+1];
-			// bicubic interpolation
-			bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Br, &dBrdr, &dBrdz);
-			//bcuint_new(indr, indz, Brc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Br, &dBrdr, &dBrdz);
-			//printf("\n Brold: %.17LG dBrdrold: %.17LG dBrdzold: %.17LG\n", Br, dBrdr, dBrdz);
-			//bcuint_new(indr, indz, Bphic, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bphi, &dBphidr, &dBphidz);
-			//printf("\n Brold: %.17LG dBdrold: %.17LG dBdzold: %.17LG\n", Bphi, dBphidr, dBphidz);
-				
-					
-			yyy[1] = BzTab[indr][indz];
-			yyy[2] = BzTab[indr+1][indz];
-			yyy[3] = BzTab[indr+1][indz+1];
-			yyy[4] = BzTab[indr][indz+1];			
-			yyy1[1] = BzTab1[indr][indz];
-			yyy1[2] = BzTab1[indr+1][indz];
-			yyy1[3] = BzTab1[indr+1][indz+1];
-			yyy1[4] = BzTab1[indr][indz+1];			
-			yyy2[1] = BzTab2[indr][indz];
-			yyy2[2] = BzTab2[indr+1][indz];
-			yyy2[3] = BzTab2[indr+1][indz+1];
-			yyy2[4] = BzTab2[indr][indz+1];			
-			yyy12[1] = BzTab12[indr][indz];
-			yyy12[2] = BzTab12[indr+1][indz];
-			yyy12[3] = BzTab12[indr+1][indz+1];
-			yyy12[4] = BzTab12[indr][indz+1];			
-			bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bz, &dBzdr, &dBzdz);
-			//bcuint_new(indr, indz, Bzc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bz, &dBzdr, &dBzdz);
-			//printf("\n Bzold: %.17LG dBdzold: %.17LG dBzdzold: %.17LG\n", Bz, dBzdr, dBzdz); 
-			}
-			else if (BFeldSkal == 0)
-			{
-				Br = 0.0;
-				dBrdr = 0.0;
-				//dBrdphi = 0.0;
-				dBrdz = BFeldSkal * dBrdz;
-				//Bphi=0.0;
-				//dBphidr = 0.0;
-				//dBphidphi = 0.0;
-				//dBphidz = 0.0;
-				Bz = 0.0;
-				dBzdr = 0.0;
-				//dBzdphi = 0.0;
-				dBzdz = 0.0;
-			}			
-						
-		} 
-		else 
-		{
-			printf("\n The array index has left boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n ,indz);
-			fprintf(LOGSCR,"\n The array index has left boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n, indz);
-			OutputState(ystart,1);
-		}
-				
-			Br = BFeldSkal * Br;
-			dBrdr = BFeldSkal * dBrdr;
-			dBrdphi = 0.0;
-			dBrdz = BFeldSkal * dBrdz;
-			//Bphi = RodFieldMultiplicator * BFeldSkal * Bphi;
-			Bphi=0.0;
-			//dBphidr = RodFieldMultiplicator * BFeldSkal * dBphidr;
-			dBphidr = 0.0;
-			dBphidphi = 0.0;
-			//dBphidz = RodFieldMultiplicator * BFeldSkal * dBphidz;
-			dBphidz = 0.0;
-			Bz = BFeldSkal * Bz;
-			dBzdr = BFeldSkal * dBzdr;
-			dBzdphi = 0.0;
-			dBzdz = BFeldSkal * dBzdz;
-		
-		
-		// add fields and field derivations of racetrack coils
-		
-		if((Ibar>0)&&(RodFieldMultiplicator>0))
-			{
-			Racetrack(r_n, phi, z_n, -0.424264, -0.424264, Ibar);
-			Racetrack(r_n, phi, z_n, 0.424264, -0.424264, Ibar); 
-			Racetrack(r_n, phi, z_n, -0.424264, 0.424264, Ibar);
-			Racetrack(r_n, phi, z_n, 0.424264, 0.424264, Ibar); 
-			CenterCurrent(r_n, phi, z_n, -4.0l*Ibar);
-			}  
-		
-		Bws = sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);
-		
-		if (Bws>1e-31)
-		{
-			
-			dBdr   = (Br*dBrdr + Bphi*dBphidr + Bz*dBzdr)  /Bws;
-			//dBdr = (Br*dBrdr +  Bz*dBzdr)  /Bws;
-			dBdz   = (Br*dBrdz + Bphi*dBphidz + Bz*dBzdz)  /Bws;
-			//dBdphi = 0.0; // intrinsic cylindrical symmetry => not any more!!!
-			dBdphi = (Br*dBrdphi + Bphi*dBphidphi + Bz*dBzdphi)/Bws;
-		}
-		else
-		{
-			Br = 0.;
-			dBrdr = 0.;
-			dBrdz = 0.;
-			Bphi = 0.;
-			dBphidr = 0.;
-			dBphidz = 0.;
-			Bz = 0.;
-			dBzdr = 0.;
-			dBzdz = 0.;
-			dBdr   = 0.;
-			dBdz   = 0.;
-			dBdphi = 0.;
-		}
-		
-		
-	}
-	else
-	{
-		//char bloed;
-		printf("The particle has entered forbidden space: r=%.17LG, z=%.17LG !!! I will terminate it now! \n", r_n, z_n);
-		fprintf(LOGSCR,"The particle has entered forbidden space: r=%.17LG, z=%.17LG !!! I will terminate it now! \n", r_n, z_n);
-		
-		//OutputState(ystart,1);
-		
-		dBrdr=0.0;dBrdz=0.0;
-		dBzdr=0.0;dBzdz=0.0;
-		Br=0.0;Bphi=0.0;Bz=0.0;
-		dBdr=0.; dBdphi=0.; dBdz=0.;
-		kennz = 2;    // something's wrong
-		stopall=1;		
-		
-	}
-	free_dvector(yyy,1,4);
-	free_dvector(yyy1,1,4);
-	free_dvector(yyy2,1,4);
-	free_dvector(yyy12,1,4);
-	
-}
 
 
 void EInterpol(long double r_n, long double phi, long double z_n){
@@ -1023,42 +745,12 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 }
 
 
-// TH: Dokumentation !!!!!!!
-char *stripws(char *string,char *retstr){
-	unsigned pws_i=0,pws_n=0,pws_ws=0;
-	
-	for(pws_i=0;pws_i<strlen(string)-1;pws_i++){
-		if((string[pws_i]==' ')||(string[pws_i]=='	')){       //????????
-			if(pws_ws==0) retstr[pws_n++]=' ';
-			pws_ws=1;
-		}else{
-			if(pws_ws==1){
-				if(string[pws_i]!='-'){
-					retstr[pws_n++]=' ';
-				}
-			}
-			pws_ws=0;
-			retstr[pws_n++]=string[pws_i];
-		}
-	}
-	retstr[pws_n]='\0';
-	fprintf(LOGSCR,"stringlaenge: %i\n",strlen(retstr));
-	fprintf(LOGSCR,"%s\n",retstr);
-	
-	return retstr;
-}
-
-
 // produce zero Bfield
-long double Bnull(long double r,long double phi,long double z)
+long double Bnull()
 {
-	long double dBbdphi, dBphidr, dBphidz, dBphidphi;
-  
-	dBphidphi=0;
-	R=0;
-
-
-	
+	Br = 0.0;
+	Bphi = 0.0;
+	Bz = 0.0;
 	dBrdr=0.0;
 	dBrdphi=0.0;
 	dBrdz=0.0;
@@ -1068,23 +760,11 @@ long double Bnull(long double r,long double phi,long double z)
 	dBzdr=0.0;
 	dBzdphi=0.0;
 	dBzdz=0.0;
-	dBbdphi=0.0;
 
-	dBphidr= 0.0;
-	dBphidz=0.0;
-	dBdphi= 0.0;
-	Bws= 1e-31;
-
-	if (Bws>1e-19)
-	{
-		dBdr   = (Bphi*dBphidr   + Br*dBrdr + Bz*dBzdr)  /Bws;
-		dBdz   = (Bphi*dBphidz   + Br*dBrdz + Bz*dBzdz)  /Bws;
-		dBdphi = (Bphi*dBphidphi )/Bws;
-	}
-	else
-	{
-		dBdr=0; dBdphi=0; dBdz=0;
-	}
+	Bws = 0.0;
+	dBdr=0;
+	dBdphi=0;
+	dBdz=0;
 	
 	return 0;
 }
@@ -1271,27 +951,10 @@ void Preinterpol(int p)
 	return;
 }
 
-// 2 dimensional polynomial interpolation of order m-1, n-1
-// **ya has to be the m*n array within which the point [x1,x2] lies
-void polin2(long double x1a[],long double x2a[], long double **ya, int m, int n, long double x1, long double x2, long double *y, long double *dy)
-{
-	int j;
-	long double *ymtmp,*vector(int nl,int nh);
-	//void polint(),free_vector();
-
-	ymtmp=vector(1,m);
-	for (j=1;j<=m;j++) {
-		BFpolint(x2a,ya[j],n,x2,&ymtmp[j],dy);
-	}
-	BFpolint(x1a,ymtmp,m,x1,y,dy);
-	free_vector(ymtmp,1,m);
-}
 
 // produce linearly rising B-field in z-direction and linearly changing in time
 long double Banalytic(long double r,long double phi,long double z, long double t)
 {
-	long double dBphidr, dBphidz, dBphidphi;
-  
 	long double dBx = 5;
 	long double x0 = 1.1;
 	long double alpha = 0.5;
@@ -1308,38 +971,25 @@ long double Banalytic(long double r,long double phi,long double z, long double t
 	Bphi = 0;
 	Bz = 0;
 	dBrdr=0.0;
-        dBrdphi=0.0;
-        dBrdz=-dBx*(alpha+beta*t)*(x0-z);
+    dBrdphi=0.0;
+    dBrdz=-dBx*(alpha+beta*t)*(x0-z);
 	dBphidr=0.0;
-        dBphidphi=0.0;
+    dBphidphi=0.0;
 	dBphidz=0.0;
-        dBzdr=0.0;
-        dBzdphi=0.0;
-        dBzdz=0.0;
+    dBzdr=0.0;
+    dBzdphi=0.0;
+    dBzdz=0.0;
         	
-	Bws= BFeldSkal * fabsl(Br);
-	
-		
-	if (Bws>1e-31)
-	{
-		Br = BFeldSkal * Br;
-		dBrdr = BFeldSkal * dBrdr;
-		dBrdz = BFeldSkal * dBrdz;
-		Bphi = RodFieldMultiplicator * BFeldSkal * Bphi;
-		dBphidr = RodFieldMultiplicator * BFeldSkal * dBphidr;
-		dBphidz = RodFieldMultiplicator * BFeldSkal * dBphidz;
-		dBphidphi = 0.0;
-		Bz = BFeldSkal * Bz;
-		dBzdr = BFeldSkal * dBzdr;
-		dBzdz = BFeldSkal * dBzdz;
-		dBdr   = (Bphi*dBphidr   + Br*dBrdr   + Bz*dBzdr)  /Bws;
-		dBdz   = (Bphi*dBphidz   + Br*dBrdz   + Bz*dBzdz)  /Bws;
-		dBdphi = 0.0;
-	}
-	else
-	{
-		dBdr=0; dBdphi=0; dBdz=0;
-	}
+	Br *= BFeldSkal;
+	dBrdr *= BFeldSkal;
+	dBrdz *= BFeldSkal;
+	Bphi *= RodFieldMultiplicator * BFeldSkal;
+	dBphidr *= RodFieldMultiplicator * BFeldSkal;
+	dBphidz *= RodFieldMultiplicator * BFeldSkal;
+	dBphidphi = 0.0;
+	Bz *= BFeldSkal;
+	dBzdr *= BFeldSkal;
+	dBzdz *= BFeldSkal;
 	
 	return 0;
 }
@@ -1381,8 +1031,7 @@ void Racetrack(long double r,long double phi,long double z,  long double lx, lon
       long double t36 = r*t16;
       long double t37 = t5*ly;
       long double t42 = 1/t9;
-      dBrdrv = vorfaktor*(ly*t2-lx*t5)*t25-t8*t33*(2.0*t34-2.0*t35+2.0*t36-2.0*
-t37)-t8*t23*t42;
+      dBrdrv = vorfaktor*(ly*t2-lx*t5)*t25-t8*t33*(2.0*t34-2.0*t35+2.0*t36-2.0*t37)-t8*t23*t42;
       dBrdphiv = vorfaktor*(-t19-t13)*t25+2.0*t8*t33*t7;
       long double t53 = vorfaktor*(-t17-t19-t11+t13);
       long double t54 = t12-lx;
@@ -1395,10 +1044,8 @@ t37)-t8*t23*t42;
       long double t61 = t60*t24;
       Bphiv = t53*t61;
       long double t69 = 1/t59/t58*t24;
-      dBphidrv = vorfaktor*(-2.0*t36-t37-2.0*t34+t35)*t61-t53*t69*(2.0*t54*t2+
-2.0*t56*t5)/2.0-t53*t60*t42;
-      dBphidphiv = vorfaktor*(-t3-t6)*t61-t53*t69*(-2.0*t54*r*t5+2.0*t56*r*t2)/
-2.0;
+      dBphidrv = vorfaktor*(-2.0*t36-t37-2.0*t34+t35)*t61-t53*t69*(2.0*t54*t2+2.0*t56*t5)/2.0-t53*t60*t42;
+      dBphidphiv = vorfaktor*(-t3-t6)*t61-t53*t69*(-2.0*t54*r*t5+2.0*t56*r*t2)/2.0;
 
 
       // add values to current B-values (superposition principle)
@@ -1423,10 +1070,10 @@ void CenterCurrent(long double r,long double phi,long double z, long double I_rt
 	long double vorfaktor = mu0 * I_rt / (2 * pi);	
 		
 	// only Bphi is present
-	Bphi = Bphi + vorfaktor/r;	
+	Bphi += vorfaktor/r;	
 	
 	// dBphidr
-	dBphidr = dBphidr - vorfaktor/(r*r);		
+	dBphidr -= vorfaktor/(r*r);		
 	
 	// dBphidphi =0		
 	
@@ -1443,7 +1090,156 @@ void StraightWireField(const long double r,const long double phi,const long doub
 {
 	long double vorfaktor = mu0 * I_rt / (4 * pi);
 
-	if ((protneut != NEUTRON) || (BruteForce)){
+/*	long double t1 = cosl(SW1phi);
+	long double t2 = t1 * SW1r;
+	long double t3 = cosl(phi);
+	long double t4 = t3 * r;
+	long double t5 = t2 - t4;
+	long double t6 = t5 * t5;
+	long double t7 = sinl(SW1phi);
+	long double t8 = t7 * SW1r;
+	long double t9 = sin(phi);
+	long double t10 = t9 * r;
+	long double t11 = t8 - t10;
+	long double t12 = t11 * t11;
+	long double t13 = SW1z - z;
+	long double t14 = t13 * t13;
+	long double t15 = t6 + t12 + t14;
+	long double t16 = sqrtl(t15);
+	long double t17 = 0.1e1 / t16;
+	long double t18 = t17 * vorfaktor;
+	long double t19 = 0.1e1 / t15;
+	long double t20 = SW1r * SW1r;
+	long double t21 = t1 * t1;
+	long double t23 = cosl(SW2phi);
+	long double t24 = t23 * SW2r;
+	long double t28 = t7 * t7;
+	long double t30 = sinl(SW2phi);
+	long double t31 = t30 * SW2r;
+	long double t37 = SW2z - SW1z;
+	long double t39 = t21 * t20 - t1 * (t24 + t4) * SW1r + t28 * t20 - t7 * (t10 + t31) * SW1r + t24 * t4 + t31 * t10 - t37 * t13;
+	long double t40 = t39 * t39;
+	long double t42 = t24 - t2;
+	long double t43 = t42 * t42;
+	long double t44 = t31 - t8;
+	long double t45 = t44 * t44;
+	long double t46 = t37 * t37;
+	long double t47 = t43 + t45 + t46;
+	long double t48 = 0.1e1 / t47;
+	long double t50 = 0.1e1 - t48 * t40 * t19;
+	long double t51 = sqrtl(t50);
+	long double t52 = 0.1e1 / t51;
+	long double t53 = t52 * t18;
+	long double t54 = t24 - t4;
+	long double t55 = t54 * t54;
+	long double t56 = t31 - t10;
+	long double t57 = t56 * t56;
+	long double t58 = SW2z - z;
+	long double t59 = t58 * t58;
+	long double t60 = t55 + t57 + t59;
+	long double t61 = sqrtl(t60);
+	long double t62 = 0.1e1 / t61;
+	long double t63 = SW2r * SW2r;
+	long double t64 = t23 * t23;
+	long double t69 = t30 * t30;
+	long double t77 = -t64 * t63 + t23 * (t2 + t4) * SW2r - t69 * t63 + t30 * (t8 + t10) * SW2r - t4 * t2 - t10 * t8 - t37 * t58;
+	long double t79 = sqrtl(t47);
+	long double t80 = 0.1e1 / t79;
+	long double t84 = -t80 * t77 * t62 + t80 * t39 * t17;
+	long double t87 = -t37 * t11 + t44 * t13;
+	long double t88 = t87 * t87;
+	long double t91 = -t42 * t13 + t37 * t5;
+	long double t92 = t91 * t91;
+	long double t95 = -t44 * t5 + t42 * t11;
+	long double t96 = t95 * t95;
+	long double t97 = t88 + t92 + t96;
+	long double t98 = sqrtl(t97);
+	long double t99 = 0.1e1 / t98;
+	long double t100 = t99 * t84;
+	long double t101 = t3 * t87;
+	long double t103 = t101 * t100 * t53;
+	long double t104 = t9 * t91;
+	long double t106 = t104 * t100 * t53;
+	long double t109 = 0.1e1 / t16 / t15;
+	long double t110 = t109 * vorfaktor;
+	long double t111 = t84 * t52;
+	long double t112 = t111 * t110;
+	long double t113 = t87 * t99;
+	long double t116 = -t3 * t5 - t9 * t11;
+	long double t117 = 0.2e1 * t116 * t3;
+	long double t122 = 0.1e1 / t51 / t50;
+	long double t124 = t84 * t122 * t18;
+	long double t125 = t15 * t15;
+	long double t127 = t40 / t125;
+	long double t130 = t39 * t19;
+	long double t139 = -t1 * t3 * SW1r - t7 * t9 * SW1r + t23 * SW2r * t3 + t30 * SW2r * t9;
+	long double t143 = 0.2e1 * t116 * t48 * t127 - 0.2e1 * t139 * t48 * t130;
+	long double t144 = t143 * t3;
+	long double t150 = t77 / t61 / t60;
+	long double t159 = t39 * t109;
+	long double t166 = t99 * ((-t3 * t54 - t9 * t56) * t80 * t150 - t80 * t139 * t62 - t116 * t80 * t159 + t80 * t139 * t17);
+	long double t169 = t111 * t18;
+	long double t171 = 0.1e1 / t98 / t97;
+	long double t172 = t87 * t171;
+	long double t173 = t9 * t87;
+	long double t175 = t3 * t91;
+	long double t178 = t42 * t9;
+	long double t179 = t44 * t3 - t178;
+	long double t181 = t37 * t173 - t37 * t175 + t179 * t95;
+	long double t182 = 0.2e1 * t181 * t3;
+	long double t186 = t91 * t99;
+	long double t187 = 0.2e1 * t116 * t9;
+	long double t191 = t143 * t9;
+	long double t197 = t91 * t171;
+	long double t198 = 0.2e1 * t181 * t9;
+	long double t207 = t9 * r * t5 - t3 * r * t11;
+	long double t208 = 0.2e1 * t207 * t3;
+	long double t214 = SW1r * r;
+	long double t221 = t1 * t9 * t214 - t7 * t3 * t214 - t24 * t10 + t31 * t4;
+	long double t225 = 0.2e1 * t207 * t48 * t127 - 0.2e1 * t221 * t48 * t130;
+	long double t226 = t225 * t3;
+	long double t246 = t99 * ((t9 * r * t54 - t3 * r * t56) * t80 * t150 - t80 * t221 * t62 - t207 * t80 * t159 + t80 * t221 * t17);
+	long double t257 = -t44 * t10 - t42 * t4;
+	long double t259 = t37 * t3 * r * t87 + t37 * t9 * r * t91 + t257 * t95;
+	long double t260 = 0.2e1 * t259 * t3;
+	long double t264 = r * t99;
+	long double t265 = t3 * t3;
+	long double t266 = t37 * t265;
+	long double t270 = t173 * t100 * t53;
+	long double t271 = 0.2e1 * t207 * t9;
+	long double t275 = t225 * t9;
+	long double t281 = 0.2e1 * t259 * t9;
+	long double t285 = t9 * t9;
+	long double t286 = t37 * t285;
+	long double t290 = t175 * t100 * t53;
+	long double t291 = -t208 * t113 * t112 / 0.2e1 - t226 * t113 * t124 / 0.2e1 + t101 * t246 * t53 - t260 * t172 * t169 / 0.2e1 + t266 * t264 * t169 - t270 - t271 * t186 * t112 / 0.2e1 - t275 * t186 * t124 / 0.2e1 + t104 * t246 * t53 - t281 * t197 * t169 / 0.2e1 + t286 * t264 * t169 + t290;
+	long double t292 = -0.2e1 * t13 * t3;
+	long double t301 = -0.2e1 * t13 * t48 * t127 - 0.2e1 * t37 * t48 * t130;
+	long double t302 = t301 * t3;
+	long double t317 = t99 * (-t58 * t80 * t150 - t80 * t37 * t62 + t13 * t80 * t159 + t80 * t37 * t17);
+	long double t322 = -t44 * t87 + t42 * t91;
+	long double t323 = 0.2e1 * t322 * t3;
+	long double t330 = -0.2e1 * t13 * t9;
+	long double t334 = t301 * t9;
+	long double t340 = 0.2e1 * t322 * t9;
+	long double t429 = t52 * t110;
+	long double t434 = t122 * t18;
+	long double t441 = t171 * t84;
+	Br = 		t103 + t106;
+	dBrdr = 	-t117 * t113 * t112 / 0.2e1 - t144 * t113 * t124 / 0.2e1 + t101 * t166 * t53 - t182 * t172 * t169 / 0.2e1 - t187 * t186 * t112 / 0.2e1 - t191 * t186 * t124 / 0.2e1 + t104 * t166 * t53 - t198 * t197 * t169 / 0.2e1;
+	dBrdphi = 	t291;
+	dBrdz = 	-t292 * t113 * t112 / 0.2e1 - t302 * t113 * t124 / 0.2e1 + t101 * t317 * t53 - t323 * t172 * t169 / 0.2e1 - t44 * t3 * t100 * t53 - t330 * t186 * t112 / 0.2e1 - t334 * t186 * t124 / 0.2e1 + t104 * t317 * t53 - t340 * t197 * t169 / 0.2e1 + t178 * t100 * t53;
+	Bphi = 		-t270 + t290;
+	dBphidr = 	t187 * t113 * t112 / 0.2e1 + t191 * t113 * t124 / 0.2e1 - t173 * t166 * t53 + t198 * t172 * t169 / 0.2e1 - t286 * t100 * t53 - t117 * t186 * t112 / 0.2e1 - t144 * t186 * t124 / 0.2e1 + t175 * t166 * t53 - t182 * t197 * t169 / 0.2e1 - t266 * t100 * t53;
+	dBphidphi = t271 * t113 * t112 / 0.2e1 + t275 * t113 * t124 / 0.2e1 - t173 * t246 * t53 + t281 * t172 * t169 / 0.2e1 - t103 - t208 * t186 * t112 / 0.2e1 - t226 * t186 * t124 / 0.2e1 + t175 * t246 * t53 - t260 * t197 * t169 / 0.2e1 - t106;
+	dBphidz = 	t330 * t113 * t112 / 0.2e1 + t334 * t113 * t124 / 0.2e1 - t173 * t317 * t53 + t340 * t172 * t169 / 0.2e1 + t9 * t44 * t100 * t53 - t292 * t186 * t112 / 0.2e1 - t302 * t186 * t124 / 0.2e1 + t175 * t317 * t53 - t323 * t197 * t169 / 0.2e1 + t3 * t42 * t100 * t53;
+	Bz = 		t95 * t100 * t53;
+	dBzdr = 	-t116 * t95 * t100 * t429 - t143 * t95 * t100 * t434 / 0.2e1 + t95 * t166 * t53 - t181 * t95 * t441 * t53 + t179 * t100 * t53;
+	dBzdphi = 	-t207 * t95 * t100 * t429 - t225 * t95 * t100 * t434 / 0.2e1 + t95 * t246 * t53 - t259 * t95 * t441 * t53 + t257 * t100 * t53;
+	dBzdz = 	t13 * t95 * t100 * t429 - t301 * t95 * t100 * t434 / 0.2e1 + t95 * t317 * t53 - t322 * t95 * t441 * t53;
+*/
+
+//	if ((protneut != NEUTRON) || (BruteForce)){
 		long double t1 = cosl(SW1phi);
 		long double t2 = t1 * SW1r;
 		long double t3 = cosl(phi);
@@ -1500,73 +1296,73 @@ void StraightWireField(const long double r,const long double phi,const long doub
 		Br += t3 * t87 * t100 * t53 + t9 * t91 * t100 * t53;
 		Bphi += -t9 * t87 * t100 * t53 + t3 * t91 * t100 * t53;
 		Bz += t95 * t100 * t53;
-	}
-	else{
-		long double t1 = cosl(SW1phi);
-		long double t2 = t1 * SW1r;
-		long double t3 = cosl(phi);
-		long double t4 = t3 * r;
-		long double t5 = t2 - t4;
-		long double t6 = t5 * t5;
-		long double t7 = sinl(SW1phi);
-		long double t8 = t7 * SW1r;
-		long double t9 = sinl(phi);
-		long double t10 = t9 * r;
-		long double t11 = t8 - t10;
-		long double t12 = t11 * t11;
-		long double t13 = SW1z - z;
-		long double t14 = t13 * t13;
-		long double t15 = t6 + t12 + t14;
-		long double t16 = sqrtl(t15);
+//	}
+//	else{
+		t1 = cosl(SW1phi);
+		t2 = t1 * SW1r;
+		t3 = cosl(phi);
+		t4 = t3 * r;
+		t5 = t2 - t4;
+		t6 = t5 * t5;
+		t7 = sinl(SW1phi);
+		t8 = t7 * SW1r;
+		t9 = sinl(phi);
+		t10 = t9 * r;
+		t11 = t8 - t10;
+		t12 = t11 * t11;
+		t13 = SW1z - z;
+		t14 = t13 * t13;
+		t15 = t6 + t12 + t14;
+		t16 = sqrtl(t15);
 		long double t18 = 0.1e1 / t16 / t15;
 		long double t19 = t18 * vorfaktor;
-		long double t20 = 0.1e1 / t15;
-		long double t21 = SW1r * SW1r;
+		t20 = 0.1e1 / t15;
+		t21 = SW1r * SW1r;
 		long double t22 = t1 * t1;
-		long double t24 = cosl(SW2phi);
+		t24 = cosl(SW2phi);
 		long double t25 = t24 * SW2r;
 		long double t29 = t7 * t7;
-		long double t31 = sinl(SW2phi);
+		t31 = sinl(SW2phi);
 		long double t32 = t31 * SW2r;
 		long double t38 = SW2z - SW1z;
-		long double t40 = -t22 * t21 + t1 * (t25 + t4) * SW1r - t29 * t21 + t7 * (t10 + t32) * SW1r - t25 * t4 - t32 * t10 + t38 * t13;
+		t40 = -t22 * t21 + t1 * (t25 + t4) * SW1r - t29 * t21 + t7 * (t10 + t32) * SW1r - t25 * t4 - t32 * t10 + t38 * t13;
 		long double t41 = t40 * t40;
-		long double t43 = t25 - t2;
-		long double t44 = t43 * t43;
-		long double t45 = t32 - t8;
-		long double t46 = t45 * t45;
-		long double t47 = t38 * t38;
+		t43 = t25 - t2;
+		t44 = t43 * t43;
+		t45 = t32 - t8;
+		t46 = t45 * t45;
+		t47 = t38 * t38;
 		long double t48 = t44 + t46 + t47;
 		long double t49 = 0.1e1 / t48;
-		long double t51 = 0.1e1 - t49 * t41 * t20;
+		t51 = 0.1e1 - t49 * t41 * t20;
 		long double t52 = sqrtl(t51);
-		long double t53 = 0.1e1 / t52;
-		long double t54 = SW2r * SW2r;
-		long double t55 = t24 * t24;
-		long double t60 = t31 * t31;
-		long double t67 = SW2z - z;
+		t53 = 0.1e1 / t52;
+		t54 = SW2r * SW2r;
+		t55 = t24 * t24;
+		t60 = t31 * t31;
+		t67 = SW2z - z;
 		long double t69 = t55 * t54 - t24 * (t2 + t4) * SW2r + t60 * t54 - t31 * (t8 + t10) * SW2r + t4 * t2 + t10 * t8 + t38 * t67;
 		long double t70 = t25 - t4;
-		long double t71 = t70 * t70;
+		t71 = t70 * t70;
 		long double t72 = t32 - t10;
-		long double t73 = t72 * t72;
-		long double t74 = t67 * t67;
+		t73 = t72 * t72;
+		t74 = t67 * t67;
 		long double t75 = t71 + t73 + t74;
-		long double t76 = sqrtl(t75);
+		t76 = sqrtl(t75);
 		long double t77 = 0.1e1 / t76;
-		long double t79 = sqrtl(t48);
-		long double t80 = 0.1e1 / t79;
+		t79 = sqrtl(t48);
+		t80 = 0.1e1 / t79;
 		long double t82 = 0.1e1 / t16;
 		long double t85 = t80 * t77 * t69 - t80 * t40 * t82;
 		long double t86 = t85 * t53;
-		long double t87 = t86 * t19;
+		t87 = t86 * t19;
 		long double t90 = -t38 * t11 + t45 * t13;
-		long double t91 = t90 * t90;
+		t91 = t90 * t90;
 		long double t94 = -t43 * t13 + t38 * t5;
-		long double t95 = t94 * t94;
-		long double t98 = -t45 * t5 + t43 * t11;
+		t95 = t94 * t94;
+		t98 = -t45 * t5 + t43 * t11;
 		long double t99 = t98 * t98;
-		long double t100 = t91 + t95 + t99;
+		t100 = t91 + t95 + t99;
 		long double t101 = sqrtl(t100);
 		long double t102 = 0.1e1 / t101;
 		long double t103 = t90 * t102;
@@ -1642,7 +1438,8 @@ void StraightWireField(const long double r,const long double phi,const long doub
 		dBzdr += -t106 * t98 * t263 * t425 - t134 * t98 * t263 * t430 / 0.2e1 + t98 * t158 * t139 - t174 * t98 * t437 * t139 + t172 * t263 * t139;
 		dBzdphi += -t201 * t98 * t263 * t425 - t219 * t98 * t263 * t430 / 0.2e1 + t98 * t240 * t139 - t253 * t98 * t437 * t139 + t251 * t263 * t139;
 		dBzdz += t13 * t98 * t263 * t425 - t296 * t98 * t263 * t430 / 0.2e1 + t98 * t312 * t139 - t317 * t98 * t437 * t139;
-	}
+//	}
+	
 	return;	
 }
 

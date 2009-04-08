@@ -35,21 +35,9 @@ long double BForbes(long double r, long double phi, long double z, long double t
 	//cout << "Integral = " << Integral << endl;
 	
 	//long double a = height/2.0, b = rthickness/2.0, R_0 = innerradius + height/2.0;
-	Br = 0;
-	dBrdr = 0;
-	dBrdphi = 0.0;
-	dBrdz = 0;
 	//Bphi = RodFieldMultiplicator * BFeldSkal * Bphi;
-	Bphi=0.0;
 	//dBphidr = RodFieldMultiplicator * BFeldSkal * dBphidr;
-	dBphidr = 0.0;
-	dBphidphi = 0.0;
 	//dBphidz = RodFieldMultiplicator * BFeldSkal * dBphidz;
-	dBphidz = 0.0;
-	Bz = 0;
-	dBzdr = 0;
-	dBzdphi = 0.0;
-	dBzdz = 0;
 	
 	int i;
 	for (i=0;i<CoilNr;i++){
@@ -64,10 +52,10 @@ long double BForbes(long double r, long double phi, long double z, long double t
 	
 	
 	
-	Br = BFeldSkal * Br;
-	dBrdr = BFeldSkal * dBrdr;
+	Br *= BFeldSkal;
+	dBrdr *= BFeldSkal;
 	dBrdphi = 0.0;
-	dBrdz = BFeldSkal * dBrdz;
+	dBrdz *= BFeldSkal;
 	//Bphi = RodFieldMultiplicator * BFeldSkal * Bphi;
 	Bphi=0.0;
 	//dBphidr = RodFieldMultiplicator * BFeldSkal * dBphidr;
@@ -75,10 +63,10 @@ long double BForbes(long double r, long double phi, long double z, long double t
 	dBphidphi = 0.0;
 	//dBphidz = RodFieldMultiplicator * BFeldSkal * dBphidz;
 	dBphidz = 0.0;
-	Bz = BFeldSkal * Bz;
-	dBzdr = BFeldSkal * dBzdr;
+	Bz *= BFeldSkal;
+	dBzdr *= BFeldSkal;
 	dBzdphi = 0.0;
-	dBzdz = BFeldSkal * dBzdz;
+	dBzdz *= BFeldSkal;
 	
 	
 	if((BFeldSkal!=0)&&(protneut!=BF_ONLY)) // don't calculate the racetrack of field is off and also don't if we write the Bfield 
@@ -88,34 +76,7 @@ long double BForbes(long double r, long double phi, long double z, long double t
 		Racetrack(r, phi, z, -0.424264, 0.424264, BFeldSkal*Ibar);
 		Racetrack(r, phi, z, 0.424264, 0.424264, BFeldSkal*Ibar); 
 		CenterCurrent(r, phi, z, -4.0*BFeldSkal*Ibar);
-	}  
-		
-	Bws = sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);
-	
-			
-	if (Bws>1e-31)
-	{
-			
-		dBdr   = (Br*dBrdr + Bphi*dBphidr + Bz*dBzdr)  /Bws;
-		dBdz   = (Br*dBrdz + Bphi*dBphidz + Bz*dBzdz)  /Bws;
-		dBdphi = (Br*dBrdphi + Bphi*dBphidphi + Bz*dBzdphi)/Bws;
-	}
-	else
-	{
-		Br = 0.;
-		dBrdr = 0.;
-		dBrdz = 0.;
-		Bphi = 0.;
-		dBphidr = 0.;
-		dBphidz = 0.;
-		Bz = 0.;
-		dBzdr = 0.;
-		dBzdz = 0.;
-		dBdr   = 0.;
-		dBdz   = 0.;
-		dBdphi = 0.;
-	}
-	
+	}  	
 	
 	return Br;
 	

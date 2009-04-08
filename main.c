@@ -426,6 +426,10 @@ void Startbed(int k)
 						break;
 			case 26:	ncont = sscanf(cline, "%LG %LG ", &eini.delx, &eini.xend);
 						break;
+			case 28:	ncont = sscanf(cline, "%LG %LG %LG ", &BCutPlanePoint[0], &BCutPlanePoint[1], &BCutPlanePoint[2]);
+						break;
+			case 29:	ncont = sscanf(cline, "%LG %LG %LG ", &BCutPlaneNormal[0], &BCutPlaneNormal[1], &BCutPlaneNormal[2]);
+						break;
 		}
 		if(ncont < 1) printf("an error occourd while reading the %i. item in line %i of all3inone.in", ncont, i);
     }
