@@ -13,7 +13,7 @@
 //	(9) histograms of 'EFeldSkal' and 'BFeldSkal'
 //	(10) histogram of 'kennz'
 //	(11) 'zstart' versus 'rstart'
-//	(12) spin-flip loss lifetime versus 'RodFieldMult'/'BFflipprob'
+//	(12) spin-flip_loss_lifetime versus 'RodFieldMult'
 //
 //	User Instructions:
 //	(1) Make sure the ROOT tree exists and is named "mytree"!
@@ -40,6 +40,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <string>
 
 void DRAWendlog(TString filename)
 {	gROOT->Reset();
@@ -274,11 +275,12 @@ void DRAWendlog(TString filename)
 	g8->SetMarkerStyle(21);
 	g8->SetMarkerSize(0.4);
 	g8->SetMarkerColor(4);
-	g8->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points +++++++++++++++
 
 	c8->Update(); // necessary command for setting the axis titles
 	g8->GetHistogram()->SetXTitle(vnamex + " [s]");
 	g8->GetHistogram()->SetYTitle(vnamey + " [neV]");
+	
+	g8->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points +++++++++++++++
 
 	vnamec = rootfilename + "_" + vnamey + "-" + vnamex + "_{" + vnamec + "}";
 	c8->SaveAs(vnamec + ".cxx");   // saving canvas as macro
@@ -288,16 +290,16 @@ void DRAWendlog(TString filename)
 	//======== (8) Finished =============================================================================================
 
 	//======== (9) Drawing and saving the histogram of 'EFeldSkal' and 'BFeldSkal' ======================================
-	vnamex = "EFeldSkal"; // dummy ~ x-variable in h91, h93 and h94
-	vnamey = "BFeldSkal"; // dummy ~ x-variable in h92 and h93, y-variable in h94
+	vnamex = "EFeldSkal"; // dummy ~ x-variable in 'h91', 'h93' and 'h94'
+	vnamey = "BFeldSkal"; // dummy ~ x-variable in 'h92' and 'h93', y-variable in 'h94'
 	vnamec = "kennz==6";  // dummy ~ selection criterion
 	nbins = 10;           // dummy ~ number of bins
-	xmin = 0;             // dummy ~ x-minimum in h91, h92, h93 and h94, y-minimum in h94
-	xmax = 1;             // dummy ~ x-maximum in h91, h92, h93 and h94, y-maximum in h94
+	xmin = 0;             // dummy ~ x-minimum in 'h91', 'h92', 'h93' and 'h94', y-minimum in 'h94'
+	xmax = 1;             // dummy ~ x-maximum in 'h91', 'h92', 'h93' and 'h94', y-maximum in 'h94'
 
 	TCanvas *c9 = new TCanvas("c9", vnamex + " " + vnamey + " {" + vnamec + "} data from " + rootfilename, 160, 160, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
-	c9->Divide(2,2); // dividing 'c9' into 2*2 pads (numbered like text read)
+	c9->Divide(2, 2); // dividing 'c9' into 2*2 pads (numbered like text read)
 	c9->cd(1); // select pad 1
 	TH1D *h91 = new TH1D("h91", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
@@ -479,45 +481,109 @@ void DRAWendlog(TString filename)
 //	delete h112;
 	//======== (11) Finished ============================================================================================
 /*
-	//======== (12) Drawing and saving spin-flip loss lifetime versus 'RodFieldMult'/'BFflipprob' =======================
-	vnamex = "RodFieldMult/BFflipprob"; // dummy ~ x-variable
-	vnamey = "(-t)/log(1-BFflipprob)";  // dummy ~ y-variable (spin-flip loss lifetime)
-	vnamec = "";                        // dummy ~ selection criterion
+	//======== (12) Drawing and saving spin-flip_loss_lifetime versus 'RodFieldMult' ====================================
+	vnamex = "RodFieldMult";           // dummy ~ x-variable
+	vnamey = "(-t)/log(1-BFflipprob)"; // dummy ~ y-variable (spin-flip loss lifetime)
+	vnamec = "RodFieldMult<1";         // dummy ~ selection criterion in 'g121'
+	nbins = 10;                        // dummy ~ number of bins in 'g122'
 
-	TCanvas *c12 = new TCanvas("c12", "spin-flip loss lifetime:" + vnamex + " {" + vnamec + "} data from " + rootfilename, 220, 220, 800, 600);
+	TCanvas *c12 = new TCanvas("c12", "spin-flip_loss_lifetime:" + vnamex + " data from " + rootfilename, 220, 220, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
-	c12->cd(); // select pad
+	c12->Divide(2, 1); // dividing 'c12' into 2*1 pads (numbered like text read)
+	c12->cd(1); // select pad
 	mytree->SetEstimate(mytree->GetEntries(vnamec)); // setting the estimated lenght of V1 and V2
 	mytree->Draw(vnamey + ":" + vnamex, vnamec, "goff"); // drawing "[vnamey]:[vnamey]" (if "[vnamec]")
 	                                                     // without graphical output
-	g12 = new TGraph(mytree->GetEntries(vnamec), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving
-	                                                                                // data from the draw command above
-	g12->SetTitle("spin-flip loss lifetime:" + vnamex + " {" + vnamec + "}");
-	c12->SetLogy(1); // defining a logarithmical y-axis
-	g12->SetMarkerStyle(21);
-	g12->SetMarkerSize(0.4);
-	g12->SetMarkerColor(4);
-	g12->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points ++++++++++++++
+	g121 = new TGraph(mytree->GetEntries(vnamec), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving
+	                                                                                 // data from the draw command above
+	g121->SetTitle("spin-flip_loss_lifetime:" + vnamex);
+	c12_1->SetLogy(1); // defining a logarithmical y-axis
+	g121->SetMarkerStyle(21);
+	g121->SetMarkerSize(0.4);
+	g121->SetMarkerColor(4);
 
-	c12->Update(); // necessary command for setting the axis titles
-	g12->GetHistogram()->SetXTitle(vnamex);
-	g12->GetHistogram()->SetYTitle("spin-flip loss lifttime [s]");
+	c12_1->Update(); // necessary command for setting the axis titles
+	g121->GetHistogram()->SetXTitle(vnamex);
+	g121->GetHistogram()->GetXaxis()->SetRangeUser(0, 1);
+	g121->GetHistogram()->SetYTitle("spin-flip loss lifttime [s]");
+	g121->GetHistogram()->GetYaxis()->SetRangeUser(1, 1E12);
 
-	vnamec = rootfilename + "_spin-flip loss lifetime_{" + vnamec + "}";
-	c12->SaveAs(vnamec + ".cxx");   // saving canvas as macro
-	c12->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
+	g121->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	c12->cd(2);
+	//-------- Generating the TGraphErrors 'g122' -----------------------------------------------------------------------
+	g122 = new TGraphErrors();
+	{	Double_t y, yerr; // y-average and y-RMS
+		Long_t entries;
+		for(int i = 0; i < nbins; i++) // loop for each bin
+		{	xmin = i / Double_t(nbins);
+			xmax = (i + 1) / Double_t(nbins);
+			{	vnamec = "";
+				vnamec+ = "(" + vnamex + ">=";
+				vnamec+ = xmin;
+				vnamec+ = ")&&(" + vnamex + "<";
+				vnamec+ = xmax;
+				vnamec+ = ")";
+			}
+			entries = mytree->GetEntries(vnamec);
+			if(entries > 0)
+			{	mytree->SetEstimate(entries); // setting the estimated lenght of V1 and V2
+				mytree->Draw(vnamey + ":" + vnamex, vnamec, "goff"); // drawing "[vnamey]:[vnamey]" (if "[vnamec]")
+	                                                                 // without graphical output
+				Double_t* p_y = &mytree->GetV1();
+				y = 0;
+				for(int j = 0; j < entries; j++) // loop to calculate the y-average 'y'
+				{	y = y + *p_y;
+					p_y++;
+				}
+				y = y / entries;
+				Double_t* p_y = &mytree->GetV1();
+				yerr = 0;
+				if(entries > 1)
+				{	for(int j = 0; j < entries; j++) // loop to calculate the y-RMS 'yerr'
+					{	yerr = yerr + pow(y - *p_y, 2);
+						p_y++;
+					}
+					yerr = pow(yerr / (entries - 1), 0.5);
+				}
+				g122->SetPoint(i, xmin + 0.5 / Double_t(nbins) , y);
+				g122->SetPointError(i, 0.5 / Double_t(nbins), yerr);
+			}
+		}
+	}
+	//-------- Finished -------------------------------------------------------------------------------------------------
+	g122->SetTitle("spin-flip_loss_lifetime:" + vnamex);
+	c12_2->SetLogy(1); // defining a logarithmical y-axis
+	g122->SetMarkerStyle(21);
+	g122->SetMarkerSize(0.4);
+	g122->SetMarkerColor(2);
+
+	c12_2->Update(); // necessary command for setting the axis titles
+	g122->GetHistogram()->SetXTitle(vnamex);
+	g122->GetHistogram()->GetXaxis()->SetRangeUser(0, 1);
+	g122->GetHistogram()->SetYTitle("spin-flip loss lifttime [s]");
+	g122->GetHistogram()->GetYaxis()->SetRangeUser(1, 1E12);
+
+	g122->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	vnamec = rootfilename + "_spin-flip_loss_lifetime";
+	c12->SaveAs(vnamec + ".cxx");     // saving canvas as macro
+	c12->SaveAs(vnamec + "_0.png");   // saving canvas as PNG
+	c12_1->SaveAs(vnamec + "_1.png"); // saving pad 1 as PNG
+	c12_2->SaveAs(vnamec + "_2.png"); // saving pad 2 as PNG
 //	delete c12; // closing canvas window
-//	delete g12; // deleting graph
+//	delete g121; // deleting graphs
+//	delete g122;
 	//======== (12) Finished ============================================================================================
 */
 	std::cout << "Drawing done." << std::endl;
-	
+
 	//-------- Removing the 20 gray shades from the list of colours -----------------------------------------------------
-	{	for(int i = 0; i < 20; i++) // filling the gray scale with 20 shades of gray
+	{	for(int i = 0; i < 20; i++) // removing the last 20 colours
 		{	gROOT->GetListOfColors()->RemoveLast();
 		}
 	}
 	//-------- Finished -------------------------------------------------------------------------------------------------
-	
+
 //	file->Close();  // closing the file
 }
