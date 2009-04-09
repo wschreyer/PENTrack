@@ -470,35 +470,27 @@ void Startbed(int k)
 		if(protneut == NEUTRON) EnergieS = nini.EnergieS; // reinitializes initial value
 	}
 
-	// EnergieS > EnergieE?? EXIT!!
-	if(nini.EnergieS > nini.EnergieE)
-	{	printf("\n\n\nERROR: nini.EnergieS (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
-		             "       Check the energy range of the neutrons!\n\n"
-		             "EXIT!!\n", nini.EnergieS, nini.EnergieE);
-		fprintf(LOGSCR, "\n\n\nERROR: nini.EnergieS (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
-		                      "       Check the energy range of the neutrons!\n\n"
-		                      "EXIT!!\n", nini.EnergieS, nini.EnergieE);
-		exit(-1);
+	// starting value (S) > final value (E)?? EXIT!!
+	for(int i = 1; i < 4; i++)
+	{	struct initial particleini;
+		switch(i)
+		{	case 1:	particleini = nini;
+					break;	
+			case 2:	particleini = pini;
+					break;
+			case 3:	particleini = eini;
+					break;
+		}
+		if((particleini.EnergieS > particleini.EnergieE) || (particleini.zs > particleini.ze) || (particleini.rs > particleini.re) || (particleini.phis > particleini.phie) || (particleini.alphas > particleini.alphae) || (particleini.gammas > particleini.gammae))
+		{	printf("\n\n\nERROR: Two or more initial values are inconsistent.\n"
+			             "       Check ALL starting and final values in all3inone.in!\n\n"
+			             "EXIT!!\n");
+			fprintf(LOGSCR, "\n\n\nERROR: Two or more initial values are inconsistent.\n"
+			                      "       Check ALL starting and final values in all3inone.in!\n\n"
+			                      "EXIT!!\n");
+			exit(-1);
+		}
 	}
-	else if(pini.EnergieS > pini.EnergieE)
-	{	printf("\n\n\nERROR: pini.EnergieS (= %.5LG neV) > pini.EnergieE (= %.5LG neV)\n"
-		             "       Check the energy range of the protons!\n\n"
-		             "EXIT!!\n", pini.EnergieS, pini.EnergieE);
-		fprintf(LOGSCR, "\n\n\nERROR: pini.EnergieS (= %.5LG neV) > pini.EnergieE (= %.5LG neV)\n"
-		                      "       Check the energy range of the protons!\n\n"
-		                      "EXIT!!\n", pini.EnergieS, pini.EnergieE);
-		exit(-1);
-	}
-	else if(eini.EnergieS > eini.EnergieE)
-	{	printf("\n\n\nERROR: eini.EnergieS (= %.5LG keV) > eini.EnergieE (= %.5LG keV)\n"
-		             "       Check the energy range of the electrons!\n\n"
-		             "EXIT!!\n", eini.EnergieS, eini.EnergieE);
-		fprintf(LOGSCR, "\n\n\nERROR: eini.EnergieS (= %.5LG keV) > eini.EnergieE (= %.5LG keV)\n"
-		                      "       Check the energy range of the electrons!\n\n"
-		                      "EXIT!!\n", eini.EnergieS, eini.EnergieE);
-		exit(-1);
-	}
-	// ??
 
 	// the inner wall thickness is set to the same size then the outer, but if there is no inner wall (/coils) the thickness is set to zero.
 	// (mainly used for AbEx)
