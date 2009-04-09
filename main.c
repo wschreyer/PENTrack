@@ -287,71 +287,35 @@ void ConfigInit(void){
 
 //======== initalizes initial values from record to used variables ==============================================
 void initialStartbed()
-{	switch(protneut)
-	{	case NEUTRON:	EnergieS = nini.EnergieS;
-						dEnergie = nini.dEnergie;
-						EnergieE = nini.EnergieE;
-						z_ns = nini.zs;
-						dz_n = nini.dz;
-						z_ne = nini.ze;
-						r_ns = nini.rs;
-						dr_n = nini.dr;
-						r_ne = nini.re;						
-						phis = nini.phis;
-						dphi = nini.dphi;
-						phie = nini.phie;
-						alphas = nini.alphas;
-						dalpha = nini.dalpha;
-						alphae = nini.alphae;
-						gammas = nini.gammas;
-						dgamma = nini.dgamma;
-						gammae = nini.gammae;
-						delx = nini.delx;
-						xend = nini.xend;
+{	struct initial particleini;
+	switch(protneut)
+	{	case NEUTRON:	particleini = nini;
 						break;	
-		case PROTON:	EnergieS = pini.EnergieS;
-						dEnergie = pini.dEnergie;
-						EnergieE = pini.EnergieE;
-						z_ns = pini.zs;
-						dz_n = pini.dz;
-						z_ne = pini.ze;
-						r_ns = pini.rs;
-						dr_n = pini.dr;
-						r_ne = pini.re;						
-						phis = pini.phis;
-						dphi = pini.dphi;
-						phie = pini.phie;
-						alphas = pini.alphas;
-						dalpha = pini.dalpha;
-						alphae = pini.alphae;
-						gammas = pini.gammas;
-						dgamma = pini.dgamma;
-						gammae = pini.gammae;
-						delx = pini.delx;
-						xend = pini.xend;
+		case PROTON:	particleini = pini;
 						break;
-		case ELECTRONS:	EnergieS = eini.EnergieS;
-						dEnergie = eini.dEnergie;
-						EnergieE = eini.EnergieE;
-						z_ns = eini.zs;
-						dz_n = eini.dz;
-						z_ne = eini.ze;
-						r_ns = eini.rs;
-						dr_n = eini.dr;
-						r_ne = eini.re;
-						phis = eini.phis;
-						dphi = eini.dphi;
-						phie = eini.phie;
-						alphas = eini.alphas;
-						dalpha = eini.dalpha;
-						alphae = eini.alphae;
-						gammas = eini.gammas;
-						dgamma = eini.dgamma;
-						gammae = eini.gammae;
-						delx = eini.delx;
-						xend = eini.xend;
+		case ELECTRONS:	particleini = eini;
 						break;
 	}
+	EnergieS = particleini.EnergieS;
+	dEnergie = particleini.dEnergie;
+	EnergieE = particleini.EnergieE;
+	z_ns = particleini.zs;
+	dz_n = particleini.dz;
+	z_ne = particleini.ze;
+	r_ns = particleini.rs;
+	dr_n = particleini.dr;
+	r_ne = particleini.re;
+	phis = particleini.phis;
+	dphi = particleini.dphi;
+	phie = particleini.phie;
+	alphas = particleini.alphas;
+	dalpha = particleini.dalpha;
+	alphae = particleini.alphae;
+	gammas = particleini.gammas;
+	dgamma = particleini.dgamma;
+	gammae = particleini.gammae;
+	delx = particleini.delx;
+	xend = particleini.xend;
 	//return;
 }
 //======== end of innitialStartbed ==============================================================================
@@ -543,26 +507,26 @@ void Startbed(int k)
 
 	// logging dimensions to *log.out
 	fprintf(LOGSCR, "dimensions.in: rmin = %.17LG, rmax = %.17LG, zmin = %.17LG, zmax = %.17LG\n"
-	                "detz = %.17LG, detrmin = %.17LG, detrmax = %.17LG, hlid = %.17LG",
+	                "  detz = %.17LG, detrmin = %.17LG, detrmax = %.17LG, hlid = %.17LG",
 	                rmin, rmax, zmin, zmax,
 	                detz, detrmin, detrmax, hlid);
 
 	// writing parameters to screen
 	printf("\nStart parameters:\n"
-	       "Energy (min, step, max): %17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
-	       "Maximum runtime: %.17LG s\n"
-	       "r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	       "z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	       "phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	       "Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-	       "Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-	       "Filling time: %LG s\n"
-	       "Cleaning time: %.17LG s\n"
-	       "Ramp up time: %.17LG s\n"
-	       "Full field time: %.17LG s\n"
-	       "RampDownTime: %.17LG s\n"
-	       "B field scaling factor: %.17LG s\n"
-	       "E field scaling factor: %.17LG s\n",
+	       "  Energy (min, step, max): %17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
+	       "  Maximum runtime: %.17LG s\n"
+	       "  r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	       "  z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	       "  phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	       "  Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	       "  Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	       "  Filling time: %LG s\n"
+	       "  Cleaning time: %.17LG s\n"
+	       "  Ramp up time: %.17LG s\n"
+	       "  Full field time: %.17LG s\n"
+	       "  RampDownTime: %.17LG s\n"
+	       "  B field scaling factor: %.17LG s\n"
+	       "  E field scaling factor: %.17LG s\n",
 	       EnergieS, dEnergie, EnergieE,
 	       xend,
 	       r_ns, dr_n, r_ne,
@@ -580,20 +544,20 @@ void Startbed(int k)
 
 	// logging parameters to *log.out
 	fprintf(LOGSCR, "\nStart parameters: \n"
-	                "Energy (min, step, max): %.17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
-	                "Maximum runtime: %.17LG s\n"
-	                "r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	                "z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	                "phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	                "Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-	                "Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-	                "Filling time %LG s\n"
-	                "Cleaning time: %.17LG s\n"
-	                "Ramp up time: %.17LG s\n"
-	                "Full field time: %.17LG s\n"
-	                "RampDownTime: %.17LG s\n"
-	                "B field scaling factor: %.17LG s\n"
-	                "E field scaling factor: %.17LG s\n",
+	                "  Energy (min, step, max): %.17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
+	                "  Maximum runtime: %.17LG s\n"
+	                "  r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	                "  z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	                "  phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
+	                "  Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	                "  Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	                "  Filling time %LG s\n"
+	                "  Cleaning time: %.17LG s\n"
+	                "  Ramp up time: %.17LG s\n"
+	                "  Full field time: %.17LG s\n"
+	                "  RampDownTime: %.17LG s\n"
+	                "  B field scaling factor: %.17LG s\n"
+	                "  E field scaling factor: %.17LG s\n",
 	                EnergieS, dEnergie, EnergieE,
 	                xend,
 	                r_ns, dr_n, r_ne,
