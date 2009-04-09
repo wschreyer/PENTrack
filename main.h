@@ -49,6 +49,7 @@
 #define NEUTRON 1
 #define PROTON 2
 #define BF_ONLY 3
+#define BF_CUT 4
 #define ELECTRONS 6
 
 #define POLARISATION_GOOD 1
@@ -97,6 +98,7 @@ extern void outndist(int k);
 extern void ConfigInit(void);
 extern void OutputState(long double *y, int l);
 extern void csleep(int sec);
+extern void PrintBFieldCut();	// print cut through BField to file
 
 // globals
 
@@ -140,7 +142,8 @@ extern int n, m;                               // number of colums and rows in t
 extern long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator;
 extern long double DiceRodField;
 extern long double VolumeB[200];   // Volume[E] accessible to neutrons at energy E without and with B-field
-extern long double BCutPlanePoint[3], BCutPlaneNormal[3];
+extern long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist; // plane for cut through BField
+extern int BCutPlaneSampleCount;
 
 // particles
 extern long double H;                               // total energy of particle

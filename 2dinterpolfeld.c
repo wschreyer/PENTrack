@@ -570,7 +570,7 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 
 		// add fields and field derivations of racetrack coils
 		
-		if((Ibar>0)&&(RodFieldMultiplicator>0))
+		if((Ibar!=0)&&(RodFieldMultiplicator>0))
 		{
 		if(Racetracks==1)
 		{
@@ -598,10 +598,6 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 		
 		//OutputState(ystart,1);
 		
-		dBrdr=0.0;dBrdz=0.0;
-		dBzdr=0.0;dBzdz=0.0;
-		Br=0.0;Bphi=0.0;Bz=0.0;
-		dBdr=0.; dBdphi=0.; dBdz=0.;
 		kennz = 2;    // something's wrong
 		stopall=1;		
 	}
@@ -1090,7 +1086,7 @@ void StraightWireField(const long double r,const long double phi,const long doub
 {
 	long double vorfaktor = mu0 * I_rt / (4 * pi);
 
-/*	long double t1 = cosl(SW1phi);
+	long double t1 = cosl(SW1phi);
 	long double t2 = t1 * SW1r;
 	long double t3 = cosl(phi);
 	long double t4 = t3 * r;
@@ -1225,221 +1221,19 @@ void StraightWireField(const long double r,const long double phi,const long doub
 	long double t429 = t52 * t110;
 	long double t434 = t122 * t18;
 	long double t441 = t171 * t84;
-	Br = 		t103 + t106;
-	dBrdr = 	-t117 * t113 * t112 / 0.2e1 - t144 * t113 * t124 / 0.2e1 + t101 * t166 * t53 - t182 * t172 * t169 / 0.2e1 - t187 * t186 * t112 / 0.2e1 - t191 * t186 * t124 / 0.2e1 + t104 * t166 * t53 - t198 * t197 * t169 / 0.2e1;
-	dBrdphi = 	t291;
-	dBrdz = 	-t292 * t113 * t112 / 0.2e1 - t302 * t113 * t124 / 0.2e1 + t101 * t317 * t53 - t323 * t172 * t169 / 0.2e1 - t44 * t3 * t100 * t53 - t330 * t186 * t112 / 0.2e1 - t334 * t186 * t124 / 0.2e1 + t104 * t317 * t53 - t340 * t197 * t169 / 0.2e1 + t178 * t100 * t53;
-	Bphi = 		-t270 + t290;
-	dBphidr = 	t187 * t113 * t112 / 0.2e1 + t191 * t113 * t124 / 0.2e1 - t173 * t166 * t53 + t198 * t172 * t169 / 0.2e1 - t286 * t100 * t53 - t117 * t186 * t112 / 0.2e1 - t144 * t186 * t124 / 0.2e1 + t175 * t166 * t53 - t182 * t197 * t169 / 0.2e1 - t266 * t100 * t53;
-	dBphidphi = t271 * t113 * t112 / 0.2e1 + t275 * t113 * t124 / 0.2e1 - t173 * t246 * t53 + t281 * t172 * t169 / 0.2e1 - t103 - t208 * t186 * t112 / 0.2e1 - t226 * t186 * t124 / 0.2e1 + t175 * t246 * t53 - t260 * t197 * t169 / 0.2e1 - t106;
-	dBphidz = 	t330 * t113 * t112 / 0.2e1 + t334 * t113 * t124 / 0.2e1 - t173 * t317 * t53 + t340 * t172 * t169 / 0.2e1 + t9 * t44 * t100 * t53 - t292 * t186 * t112 / 0.2e1 - t302 * t186 * t124 / 0.2e1 + t175 * t317 * t53 - t323 * t197 * t169 / 0.2e1 + t3 * t42 * t100 * t53;
-	Bz = 		t95 * t100 * t53;
-	dBzdr = 	-t116 * t95 * t100 * t429 - t143 * t95 * t100 * t434 / 0.2e1 + t95 * t166 * t53 - t181 * t95 * t441 * t53 + t179 * t100 * t53;
-	dBzdphi = 	-t207 * t95 * t100 * t429 - t225 * t95 * t100 * t434 / 0.2e1 + t95 * t246 * t53 - t259 * t95 * t441 * t53 + t257 * t100 * t53;
-	dBzdz = 	t13 * t95 * t100 * t429 - t301 * t95 * t100 * t434 / 0.2e1 + t95 * t317 * t53 - t322 * t95 * t441 * t53;
-*/
+	Br += 		t103 + t106;
+	dBrdr += 	-t117 * t113 * t112 / 0.2e1 - t144 * t113 * t124 / 0.2e1 + t101 * t166 * t53 - t182 * t172 * t169 / 0.2e1 - t187 * t186 * t112 / 0.2e1 - t191 * t186 * t124 / 0.2e1 + t104 * t166 * t53 - t198 * t197 * t169 / 0.2e1;
+	dBrdphi += 	t291;
+	dBrdz += 	-t292 * t113 * t112 / 0.2e1 - t302 * t113 * t124 / 0.2e1 + t101 * t317 * t53 - t323 * t172 * t169 / 0.2e1 - t44 * t3 * t100 * t53 - t330 * t186 * t112 / 0.2e1 - t334 * t186 * t124 / 0.2e1 + t104 * t317 * t53 - t340 * t197 * t169 / 0.2e1 + t178 * t100 * t53;
+	Bphi += 	-t270 + t290;
+	dBphidr += 	t187 * t113 * t112 / 0.2e1 + t191 * t113 * t124 / 0.2e1 - t173 * t166 * t53 + t198 * t172 * t169 / 0.2e1 - t286 * t100 * t53 - t117 * t186 * t112 / 0.2e1 - t144 * t186 * t124 / 0.2e1 + t175 * t166 * t53 - t182 * t197 * t169 / 0.2e1 - t266 * t100 * t53;
+	dBphidphi += t271 * t113 * t112 / 0.2e1 + t275 * t113 * t124 / 0.2e1 - t173 * t246 * t53 + t281 * t172 * t169 / 0.2e1 - t103 - t208 * t186 * t112 / 0.2e1 - t226 * t186 * t124 / 0.2e1 + t175 * t246 * t53 - t260 * t197 * t169 / 0.2e1 - t106;
+	dBphidz += 	t330 * t113 * t112 / 0.2e1 + t334 * t113 * t124 / 0.2e1 - t173 * t317 * t53 + t340 * t172 * t169 / 0.2e1 + t9 * t44 * t100 * t53 - t292 * t186 * t112 / 0.2e1 - t302 * t186 * t124 / 0.2e1 + t175 * t317 * t53 - t323 * t197 * t169 / 0.2e1 + t3 * t42 * t100 * t53;
+	Bz += 		t95 * t100 * t53;
+	dBzdr += 	-t116 * t95 * t100 * t429 - t143 * t95 * t100 * t434 / 0.2e1 + t95 * t166 * t53 - t181 * t95 * t441 * t53 + t179 * t100 * t53;
+	dBzdphi += 	-t207 * t95 * t100 * t429 - t225 * t95 * t100 * t434 / 0.2e1 + t95 * t246 * t53 - t259 * t95 * t441 * t53 + t257 * t100 * t53;
+	dBzdz += 	t13 * t95 * t100 * t429 - t301 * t95 * t100 * t434 / 0.2e1 + t95 * t317 * t53 - t322 * t95 * t441 * t53;
 
-//	if ((protneut != NEUTRON) || (BruteForce)){
-		long double t1 = cosl(SW1phi);
-		long double t2 = t1 * SW1r;
-		long double t3 = cosl(phi);
-		long double t4 = t3 * r;
-		long double t5 = t2 - t4;
-		long double t6 = t5 * t5;
-		long double t7 = sinl(SW1phi);
-		long double t8 = t7 * SW1r;
-		long double t9 = sinl(phi);
-		long double t10 = t9 * r;
-		long double t11 = t8 - t10;
-		long double t12 = t11 * t11;
-		long double t13 = SW1z - z;
-		long double t14 = t13 * t13;
-		long double t15 = t6 + t12 + t14;
-		long double t16 = sqrtl(t15);
-		long double t17 = 0.1e1 / t16;
-		long double t20 = SW1r * SW1r;
-		long double t21 = t1 * t1;
-		long double t23 = cosl(SW2phi);
-		long double t24 = t23 * SW2r;
-		long double t28 = t7 * t7;
-		long double t30 = sinl(SW2phi);
-		long double t31 = t30 * SW2r;
-		long double t37 = SW2z - SW1z;
-		long double t39 = -t21 * t20 + t1 * (t24 + t4) * SW1r - t28 * t20 + t7 * (t10 + t31) * SW1r - t24 * t4 - t31 * t10 + t37 * t13;
-		long double t40 = t39 * t39;
-		long double t42 = t24 - t2;
-		long double t43 = t42 * t42;
-		long double t44 = t31 - t8;
-		long double t45 = t44 * t44;
-		long double t46 = t37 * t37;
-		long double t47 = t43 + t45 + t46;
-		long double t51 = sqrtl(0.1e1 - 0.1e1 / t47 * t40 / t15);
-		long double t53 = 0.1e1 / t51 * t17 * vorfaktor;
-		long double t54 = SW2r * SW2r;
-		long double t55 = t23 * t23;
-		long double t60 = t30 * t30;
-		long double t67 = SW2z - z;
-		long double t71 = powl(t24 - t4, 0.2e1);
-		long double t73 = powl(t31 - t10, 0.2e1);
-		long double t74 = t67 * t67;
-		long double t76 = sqrtl(t71 + t73 + t74);
-		long double t79 = sqrtl(t47);
-		long double t80 = 0.1e1 / t79;
-		long double t87 = -t37 * t11 + t44 * t13;
-		long double t88 = t87 * t87;
-		long double t91 = -t42 * t13 + t37 * t5;
-		long double t92 = t91 * t91;
-		long double t95 = -t44 * t5 + t42 * t11;
-		long double t96 = t95 * t95;
-		long double t98 = sqrtl(t88 + t92 + t96);
-		long double t100 = 0.1e1 / t98 * (t80 / t76 * (t55 * t54 - t23 * (t2 + t4) * SW2r + t60 * t54 - t30 * (t8 + t10) * SW2r + t4 * t2 + t10 * t8 + t37 * t67) - t80 * t39 * t17);
-		Br += t3 * t87 * t100 * t53 + t9 * t91 * t100 * t53;
-		Bphi += -t9 * t87 * t100 * t53 + t3 * t91 * t100 * t53;
-		Bz += t95 * t100 * t53;
-//	}
-//	else{
-		t1 = cosl(SW1phi);
-		t2 = t1 * SW1r;
-		t3 = cosl(phi);
-		t4 = t3 * r;
-		t5 = t2 - t4;
-		t6 = t5 * t5;
-		t7 = sinl(SW1phi);
-		t8 = t7 * SW1r;
-		t9 = sinl(phi);
-		t10 = t9 * r;
-		t11 = t8 - t10;
-		t12 = t11 * t11;
-		t13 = SW1z - z;
-		t14 = t13 * t13;
-		t15 = t6 + t12 + t14;
-		t16 = sqrtl(t15);
-		long double t18 = 0.1e1 / t16 / t15;
-		long double t19 = t18 * vorfaktor;
-		t20 = 0.1e1 / t15;
-		t21 = SW1r * SW1r;
-		long double t22 = t1 * t1;
-		t24 = cosl(SW2phi);
-		long double t25 = t24 * SW2r;
-		long double t29 = t7 * t7;
-		t31 = sinl(SW2phi);
-		long double t32 = t31 * SW2r;
-		long double t38 = SW2z - SW1z;
-		t40 = -t22 * t21 + t1 * (t25 + t4) * SW1r - t29 * t21 + t7 * (t10 + t32) * SW1r - t25 * t4 - t32 * t10 + t38 * t13;
-		long double t41 = t40 * t40;
-		t43 = t25 - t2;
-		t44 = t43 * t43;
-		t45 = t32 - t8;
-		t46 = t45 * t45;
-		t47 = t38 * t38;
-		long double t48 = t44 + t46 + t47;
-		long double t49 = 0.1e1 / t48;
-		t51 = 0.1e1 - t49 * t41 * t20;
-		long double t52 = sqrtl(t51);
-		t53 = 0.1e1 / t52;
-		t54 = SW2r * SW2r;
-		t55 = t24 * t24;
-		t60 = t31 * t31;
-		t67 = SW2z - z;
-		long double t69 = t55 * t54 - t24 * (t2 + t4) * SW2r + t60 * t54 - t31 * (t8 + t10) * SW2r + t4 * t2 + t10 * t8 + t38 * t67;
-		long double t70 = t25 - t4;
-		t71 = t70 * t70;
-		long double t72 = t32 - t10;
-		t73 = t72 * t72;
-		t74 = t67 * t67;
-		long double t75 = t71 + t73 + t74;
-		t76 = sqrtl(t75);
-		long double t77 = 0.1e1 / t76;
-		t79 = sqrtl(t48);
-		t80 = 0.1e1 / t79;
-		long double t82 = 0.1e1 / t16;
-		long double t85 = t80 * t77 * t69 - t80 * t40 * t82;
-		long double t86 = t85 * t53;
-		t87 = t86 * t19;
-		long double t90 = -t38 * t11 + t45 * t13;
-		t91 = t90 * t90;
-		long double t94 = -t43 * t13 + t38 * t5;
-		t95 = t94 * t94;
-		t98 = -t45 * t5 + t43 * t11;
-		long double t99 = t98 * t98;
-		t100 = t91 + t95 + t99;
-		long double t101 = sqrtl(t100);
-		long double t102 = 0.1e1 / t101;
-		long double t103 = t90 * t102;
-		long double t106 = -t3 * t5 - t9 * t11;
-		long double t107 = 0.2e1 * t106 * t3;
-		long double t111 = t82 * vorfaktor;
-		long double t113 = 0.1e1 / t52 / t51;
-		long double t115 = t85 * t113 * t111;
-		long double t116 = t15 * t15;
-		long double t118 = t41 / t116;
-		long double t121 = t40 * t20;
-		long double t130 = t1 * t3 * SW1r + t7 * t9 * SW1r - t24 * SW2r * t3 - t31 * SW2r * t9;
-		long double t134 = 0.2e1 * t106 * t49 * t118 - 0.2e1 * t130 * t49 * t121;
-		long double t135 = t134 * t3;
-		long double t139 = t53 * t111;
-		long double t144 = 0.1e1 / t76 / t75 * t69;
-		long double t151 = t40 * t18;
-		long double t158 = t102 * (t80 * t77 * t130 - (-t3 * t70 - t9 * t72) * t80 * t144 + t106 * t80 * t151 - t80 * t130 * t82);
-		long double t159 = t3 * t90;
-		long double t162 = t86 * t111;
-		long double t164 = 0.1e1 / t101 / t100;
-		long double t165 = t90 * t164;
-		long double t166 = t9 * t90;
-		long double t168 = t3 * t94;
-		long double t171 = t43 * t9;
-		long double t172 = t45 * t3 - t171;
-		long double t174 = t38 * t166 - t38 * t168 + t172 * t98;
-		long double t175 = 0.2e1 * t174 * t3;
-		long double t179 = t94 * t102;
-		long double t180 = 0.2e1 * t106 * t9;
-		long double t184 = t134 * t9;
-		long double t188 = t9 * t94;
-		long double t191 = t94 * t164;
-		long double t192 = 0.2e1 * t174 * t9;
-		long double t201 = t9 * r * t5 - t3 * r * t11;
-		long double t202 = 0.2e1 * t201 * t3;
-		long double t208 = SW1r * r;
-		long double t215 = -t1 * t9 * t208 + t7 * t3 * t208 + t25 * t10 - t32 * t4;
-		long double t219 = 0.2e1 * t201 * t49 * t118 - 0.2e1 * t215 * t49 * t121;
-		long double t220 = t219 * t3;
-		long double t240 = t102 * (t80 * t77 * t215 - (t9 * r * t70 - t3 * r * t72) * t80 * t144 + t201 * t80 * t151 - t80 * t215 * t82);
-		long double t251 = -t45 * t10 - t43 * t4;
-		long double t253 = t38 * t3 * r * t90 + t38 * t9 * r * t94 + t251 * t98;
-		long double t254 = 0.2e1 * t253 * t3;
-		long double t258 = r * t102;
-		long double t259 = t3 * t3;
-		long double t260 = t38 * t259;
-		long double t263 = t102 * t85;
-		long double t266 = 0.2e1 * t201 * t9;
-		long double t270 = t219 * t9;
-		long double t276 = 0.2e1 * t253 * t9;
-		long double t280 = t9 * t9;
-		long double t281 = t38 * t280;
-		long double t286 = -t202 * t103 * t87 / 0.2e1 - t220 * t103 * t115 / 0.2e1 + t159 * t240 * t139 - t254 * t165 * t162 / 0.2e1 + t260 * t258 * t162 - t166 * t263 * t139 - t266 * t179 * t87 / 0.2e1 - t270 * t179 * t115 / 0.2e1 + t188 * t240 * t139 - t276 * t191 * t162 / 0.2e1 + t281 * t258 * t162 + t168 * t263 * t139;
-		long double t287 = -0.2e1 * t13 * t3;
-		long double t296 = -0.2e1 * t13 * t49 * t118 + 0.2e1 * t38 * t49 * t121;
-		long double t297 = t296 * t3;
-		long double t312 = t102 * (-t80 * t77 * t38 + t67 * t80 * t144 - t13 * t80 * t151 + t80 * t38 * t82);
-		long double t317 = -t45 * t90 + t43 * t94;
-		long double t318 = 0.2e1 * t317 * t3;
-		long double t325 = -0.2e1 * t13 * t9;
-		long double t329 = t296 * t9;
-		long double t335 = 0.2e1 * t317 * t9;
-		long double t425 = t53 * t19;
-		long double t430 = t113 * t111;
-		long double t437 = t164 * t85;
-		dBrdr += -t107 * t103 * t87 / 0.2e1 - t135 * t103 * t115 / 0.2e1 + t159 * t158 * t139 - t175 * t165 * t162 / 0.2e1 - t180 * t179 * t87 / 0.2e1 - t184 * t179 * t115 / 0.2e1 + t188 * t158 * t139 - t192 * t191 * t162 / 0.2e1;
-		dBrdphi += t286;
-		dBrdz += -t287 * t103 * t87 / 0.2e1 - t297 * t103 * t115 / 0.2e1 + t159 * t312 * t139 - t318 * t165 * t162 / 0.2e1 - t45 * t3 * t263 * t139 - t325 * t179 * t87 / 0.2e1 - t329 * t179 * t115 / 0.2e1 + t188 * t312 * t139 - t335 * t191 * t162 / 0.2e1 + t171 * t263 * t139;
-		dBphidr += t180 * t103 * t87 / 0.2e1 + t184 * t103 * t115 / 0.2e1 - t166 * t158 * t139 + t192 * t165 * t162 / 0.2e1 - t281 * t263 * t139 - t107 * t179 * t87 / 0.2e1 - t135 * t179 * t115 / 0.2e1 + t168 * t158 * t139 - t175 * t191 * t162 / 0.2e1 - t260 * t263 * t139;
-		dBphidphi += t266 * t103 * t87 / 0.2e1 + t270 * t103 * t115 / 0.2e1 - t166 * t240 * t139 + t276 * t165 * t162 / 0.2e1 - t159 * t263 * t139 - t202 * t179 * t87 / 0.2e1 - t220 * t179 * t115 / 0.2e1 + t168 * t240 * t139 - t254 * t191 * t162 / 0.2e1 - t188 * t263 * t139;
-		dBphidz += t325 * t103 * t87 / 0.2e1 + t329 * t103 * t115 / 0.2e1 - t166 * t312 * t139 + t335 * t165 * t162 / 0.2e1 + t9 * t45 * t263 * t139 - t287 * t179 * t87 / 0.2e1 - t297 * t179 * t115 / 0.2e1 + t168 * t312 * t139 - t318 * t191 * t162 / 0.2e1 + t3 * t43 * t263 * t139;
-		dBzdr += -t106 * t98 * t263 * t425 - t134 * t98 * t263 * t430 / 0.2e1 + t98 * t158 * t139 - t174 * t98 * t437 * t139 + t172 * t263 * t139;
-		dBzdphi += -t201 * t98 * t263 * t425 - t219 * t98 * t263 * t430 / 0.2e1 + t98 * t240 * t139 - t253 * t98 * t437 * t139 + t251 * t263 * t139;
-		dBzdz += t13 * t98 * t263 * t425 - t296 * t98 * t263 * t430 / 0.2e1 + t98 * t312 * t139 - t317 * t98 * t437 * t139;
-//	}
-	
 	return;	
 }
 
