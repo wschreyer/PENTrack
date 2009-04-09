@@ -393,7 +393,7 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 	
 	if (protneut == NEUTRON) // switching of field only for neutrons valid
 		SwitchField(t);
-	else if(protneut == PROTON || protneut == ELECTRONS)
+	else if(protneut == PROTON || protneut == ELECTRONS || protneut == BF_CUT)
 		BFeldSkal=BFeldSkalGlobal;
 		
 	

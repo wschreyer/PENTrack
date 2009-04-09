@@ -45,7 +45,8 @@ int n, m;                               // number of colums and rows in the inpu
 long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep=0.001, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator = 0.0;
 long double DiceRodField=0;
 long double VolumeB[200] = {0.0};   // Volume[E] accessible to neutrons at energy E without and with B-field
-long double BCutPlanePoint[3], BCutPlaneNormal[3];
+long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist;	// plane for B field cut
+int BCutPlaneSampleCount;
 
 // particles
 long double H;                               // total energy of particle
@@ -225,22 +226,22 @@ int main(int argc, char **argv){
 	
 	// current bar test
 	// current from outside in
-	Bars_1r[1]=0.6;  Bars_1phi[1]=0.0;    Bars_1z[1]=-0.15; Bars_2r[1]=0.0; Bars_2phi[1]=0.0;    Bars_2z[1]=-0.15;   // lower horizontal 0 deg
-	Bars_1r[2]=0.60;Bars_1phi[2]=pi/2.0;Bars_1z[2]=-0.15; Bars_2r[2]=0.0; Bars_2phi[2]=pi/2.0;Bars_2z[2]=-0.15; // lower horizontal 90 deg
-	Bars_1r[3]=0.60;Bars_1phi[3]=pi;      Bars_1z[3]=-0.15; Bars_2r[3]=0.0; Bars_2phi[3]=pi;      Bars_2z[3]=-0.15; // lower horizontal 180 deg
-	Bars_1r[4]=0.60;Bars_1phi[4]=pi*1.5;Bars_1z[4]=-0.15; Bars_2r[4]=0.0; Bars_2phi[4]=pi*1.5;Bars_2z[4]=-0.15; // lower horizontal 270 deg
+	Bars_1r[1]=0.60;Bars_1phi[1]=0.0;	Bars_1z[1]=-0.15;	Bars_2r[1]=0.0;	Bars_2phi[1]=0.0;	Bars_2z[1]=-0.15;   // lower horizontal 0 deg
+	Bars_1r[2]=0.60;Bars_1phi[2]=pi/2.0;Bars_1z[2]=-0.15;	Bars_2r[2]=0.0;	Bars_2phi[2]=pi/2.0;Bars_2z[2]=-0.15; // lower horizontal 90 deg
+	Bars_1r[3]=0.60;Bars_1phi[3]=pi;	Bars_1z[3]=-0.15;	Bars_2r[3]=0.0;	Bars_2phi[3]=pi;	Bars_2z[3]=-0.15; // lower horizontal 180 deg
+	Bars_1r[4]=0.60;Bars_1phi[4]=pi*1.5;Bars_1z[4]=-0.15;	Bars_2r[4]=0.0;	Bars_2phi[4]=pi*1.5;Bars_2z[4]=-0.15; // lower horizontal 270 deg
 	// current from inside out
-	Bars_1r[5]=0.0;Bars_1phi[5]=0.0;    Bars_1z[5]=1.35;Bars_2r[5]=0.6;Bars_2phi[5]=0.0;    Bars_2z[5]=1.35;   // upper horizontal 0 deg
-	Bars_1r[6]=0.0;Bars_1phi[6]=pi/2.0;Bars_1z[6]=1.35;Bars_2r[6]=0.6;Bars_2phi[6]=pi/2.0;Bars_2z[6]=1.35;  // upper horizontal 90 deg
-	Bars_1r[7]=0.0;Bars_1phi[7]=pi;      Bars_1z[7]=1.35;Bars_2r[7]=0.6;Bars_2phi[7]=pi;      Bars_2z[7]=1.35;  // upper horizontal 180 deg
-	Bars_1r[8]=0.0;Bars_1phi[8]=pi*1.5;Bars_1z[8]=1.35;Bars_2r[8]=0.6;Bars_2phi[8]=pi*1.5;Bars_2z[8]=1.35;  // upper horizontal 270 deg
+	Bars_1r[5]=0.0;Bars_1phi[5]=0.0;	Bars_1z[5]=1.35;	Bars_2r[5]=0.6;	Bars_2phi[5]=0.0;	Bars_2z[5]=1.35;   // upper horizontal 0 deg
+	Bars_1r[6]=0.0;Bars_1phi[6]=pi/2.0;	Bars_1z[6]=1.35;	Bars_2r[6]=0.6;	Bars_2phi[6]=pi/2.0;Bars_2z[6]=1.35;  // upper horizontal 90 deg
+	Bars_1r[7]=0.0;Bars_1phi[7]=pi;		Bars_1z[7]=1.35;	Bars_2r[7]=0.6;	Bars_2phi[7]=pi;	Bars_2z[7]=1.35;  // upper horizontal 180 deg
+	Bars_1r[8]=0.0;Bars_1phi[8]=pi*1.5;	Bars_1z[8]=1.35;	Bars_2r[8]=0.6;	Bars_2phi[8]=pi*1.5;Bars_2z[8]=1.35;  // upper horizontal 270 deg
 	// current from high to low
-	Bars_1r[9]=0.6;  Bars_1phi[9]=0;        Bars_1z[9]=1.35;  Bars_2r[9]=0.6; Bars_2phi[9]=0;        Bars_2z[9]=-0.15;  //outer current 0 deg
-	Bars_1r[10]=0.6;Bars_1phi[10]=pi/2;   Bars_1z[10]=1.35;Bars_2r[10]=0.6;Bars_2phi[10]=pi/2;  Bars_2z[10]=-0.15; //outer current 90 deg
-	Bars_1r[11]=0.6;Bars_1phi[11]=pi;      Bars_1z[11]=1.35;Bars_2r[11]=0.6;Bars_2phi[11]=pi;      Bars_2z[11]=-0.15; //outer current 180 deg
-	Bars_1r[12]=0.6;Bars_1phi[12]=pi*1.5;Bars_1z[12]=1.35;Bars_2r[12]=0.6;Bars_2phi[12]=pi*1.5;Bars_2z[12]=-0.15; //outer current 270 deg
+	Bars_1r[9]=0.60;Bars_1phi[9]=0;		Bars_1z[9]=1.35;	Bars_2r[9]=0.6; Bars_2phi[9]=0;		Bars_2z[9]=-0.15;  //outer current 0 deg
+	Bars_1r[10]=0.6;Bars_1phi[10]=pi/2;	Bars_1z[10]=1.35;	Bars_2r[10]=0.6;Bars_2phi[10]=pi/2;	Bars_2z[10]=-0.15; //outer current 90 deg
+	Bars_1r[11]=0.6;Bars_1phi[11]=pi;	Bars_1z[11]=1.35;	Bars_2r[11]=0.6;Bars_2phi[11]=pi;	Bars_2z[11]=-0.15; //outer current 180 deg
+	Bars_1r[12]=0.6;Bars_1phi[12]=pi*1.5;Bars_1z[12]=1.35;	Bars_2r[12]=0.6;Bars_2phi[12]=pi*1.5;Bars_2z[12]=-0.15; //outer current 270 deg
 	// current from low to high
-	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;   Bars_1z[13]=-0.15;Bars_2r[13]=0; Bars_2phi[13]=0.0;    Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
+	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;	Bars_1z[13]=-0.15;	Bars_2r[13]=0;	Bars_2phi[13]=0.0;	Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
   
   /*
 	long double err, testr = 0.25, result;
@@ -368,6 +369,11 @@ int main(int argc, char **argv){
 			fprintf(ENDLOG,"r phi z Br Bphi Bz 0 0 0 \n");			
 		break;
 		
+		case BF_CUT:
+			PrintBFieldCut();
+			exit(0);
+		break;
+		
 		case ELECTRONS:
 			h1=2e-10;           // guess for the first step size of runge kutta
 			dxsav=2e-12;        // kleinster ausgabeschritt der zwischenwerte im integrator
@@ -476,7 +482,7 @@ void derivs(long double x, long double *y, long double *dydx){
 	if (protneut == NEUTRON)
 	{ // neutron equations of motion
 		// Bahnverfolgung ausgeschaltet => gerade Bahn der Teilchen
-		/*                    
+		/*              
 		dydx[1]= y[2];
 		dydx[2]= 0;
 		dydx[3]= y[4];
@@ -617,7 +623,7 @@ void PrepareBField(){
 	
 		printf("\n \n Test of integration\n");
 		//	long double TestInt;
-		BFeldSkal=1.0; Ibar = 2250;
+		BFeldSkal=1.0;
 		sign1 = 1, sign2 = 1;
 		for (int a = 0;a<1;a++)
 		{
