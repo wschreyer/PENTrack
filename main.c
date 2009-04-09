@@ -287,35 +287,35 @@ void ConfigInit(void){
 
 //======== initalizes initial values from record to used variables ==============================================
 void initialStartbed()
-{	struct initial particleini;
+{	initial *particleini;
 	switch(protneut)
-	{	case NEUTRON:	particleini = nini;
+	{	case NEUTRON:	particleini = &nini;
 						break;	
-		case PROTON:	particleini = pini;
+		case PROTON:	particleini = &pini;
 						break;
-		case ELECTRONS:	particleini = eini;
+		case ELECTRONS:	particleini = &eini;
 						break;
 	}
-	EnergieS = particleini.EnergieS;
-	dEnergie = particleini.dEnergie;
-	EnergieE = particleini.EnergieE;
-	z_ns = particleini.zs;
-	dz_n = particleini.dz;
-	z_ne = particleini.ze;
-	r_ns = particleini.rs;
-	dr_n = particleini.dr;
-	r_ne = particleini.re;
-	phis = particleini.phis;
-	dphi = particleini.dphi;
-	phie = particleini.phie;
-	alphas = particleini.alphas;
-	dalpha = particleini.dalpha;
-	alphae = particleini.alphae;
-	gammas = particleini.gammas;
-	dgamma = particleini.dgamma;
-	gammae = particleini.gammae;
-	delx = particleini.delx;
-	xend = particleini.xend;
+	EnergieS = particleini->EnergieS;
+	dEnergie = particleini->dEnergie;
+	EnergieE = particleini->EnergieE;
+	z_ns = particleini->zs;
+	dz_n = particleini->dz;
+	z_ne = particleini->ze;
+	r_ns = particleini->rs;
+	dr_n = particleini->dr;
+	r_ne = particleini->re;
+	phis = particleini->phis;
+	dphi = particleini->dphi;
+	phie = particleini->phie;
+	alphas = particleini->alphas;
+	dalpha = particleini->dalpha;
+	alphae = particleini->alphae;
+	gammas = particleini->gammas;
+	dgamma = particleini->dgamma;
+	gammae = particleini->gammae;
+	delx = particleini->delx;
+	xend = particleini->xend;
 	//return;
 }
 //======== end of innitialStartbed ==============================================================================
@@ -327,12 +327,7 @@ void Startbed(int k)
 	string path;
 
 	// setting path for all3inone.in
-	if(protneut==PROTON || protneut==NEUTRON || protneut==ELECTRONS)
-	{	path = inpath + "/all3inone.in";
-	}
-    else
-    {	exit(-1);
-    }
+	path = inpath + "/all3inone.in";
 
 	// creating 'inistream' to all3inone.in
 	FILE *inistream = fopen(path.c_str(), mode_r);
@@ -342,7 +337,7 @@ void Startbed(int k)
 	}
 	
 	// looping  over the lines of all3inone.in and reading them in
-	for(i = 1; i < 27; i++)
+	for(i = 1; i < 31; i++)
 	{	fgets(cline, 200, inistream);
 		ncont = 42;
 		switch (i)
@@ -392,7 +387,9 @@ void Startbed(int k)
 						break;
 			case 28:	ncont = sscanf(cline, "%LG %LG %LG ", &BCutPlanePoint[0], &BCutPlanePoint[1], &BCutPlanePoint[2]);
 						break;
-			case 29:	ncont = sscanf(cline, "%LG %LG %LG ", &BCutPlaneNormal[0], &BCutPlaneNormal[1], &BCutPlaneNormal[2]);
+			case 29:	ncont = sscanf(cline, "%LG %LG ", &BCutPlaneNormalAlpha, &BCutPlaneNormalGamma);
+						break;
+			case 30:	ncont = sscanf(cline, "%LG %u ", &BCutPlaneSampleDist, &BCutPlaneSampleCount);
 						break;
 		}
 		if(ncont < 1) printf("an error occourd while reading the %i. item in line %i of all3inone.in", ncont, i);
@@ -751,3 +748,75 @@ time_t start_time, cur_time;
          }
          while((cur_time - start_time) < sec);	
 }
+
+// print cut through BField to file
+void PrintBFieldCut(){
+	// transform plane parameters to cartesian coords
+	long double P[3] = {BCutPlanePoint[0]*cosl(BCutPlanePoint[1]), BCutPlanePoint[0]*sinl(BCutPlanePoint[1]), BCutPlanePoint[2]};
+	long double n[3] = {cosl(BCutPlanePoint[1]+BCutPlaneNormalAlpha)*sinl(BCutPlaneNormalGamma), 
+						sinl(BCutPlanePoint[1]+BCutPlaneNormalAlpha)*sinl(BCutPlaneNormalGamma), 
+						cosl(BCutPlaneNormalGamma)};
+
+	// project x/y/z-axes on plane for direction vectors u,v
+	long double u[3], v[3];
+	if (n[0] < 0.9){		// n not parallel to x-axis
+		u[0] = 1-n[0]*n[0];
+		u[1] = -n[0]*n[1];
+		u[2] = -n[0]*n[2];
+	}
+	else{					// if n parallel to x-axis use z-axis for u
+		u[0] = -n[2]*n[0];
+		u[1] = -n[2]*n[1];
+		u[2] = 1-n[2]*n[1];
+	}
+	if (n[1] < 0.9){		// n not parallel to y-axis
+		v[0] = -n[1]*n[0];
+		v[1] = 1-n[1]*n[1];
+		v[2] = -n[1]*n[2];
+	}
+	else{					// if n parallel to y-axis use z-axis for v
+		v[0] = -n[2]*n[0];
+		v[1] = -n[2]*n[1];
+		v[2] = 1-n[2]*n[1];
+	}
+	
+	int i,j,k;
+	// normalize u,v
+	long double uabs = sqrtl(u[0]*u[0]+u[1]*u[1]+u[2]*u[2]);
+	long double vabs = sqrtl(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+	for (i = 0; i < 3; i++){
+		u[i] /= uabs;
+		v[i] /= vabs;
+	}
+	
+	// print BField to file
+	string path = outpath + "/BFCut.out";
+	FILE *cutfile = fopen(path.c_str(), mode_w);
+	if (!cutfile){
+		printf("Could not open %s!",path.c_str());
+		exit(-1);
+	}
+	fprintf(cutfile, "r phi z x y Br Bphi Bz Bx By dBrdr dBrdphi dBrdz dBphidr dBphidphi dBphidz dBzdr dBzdphi dBzdz Babs dBdr dBdphi dBdz\n");
+	
+	long double Pp[3],r,phi,Bx,By;
+	float start = clock();
+	for (i = -BCutPlaneSampleCount/2; i <= BCutPlaneSampleCount/2; i++) {
+		for (j = -BCutPlaneSampleCount/2; j <= BCutPlaneSampleCount/2; j++){
+			for (k = 0; k < 3; k++)
+				Pp[k] = P[k] + i*BCutPlaneSampleDist*u[k] + j*BCutPlaneSampleDist*v[k];
+			r = sqrtl(Pp[0]*Pp[0]+Pp[1]*Pp[1]);
+			phi = atan2(Pp[1],Pp[0]);
+			BFeld(r, phi, Pp[2], 0);
+			Bx = Br*cosl(phi) - Bphi*sinl(phi);
+			By = Br*sinl(phi) + Bphi*cosl(phi);
+			fprintf(cutfile, "%LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+							  r,phi,Pp[2],Pp[0],Pp[1],Br,Bphi,Bz,Bx,By,dBrdr,dBrdphi,dBrdz,dBphidr,dBphidphi,dBphidz,dBzdr,dBzdphi,dBzdz,Bws,dBdr,dBdphi,dBdz);
+		}
+	}
+	start = (clock() - start)/CLOCKS_PER_SEC;
+	fclose(cutfile);
+	printf("Called BFeld %u times in %fs (%fms per call)",BCutPlaneSampleCount*BCutPlaneSampleCount, start, start/BCutPlaneSampleCount/BCutPlaneSampleCount);
+}
+
+
+
