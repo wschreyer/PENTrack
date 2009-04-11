@@ -173,9 +173,9 @@ int BFNrIntermediate=BFKMDEF;    // number of steps for intermediate output in t
 int kmax=0, BFkmax = BFKMDEF;                                         // number of steps for intermediate output
 long double nintcalls=0, ntotalsteps=0;     // counters to determine average steps per integrator call
 int kount, hfs, NSF = 0;                                            // counter for intermediate output steps, highfieldseeker: +1 yes, -1 lowfieldseeker, number of spin flips
-long double *xp=NULL,**yp=NULL, *BFxp=NULL, **BFyp=NULL, dxsav=0;          // Arrays for intermediate output
+long double *xp=NULL,**yp=NULL, *BFxp=NULL, **BFyp=NULL, dxsav=0, BFdxsav=0;          // Arrays for intermediate output
 long double **Bp=NULL,**Ep=NULL;                            // Arrays for intermediate output
-// END output of intermediate steps
+// END output of intermediate steps 
 
 // incorporate B-fieldoszillations into the code
 int FieldOscillation = 0;        // turn field oscillation on if 1
@@ -1182,7 +1182,7 @@ void IntegrateParticle(){
 void BruteForceIntegration(){
 	// Array fr BruteForce Integration wird gebildet
 	int klauf, klaufstart;
-	dxsav=1e-9;
+	BFdxsav=5e-7;  // timestep for intermediate output
 	bool BFPolmin;
 	if (BFBmin<BFTargetB)
 	{
@@ -1281,7 +1281,7 @@ void BruteForceIntegration(){
 			
 			//printf("Bvector before %LG %LG %LG Babs %LG \n",BFField[1][1],BFField[2][1],BFField[3][1],BFBws[1]);
 			//printf("Spinvector before %LG %LG %LG  \n",I_n[1],I_n[2],I_n[3]);													
-			printf(" BFtime %.6LG, offset %i, delx_n %LG, Babs %LG |I| before %LG ",BFtime[offset], offset, delx_n, Bws,sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)));
+			printf(" BFtime %.6LG, offset %i, delx_n %LG, Bmin %LG, |I| before %LG ",BFtime[offset], offset, delx_n, BFBmin,sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)));
 		}													
 		
 		/*
@@ -1320,11 +1320,11 @@ void BruteForceIntegration(){
 				BFpol = (BFyp[1][BFcount]* BFypFields[1][BFcount] + BFyp[2][BFcount]* BFypFields[2][BFcount] + BFyp[3][BFcount]* BFypFields[3][BFcount])/sqrtl(BFypFields[1][BFcount]*BFypFields[1][BFcount] + BFypFields[2][BFcount]*BFypFields[2][BFcount] + BFypFields[3][BFcount]*BFypFields[3][BFcount]);
 				long double BFlogpol;
 				if (BFpol<0.5) 
-					BFlogpol = log10l(0.5+BFpol);
+					BFlogpol = log10l(0.5-BFpol);
 				else if (BFpol==0.5) 
 					BFlogpol = 0.0;
 				fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
-								BFxp[BFcount],BFBws[BFcount],BFpol,BFlogpol,BFyp[1][BFcount],BFyp[2][BFcount],BFyp[3][BFcount],BFypFields[1][BFcount],BFypFields[2][BFcount],BFypFields[3][BFcount]);
+								BFxp[BFcount],BFBws[BFcount],BFpol,BFlogpol,BFyp[1][BFcount]*2,BFyp[2][BFcount]*2,BFyp[3][BFcount]*2,BFypFields[1][BFcount]/BFBws[BFcount],BFypFields[2][BFcount]/BFBws[BFcount],BFypFields[3][BFcount]/BFBws[BFcount]);
 				
 				BFZeilencount++;
 			}  
