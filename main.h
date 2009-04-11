@@ -1,5 +1,5 @@
 #define KMDEF 1000
-#define BFKMDEF 3000
+#define BFKMDEF 50000
 
 // stdincludes
 #include <stdio.h>
@@ -279,7 +279,7 @@ extern int NoAbsorption, AbsorberHits;
 extern int kmax, BFkmax;                                         // number of steps for intermediate output
 extern long double nintcalls, ntotalsteps;					// counters to determine average steps per integrator call
 extern int kount, hfs, NSF;                                            // counter for intermediate output steps, highfieldseeker, numberofspinflips
-extern long double *xp,**yp, *BFxp, **BFyp, dxsav;          // Arrays for intermediate output
+extern long double *xp,**yp, *BFxp, **BFyp, dxsav, BFdxsav;          // Arrays for intermediate output
 extern long double **Bp,**Ep;                            // Arrays for intermediate output
 
 // incorporate B-fieldoszillations into the code

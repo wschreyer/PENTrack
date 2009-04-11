@@ -282,12 +282,12 @@ void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, 
 	for (i=1;i<=nvar;i++) 
 		y[i]=ystart[i]; 
 	if (BFkmax > 0) 
-		xsav=x-dxsav*2.0;                                             //Assures storag of first step.
+		xsav=x-BFdxsav*2.0;                                             //Assures storag of first step.
 	for (nstp=1;nstp<=MAXSTP;nstp++) {                                          //Take at most MAXSTP steps.
 		(*BFderivs)(x,y,dydx); 
 		for (i=1;i<=nvar;i++)//Scaling used to monitor accuracy.
 			yscal[i]=fabsl(y[i])+fabsl(dydx[i]*h)+TINY;
-		if (BFkmax > 0 && BFkount < BFkmax-1 && fabsl(x-xsav) > fabsl(dxsav)) {
+		if ((BFkmax > 0) && (BFkount < BFkmax-1) && (fabsl(x-xsav) > fabsl(BFdxsav))) {
 			BFxp[++BFkount]=x;                                                              //Store intermediate results.
 			for (i=1;i<=nvar;i++) 
 				BFyp[i][BFkount]=y[i];
@@ -299,6 +299,8 @@ void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, 
 			//RP End
 			xsav=x;
 		}
+		if (BFkount>=BFkmax-1)
+			cout << "Too many points in intermediate array...!" << endl;
 		if ((x+h-x2)*(x+h-x1) > 0.0) 
 			h=x2-x;                                        //If stepsize can overshoot, decrease.
 		(*integrator)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,BFderivs);                    // Successful Runge Kutte step
