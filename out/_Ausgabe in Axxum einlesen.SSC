@@ -1,7 +1,3 @@
 # import.data(FileName="Y:/ucn/Penelope/rpicker/pbsoutfiles/FillingLFS/end.log", DataFrame="end", FileType= "ASCII");
- import.data(FileName="Y:/ucn/Penelope/rpicker/Track2009e/out/000000track001.out", DataFrame="track", FileType= "ASCII");
-# import.data(FileName="Y:/ucn/Penelope/rpicker/Track2008BD/out/000000end.out", DataFrame="end", FileType= "ASCII");
-# import.data(FileName="Y:/ucn/Penelope/rpicker/Track2008BD/out/end.log", DataFrame="end", FileType= "ASCII");
-# import.data(FileName="Y:/ucn/Penelope/rpicker/pbsoutfiles/FillingLFS/reflect2.log", DataFrame="reflekt", FileType= "ASCII");
-# import.data(FileName="Y:/ucn/Penelope/rpicker/pbsoutfiles/SpinTracking/end.log", DataFrame="end", FileType= "ASCII");
-
+ import.data(FileName="Y:/ucn/Penelope/rpicker/checked/SpinTrack/out/0track1.out", DataFrame="track", FileType= "ASCII");
+ import.data(FileName="Y:/ucn/Penelope/rpicker/checked/SpinTrack/out/0BF1.out", DataFrame="BF", FileType= "ASCII");
