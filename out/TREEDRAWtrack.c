@@ -108,12 +108,18 @@ void TREEDRAWtrack(TString filename)
 
 	//======== Drawing and saving z versus r, z versus x and x-y-z  =====================================================
 	std::cout << "Drawing ..." << std::endl;
+	
+	gStyle->SetTitleFillColor(0);
 
 	TCanvas *c1 = new TCanvas("c1", "z:r z:x data from " + rootfilename, 20, 20, 1200, 450); // creating a new
 	// TCanvas([canvasname], [canvastitle], x pixel coordinate, y pixel coordinate, x pixle size, y pixel size)
+	c1->SetFillColor(0);
+	c1->SetBorderMode(0);
 	c1->Divide(2,1); // dividing 'c1' into 2*1 pads (numbered like text read)
 
 	c1->cd(1); // select pad 1
+	c1_1->SetFrameFillColor(0);
+	c1_1->SetFrameBorderMode(0);
 	mytree->SetEstimate(mytree->GetEntries()); // setting the estimated lenght of V1, V2 and V3
 	mytree->Draw("z:r", "", "goff"); // drawing "z:r" without graphical output
 	g11 = new TGraph(mytree->GetEntries(), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving data
@@ -121,24 +127,28 @@ void TREEDRAWtrack(TString filename)
 	g11->SetTitle("z:r");
 	g11->SetMarkerColor(4);
 	g11->SetLineColor(4);
-	g11->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points ++++++++++++++
 
 	c1->Update(); // necessary command for setting the axis titles
 	g11->GetHistogram()->SetXTitle("r [m]");
 	g11->GetHistogram()->SetYTitle("z [m]");
 
+	g11->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points ++++++++++++++
+
 	c1->cd(2); // select pad 2
+	c1_2->SetFrameFillColor(0);
+	c1_2->SetFrameBorderMode(0);
 	mytree->Draw("z:x", "", "goff"); // drawing "z:x" without graphical output
 	g12 = new TGraph(mytree->GetEntries(), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving data
 	                                                                          // from the draw command above
 	g12->SetTitle("z:x");
 	g12->SetMarkerColor(4);
 	g12->SetLineColor(4);
-	g12->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points ++++++++++++++
 
 	c1->Update(); // necessary command for setting the axis titles
 	g12->GetHistogram()->SetXTitle("x [m]");
 	g12->GetHistogram()->SetYTitle("z [m]");
+
+	g12->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points ++++++++++++++
 
 	c1->SaveAs(rootfilename + "_z-r_z-x.cxx");     // saving canvas as macro
 	c1->SaveAs(rootfilename + "_z-r_z-x_0.png");   // saving canvas as PNG
@@ -151,8 +161,12 @@ void TREEDRAWtrack(TString filename)
 */
 	TCanvas *c2 = new TCanvas("c2", "z:y:x data from " + rootfilename, 620, 200, 600, 450); // creating a new
 	// TCanvas([canvasname], [canvastitle], x pixel coordinate, y pixel coordinate, x pixle size, y pixel size)
+	c2->SetFillColor(0);
+	c2->SetBorderMode(0);
 
 	c2->cd(); // select pad
+	c2->SetFrameFillColor(0);
+	c2->SetFrameBorderMode(0);
 	mytree->Draw("z:y:x", "", "goff"); // drawing "z:y:x" without graphical output
 	g2 = new TGraph2D(mytree->GetEntries(), mytree->GetV3(), mytree->GetV2(), mytree->GetV1()); // generating graph and
 	//retrieving data from the draw command above
