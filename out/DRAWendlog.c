@@ -72,6 +72,9 @@ void DRAWendlog(TString filename)
 	
 	std::cout << "Drawing ..." << std::endl;
 
+	gStyle->SetTitleFillColor(0);
+	gStyle->SetStatColor(0);
+
 	//======== (1) Drawing and saving 'kennz' versus 'zstart' versus 'rstart' ===========================================
 	vnamex = "rstart"; // dummy ~ x-variable
 	vnamey = "zstart"; // dummy ~ y-variable
@@ -79,7 +82,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c1 = new TCanvas("c1", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 20, 20, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c1->SetFillColor(0);
+	c1->SetBorderMode(0);
 	c1->cd(); // select pad
+	c1->SetFrameFillColor(0);
+	c1->SetFrameBorderMode(0);
 	mytree->SetEstimate(nentries); // setting the estimated lenght of V1, V2 and V3
 	mytree->Draw(vnamec + ":" + vnamey + ":" + vnamex, "", "goff"); // drawing "[vnamec]:[vnamey]:[vnamex]" without
 	                                                                // graphical output
@@ -106,7 +113,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c2 = new TCanvas("c2", vnamex + " data from " + rootfilename, 40, 40, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c2->SetFillColor(0);
+	c2->SetBorderMode(0);
 	c2->cd(); // select pad
+	c2->SetFrameFillColor(0);
+	c2->SetFrameBorderMode(0);
 	mytree->Draw(vnamex + ">>h2", "", "goff"); // drawing "[vnamex]" and storing the histogram 'h2'
 	TH1D *h2 = (TH1D*) gDirectory->Get("h2"); // retrieving histogram 'h2' from the draw command above
 
@@ -132,7 +143,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c3 = new TCanvas("c3", vnamex + " {" + vnamec + "} data from " + rootfilename, 60, 60, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c3->SetFillColor(0);
+	c3->SetBorderMode(0);
 	c3->cd(); // select pad
+	c3->SetFrameFillColor(0);
+	c3->SetFrameBorderMode(0);
 	mytree->Draw(vnamex + ">>h3", vnamec); // drawing "[vnamex]" (if "[vnamec]") and storing the histogram 'h3'
 	TH1D *h3 = (TH1D*) gDirectory->Get("h3"); // retrieving histogram 'h3' from the draw command above
 
@@ -160,7 +175,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c4 = new TCanvas("c4", vnamex + " {" + vnamec + "} data from " + rootfilename, 80, 80, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c4->SetFillColor(0);
+	c4->SetBorderMode(0);
 	c4->cd();
+	c4->SetFrameFillColor(0);
+	c4->SetFrameBorderMode(0);
 	TH1D *h4 = new TH1D("h4", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
@@ -190,7 +209,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c5 = new TCanvas("c5", vnamex + " {" + vnamec + "} data from " + rootfilename, 100, 100, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c5->SetFillColor(0);
+	c5->SetBorderMode(0);
 	c5->cd(); // select pad
+	c5->SetFrameFillColor(0);
+	c5->SetFrameBorderMode(0);
 	TH1D *h5 = new TH1D("h5", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
@@ -216,7 +239,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c6 = new TCanvas("c6", vnamex + " data from " + rootfilename, 120, 120, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c6->SetFillColor(0);
+	c6->SetBorderMode(0);
 	c6->cd(); // select pad
+	c6->SetFrameFillColor(0);
+	c6->SetFrameBorderMode(0);
 	mytree->Draw(vnamex + ">>h6"); // drawing "[vnamex]" and storing the histogram 'h6'
 	TH1D *h6 = (TH1D*) gDirectory->Get("h6"); // retrieving histogram 'h6' from the draw command above
 
@@ -240,7 +267,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c7 = new TCanvas("c7", vnamex + " data from " + rootfilename, 140, 140, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c7->SetFillColor(0);
+	c7->SetBorderMode(0);
 	c7->cd(); // select pad
+	c7->SetFrameFillColor(0);
+	c7->SetFrameBorderMode(0);
 	mytree->Draw(vnamex + ">>h7"); // drawing "[vnamex]" and storing the histogram 'h7'
 	TH1D *h7 = (TH1D*) gDirectory->Get("h7"); // retrieving histogram 'h7' from the draw command above
 
@@ -265,7 +296,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c8 = new TCanvas("c8", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + rootfilename, 140, 140, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c8->SetFillColor(0);
+	c8->SetBorderMode(0);
 	c8->cd(); // select pad
+	c8->SetFrameFillColor(0);
+	c8->SetFrameBorderMode(0);
 	mytree->SetEstimate(mytree->GetEntries(vnamec)); // setting the estimated lenght of V1 and V2
 	mytree->Draw(vnamey + ":" + vnamex, vnamec, "goff"); // drawing "[vnamey]:[vnamey]" (if "[vnamec]")
 	                                                     // without graphical output
@@ -299,8 +334,12 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c9 = new TCanvas("c9", vnamex + " " + vnamey + " {" + vnamec + "} data from " + rootfilename, 160, 160, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c9->SetFillColor(0);
+	c9->SetBorderMode(0);
 	c9->Divide(2, 2); // dividing 'c9' into 2*2 pads (numbered like text read)
-	c9->cd(1); // select pad 1
+	c9->cd(1); // select pad 1	
+	c9_1->SetFrameFillColor(0);
+	c9_1->SetFrameBorderMode(0);
 	TH1D *h91 = new TH1D("h91", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
@@ -320,6 +359,8 @@ void DRAWendlog(TString filename)
 	h91->Draw();
 
 	c9->cd(2); // select pad 2
+	c9_2->SetFrameFillColor(0);
+	c9_2->SetFrameBorderMode(0);
 	TH1D *h92 = new TH1D("h92", vnamey + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
@@ -339,6 +380,8 @@ void DRAWendlog(TString filename)
 	h92->Draw();
 
 	c9->cd(3); // select pad 3
+	c9_3->SetFrameFillColor(0);
+	c9_3->SetFrameBorderMode(0);
 	THStack *h93 = new THStack("h93", vnamex + ", " + vnamey + " {" + vnamec + "}");
 	// creating a new THStack([histogramname], [histogramtitle])
 	h93->Add(h91); // adding 'h91' to 'h93'
@@ -351,6 +394,8 @@ void DRAWendlog(TString filename)
 	h93	->Draw("nostack"); //++++++++ options: "" ~ stack, "nostack" ~ no stack (last added one in the front) +++++++++++
 
 	c9->cd(4); // select pad 4
+	c9_4->SetFrameFillColor(0);
+	c9_4->SetFrameBorderMode(0);
 	TH2D *h94 = new TH2D("h94", vnamey + ":" + vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001, nbins, xmin, xmax * 1.0001);
 	// creating a new TH2D([histogramname], [histogramtitle], number of x-bins, lower edge of the first x-bin, excluded!
 	// upper edge of the last x-bin, number of y-bins, lower edge y-bin, excluded! upper edge y-bin)
@@ -395,7 +440,11 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c10 = new TCanvas("c10", vnamec + " data from " + rootfilename, 180, 180, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c10->SetFillColor(0);
+	c10->SetBorderMode(0);
 	c10->cd(); // select pad
+	c10->SetFrameFillColor(0);
+	c10->SetFrameBorderMode(0);
 	TH1D *h10 = new TH1D("h10", vnamec, nbins, xmin, xmax * 1.0001); // creating a new TH1D([histogramname],
 	// [histogramtitle], number of bins, lower edge of the first bin, excluded! upper edge of the last bin)
 	mytree->Draw(vnamec + ">>+h10"); // drawing "[vnamec]" and storing the result in 'h10'
@@ -428,12 +477,16 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c11 = new TCanvas("c11", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + rootfilename, 200, 200, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c11->SetFillColor(0);
+	c11->SetBorderMode(0);
 	TH2D *h110 = new TH2D("h110", "reference histogram", nbins, xmin, xmax * 1.0001, nbins, 0, 1.2 * 1.0001);
 	// creating a new TH2D([histogramname], [histogramtitle], number of x-bins, lower edge of the first x-bin, excluded!
 	// upper edge of the last x-bin, number of y-bins, lower edge y-bin, excluded! upper edge y-bin)
 	mytree->Draw(vnamey + ":" + vnamex + ">>+h110", "", "goff"); // drawing "[vnamey]:[vnamex]" and storing the result in 'h110'
 
 	c11->cd(); // select pad
+	c11->SetFrameFillColor(0);
+	c11->SetFrameBorderMode(0);
 	TH2D *h111 = new TH2D("h111", vnamey + ":" + vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001, nbins, 0, 1.2 * 1.0001);
 	TH2D *h112 = new TH2D("h112", vnamey + ":" + vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001, nbins, 0, 1.2 * 1.0001);
 	// creating two new TH2D([histogramname], [histogramtitle], number of x-bins, lower edge of the first x-bin, excluded!
@@ -489,8 +542,12 @@ void DRAWendlog(TString filename)
 
 	TCanvas *c12 = new TCanvas("c12", "spin-flip_loss_lifetime:" + vnamex + " data from " + rootfilename, 220, 220, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c12->SetFillColor(0);
+	c12->SetBorderMode(0);
 	c12->Divide(2, 1); // dividing 'c12' into 2*1 pads (numbered like text read)
 	c12->cd(1); // select pad
+	c12_1->SetFrameFillColor(0);
+	c12_1->SetFrameBorderMode(0);
 	mytree->SetEstimate(mytree->GetEntries(vnamec)); // setting the estimated lenght of V1 and V2
 	mytree->Draw(vnamey + ":" + vnamex, vnamec, "goff"); // drawing "[vnamey]:[vnamey]" (if "[vnamec]")
 	                                                     // without graphical output
@@ -510,7 +567,9 @@ void DRAWendlog(TString filename)
 
 	g121->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	c12->cd(2);
+	c12->cd(2);	
+	c12_2->SetFrameFillColor(0);
+	c12_2->SetFrameBorderMode(0);
 	//-------- Generating the TGraphErrors 'g122' -----------------------------------------------------------------------
 	g122 = new TGraphErrors();
 	{	Double_t y, yerr; // y-average and y-RMS
