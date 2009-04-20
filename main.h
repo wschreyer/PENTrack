@@ -258,7 +258,7 @@ extern int AbsorberChoice;    // 1: PE, 2: Ti
 extern long double *BFtime, **BFField;    // time, Bx, By, Bz, r, z array
 extern int offset, BFkount, BFindex;			// counter in BFarray, offset off BFarray, maximum index of intermediate values , index in BFarray;
 extern long double *BFBws;                    // BFpolarisation
-extern long double BFBmin, BFTargetB;     // smallest value of Babs during step, Babs < BFTargetB => integrate,
+extern long double BFBmin, BFBminmem,BFTargetB;     // smallest value of Babs during step, Babs < BFTargetB => integrate,
 extern long double BFBxcoor, BFBycoor, BFBzcoor;        // cartesian coord of B field
 extern unsigned short int BruteForce, firstint, alwayscont, flipspin;  // enable BruteForce?, flipthespin?
 extern long double I_n[4], **BFypFields;        // Spinvector, intermediate field values in BFodeint

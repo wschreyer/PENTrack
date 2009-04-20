@@ -299,7 +299,7 @@ void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, 
 			//RP End
 			xsav=x;
 		}
-		if (BFkount>=BFkmax-1)
+		if (BFkount==BFkmax)
 			cout << "Too many points in intermediate array...!" << endl;
 		if ((x+h-x2)*(x+h-x1) > 0.0) 
 			h=x2-x;                                        //If stepsize can overshoot, decrease.
