@@ -150,7 +150,7 @@ int AbsorberChoice = 1;    // 1: PE, 2: Ti
 long double *BFtime=NULL, **BFField=NULL;   // time, Bx, By, Bz, r, z array
 int offset=0, BFkount, BFindex = 3;			// counter in BFarray, offset of BFarray, maximum index of intermediate values , index in BFarray
 long double BFpol, *BFBws=NULL;                    // BFpolarisation
-long double BFBmin = 10.0, BFTargetB=0.1;     // smallest value of Babs during step, Babs < BFTargetB => integrate,
+long double BFBmin = 10.0, BFBminmem=10.0, BFTargetB=0.1;     // smallest value of Babs during step, memorize value during value accumulation, Babs < BFTargetB => integrate,
 long double BFBxcoor, BFBycoor, BFBzcoor;        // cartesian coord of B field
 unsigned short int BruteForce = 0, firstint = 1, flipspin=1;  // enable BruteForce?,
 long double I_n[4], **BFypFields=NULL;        // Spinvector, intermediate field values in BFodeint
@@ -350,7 +350,7 @@ int main(int argc, char **argv){
 			if((ausgabewunsch == OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch == OUTPUT_ENDPOINTSandSPIN))
 			{
 				//fprintf(TESTLOG,"t log(pol) spinflipprob\n");
-				fprintf(BFLOG,"t Babs Polar logPolar Ix Iy Iz Bx By Bz\n");
+				fprintf(BFLOG,"t Babs Polar logPolar Ixnorm Iynorm Iznorm Bxnorm Bynorm Bznorm dx dy dz\n");
 				// for field interpolation tests fprintf(BFLOG,"r z Br Bphi Bz BrTab BphiTab BzTab deltabr_abs deltabphi_abs deltabz_abs deltabr_rel deltabphi_rel deltabz_rel\n"); 
 			}
 			cout << "Geht noch... " << endl;
@@ -679,7 +679,7 @@ void IntegrateParticle(){
 	if(BruteForce)
 	{
 		NSF=0;
-		firstint = 0;                 // after BF step, it will not be the first BF step any more...
+		firstint = 1;                 // after BF step, it will not be the first BF step any more...
 		if(protneut == NEUTRON){
 	
 			if(polarisation==POLARISATION_GOOD){
@@ -1057,7 +1057,7 @@ void IntegrateParticle(){
 				Zeilencount=1;
 			}
 
-			if ((BFZeilencount>100000) && BruteForce)
+			if ((BFZeilencount>50000) && BruteForce)
 			{
 				fclose(BFLOG);
 				BFFilecount++;
@@ -1201,6 +1201,8 @@ void BruteForceIntegration(){
 			BFBmin = Bp[13][klauf];
 		}
 	}
+	if(BFBmin<BFBminmem)    // accumulate the smallest value Babs for which BF integration is done
+		BFBminmem=BFBmin;
 	
 	if ((BFBmin>BFTargetB)&&(BFPolmin))
 	{    // output of polarisation after BF int completed
@@ -1234,18 +1236,20 @@ void BruteForceIntegration(){
 		{// start with 2 if there are already values in the arrays, because otherwise two values could be the same
 			klaufstart = 2;
 		}			
-		
+		/*
 		// output start position and velocities of BruteForce
 		if(klaufstart == 1)
 		{
 			gammaend=atan2l(sqrtl(powl(yp[2][2],2)+powl(yp[1][2]*yp[6][2],2)),yp[4][2])/conv;
 			fprintf(LOGSCR,"\n r:%.17LG phi:%.17LG z:%.17LG H:%.17LG alpha:%.17LG gamma:%.17LG \n ",
 							yp[1][2],yp[5][2]/conv,yp[3][2],(M*gravconst*yp[3][2]+0.5*M*fabsl(yp[2][2]*yp[2][2]+yp[1][2]*yp[1][2]*yp[6][2]*yp[6][2]+yp[4][2]*yp[4][2])-mu_n*Bp[13][2])*1E9, atanl(yp[6][2]*yp[1][2]/yp[2][2])/conv, gammaend);
-		}
+		}*/
 		
 													
 		for (klauf=klaufstart;klauf<=kount;klauf++)
 		{    // build array for Bloch integration
+			//if(xp[klauf]<=BFtime[offset+klauf-(klaufstart-1)])
+			//	klauf++;
 			BFtime[offset+klauf-(klaufstart-1)]=xp[klauf];
 			// transform cylindrical into kartesian lokal coordinates
 			CylKartCoord(Bp[1][klauf], Bp[5][klauf], Bp[9][klauf],  yp[5][klauf], &BFBxcoor, &BFBycoor, &BFBzcoor);
@@ -1271,7 +1275,7 @@ void BruteForceIntegration(){
 
 	
 	// Perform integration
-	if (((BFBmin>=BFTargetB)&&(offset>=10))||(offset>=2000))
+	if ((((BFBmin>=BFTargetB)||((x2-xstart)>=xend))&&(offset>=10))||(offset>=2000))
 	{                      
 		if (firstint){
 			BFBws[1] = sqrtl(powl(BFField[1][1],2)+powl(BFField[2][1],2)+powl(BFField[3][1],2));
@@ -1281,7 +1285,7 @@ void BruteForceIntegration(){
 			
 			//printf("Bvector before %LG %LG %LG Babs %LG \n",BFField[1][1],BFField[2][1],BFField[3][1],BFBws[1]);
 			//printf("Spinvector before %LG %LG %LG  \n",I_n[1],I_n[2],I_n[3]);													
-			printf(" BFtime %.6LG, offset %i, delx_n %LG, Bmin %LG, |I| before %LG ",BFtime[offset], offset, delx_n, BFBmin,sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)));
+			printf(" BF starttime %.6LG, BFflipprob before %LG, offset %i, delx_n %LG, Bmin %LG, |I| before %LG ",BFtime[1], BFflipprob, offset, delx_n, BFBmin,sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)));
 		}													
 		
 		/*
@@ -1294,8 +1298,9 @@ void BruteForceIntegration(){
 		//    (eingangsvektor,nvar,xbeg,xend,rel.accur,begstepsize,hmin,&nok,&nbad,derivs,bsstep)
 		(*BFodeintrk)(I_n,3,BFtime[1],BFtime[offset],1e-13,1e-5,0,&nok,&nbad,BFderivs,BFrkqs);
 		//(*BFodeintrk) (I_n,3,BFtime[1],2e-7,1e-13,1e-5,0,&nok,&nbad,BFderivs,BFrkqs);
-		printf("|I| after %LG BFflipprob %LG \n",sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)),BFflipprob);
-		firstint = 0;                 // after BF step, it will not be the first BF step any more...		
+		printf("|I| after %LG, BF endtime %LG, intsteps taken %d, Babsmin %LG\n",sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)), BFtime[offset], nok, BFBminmem);
+		firstint = 0;                 // after BF step, it will not be the first BF step any more...	
+		BFBminmem=10;
 		// calculate polarisation at end of step BFpol = (I_n*B/|B|) in [-1/2,1/2]
 		BFpol = 	(BFyp[1][BFkount]* BFypFields[1][BFkount] + 
 						BFyp[2][BFkount]* BFypFields[2][BFkount] + 
@@ -1323,8 +1328,10 @@ void BruteForceIntegration(){
 					BFlogpol = log10l(0.5-BFpol);
 				else if (BFpol==0.5) 
 					BFlogpol = 0.0;
-				fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
-								BFxp[BFcount],BFBws[BFcount],BFpol,BFlogpol,BFyp[1][BFcount]*2,BFyp[2][BFcount]*2,BFyp[3][BFcount]*2,BFypFields[1][BFcount]/BFBws[BFcount],BFypFields[2][BFcount]/BFBws[BFcount],BFypFields[3][BFcount]/BFBws[BFcount]);
+				fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
+								BFxp[BFcount],BFBws[BFcount],BFpol,BFlogpol,BFyp[1][BFcount]*2,BFyp[2][BFcount]*2,BFyp[3][BFcount]*2,BFypFields[1][BFcount]/BFBws[BFcount],BFypFields[2][BFcount]/BFBws[BFcount],BFypFields[3][BFcount]/BFBws[BFcount], BFyp[1][BFcount]*2-BFypFields[1][BFcount]/BFBws[BFcount],
+				BFyp[2][BFcount]*2-BFypFields[2][BFcount]/BFBws[BFcount],
+				BFyp[3][BFcount]*2-BFypFields[3][BFcount]/BFBws[BFcount]);
 				
 				BFZeilencount++;
 			}  
