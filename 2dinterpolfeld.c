@@ -1245,8 +1245,8 @@ void BarRaceTrack(long double r_current, long double phi_current, long double z_
 	// for all single current bars
 	for(int cobar=1;cobar<=12;cobar++)
 	{
-		StraightWireField(r_current,phi_current,z_current, Ibar, Bars_1r[cobar],Bars_1phi[cobar], Bars_1z[cobar],Bars_2r[cobar], Bars_2phi[cobar], Bars_2z[cobar]);					
+		StraightWireField(r_current,phi_current,z_current, I_bar, Bars_1r[cobar],Bars_1phi[cobar], Bars_1z[cobar],Bars_2r[cobar], Bars_2phi[cobar], Bars_2z[cobar]);					
 	}
 	// then for the center bar (4x current)   
-	StraightWireField(r_current,phi_current,z_current, 4.0*Ibar, Bars_1r[13],Bars_1phi[13], Bars_1z[13],Bars_2r[13], Bars_2phi[13], Bars_2z[13]);
+	StraightWireField(r_current,phi_current,z_current, 4.0*I_bar, Bars_1r[13],Bars_1phi[13], Bars_1z[13],Bars_2r[13], Bars_2phi[13], Bars_2z[13]);
 }
