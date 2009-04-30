@@ -210,7 +210,7 @@ int main(int argc, char **argv){
 	mt_state_t mtstate;
 	v_mt_state = &mtstate;
 	mytime = time(NULL);
-	mt_set (v_mt_state,(unsigned long int) (((unsigned long int) mytime)+jobnumber));  // add jobnumber to current time to get different starting values for batch job
+	mt_set (v_mt_state,(unsigned long int) (((unsigned long int) mytime)+jobnumber*3600));  // add jobnumber to current time to get different starting values for batch job
 	
 	// setting some default values
 	nvar=6;           // number of variables
@@ -556,7 +556,7 @@ void OpenFiles(int argc, char **argv){
         fprintf(ENDLOG,"jobnumber protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
         			   "gammastart rend phiend zend vend alphaend gammaend t H kennz "
         			   "NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax "
-        			   "AbsorberHits BFeldSkal EFeldSkal lossprob\n");
+        			   "AbsorberHits BFeldSkal EFeldSkal lossprob tauSF dtau \n");
 	}		
 	
 	// Print track to file
