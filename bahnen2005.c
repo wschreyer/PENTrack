@@ -1184,23 +1184,18 @@ void BruteForceIntegration(){
 	int klauf, klaufstart;
 	BFdxsav=5e-7;  // timestep for intermediate output
 	bool BFPolmin;
-	if (BFBmin<BFTargetB)
-	{
-		BFPolmin=true;          // if at last step there was BFintegration => true
-	}else if (BFBmin>=BFTargetB)
-	{
-		BFPolmin=false;   // if there was no integration => false
-	}
 	
-	BFBmin = 10;                                   // set to a value higher than all real bws values
+	BFPolmin = (BFBmin < BFTargetB);
+	// if at last step there was BFintegration => true
+	// if there was no integration => false
+	
+	BFBmin = 10; // set to a value higher than all real bws values
 	
 	for (klauf=1;klauf<=kount;klauf++)
 	{    // go through intermediate values
-		if(Bp[13][klauf]<BFBmin)
-		{          // write out smallest value of Bws
-			BFBmin = Bp[13][klauf];
-		}
+		BFBmin = min(BFBmin, Bp[13][klauf]); // write out smallest value of Bws
 	}
+	
 	if(BFBmin<BFBminmem)    // accumulate the smallest value Babs for which BF integration is done
 		BFBminmem=BFBmin;
 	

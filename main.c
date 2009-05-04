@@ -581,7 +581,7 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 		  alphaend= atan2l(ystart[6]*ystart[1],ystart[2])/conv;
 		
 		// calculate spin flip lifetime tauSF and influence on lifetime measurement 
-		long double tauSF = -x2/logl(1-BFflipprop);
+		long double tauSF = -x2/logl(1-BFflipprob);
 		long double dtau=tau-1/(1/tau+1/tauSF) ;
 		
 	
