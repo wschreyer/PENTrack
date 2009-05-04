@@ -119,7 +119,8 @@ int rdslit,rdBruteForce,rdreflekt,rdspinflipcheck,rdDetOpen;  // rampdown
 int fislit,fiBruteForce,fireflekt,fispinflipcheck,fiDetOpen;  // filling
 int coslit,coBruteForce,coreflekt,cospinflipcheck,coDetOpen;  // counting UCN
 int clslit,clBruteForce,clreflekt,clspinflipcheck,clDetOpen;  // cleaning time
-int jobnumber; 
+int jobnumber;
+unsigned long int monthinmilliseconds; // RandomSeed
 
 // Spintracking
 int spinflipcheck = 0;                          // user choice to check adiabacity
@@ -205,12 +206,25 @@ mt_state_t *v_mt_state = NULL; //mersenne twister state var
 // uebergabe: jobnumber inpath outpath                 paths without last slash
 int main(int argc, char **argv){
 	time_t mytime;
+	tm *monthday;
+	timeval daysec;
+	ldiv_t divresult; 
 
 	// for random numbers we need a statevar + we need to set an initial seed
 	mt_state_t mtstate;
 	v_mt_state = &mtstate;
 	mytime = time(NULL);
-	mt_set (v_mt_state,(unsigned long int) (((unsigned long int) mytime)+jobnumber*3600));  // add jobnumber to current time to get different starting values for batch job
+	
+	monthday = localtime(&mytime);
+	monthinmilliseconds = (unsigned long int)(monthday->tm_mday)*24*60*60*1000; // add day in ms
+	monthinmilliseconds = monthinmilliseconds + (unsigned long int)(monthday->tm_hour)*60*60*1000; // add hour in ms
+	monthinmilliseconds = monthinmilliseconds + (unsigned long int)(monthday->tm_min)*60*1000; // add minute in ms 
+	monthinmilliseconds = monthinmilliseconds + (unsigned long int)(monthday->tm_sec)*1000;  // add second in ms	
+	gettimeofday(&daysec, 0);
+	divresult = div((long int)(daysec.tv_usec), (long int)(1000));
+	monthinmilliseconds = monthinmilliseconds + (unsigned long int)(divresult.quot); // add milliseconds
+	
+	mt_set (v_mt_state, monthinmilliseconds);
 	
 	// setting some default values
 	nvar=6;           // number of variables
@@ -553,7 +567,7 @@ void OpenFiles(int argc, char **argv){
 	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
 	if (protneut != BF_ONLY) 
 	{
-        fprintf(ENDLOG,"jobnumber protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
+        fprintf(ENDLOG,"jobnumber RandomSeed protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
         			   "gammastart rend phiend zend vend alphaend gammaend t H kennz "
         			   "NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax "
         			   "AbsorberHits BFeldSkal EFeldSkal lossprob tauSF dtau \n");
