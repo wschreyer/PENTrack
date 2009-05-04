@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <stddef.h>
 #include <string.h>
@@ -240,6 +241,7 @@ extern long double Bxcoor, Bycoor, Bzcoor;    // B-field in cart Labor coord, ca
 
 // file output
 extern int jobnumber;
+extern unsigned long int monthinmilliseconds; // RandomSeed
 extern long Zeilencount;
 extern int Filecount, p;                                   // counts the output files, counter for last line written in outs, random generator temp value
 extern long double BahnPointSaveTime;               // default 2e-7; 0=1e-19 not changed at run time, time between two lines written in outs
