@@ -586,8 +586,8 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 		
 	
 		// output of end values
-		fprintf(ENDLOG,"%i %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG %LG \n",
-		jobnumber,protneut, polarisation,xstart,r_n,phi_n,z_n,NeutEnergie*1.0e9,v_n,alpha,gammaa,ystart[1],phiend,ystart[3],vend,alphaend,gammaend,x2,H,kennz, NSF,RodFieldMultiplicator, BFflipprob,nrefl, vladmax,vladtotal,thumbmax,
+		fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG %LG \n",
+		jobnumber, monthinmilliseconds, protneut, polarisation,xstart,r_n,phi_n,z_n,NeutEnergie*1.0e9,v_n,alpha,gammaa,ystart[1],phiend,ystart[3],vend,alphaend,gammaend,x2,H,kennz, NSF,RodFieldMultiplicator, BFflipprob,nrefl, vladmax,vladtotal,thumbmax,
 		trajlengthsum,(H-Hstart),Hmax,AbsorberHits, BFeldSkal, EFeldSkal, lossprob, tauSF, dtau);
 	
 	
