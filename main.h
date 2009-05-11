@@ -130,7 +130,7 @@ extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  
 extern long double Ibar;                // current through rod
 extern int diffuse; // diffuse reflection switch
 extern long double DiffProb, diffuprob; // property of diffuse reflection 0.125
-extern unsigned short int nodelay, slit, DetOpen, decay;                // delays for monte carlo, is there an entrance slit?, do the neutrons decay?;
+extern unsigned short int nodelay, slit, DetOpen;                // delays for monte carlo, is there an entrance slit?
 extern long double lossprob, epsi, AbsProb;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
 
 // Fields
@@ -156,6 +156,12 @@ extern long int kennz0,kennz1,kennz2,kennz3,kennz4,kennz5,kennz6,kennz7,kennz8,k
 extern long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
 extern unsigned short int TrajectoryLength;
 extern long double Hstart, Hend, Hmax;     //maximum energy
+
+struct decayinfo				// containing all data from neutron decay for the emerging proton and electron
+{	unsigned short int on;		// true if neutron decay is allowed (false if not) // "do the neutrons decay?"
+	long double energy;			// neutron decay energy 
+};
+extern struct decayinfo decay;	// containing all data from neutron decay for the emerging proton and electron
 
 // initial values of particle
 extern long double EnergieS,dEnergie, EnergieE, Energie;    //initial energy range
@@ -280,7 +286,7 @@ extern int NoAbsorption, AbsorberHits;
 //for the output of intermediate steps
 extern int kmax, BFkmax;                                         // number of steps for intermediate output
 extern long double nintcalls, ntotalsteps;					// counters to determine average steps per integrator call
-extern int kount, hfs, NSF;                                            // counter for intermediate output steps, highfieldseeker, numberofspinflips
+extern int kount, hfs, NSF;                               // counter for intermediate output steps, highfieldseeker, numberofspinflips
 extern long double *xp,**yp, *BFxp, **BFyp, dxsav, BFdxsav;          // Arrays for intermediate output
 extern long double **Bp,**Ep;                            // Arrays for intermediate output
 

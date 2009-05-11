@@ -181,7 +181,7 @@ void MCStartwerte(long double delx)
 		xstart = FillingTime * (mt_get_double(v_mt_state));
 
 	// set time span till decay
-	if((decay) && (protneut == NEUTRON))
+	if((decay.on) && (protneut == NEUTRON))
 		xend = - tau * log(mt_get_double(v_mt_state)) + xstart; // time span till neutron decay	
 
 	return ;

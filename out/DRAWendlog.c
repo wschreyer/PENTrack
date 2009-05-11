@@ -56,8 +56,22 @@ void DRAWendlog(TString filename)
 	TFile *file = TFile::Open(rootfilename, "READ"); // opening the file wherein the tree is stored (read access only)
 	TTree *mytree = (TTree*) file->Get("mytree"); // creating a pointer 'mytree' pointing on the TTree "mytree"
 	//file->cd();
+	
+	Int_t particle = 0; //++++++++ options: 0 ~ unspecified, 1 ~ neutron, 2 ~ protron, 6 ~ electron +++++++++++++++++++++
+	//-------- Generating particle type selection criterion 'pnamec' ----------------------------------------------------
+	TString pnamec = ""; // particle type selection criterion
+	{	if(particle == 0) // choose predominant particle type or 1 (~ neutron)
+		{	particle = 1;
+			if(mytree->GetEntries("protneut==6") > mytree->GetEntries("protneut==1")) particle = 6;
+			if(mytree->GetEntries("protneut==2") > mytree->GetEntries("protneut==1")) particle = 2;
+		}	
+		pnamec+ = "(protneut==";
+		pnamec+ = particle;
+		pnamec+ = ")";
+	}
+	//-------- Finished -------------------------------------------------------------------------------------------------
 
-	const Long_t nentries = mytree->GetEntries(); // total number of entries in 'mytree'
+	const Long_t nentries = mytree->GetEntries(pnamec); // total number of entries in 'mytree'
 	
 	const Int_t ncolors = gROOT->GetListOfColors()->LastIndex(); // number of the last idicated colour
 	//-------- Generating a gray scale palette with 20 shades -----------------------------------------------------------
@@ -87,8 +101,8 @@ void DRAWendlog(TString filename)
 	c1->SetFrameFillColor(0);
 	c1->SetFrameBorderMode(0);
 	mytree->SetEstimate(nentries); // setting the estimated lenght of V1, V2 and V3
-	mytree->Draw(vnamec + ":" + vnamey + ":" + vnamex, "", "goff"); // drawing "[vnamec]:[vnamey]:[vnamex]" without
-	                                                                // graphical output
+	mytree->Draw(vnamec + ":" + vnamey + ":" + vnamex, pnamec, "goff"); // drawing "[vnamec]:[vnamey]:[vnamex]" without
+	                                                                    // graphical output
 	g1 = new TGraph2D(nentries, mytree->GetV3(), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving
 	                                                                                // data from the draw command above
 	g1->SetTitle(vnamec + ":" + vnamey + ":" + vnamex + ";" + vnamex + " [m];" + vnamey + " [m];" + vnamec);
@@ -117,7 +131,7 @@ void DRAWendlog(TString filename)
 	c2->cd(); // select pad
 	c2->SetFrameFillColor(0);
 	c2->SetFrameBorderMode(0);
-	mytree->Draw(vnamex + ">>h2", "", "goff"); // drawing "[vnamex]" and storing the histogram 'h2'
+	mytree->Draw(vnamex + ">>h2", pnamec, "goff"); // drawing "[vnamex]" and storing the histogram 'h2'
 	TH1D *h2 = (TH1D*) gDirectory->Get("h2"); // retrieving histogram 'h2' from the draw command above
 
 	h2->GetXaxis()->SetTitle(vnamex + " [s]");
@@ -147,7 +161,8 @@ void DRAWendlog(TString filename)
 	c3->cd(); // select pad
 	c3->SetFrameFillColor(0);
 	c3->SetFrameBorderMode(0);
-	mytree->Draw(vnamex + ">>h3", vnamec); // drawing "[vnamex]" (if "[vnamec]") and storing the histogram 'h3'
+	mytree->Draw(vnamex + ">>h3", "(" + vnamec + ")&&" + pnamec); // drawing "[vnamex]" (if "[vnamec]")
+	                                                              // and storing the histogram 'h3'
 	TH1D *h3 = (TH1D*) gDirectory->Get("h3"); // retrieving histogram 'h3' from the draw command above
 
 	h3->GetXaxis()->SetTitle(vnamex + " [neV]");
@@ -182,8 +197,8 @@ void DRAWendlog(TString filename)
 	TH1D *h4 = new TH1D("h4", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
-	mytree->Draw(vnamex + ">>+h4", vnamec); // drawing "[vnamex]" (if "[vnamec]") and storing the result in 'h4'
-
+	mytree->Draw(vnamex + ">>+h4", "(" + vnamec + ")&&" + pnamec); // drawing "[vnamex]" (if "[vnamec]")
+	                                                               // and storing the result in 'h4'
 	h4->GetXaxis()->SetTitle(vnamex + " [m]");
 	h4->GetXaxis()->SetRangeUser(xmin, xmax);
 	h4->GetYaxis()->SetTitle(vnamey);
@@ -216,8 +231,8 @@ void DRAWendlog(TString filename)
 	TH1D *h5 = new TH1D("h5", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
-	mytree->Draw(vnamex + ">>+h5", vnamec); // drawing "[vnamex]" (if "[vnamec]") and storing the result in 'h5'
-
+	mytree->Draw(vnamex + ">>+h5", "(" + vnamec + ")&&" + pnamec); // drawing "[vnamex]" (if "[vnamec]")
+	                                                               // and storing the result in 'h5'
 	h5->GetXaxis()->SetTitle(vnamex + " [°]");
 	h5->GetXaxis()->SetRangeUser(xmin, xmax);
 	h5->GetYaxis()->SetTitle(vnamey);
@@ -243,7 +258,7 @@ void DRAWendlog(TString filename)
 	c6->cd(); // select pad
 	c6->SetFrameFillColor(0);
 	c6->SetFrameBorderMode(0);
-	mytree->Draw(vnamex + ">>h6"); // drawing "[vnamex]" and storing the histogram 'h6'
+	mytree->Draw(vnamex + ">>h6", pnamec); // drawing "[vnamex]" and storing the histogram 'h6'
 	TH1D *h6 = (TH1D*) gDirectory->Get("h6"); // retrieving histogram 'h6' from the draw command above
 
 	h6->GetXaxis()->SetTitle(vnamex + " [neV]");
@@ -271,7 +286,7 @@ void DRAWendlog(TString filename)
 	c7->cd(); // select pad
 	c7->SetFrameFillColor(0);
 	c7->SetFrameBorderMode(0);
-	mytree->Draw(vnamex + ">>h7"); // drawing "[vnamex]" and storing the histogram 'h7'
+	mytree->Draw(vnamex + ">>h7", pnamec); // drawing "[vnamex]" and storing the histogram 'h7'
 	TH1D *h7 = (TH1D*) gDirectory->Get("h7"); // retrieving histogram 'h7' from the draw command above
 
 	h7->GetXaxis()->SetTitle(vnamex + " [neV]");
@@ -300,11 +315,13 @@ void DRAWendlog(TString filename)
 	c8->cd(); // select pad
 	c8->SetFrameFillColor(0);
 	c8->SetFrameBorderMode(0);
-	mytree->SetEstimate(mytree->GetEntries(vnamec)); // setting the estimated lenght of V1 and V2
-	mytree->Draw(vnamey + ":" + vnamex, vnamec, "goff"); // drawing "[vnamey]:[vnamey]" (if "[vnamec]")
-	                                                     // without graphical output
-	g8 = new TGraph(mytree->GetEntries(vnamec), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving
-	                                                                               // data from the draw command above
+	mytree->SetEstimate(mytree->GetEntries("(" + vnamec + ")&&" + pnamec)); // setting the estimated lenght of V1 and V2
+	mytree->Draw(vnamey + ":" + vnamex, "(" + vnamec + ")&&" + pnamec, "goff");
+	// drawing "[vnamey]:[vnamey]" (if "[vnamec]") without graphical output
+
+	g8 = new TGraph(mytree->GetEntries("(" + vnamec + ")&&" + pnamec), mytree->GetV2(), mytree->GetV1());
+	// generating graph and retrieving data from the draw command above
+	
 	g8->SetTitle(vnamey + ":" + vnamex + " {" + vnamec + "}");
 	g8->SetMarkerStyle(21);
 	g8->SetMarkerSize(0.4);
@@ -342,8 +359,8 @@ void DRAWendlog(TString filename)
 	TH1D *h91 = new TH1D("h91", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
-	mytree->Draw(vnamex + ">>+h91", vnamec); // drawing "[vnamex]" (if "[vnamec]") and storing the result in 'h91'
-
+	mytree->Draw(vnamex + ">>+h91", "(" + vnamec + ")&&" + pnamec); // drawing "[vnamex]" (if "[vnamec]")
+	                                                                // and storing the result in 'h91'
 	h91->SetStats(0);
 	h91->GetXaxis()->SetTitle(vnamex);
 	h91->GetXaxis()->SetRangeUser(xmin, xmax);
@@ -363,8 +380,8 @@ void DRAWendlog(TString filename)
 	TH1D *h92 = new TH1D("h92", vnamey + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
-	mytree->Draw(vnamey + ">>+h92", vnamec); // drawing "[vnamey]" (if "[vnamec]") and storing the result in 'h92'
-
+	mytree->Draw(vnamey + ">>+h92", "(" + vnamec + ")&&" + pnamec); // drawing "[vnamey]" (if "[vnamec]")
+	                                                                // and storing the result in 'h92'
 	h92->SetStats(0);
 	h92->GetXaxis()->SetTitle(vnamey);
 	h92->GetXaxis()->SetRangeUser(0, 1);
@@ -398,8 +415,9 @@ void DRAWendlog(TString filename)
 	TH2D *h94 = new TH2D("h94", vnamey + ":" + vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001, nbins, xmin, xmax * 1.0001);
 	// creating a new TH2D([histogramname], [histogramtitle], number of x-bins, lower edge of the first x-bin, excluded!
 	// upper edge of the last x-bin, number of y-bins, lower edge y-bin, excluded! upper edge y-bin)
-	mytree->Draw(vnamey + ":" + vnamex + ">>+h94", vnamec); // drawing "[vnamey]:[vnamex]" (if "[vnamec]") and storing
-	                                                        // the result in 'h94'
+	mytree->Draw(vnamey + ":" + vnamex + ">>+h94", "(" + vnamec + ")&&" + pnamec);
+	// drawing "[vnamey]:[vnamex]" (if "[vnamec]") and storing the result in 'h94'
+
 	h94->GetXaxis()->SetTitle(vnamex);
 	h94->GetXaxis()->SetTitleOffset(2.0);
 	h94->GetXaxis()->SetRangeUser(xmin, xmax);
@@ -446,7 +464,7 @@ void DRAWendlog(TString filename)
 	c10->SetFrameBorderMode(0);
 	TH1D *h10 = new TH1D("h10", vnamec, nbins, xmin, xmax * 1.0001); // creating a new TH1D([histogramname],
 	// [histogramtitle], number of bins, lower edge of the first bin, excluded! upper edge of the last bin)
-	mytree->Draw(vnamec + ">>+h10"); // drawing "[vnamec]" and storing the result in 'h10'
+	mytree->Draw(vnamec + ">>+h10", pnamec); // drawing "[vnamec]" and storing the result in 'h10'
 
 	h10->SetStats(0);
 	h10->GetXaxis()->SetTitle(vnamec);
@@ -481,8 +499,8 @@ void DRAWendlog(TString filename)
 	TH2D *h110 = new TH2D("h110", "reference histogram", nbins, xmin, xmax * 1.0001, nbins, 0, 1.2 * 1.0001);
 	// creating a new TH2D([histogramname], [histogramtitle], number of x-bins, lower edge of the first x-bin, excluded!
 	// upper edge of the last x-bin, number of y-bins, lower edge y-bin, excluded! upper edge y-bin)
-	mytree->Draw(vnamey + ":" + vnamex + ">>+h110", "", "goff"); // drawing "[vnamey]:[vnamex]" and storing the result in 'h110'
-
+	mytree->Draw(vnamey + ":" + vnamex + ">>+h110", pnamec, "goff"); // drawing "[vnamey]:[vnamex]"
+	                                                                 // and storing the result in 'h110'
 	c11->cd(); // select pad
 	c11->SetFrameFillColor(0);
 	c11->SetFrameBorderMode(0);
@@ -490,8 +508,9 @@ void DRAWendlog(TString filename)
 	TH2D *h112 = new TH2D("h112", vnamey + ":" + vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001, nbins, 0, 1.2 * 1.0001);
 	// creating two new TH2D([histogramname], [histogramtitle], number of x-bins, lower edge of the first x-bin, excluded!
 	// upper edge of the last x-bin, number of y-bins, lower edge y-bin, excluded! upper edge y-bin)
-	mytree->Draw(vnamey + ":" + vnamex + ">>+h111", vnamec); // drawing "[vnamey]:[vnamex]" (if "[vnamec]") and storing
-	                                                         // the result in 'h111'
+	mytree->Draw(vnamey + ":" + vnamex + ">>+h111", "(" + vnamec + ")&&" + pnamec);
+	// drawing "[vnamey]:[vnamex]" (if "[vnamec]") and storing the result in 'h111'
+
 	h111->SetStats(0);
 	h111->GetXaxis()->SetTitle(vnamex + " [m]");
 	h111->GetXaxis()->SetRangeUser(xmin, xmax);

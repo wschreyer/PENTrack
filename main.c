@@ -40,7 +40,7 @@ void ConfigInit(void){
 	M = m_n;
 	mu_n = mu_nSI / ele_e * -1;
 	mumB = mu_n/M;
-	decay = 0;
+	decay.on = 0;
 	/*end default values*/
 	
 	// we want do find some keywords in the config file bah[][] contains the possible variables and bah2[][] the regions
@@ -132,7 +132,7 @@ void ConfigInit(void){
 					else if(strstr(line,bah[20]) != NULL)
 						sscanf(line,"%*s %3LG",&BFTargetB);
 					else if(strstr(line,bah[21]) != NULL)
-						sscanf(line,"%*s %hu",&decay);
+						sscanf(line,"%*s %hu",&decay.on);
 					else if(strstr(line,bah[22]) != NULL)
 						sscanf(line,"%*s %d",&AbsorberChoice);
 					else if(strstr(line,bah[23]) != NULL)
@@ -570,7 +570,7 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 		
 	if((x2>=xend)) 
 	{                                                           //Zeit abgelaufen
-		if (decay)
+		if (decay.on)
 			kennz=8;   // neutron decayed 
 		else 
 			kennz=1;   // particle survived until xend			
@@ -583,10 +583,11 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 		// calculate spin flip lifetime tauSF and influence on lifetime measurement 
 		long double tauSF = -x2/logl(1-BFflipprob);
 		long double dtau=tau-1/(1/tau+1/tauSF) ;
-		
+		 
+		if(tauSF < -9e99) tauSF = -9e99; // "-INF"?
 	
 		// output of end values
-		fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG %LG \n",
+		fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG %LG\n",
 		jobnumber, monthinmilliseconds, protneut, polarisation,xstart,r_n,phi_n,z_n,NeutEnergie*1.0e9,v_n,alpha,gammaa,ystart[1],phiend,ystart[3],vend,alphaend,gammaend,x2,H,kennz, NSF,RodFieldMultiplicator, BFflipprob,nrefl, vladmax,vladtotal,thumbmax,
 		trajlengthsum,(H-Hstart),Hmax,AbsorberHits, BFeldSkal, EFeldSkal, lossprob, tauSF, dtau);
 	
