@@ -287,35 +287,35 @@ void ConfigInit(void){
 
 //======== initalizes initial values from record to used variables ==============================================
 void initialStartbed()
-{	initial *particleini;
+{	initial particleini;
 	switch(protneut)
-	{	case NEUTRON:	particleini = &nini;
+	{	case NEUTRON:	particleini = nini;
 						break;	
-		case PROTON:	particleini = &pini;
+		case PROTON:	particleini = pini;
 						break;
-		case ELECTRONS:	particleini = &eini;
+		case ELECTRONS:	particleini = eini;
 						break;
 	}
-	EnergieS = particleini->EnergieS;
-	dEnergie = particleini->dEnergie;
-	EnergieE = particleini->EnergieE;
-	z_ns = particleini->zs;
-	dz_n = particleini->dz;
-	z_ne = particleini->ze;
-	r_ns = particleini->rs;
-	dr_n = particleini->dr;
-	r_ne = particleini->re;
-	phis = particleini->phis;
-	dphi = particleini->dphi;
-	phie = particleini->phie;
-	alphas = particleini->alphas;
-	dalpha = particleini->dalpha;
-	alphae = particleini->alphae;
-	gammas = particleini->gammas;
-	dgamma = particleini->dgamma;
-	gammae = particleini->gammae;
-	delx = particleini->delx;
-	xend = particleini->xend;
+	EnergieS = particleini.EnergieS;
+	dEnergie = particleini.dEnergie;
+	EnergieE = particleini.EnergieE;
+	z_ns = particleini.zs;
+	dz_n = particleini.dz;
+	z_ne = particleini.ze;
+	r_ns = particleini.rs;
+	dr_n = particleini.dr;
+	r_ne = particleini.re;
+	phis = particleini.phis;
+	dphi = particleini.dphi;
+	phie = particleini.phie;
+	alphas = particleini.alphas;
+	dalpha = particleini.dalpha;
+	alphae = particleini.alphae;
+	gammas = particleini.gammas;
+	dgamma = particleini.dgamma;
+	gammae = particleini.gammae;
+	delx = particleini.delx;
+	xend = particleini.xend;
 	//return;
 }
 //======== end of innitialStartbed ==============================================================================
@@ -502,13 +502,13 @@ void Startbed(int k)
 
 	// writing parameters to screen
 	printf("\nStart parameters:\n"
-	       "  Energy (min, step, max): %17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
+	       "  Energy (min, step, max): %.17LG neV/keV, %.17LG neV/keV, %.17LG neV/keV\n"
 	       "  Maximum runtime: %.17LG s\n"
 	       "  r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
 	       "  z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
 	       "  phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	       "  Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-	       "  Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	       "  Alpha (min, step, max): %.17LG degree, %.17LG degree, %.17LG degree\n"
+	       "  Gamma (min, step, max): %.17LG degree, %.17LG degree, %.17LG degree\n"
 	       "  Filling time: %LG s\n"
 	       "  Cleaning time: %.17LG s\n"
 	       "  Ramp up time: %.17LG s\n"
@@ -532,14 +532,14 @@ void Startbed(int k)
 	       EFeldSkal);
 
 	// logging parameters to *log.out
-	fprintf(LOGSCR, "\nStart parameters: \n"
-	                "  Energy (min, step, max): %.17LG neV/eV, %.17LG neV/eV, %.17LG neV/eV\n"
+	fprintf(LOGSCR, "\nStart parameters:\n"
+	                "  Energy (min, step, max): %.17LG neV/keV, %.17LG neV/keV, %.17LG neV/keV\n"
 	                "  Maximum runtime: %.17LG s\n"
 	                "  r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
 	                "  z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
 	                "  phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	                "  Alpha (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
-	                "  Gamma (min, step, max): %.17LG Grad, %.17LG Grad, %.17LG Grad\n"
+	                "  Alpha (min, step, max): %.17LG degree, %.17LG degree, %.17LG degree\n"
+	                "  Gamma (min, step, max): %.17LG degree, %.17LG degree, %.17LG degree\n"
 	                "  Filling time %LG s\n"
 	                "  Cleaning time: %.17LG s\n"
 	                "  Ramp up time: %.17LG s\n"
