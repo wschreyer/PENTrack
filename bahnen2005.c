@@ -32,7 +32,7 @@ long double Ibar= 2250.;                // B-field strength, current through rod
 int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 int diffuse; //diffuse reflection switch
 long double DiffProb = 0.16, diffuprob; // property of diffuse reflection 0.125
-unsigned short int nodelay, slit = 0, decay = 0, DetOpen=0; // delays for monte carlo, is there an entrance slit?, do the neutrons decay?;
+unsigned short int nodelay, slit = 0, DetOpen=0; // delays for monte carlo, is there an entrance slit?
 long double lossprob = 5.0e-4, epsi= 0, AbsProb = 0;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
 
 // Fields
@@ -57,6 +57,8 @@ long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
 unsigned short int TrajectoryLength=1;
 long double Hstart, Hend,Hmax;     //maximum energy
 long double gammarel, NeutEnergie;	//relativistic gamma factor, Neutron energy
+
+struct decayinfo decay; //containing all data from neutron decay for the emerging proton and electron
 
 // inital values of particle
 long double EnergieS,dEnergie, EnergieE, Energie;    //initial energy range
@@ -376,7 +378,7 @@ int main(int argc, char **argv){
 			dxsav=1e-10;        // kleinster ausgabeschritt der zwischenwerte im integrator
 			BahnPointSaveTime = 1e-8;
 			reflekt=0;
-			decay=0;
+			decay.on=0;
 		break;
 		
 		case BF_ONLY:			
@@ -393,7 +395,7 @@ int main(int argc, char **argv){
 			dxsav=2e-12;        // kleinster ausgabeschritt der zwischenwerte im integrator
 			BahnPointSaveTime = 5e-12;
 			reflekt=0;
-			decay=0;		
+			decay.on=0;		
 			//fprintf(ENDLOG,"rstart zstart vr vphi vz ElecAngleB Dethit? CritAngle Ekin Br0 Bz0 Babs0 Babsm rend zend Babsend Vdiff EnergyonDet IncAngle\n");
 		break;
 	}
@@ -570,7 +572,7 @@ void OpenFiles(int argc, char **argv){
         fprintf(ENDLOG,"jobnumber RandomSeed protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
         			   "gammastart rend phiend zend vend alphaend gammaend t H kennz "
         			   "NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax "
-        			   "AbsorberHits BFeldSkal EFeldSkal lossprob tauSF dtau \n");
+        			   "AbsorberHits BFeldSkal EFeldSkal lossprob tauSF dtau\n");
 	}		
 	
 	// Print track to file
