@@ -413,7 +413,8 @@ int main(int argc, char **argv){
 		
 	}
 //return;*/
-	for(iMC=1; iMC<= MonteCarloAnzahl; iMC++) // Zahl der Durchlufe bei MonteCarlo
+	iMC = 1;
+	do
 	{      
 		for(Energie=EnergieS; Energie<=EnergieE; Energie+=dEnergie)
 		{
@@ -434,7 +435,9 @@ int main(int argc, char **argv){
 				}
 			}
 		}
-	}
+		//if(decay.on && (...))
+		iMC++;
+	} while(iMC <= MonteCarloAnzahl);
 	
 	if (neutdist == 1) outndist(1);   // Neutronenverteilung in der Flasche ausgeben
 	OutputCodes(iMC);
