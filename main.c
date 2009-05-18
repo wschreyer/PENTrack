@@ -41,6 +41,7 @@ void ConfigInit(void){
 	mu_n = mu_nSI / ele_e * -1;
 	mumB = mu_n/M;
 	decay.on = 0;
+	decay.ed = 0;
 	/*end default values*/
 	
 	// we want do find some keywords in the config file bah[][] contains the possible variables and bah2[][] the regions
@@ -235,38 +236,22 @@ void ConfigInit(void){
 		
 	}while(!feof(cfg));
 	
+	if(decay.on)
+	{	protneut = NEUTRON; // neutron is needed as decay educt
+		decay.ed = 0;
+	}
+	
+	polarisationsave = polarisation; // save polarisation choise
+	
 	if(protneut == NEUTRON)
-	{
-		M=m_n;   // [eV/c^2]
-		// make absorber choice
+	{	// make absorber choice
 		if(AbsorberChoice==1) //PE
-		{ Mf=FPrealPE; Pf=FPimPE;	}
+		{	Mf=FPrealPE; Pf=FPimPE;
+		}
 		else if(AbsorberChoice==2) //Ti
-		{ Mf=FPrealTi; Pf=FPimTi;	} 
-		if(polarisation==POLARISATION_GOOD){
-			hfs = -1;
-			mu_n=hfs * mu_nSI / ele_e; //=> mu_n is negative
-			mumB= mu_n/M;  // [c^2/T]
-		}else if(polarisation==POLARISATION_BAD){  // in ev/T
-			hfs = 1;
-			mu_n=hfs * mu_nSI / ele_e; //=> mu_n is positive
-			mumB= mu_n/M;  // [c^2/T]
-		} else if (polarisation==POLARISATION_NONE){
-			hfs = 0;
-			mu_n=0;
-			mumB= mu_n/M;  // [c^2/T] 
-		}  // in ev/T
+		{	Mf=FPrealTi; Pf=FPimTi;
+		}
 		if (neutdist == 1) prepndist(1);
-	}
-	else if(protneut==PROTON)
-	{
-		M=m_p;
-		Qm0=1.0/M;
-	}
-	else if (protneut == ELECTRONS)
-	{
-		M=m_e;
-		Qm0=-1.0/M;
 	}
 	
 	if((BruteForce==1)||(ausgabewunsch==1)||(neutdist==1))

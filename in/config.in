@@ -14,7 +14,7 @@ spinflipcheck 0
 # runge 1=> Bulirsch-Stoer, 2 => Runge Kutta
 runge 1
 # polarisation: 1 => low field seekers, 2 => high field seekers, 3 => no polarisation, 4 => dice (MC)
-polarisation 1
+polarisation 2
 # output neutron spacial distribution?
 neutdist 0
 # how thick shall the wall be [cm]
@@ -29,11 +29,11 @@ BFeldSkalGlobal 1
 EFeldSkal -1
 # ausgabewunsch: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
 # 4 => only endpoints, but BFspin track, 5 => nothing
-ausgabewunsch 1
+ausgabewunsch 2
 # 0=> ordered starting values, 1=>randomly chosen starting parameters, 2=> read in start.in for starting values
 MonteCarlo 1
 # number of particles 
-MonteCarloAnzahl 10
+MonteCarloAnzahl 2
 
 # absorber choice: 1 => PE, 2 => Ti
 absorber 1
@@ -47,8 +47,9 @@ storagetime 2000.00
 
 # flux density below which the spin will also be tracked, when BF is turned on
 BFTargetB 0.2
-# important, if 1 neutrons will decay and xend will not be regarded
-decay 1
+# decay: 0 => NO neutron decay, 1 => neutrons will decay (and xend will not be regarded),
+#								2 => neutrons will decay (and xend will not be regarded) and a proton and electron will be simulated
+decay 2
 [/global]
 
 
