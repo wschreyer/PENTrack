@@ -85,6 +85,7 @@ using namespace std;
 //typedef unsigned short int bool;
 
 //functions
+extern void PrepareParticle();
 extern void derivs(long double x, long double *y, long double *dydx);
 extern void OpenFiles(int argc, char **argv); // Open in files
 extern void PrepareBField(); // Read fieldval tab and preinterpolated or read coils.cond
@@ -158,8 +159,9 @@ extern unsigned short int TrajectoryLength;
 extern long double Hstart, Hend, Hmax;     //maximum energy
 
 struct decayinfo				// containing all data from neutron decay for the emerging proton and electron
-{	unsigned short int on;		// true if neutron decay is allowed (false if not) // "do the neutrons decay?"
-	long double energy;			// neutron decay energy 
+{	unsigned short int on;		// (!=0) if neutron decay is allowed // "do the neutrons decay?"
+								// (==2) if neutron decay in a proton and an electron 
+	unsigned short int ed;		// (!=0) if the previous neutron decayed // "did the neutron decay?"
 };
 extern struct decayinfo decay;	// containing all data from neutron decay for the emerging proton and electron
 

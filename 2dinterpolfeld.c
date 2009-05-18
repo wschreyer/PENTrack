@@ -432,7 +432,7 @@ void PrepIntpol(int k){
 	BphiTab12=dmatrix(2,m-1,2,n-1);
 
 	// Vektoren der r und z Komponenten, Matrizen f�r B-Feld Komponenten und deren Ableitungen kreieren
-	if ((protneut==PROTON)||(protneut==ELECTRONS)){
+	if ((protneut==PROTON)||(protneut==ELECTRONS)||(decay.on==2)){
 		ErTab=dmatrix(1,m,1,n);
 		EzTab=dmatrix(1,m,1,n);
 		EphiTab=dmatrix(1,m,1,n);
@@ -453,7 +453,7 @@ void PrepIntpol(int k){
 	CalcDeriv4th(rind, zind, BrTab, BzTab, BphiTab, BrTab1, BrTab2, BrTab12, BzTab1, BzTab2, BzTab12, BphiTab1, BphiTab2, BphiTab12,m, n);
 	// Die Ableitungen der E-Werte in den Tabellen berechnen
 
-	if ((protneut==PROTON)||(protneut==ELECTRONS)){
+	if ((protneut==PROTON)||(protneut==ELECTRONS)||(decay.on==2)){
 		CalcDeriv4th(rind, zind, ErTab, EzTab, EphiTab, ErTab1, ErTab2, ErTab12, EzTab1, EzTab2, EzTab12, EphiTab1, EphiTab2, EphiTab12,m, n);
 	}
 	
@@ -488,7 +488,7 @@ void PrepIntpol(int k){
 				rBabsmin = rind[j];
 				zBabsmin = zind[k];
 			}
-			if ((protneut==PROTON)||(protneut==ELECTRONS))
+			if ((protneut==PROTON)||(protneut==ELECTRONS)||(decay.on==2))
 			{
 				Eabsmaxtmp = sqrtl(ErTab[j][k]*ErTab[j][k]+EphiTab[j][k]*EphiTab[j][k]+
 				EzTab[j][k]*EzTab[j][k]);
