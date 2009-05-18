@@ -354,51 +354,15 @@ int main(int argc, char **argv){
 	
 	PrintConfig();
 	
-	// setting some values depending on the simulated particle
-	switch(protneut)
+	PrepareParticle(); // setting values depending on particle type
+	
+	if((protneut == NEUTRON)&&((ausgabewunsch == OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch == OUTPUT_ENDPOINTSandSPIN)))
 	{
-		case NEUTRON:
-			h1=5e-5;           // guess for the first step size of runge kutta
-			dxsav=1e-5;  //Kleinster ausgegebener zeitschritt Neutronen
-			EnergieS=EnergieS*1.e-9;
-			EnergieE=EnergieE*1.e-9;
-			dEnergie=dEnergie*1.e-9;
-			if((ausgabewunsch == OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch == OUTPUT_ENDPOINTSandSPIN))
-			{
-				//fprintf(TESTLOG,"t log(pol) spinflipprob\n");
-				fprintf(BFLOG,"t Babs Polar logPolar Ixnorm Iynorm Iznorm Bxnorm Bynorm Bznorm dx dy dz\n");
-				// for field interpolation tests fprintf(BFLOG,"r z Br Bphi Bz BrTab BphiTab BzTab deltabr_abs deltabphi_abs deltabz_abs deltabr_rel deltabphi_rel deltabz_rel\n"); 
-			}
-			cout << "Geht noch... " << endl;
-			polarisationsave=polarisation;
-		break;
-		
-		case PROTON:
-			h1=1e-8;           // guess for the first step size of runge kutta
-			dxsav=1e-10;        // kleinster ausgabeschritt der zwischenwerte im integrator
-			BahnPointSaveTime = 1e-8;
-			reflekt=0;
-			decay.on=0;
-		break;
-		
-		case BF_ONLY:			
-			fprintf(ENDLOG,"r phi z Br Bphi Bz 0 0 0 \n");			
-		break;
-		
-		case BF_CUT:
-			PrintBFieldCut();
-			exit(0);
-		break;
-		
-		case ELECTRONS:
-			h1=2e-10;           // guess for the first step size of runge kutta
-			dxsav=2e-12;        // kleinster ausgabeschritt der zwischenwerte im integrator
-			BahnPointSaveTime = 5e-12;
-			reflekt=0;
-			decay.on=0;		
-			//fprintf(ENDLOG,"rstart zstart vr vphi vz ElecAngleB Dethit? CritAngle Ekin Br0 Bz0 Babs0 Babsm rend zend Babsend Vdiff EnergyonDet IncAngle\n");
-		break;
+		//fprintf(TESTLOG,"t log(pol) spinflipprob\n");
+		fprintf(BFLOG,"t Babs Polar logPolar Ixnorm Iynorm Iznorm Bxnorm Bynorm Bznorm dx dy dz\n");
+		// for field interpolation tests fprintf(BFLOG,"r z Br Bphi Bz BrTab BphiTab BzTab deltabr_abs deltabphi_abs deltabz_abs deltabr_rel deltabphi_rel deltabz_rel\n"); 
 	}
+	
 	//end initial step
 	
 	/*printf("\nm=%i \nn=%i\n",m,n);
@@ -412,7 +376,8 @@ int main(int argc, char **argv){
 		}
 		
 	}
-//return;*/
+	//return;*/
+
 	iMC = 1;
 	do
 	{      
@@ -435,8 +400,23 @@ int main(int argc, char **argv){
 				}
 			}
 		}
-		//if(decay.on && (...))
-		iMC++;
+		if((decay.on==2) /*&& decay.ed*/)
+		{	switch(protneut) // simulation sequenz in decay case: neutron, proton, electron
+			{	case NEUTRON:	protneut = PROTON;
+								break;	
+				case PROTON:	protneut = ELECTRONS;
+								break;
+				case ELECTRONS:	protneut = NEUTRON;
+								decay.ed = 0;
+								iMC++; // !!
+								break;
+			}
+			initialStartbed(); // initalizes initial values from record to used variables
+			PrepareParticle(); // setting values depending on particle type
+		}
+		else
+		{	iMC++; // !!
+		}
 	} while(iMC <= MonteCarloAnzahl);
 	
 	if (neutdist == 1) outndist(1);   // Neutronenverteilung in der Flasche ausgeben
@@ -483,6 +463,56 @@ int main(int argc, char **argv){
 		
 	return 0;
 }
+
+//======== setting values depending on particle type ==================================================================
+void PrepareParticle()
+{	
+	switch(protneut)
+	{	case NEUTRON:	M = m_n;			// [eV/c^2]
+						h1 = 5e-5;			// guess for the first step size of runge kutta
+						dxsav = 1e-5;		// kleinster ausgegebener zeitschritt Neutronen
+						EnergieS = EnergieS*1.e-9;
+						EnergieE = EnergieE*1.e-9;
+						dEnergie = dEnergie*1.e-9;
+						if(polarisationsave == POLARISATION_GOOD) // in ev/T
+						{	hfs = -1;
+							mu_n = hfs * mu_nSI / ele_e; // => mu_n is negative
+							mumB = mu_n/M;	// [c^2/T]
+						}
+						else if(polarisationsave == POLARISATION_BAD) // in ev/T
+						{	hfs = 1;
+							mu_n = hfs * mu_nSI / ele_e; // => mu_n is positive
+							mumB = mu_n/M;	// [c^2/T]
+						}
+						else if(polarisationsave == POLARISATION_NONE) // in ev/T
+						{	hfs = 0;
+							mu_n = 0;
+							mumB = mu_n/M;	// [c^2/T]
+						}
+						break;		
+		case PROTON:	M = m_p;			// [eV/c^2]
+						Qm0 = 1.0/M;
+						h1 = 1e-8;		// guess for the first step size of runge kutta
+						dxsav = 1e-10;	// kleinster ausgabeschritt der zwischenwerte im integrator
+						BahnPointSaveTime = 1e-8;
+						reflekt = 0;
+						break;		
+		case BF_ONLY:	fprintf(ENDLOG,"r phi z Br Bphi Bz 0 0 0 \n");
+						break;		
+		case BF_CUT:	PrintBFieldCut();
+						exit(0);
+						break;		
+		case ELECTRONS:	M=m_e;			// [eV/c^2]
+						Qm0 = -1.0/M;
+						h1 = 2e-10;		// guess for the first step size of runge kutta
+						dxsav = 2e-12;	// kleinster ausgabeschritt der zwischenwerte im integrator
+						BahnPointSaveTime = 5e-12;
+						reflekt = 0;
+						//fprintf(ENDLOG,"rstart zstart vr vphi vz ElecAngleB Dethit? CritAngle Ekin Br0 Bz0 Babs0 Babsm rend zend Babsend Vdiff EnergyonDet IncAngle\n");
+						break;
+	}
+}
+//======== end of PrepareParticle =====================================================================================
 
 //int derivsaufrufe=0;
 void derivs(long double x, long double *y, long double *dydx){
