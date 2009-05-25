@@ -78,7 +78,7 @@ struct initial nini, pini, eini; 	// one 'initial' for each particle type
 // final values of particle
 int kennz;                                  // ending code
 long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues for particle
-long int kennz0=0,kennz1=0,kennz2=0,kennz3=0,kennz4=0,kennz5=0,kennz6=0,kennz7=0,kennz8=0,kennz9=0,kennz10=0, kennz11=0, kennz12=0,kennz99=0,nrefl; // Counter for the particle codes
+long int kennz0[3]={0},kennz1[3]={0},kennz2[3]={0},kennz3[3]={0},kennz4[3]={0},kennz5[3]={0},kennz6[3]={0},kennz7[3]={0},kennz8[3]={0},kennz9[3]={0},kennz10[3]={0},kennz11[3]={0},kennz12[3]={0},kennz99[3]={0},nrefl; // Counter for the particle codes
 
 // geometry of bottle
 long double ri= 0.12, ra= 0.48;                      //dimensions of torus for Maple field
@@ -355,7 +355,7 @@ int main(int argc, char **argv){
 	PrintConfig();
 	
 	PrepareParticle(); // setting values depending on particle type
-	
+
 	if((protneut == NEUTRON)&&((ausgabewunsch == OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch == OUTPUT_ENDPOINTSandSPIN)))
 	{
 		//fprintf(TESTLOG,"t log(pol) spinflipprob\n");
@@ -377,6 +377,8 @@ int main(int argc, char **argv){
 		
 	}
 	//return;*/
+	
+	decay.counter = 0; // no neutron had decayed yet (no chance)
 
 	iMC = 1;
 	do
@@ -400,14 +402,14 @@ int main(int argc, char **argv){
 				}
 			}
 		}
-		if((decay.on==2) /*&& decay.ed*/)
+		if((decay.on==2) && decay.ed)
 		{	switch(protneut) // simulation sequenz in decay case: neutron, proton, electron
 			{	case NEUTRON:	protneut = PROTON;
+								decay.counter++;
 								break;	
 				case PROTON:	protneut = ELECTRONS;
 								break;
 				case ELECTRONS:	protneut = NEUTRON;
-								decay.ed = 0;
 								iMC++; // !!
 								break;
 			}
@@ -489,6 +491,7 @@ void PrepareParticle()
 							mu_n = 0;
 							mumB = mu_n/M;	// [c^2/T]
 						}
+						decay.ed = 0;
 						break;		
 		case PROTON:	M = m_p;			// [eV/c^2]
 						Qm0 = 1.0/M;
@@ -926,6 +929,10 @@ void IntegrateParticle(){
 		
 		printf("Teilchennummer: %i\n",iMC);
 		fprintf(LOGSCR,"Teilchennummer: %i\n",iMC);
+		if(decay.on == 2)
+		{	printf("Teilchensorte : %i\n", protneut);
+			fprintf(LOGSCR,"Teilchensorte : %i\n", protneut);
+		}
 		printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
 		fprintf(LOGSCR,"r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
 
