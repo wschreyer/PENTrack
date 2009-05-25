@@ -153,7 +153,7 @@ extern long double projz, ystart[7], ysave[7], xstart;       //z-component of ve
 extern int iMC;                             //  counter for MonteCarloSim
 extern bool noparticle; // true if there was NO particle simulated
 extern long double  x1, x2;                         // start and endtime handed over to integrator
-extern long int kennz0,kennz1,kennz2,kennz3,kennz4,kennz5,kennz6,kennz7,kennz8,kennz9,kennz10,kennz11,kennz12, kennz99,nrefl; // Counter for the particle codes
+extern long int kennz0[3],kennz1[3],kennz2[3],kennz3[3],kennz4[3],kennz5[3],kennz6[3],kennz7[3],kennz8[3],kennz9[3],kennz10[3],kennz11[3],kennz12[3],kennz99[3],nrefl; // Counter for the particle codes
 extern long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
 extern unsigned short int TrajectoryLength;
 extern long double Hstart, Hend, Hmax;     //maximum energy
@@ -162,6 +162,7 @@ struct decayinfo				// containing all data from neutron decay for the emerging p
 {	unsigned short int on;		// (!=0) if neutron decay is allowed // "do the neutrons decay?"
 								// (==2) if neutron decay in a proton and an electron 
 	unsigned short int ed;		// (!=0) if the previous neutron decayed // "did the neutron decay?"
+	long int counter;
 };
 extern struct decayinfo decay;	// containing all data from neutron decay for the emerging proton and electron
 

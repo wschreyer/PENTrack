@@ -42,6 +42,7 @@ void ConfigInit(void){
 	mumB = mu_n/M;
 	decay.on = 0;
 	decay.ed = 0;
+	decay.counter = 0;
 	/*end default values*/
 	
 	// we want do find some keywords in the config file bah[][] contains the possible variables and bah2[][] the regions
@@ -555,10 +556,13 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 		
 	if((x2>=xend)) 
 	{                                                           //Zeit abgelaufen
-		if (decay.on)
-			kennz=8;   // neutron decayed 
-		else 
-			kennz=1;   // particle survived until xend			
+		if (decay.on && (protneut == NEUTRON))
+		{	kennz = 8; // neutron decayed
+			decay.ed = 1;
+		}
+		else
+		{	kennz = 1; // particle survived until xend
+		}			
 	}
 		
 		if(vend>0) gammaend= acosl(ystart[4]/vend) /conv;
