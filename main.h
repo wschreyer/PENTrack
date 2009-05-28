@@ -12,21 +12,6 @@
 #include <string.h>
 #include <iostream.h>
 #include <sstream>
-#include <algorithm>
-
-// root stuff
-#include "TROOT.h"/*
-#include "TFile.h"
-#include "TNetFile.h"
-#include "TRandom.h"
-#include "TTree.h"
-#include "TBranch.h"
-#include "TClonesArray.h"
-#include "TStopwatch.h"*/
-#include "TMath.h"
-#include "TF1.h"
-#include "TF2.h"
-
 
 // project includes
 #include "mersenne/mt.h" // mersenne twister pseudo random number generator (rng) used for MonteCarlo alg.
@@ -39,6 +24,7 @@
 #include "maplefield.h"
 #include "BForbes.h"
 #include "geomcheck.h"
+#include "geometry.h"
 
 
 // numeric recipes
@@ -154,8 +140,7 @@ extern int iMC;                             //  counter for MonteCarloSim
 extern bool noparticle; // true if there was NO particle simulated
 extern long double  x1, x2;                         // start and endtime handed over to integrator
 extern long int kennz0[3],kennz1[3],kennz2[3],kennz3[3],kennz4[3],kennz5[3],kennz6[3],kennz7[3],kennz8[3],kennz9[3],kennz10[3],kennz11[3],kennz12[3],kennz99[3],nrefl; // Counter for the particle codes
-extern long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
-extern unsigned short int TrajectoryLength;
+extern long double trajlengthsum;
 extern long double Hstart, Hend, Hmax;     //maximum energy
 
 struct decayinfo				// containing all data from neutron decay for the emerging proton and electron
