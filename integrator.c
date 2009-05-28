@@ -62,7 +62,6 @@ free_vector(yerr,1,n);
 }
 
 //The routine rkqs calls the routine rkck to take a Cash�Karp Runge�Kutta step:
-#include "nrutil.h"
 void rkck(long double y[], long double dydx[], int n, long double x, long double h, long double yout[],
 long double yerr[], void (*derivs)(long double, long double [], long double []))
 /*
@@ -498,122 +497,135 @@ void bsstep(long double *y, long double *dydx, int nv, long double *xx,
 //long double *xp=0,**yp=0,dxsav=0;  /* defining declaration */
 //-----------------------------------------------------------------------------
 void odeint (long double *ystart,int nvar, long double x1, long double x2, long double eps,long double h1, long double hmin, int *nok, int *nbad,void (*derivs)(long double, long double*, long double*),void (*integrator)(long double *,long double *, int, long double*, long double,long double, long double*, long double*,long double*, void (*derivs)(long double,long double*,long double*))){
-		int nstp,i;
-		long double xsav = 0,x = 0,hnext = 0,hdid = 0,h = 0;
-		long double *yscal = NULL,*y = NULL,*dydx = NULL;
+	int nstp,i;
+	long double xsav = 0,x = 0,hnext = 0,hdid = 0,h = 0;
+	long double *yscal = NULL,*y = NULL,*dydx = NULL;
 
-		yscal=dvector(1,nvar);
-		y=dvector(1,nvar);
-		dydx=dvector(1,nvar);
+	yscal=dvector(1,nvar);
+	y=dvector(1,nvar);
+	dydx=dvector(1,nvar);
+	
+	// +++++++++++++++++++++++++++++++
+	long double xtemp, *ytemp = NULL, hnexttemp;	// variables used to save previous point
+	ytemp=dvector(1,nvar);
+	// +++++++++++++++++++++++++++++++
+	
+	x=x1;
+	h=(x2 > x1) ? fabsl(h1) : -fabsl(h1);
+	*nok = (*nbad) = kount = 0;
+	
+	for (i=1;i<=nvar;i++) 
+		y[i]=ystart[i];
+	if (kmax > 0) 
+		xsav=x-dxsav*2.0;                             //Assures storage of first step.
+	for (nstp=1;nstp<=MAXSTP;nstp++){                          //Step loop: Take at most MAXSTP steps. 
 		
-		x=x1;
-		h=(x2 > x1) ? fabsl(h1) : -fabsl(h1);
-		*nok = (*nbad) = kount = 0;
-		
-		for (i=1;i<=nvar;i++) 
-			y[i]=ystart[i];
-		if (kmax > 0) 
-			xsav=x-dxsav*2.0;                             //Assures storage of first step.
-		for (nstp=1;nstp<=MAXSTP;nstp++){                          //Step loop: Take at most MAXSTP steps. 
-			
-			//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-			// only check for reflections of absorbtions when outside bulk of PENeLOPE storage volume
-						if((y[3]>detz-wanddicke)||(y[1]<=StorVolrmin+wanddicke)||(y[1]>=StorVolrmax-wanddicke)||(y[3]<=StorVolzmin+wanddicke)||(y[3]>=StorVolzmax)  )
-						{
-							blankint = GeomCheck(y,y[1],y[2],y[3],y[4],y[5],y[6],x);
-							if(stopall)
-								return;
-							//cout << "GEOMCHECK t: " << x <<  " r: " << y[1] << " z: " << y[3] << endl;
-							//cin >> blankint;
-						}
-			// spin flip properties according to Vladimirsky and thumbrule
-			if (spinflipcheck == 2){   
-				// y[6]: phidot
-				vlad = vladimirsky(y[1], Br, Bphi, Bz, dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, y[2], y[6], y[4]);
-				frac = thumbrule(Br, Bphi, Bz, dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, y[2], y[6], y[4]);
-				if (vlad > 1e-99){
-					vladtotal = vladtotal * (1-vlad);
-					if (vladtotal < 0.9999)
-						printf(" VladShit at t= %.17LG\n",x);
-				}
-				if ((vlad > vladmax)&&(vlad > 1e-99))
-					vladmax=log10l(vlad);
-				if ((frac > thumbmax)&&(frac > 1e-99))
-					thumbmax=log10l(frac);
-			}
-			// Ende Spinflipwahrscheinlichkeit
-			
-			// Trajectory length calculation
-						if (TrajectoryLength)
-						{
-							trajlength =  sqrtl(powl(ytemp1-y[1],2)+powl(ytemp3-y[3],2)+powl(ytemp5*ytemp1-y[5]*y[1],2));
-							trajlengthsum += trajlength;
-							ytemp1 = y[1]; ytemp3 = y[3]; ytemp5 = y[5];
-						}
-			//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-			(*derivs)(x,y,dydx);
-			for (i=1;i<=nvar;i++)
-				yscal[i]=fabsl(y[i])+fabsl(dydx[i]*h)+TINY;          //Scaling used to monitor accuracy.
-			if (kmax > 0){
-				if (fabsl(x-xsav) > fabsl(dxsav)){
-					if (kount < kmax-1){
-						
-						// Vektoren und B-Feld zwischenspeichern
-						if(SaveIntermediate)
-						{
-							xp[++kount]=x;                     //Store intermediate results.
-							for (i=1;i<=nvar;i++) 
-							yp[i][kount]=y[i];	
-							BFeld(yp[1][kount],yp[5][kount],yp[3][kount],xp[kount]);
-							Bp[1][kount]=Br;
-							Bp[2][kount]=dBrdr;
-							Bp[3][kount]=dBrdphi;
-							Bp[4][kount]=dBrdz;
-							Bp[5][kount]=Bphi;
-							Bp[6][kount]=dBphidr;
-							Bp[7][kount]=dBphidphi;
-							Bp[8][kount]=dBphidz;
-							Bp[9][kount]=Bz;
-							Bp[10][kount]=dBzdr;
-							Bp[11][kount]=dBzdphi;
-							Bp[12][kount]=dBzdz;
-							Bp[13][kount]=Bws;
-							Ep[1][kount] = Er;
-							Ep[2][kount] = Ez;
-							//cout << "integrator: " << delx_n << " " << kount << " " << xp[kount] << " " << Br << " " << Bz << endl;
-						}
-						// ENDE Vektoren und B-Feld zwischenspeichern				
-				
-						xsav=x;
-						
-					}
-				}
-			}
-		
-			if ((x+h-x2)*(x+h-x1) > 0.0) 
-				h=x2-x;                                          //If stepsize can overshoot, decrease.
-
-			//(*rkqs)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta
-			 (*integrator)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta or bulirsch stoer step
-			
-			
-			if (hdid == h) 
-				++(*nok); 
-			else 
-				++(*nbad);                                   //Are we done?
-			if (stopall == 1) 
+		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		// only check for reflections of absorbtions when outside bulk of PENeLOPE storage volume
+		if((y[3]>detz-wanddicke)||(y[1]<=StorVolrmin+wanddicke)||(y[1]>=StorVolrmax-wanddicke)||(y[3]<=StorVolzmin+wanddicke)||(y[3]>=StorVolzmax)  )
+		{
+			blankint = GeomCheck(y,y[1],y[2],y[3],y[4],y[5],y[6],x);
+			if(stopall)
 				return;
+			//cout << "GEOMCHECK t: " << x <<  " r: " << y[1] << " z: " << y[3] << endl;
+			//cin >> blankint;
+		}
 		
-			if ((x-x2)*(x2-x1) >= 0.0){							
-				for (i=1;i<=nvar;i++)   // save final step in ystart
-					ystart[i]=y[i];
-				if (kmax){  // war kmax, ist nun deaktiviert
+		// spin flip properties according to Vladimirsky and thumbrule
+		if (spinflipcheck == 2){   
+			// y[6]: phidot
+			vlad = vladimirsky(y[1], Br, Bphi, Bz, dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, y[2], y[6], y[4]);
+			frac = thumbrule(Br, Bphi, Bz, dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, y[2], y[6], y[4]);
+			if (vlad > 1e-99){
+				vladtotal = vladtotal * (1-vlad);
+				if (vladtotal < 0.9999)
+					printf(" VladShit at t= %.17LG\n",x);
+			}
+			if ((vlad > vladmax)&&(vlad > 1e-99))
+				vladmax=log10l(vlad);
+			if ((frac > thumbmax)&&(frac > 1e-99))
+				thumbmax=log10l(frac);
+		}
+		
+		// save point before next integration step for trajectory length calculation and reflection checking
+		xtemp = x;
+		for (i=1;i<=nvar;i++) 
+			ytemp[i]=y[i];
+		hnexttemp = hnext;
+		//--------------------------------------------------------------------------
+		
+		(*derivs)(x,y,dydx);
+		for (i=1;i<=nvar;i++)
+			yscal[i]=fabsl(y[i])+fabsl(dydx[i]*h)+TINY;          //Scaling used to monitor accuracy.
+		if (kmax > 0 && kount < kmax-1 && fabsl(x-xsav) > fabsl(dxsav)){
+			if(SaveIntermediate)
+			{
+				xp[++kount]=x;                     //Store intermediate results.
+				for (i=1;i<=nvar;i++) 
+					yp[i][kount]=y[i];	
+					
+				// Vektoren und B-Feld zwischenspeichern ++++++++++++++++++++++++
+				BFeld(yp[1][kount],yp[5][kount],yp[3][kount],xp[kount]);
+				Bp[1][kount]=Br;
+				Bp[2][kount]=dBrdr;
+				Bp[3][kount]=dBrdphi;
+				Bp[4][kount]=dBrdz;
+				Bp[5][kount]=Bphi;
+				Bp[6][kount]=dBphidr;
+				Bp[7][kount]=dBphidphi;
+				Bp[8][kount]=dBphidz;
+				Bp[9][kount]=Bz;
+				Bp[10][kount]=dBzdr;
+				Bp[11][kount]=dBzdphi;
+				Bp[12][kount]=dBzdz;
+				Bp[13][kount]=Bws;
+				Ep[1][kount] = Er;
+				Ep[2][kount] = Ez;
+				// ENDE Vektoren und B-Feld zwischenspeichern ----------------------
+			}
+
+			xsav=x;
+		}
+	
+		if ((x+h-x2)*(x+h-x1) > 0.0) 
+			h=x2-x;                                          //If stepsize can overshoot, decrease.
+
+		//(*rkqs)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta
+		 (*integrator)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta or bulirsch stoer step
+		
+		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		// check for reflection and invert velocity in ytemp when necessary
+		/*if (ReflectCheck(xtemp,ytemp,x,y)){
+			if (stopall == 1) return;
+			x = xtemp;
+			for (i=1;i<=nvar;i++) // if reflected drop last integration step and resume from previous point with inversed velocity
+				y[i] = ytemp[i];
+			hnext = hnexttemp;
+			continue;
+		}
+		*/
+		// Trajectory length calculation
+		trajlengthsum += sqrtl(powl(ytemp[1]-y[1],2)+powl(ytemp[3]-y[3],2)+powl(ytemp[5]*ytemp[1]-y[5]*y[1],2));
+		//--------------------------------------------------------------------
+		
+		if (hdid == h) 
+			++(*nok); 
+		else 
+			++(*nbad);
+		if (stopall == 1) 
+			return;
+	
+		if ((x-x2)*(x2-x1) >= 0.0){	//Are we done?
+			for (i=1;i<=nvar;i++)   // save final step in ystart
+				ystart[i]=y[i];
+			if (kmax){  // war kmax, ist nun deaktiviert
+				if(SaveIntermediate)
+				{
 					xp[++kount]=x;                                             //Save final step.
 					for (i=1;i<=nvar;i++) 
-						yp[i][kount]=y[i];					
-					// B-Feld zwischenspeichern
-					if(SaveIntermediate)
-					{
+						yp[i][kount]=y[i];		
+									
+					// Vektoren und B-Feld zwischenspeichern ++++++++++++++++++++++++
 					BFeld(yp[1][kount],yp[5][kount],yp[3][kount],xp[kount]);
 					Bp[1][kount]=Br;
 					Bp[2][kount]=dBrdr;
@@ -630,29 +642,20 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 					Bp[13][kount]=Bws;
 					Ep[1][kount] = Er;
 					Ep[2][kount] = Ez;
-					//cout << "Ja!";
-					}
-					// B-Feld zwischenspeichern Ende					
+					// ENDE Vektoren und B-Feld zwischenspeichern -------------------
 				}
-				
-				// Trajectory length calculation
-					if (TrajectoryLength)
-					{
-						trajlength =  sqrtl(powl(ytemp1-y[1],2)+powl(ytemp3-y[3],2)+powl(ytemp5*ytemp1-y[5]*y[1],2));
-						trajlengthsum += trajlength;
-						ytemp1 = y[1]; ytemp3 = y[3]; ytemp5 = y[5];
-					}
-
+			}
+			
 			free_vector(dydx,1,nvar);
 			free_vector(y,1,nvar);
 			free_vector(yscal,1,nvar);
+			free_vector(ytemp,1,nvar);
 			return;
 		}
 		
 		if (fabsl(hnext) <= hmin) 
 			nrerror("Step size too small in ODEINT");
-		h=hnext;
-		
+		h=hnext;	
 
 	}
 	//nrerror("Too many steps in routine ODEINT");
