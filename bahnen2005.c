@@ -53,8 +53,7 @@ long double H;                               // total energy of particle
 long double projz, ystart[7], ysave[7], xstart = 0;       //z-component of velocity, initial and intermediate values of y[9]
 long double  x1, x2;                         // start and endtime handed over to integrator
 int iMC;                             //  counter for MonteCarloSim
-long double trajlength, trajlengthsum, ytemp1, ytemp3, ytemp5;
-unsigned short int TrajectoryLength=1;
+long double trajlengthsum;
 long double Hstart, Hend,Hmax;     //maximum energy
 long double gammarel, NeutEnergie;	//relativistic gamma factor, Neutron energy
 
@@ -882,12 +881,6 @@ void IntegrateParticle(){
 		ystart[1]= r_n; ystart[2]= vr_n;           // fill array for ODEint integrator
 		ystart[3]= z_n; ystart[4]= vz_n;
 		ystart[5]= conv*phi_n;
-		if (TrajectoryLength)
-		{ // Trajectory length
-			ytemp1=ystart[1]; 
-			ytemp3=ystart[3]; 
-			ytemp5=ystart[5];      
-		}
 		if (r_n!=0.) 
 			ystart[6]= vphi_n/r_n;
 		else if (r_n==0.)
@@ -957,7 +950,6 @@ void IntegrateParticle(){
 
 			x1= x2; x2=x1+delx_n;                 // determine start and endtime of step
 			schritte++;
-			if (TrajectoryLength) ytemp1 = ystart[1]; ytemp3 = ystart[3]; ytemp5 = ystart[5];    // for trajectory length calculation
 														
 			// put phi (ystart[5]) back to [-2Pi,2Pi]
 			if(ystart[5]>(2.0*pi))

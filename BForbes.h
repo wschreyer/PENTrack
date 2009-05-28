@@ -1,3 +1,17 @@
+// root stuff
+#include "TROOT.h"/*
+#include "TFile.h"
+#include "TNetFile.h"
+#include "TRandom.h"
+#include "TTree.h"
+#include "TBranch.h"
+#include "TClonesArray.h"
+#include "TStopwatch.h"*/
+#include "TMath.h"
+#include "TF1.h"
+#include "TF2.h"
+
+
 extern long double BForbes(long double r, long double phi, long double z, long double t);
 extern long double trapzd(long double (*func)(long double), long double a, long double b, int n);
 extern long double qromb(long double (*func)(long double), long double a, long double b);
