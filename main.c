@@ -554,7 +554,7 @@ void Startbed(int k)
 
 void ausgabe(long double x2, long double *ystart, long double vend, long double H){
 		
-	if((x2>=xend)) 
+	if(((x2-xstart)>=xend)) 
 	{                                                           //Zeit abgelaufen
 		if (decay.on && (protneut == NEUTRON))
 		{	kennz = 8; // neutron decayed
