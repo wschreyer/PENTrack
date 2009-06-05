@@ -401,7 +401,7 @@ int main(int argc, char **argv){
 				}
 			}
 		}
-		if((decay.on==2) /*&& decay.ed*/)
+		if((decay.on==2) && decay.ed)
 		{	switch(protneut) // simulation sequenz in decay case: neutron, proton, electron
 			{	case NEUTRON:	protneut = PROTON;
 								decay.counter++;
