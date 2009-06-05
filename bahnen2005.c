@@ -13,7 +13,7 @@ char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
 // physical constants
 long double ele_e=1.602176487E-19, Qm0=1.602176487E-19/1.672621637E-27;      //elementary charge in SI, charge/proton mass 																					
-long double gravconst=9.80665, conv=0.01745329251, mu0= 1.25663706144e-6;      //g, Pi/180, permeability,
+long double gravconst=9.80665, conv=0.01745329251, mu0= 1.25663706144e-6;      //g [m/s^2], Pi/180, permeability,
 long double m_n=1.674927211E-27/1.602176487E-19, mu_n, pi=3.141592655359;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
 long double M,m_p=1.672621637E-27/1.602176487E-19;        //proton mass (eV/c^2), tempmass
 long double m_e = 9.10938215e-31/1.602176487E-19, c_0 = 299792458; //electron mass (eV/c^2), lightspeed
@@ -401,7 +401,7 @@ int main(int argc, char **argv){
 				}
 			}
 		}
-		if((decay.on==2) && decay.ed)
+		if((decay.on==2) /*&& decay.ed*/)
 		{	switch(protneut) // simulation sequenz in decay case: neutron, proton, electron
 			{	case NEUTRON:	protneut = PROTON;
 								decay.counter++;
@@ -472,9 +472,6 @@ void PrepareParticle()
 	{	case NEUTRON:	M = m_n;			// [eV/c^2]
 						h1 = 5e-5;			// guess for the first step size of runge kutta
 						dxsav = 1e-5;		// kleinster ausgegebener zeitschritt Neutronen
-						EnergieS = EnergieS*1.e-9;
-						EnergieE = EnergieE*1.e-9;
-						dEnergie = dEnergie*1.e-9;
 						if(polarisationsave == POLARISATION_GOOD) // in ev/T
 						{	hfs = -1;
 							mu_n = hfs * mu_nSI / ele_e; // => mu_n is negative
@@ -545,7 +542,7 @@ void derivs(long double x, long double *y, long double *dydx){
 		dydx[1]= y[2];
 		dydx[2]= y[1]*(y[6]*y[6])+mumB*dBdr;
 		dydx[3]= y[4];
-		dydx[4]= mumB*dBdz-gravconst;
+		dydx[4]= mumB*dBdz-gravconst; // [m/s^2]
 		dydx[5]= y[6];
 		dydx[6]= -2*y[2]*y[6]/y[1]+mumB/y[1]*dBdphi/y[1];
 		
@@ -555,7 +552,7 @@ void derivs(long double x, long double *y, long double *dydx){
 		dydx[1]= y[2];
 		dydx[2]= y[1]*(y[6]*y[6])+Qm0*(Bz*y[1]*y[6]-Bphi*y[4]+Er);
 		dydx[3]= y[4];
-		dydx[4]= Qm0*(Ez+Bphi*y[2]-y[1]*Br*y[6]);
+		dydx[4]= Qm0*(Ez+Bphi*y[2]-y[1]*Br*y[6])-gravconst; 
 		dydx[5]= y[6];
 		dydx[6]= -2*y[2]*y[6]/y[1]+Qm0*(Ephi+Br*y[4]-Bz*y[2])/y[1];
 	}
@@ -565,7 +562,7 @@ void derivs(long double x, long double *y, long double *dydx){
 		dydx[1]= y[2];
 		dydx[2]= y[1]*(y[6]*y[6])+Qm0*(Bz*y[1]*y[6]-Bphi*y[4]+Er);
 		dydx[3]= y[4];
-		dydx[4]= Qm0*(Ez+Bphi*y[2]-y[1]*Br*y[6]);
+		dydx[4]= Qm0*(Ez+Bphi*y[2]-y[1]*Br*y[6])-gravconst;
 		dydx[5]= y[6];
 		dydx[6]= -2*y[2]*y[6]/y[1]+Qm0*(Ephi+Br*y[4]-Bz*y[2])/y[1];
 	}
@@ -605,7 +602,7 @@ void OpenFiles(int argc, char **argv){
 	if (protneut != BF_ONLY) 
 	{
         fprintf(ENDLOG,"jobnumber RandomSeed protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
-        			   "gammastart rend phiend zend vend alphaend gammaend t H kennz "
+        			   "gammastart rend phiend zend vend alphaend gammaend tend dt H kennz "
         			   "NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax "
         			   "AbsorberHits BFeldSkal EFeldSkal lossprob tauSF dtau\n");
 	}		

@@ -608,7 +608,7 @@ void OutputCodes(int iMC)
 {	if(decay.on == 2)
 	{	printf("\nThe calculations of %li particle(s) yielded:\n"
 		       "endcode    out of %i neutron(s)                            \tout of %li proton(s)                              \tout of %li electron(s)\n"
-		       "   0       %*li (not categorized)                          \t%*li (not categorized)                          \t%*li (not categorized)\n"
+		       "   0       %*li (were not categorized)                     \t%*li (were not categorized)                     \t%*li (were not categorized)\n"
 		       "   1       %*li (did not finish)                           \t%*li (did not finish in %2.1LE s)              \t%*li (did not finish in %2.1LE s)\n"
 		       "   2       %*li (hit outer boundaries)                     \t%*li (hit outer boundaries)                     \t%*li (hit outer boundaries)\n"
 		       "   3       %*li (hit the walls)                            \t%*li (hit the walls)                            \t%*li (hit the walls)\n"

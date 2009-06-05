@@ -10,7 +10,7 @@ bool noparticle = false;
 
 void MCStartwerte(long double delx)
 {	long int nroll = 0; // counter for the number of rolled dices 
-	long double crit;   // crit = initial energie - potenial energy by gravitation + potential energie by B-field 
+	long double crit;   // crit = initial energie - potenial energy by gravitation + potential energie by B-field  // [eV]
 	long double WktTMP;
 
 	// examine correlation of fields with proton collection 
@@ -72,8 +72,8 @@ void MCStartwerte(long double delx)
 	// square root neutron energy distribution
 	if ((protneut != PROTON)&&(protneut != ELECTRONS))
 	{	//Energie = powl(mt_get_double(v_mt_state) * (EnergieE * EnergieE - EnergieS * EnergieS) + EnergieS * EnergieS, 0.5); // squared weighted energy
-		Energie = powl((powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS*1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS*1e-9, 1.5), 2.0/3.0);
-		NeutEnergie = Energie;
+		Energie = powl((powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS*1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS*1e-9, 1.5), 2.0/3.0); // [eV]
+		NeutEnergie = Energie; // [eV]
 	}		
 
 	// proton energy distribution
@@ -84,7 +84,7 @@ void MCStartwerte(long double delx)
 		// dice as long as point is above curve
 		do
 		{	//cout << "above distribution... dicing on..." << endl;
-			Energie = pini.EnergieS + mt_get_double(v_mt_state) * (pini.EnergieE - pini.EnergieS); // constant distribution between 0 and 800 eV
+			Energie = pini.EnergieS + mt_get_double(v_mt_state) * (pini.EnergieE - pini.EnergieS); // constant distribution between 0 and 800 eV // [eV]
 			WktTMP = mt_get_double(v_mt_state)*2;
 			
 			long double DeltaM = m_n - m_p;
@@ -102,7 +102,7 @@ void MCStartwerte(long double delx)
 		//NeutEnergie =  15.0e-9 + mt_get_double(v_mt_state) * (110.0e-9 - 15.0e-9); // equal weighted neutron energy		
 		// END temporary for energy dependence test of proton extraction efficiency
 	
-		NeutEnergie  = powl((powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS + 1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS + 1e-9, 1.5), 2.0/3.0);
+		NeutEnergie  = powl((powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS*1e-9 + 1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS*1e-9 + 1e-9, 1.5), 2.0/3.0); // [eV]
 	}
 	
 	// electron energy distribution
@@ -122,7 +122,7 @@ void MCStartwerte(long double delx)
  
 		}while(WktTMP > Elvert);
 
-		NeutEnergie  = powl( (powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS + 1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS + 1e-9, 1.5), 2.0/3.0);			
+		NeutEnergie  = powl( (powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS*1e-9 + 1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS*1e-9 + 1e-9, 1.5), 2.0/3.0); // [eV]			
 	}
 
 
@@ -146,7 +146,7 @@ void MCStartwerte(long double delx)
 		
 		// check if neutron could possiblly reached this positon by its own energy
 		BFeld(r_n, phi_n * conv, z_n, 0.0);
-		crit = NeutEnergie - m_n * gravconst * z_n + mu_n * Bws; // crit = initial energie - potenial energy by gravitation + potential energie by B-field
+		crit = NeutEnergie - m_n * gravconst * z_n + mu_n * Bws; // crit = initial energie - potenial energy by gravitation + potential energie by B-field // [eV]
 		//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n", NeutEnergie*1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
 		//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie * 1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
 
@@ -182,7 +182,7 @@ void MCStartwerte(long double delx)
 
 	// set time span till decay
 	if((decay.on) && (protneut == NEUTRON))
-		xend = - tau * log(mt_get_double(v_mt_state)) + xstart; // time span till neutron decay	
+		xend = - tau * log(mt_get_double(v_mt_state)); // time span till neutron decay	
 
 	return ;
 }
