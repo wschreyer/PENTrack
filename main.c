@@ -274,17 +274,21 @@ void ConfigInit(void){
 //======== initalizes initial values from record to used variables ==============================================
 void initialStartbed()
 {	initial particleini;
+	long double edm; // energie dimension multiplikator
 	switch(protneut)
 	{	case NEUTRON:	particleini = nini;
+						edm = 1e-9; 
 						break;	
 		case PROTON:	particleini = pini;
+						edm = 1;
 						break;
 		case ELECTRONS:	particleini = eini;
+						edm = 1e+3;
 						break;
 	}
-	EnergieS = particleini.EnergieS;
-	dEnergie = particleini.dEnergie;
-	EnergieE = particleini.EnergieE;
+	EnergieS = particleini.EnergieS * edm; // [eV]
+	dEnergie = particleini.dEnergie * edm; // [eV]
+	EnergieE = particleini.EnergieE * edm; // [eV]
 	z_ns = particleini.zs;
 	dz_n = particleini.dz;
 	z_ne = particleini.ze;
@@ -437,7 +441,7 @@ void Startbed(int k)
 	// initalizes initial values from record to used variables
 	initialStartbed();
 
-	// Emin_n > nini.EnergieE ?? EXIT !!
+	// minimal necessary energy (Emin_n) > maximum input energy (nini.EnergieE)?? EXIT !!
 	if(Emin_n*1e9 > nini.EnergieE)
 	{	printf("\n\n\nERROR: Emin_n (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
 		             "       Check the energy range of the neutrons and / or the B-field configuration!\n\n"
@@ -447,6 +451,7 @@ void Startbed(int k)
 		                      "EXIT!!\n", (Emin_n*1e9), nini.EnergieE);
 		exit(-1);
 	}
+	
 	// check if lower neutron energy boundary is possible, if not set to possible value
 	if((z_ns >= 0) && ((FillingTime = 0) && (CleaningTime = 0) && (RampUpTime = 0) && ((FullFieldTime != 0) || (RampDownTime != 0))))
 	{	nini.EnergieS = max(Emin_n*1e9, nini.EnergieS); // higher energy of the neutron
@@ -488,7 +493,7 @@ void Startbed(int k)
 
 	// writing parameters to screen
 	printf("\nStart parameters:\n"
-	       "  Energy (min, step, max): %.17LG neV/keV, %.17LG neV/keV, %.17LG neV/keV\n"
+	       "  Energy (min, step, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
 	       "  Maximum runtime: %.17LG s\n"
 	       "  r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
 	       "  z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
@@ -519,7 +524,7 @@ void Startbed(int k)
 
 	// logging parameters to *log.out
 	fprintf(LOGSCR, "\nStart parameters:\n"
-	                "  Energy (min, step, max): %.17LG neV/keV, %.17LG neV/keV, %.17LG neV/keV\n"
+	                "  Energy (min, step, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
 	                "  Maximum runtime: %.17LG s\n"
 	                "  r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
 	                "  z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
@@ -553,35 +558,46 @@ void Startbed(int k)
 
 
 void ausgabe(long double x2, long double *ystart, long double vend, long double H){
+	
+	long double dt = x2 - xstart; // simulation time dt
 		
-	if(((x2-xstart)>=xend)) 
+	if(dt>=xend) 
 	{                                                           //Zeit abgelaufen
 		if (decay.on && (protneut == NEUTRON))
 		{	kennz = 8; // neutron decayed
 			decay.ed = 1;
+			decay.Npolarisation = polarisation;
+			decay.Nr = ystart[1];
+			decay.Nphi = phiend;
+			decay.Nz = ystart[3];
+			decay.Nv = vend;
+			decay.Nalpha = alphaend;
+			decay.Ngamma = gammaend;
+			decay.Nx = x2;
+			decay.NH = H; // [neV]
 		}
 		else
 		{	kennz = 1; // particle survived until xend
 		}			
 	}
 		
-		if(vend>0) gammaend= acosl(ystart[4]/vend) /conv;
-		else gammaend=0;
-		  alphaend= atan2l(ystart[6]*ystart[1],ystart[2])/conv;
-		
-		// calculate spin flip lifetime tauSF and influence on lifetime measurement 
-		long double tauSF = -x2/logl(1-BFflipprob);
-		long double dtau=tau-1/(1/tau+1/tauSF) ;
-		 
-		if(tauSF < -9e99) tauSF = -9e99; // "-INF"?
+	if(vend>0) gammaend= acosl(ystart[4]/vend) /conv;
+	else gammaend=0;
+	alphaend= atan2l(ystart[6]*ystart[1],ystart[2])/conv;
 	
-		// output of end values
-		fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG %LG\n",
-		jobnumber, monthinmilliseconds, protneut, polarisation,xstart,r_n,phi_n,z_n,NeutEnergie*1.0e9,v_n,alpha,gammaa,ystart[1],phiend,ystart[3],vend,alphaend,gammaend,x2,H,kennz, NSF,RodFieldMultiplicator, BFflipprob,nrefl, vladmax,vladtotal,thumbmax,
-		trajlengthsum,(H-Hstart),Hmax,AbsorberHits, BFeldSkal, EFeldSkal, lossprob, tauSF, dtau);
+	// calculate spin flip lifetime tauSF and influence on lifetime measurement 
+	long double tauSF = -x2/logl(1-BFflipprob);
+	long double dtau=tau-1/(1/tau+1/tauSF) ;
+	 
+	if(tauSF < -9e99) tauSF = -9e99; // "-INF"?
+	
+	// output of end values
+	fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG %LG\n",
+	jobnumber, monthinmilliseconds, protneut, polarisation,xstart,r_n,phi_n,z_n,NeutEnergie*1.0e9,v_n,alpha,gammaa,ystart[1],phiend,ystart[3],vend,alphaend,gammaend,x2,dt,H,kennz, NSF,RodFieldMultiplicator, BFflipprob,nrefl, vladmax,vladtotal,thumbmax,
+	trajlengthsum,(H-Hstart),Hmax,AbsorberHits, BFeldSkal, EFeldSkal, lossprob, tauSF, dtau);
 	
 	
-		fflush(ENDLOG);
+	fflush(ENDLOG);
     return;
 }
 

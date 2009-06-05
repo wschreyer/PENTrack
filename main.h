@@ -148,6 +148,15 @@ struct decayinfo				// containing all data from neutron decay for the emerging p
 								// (==2) if neutron decay in a proton and an electron 
 	unsigned short int ed;		// (!=0) if the previous neutron decayed // "did the neutron decay?"
 	long int counter;
+	int Npolarisation;			// = 'polarisation' of decayed neutron
+	long double Nr;				// = 'ystart[1]' (rend) of decayed neutron
+	long double Nphi;			// = 'phiend' of decayed neutron
+	long double Nz;				// = 'ystart[3]' (zend) of decayed neutron
+	long double Nv;				// = 'vend' of decayed neutron
+	long double Nalpha;			// = 'alphaend' of decayed neutron
+	long double Ngamma;			// = 'gammaend' of decayed neutron
+	long double Nx;				// = 'x2' (t) of decayed neutron
+	long double NH;				// = 'H' (total energie) of decayed neutron (gravitational + kinetic + B-potential) [neV]
 };
 extern struct decayinfo decay;	// containing all data from neutron decay for the emerging proton and electron
 
