@@ -164,7 +164,6 @@ void MCStartwerte(long double delx)
 		}		
 	}
 
-
 	alpha = alphas + (mt_get_double(v_mt_state)) * (alphae - alphas); // constant angular distribution
 	gammaa = acosl(cosl(gammas*conv) - mt_get_double(v_mt_state) * (cosl(gammas * conv) - cosl(gammae * conv))) / conv; // isotropic emission characteristics
 
