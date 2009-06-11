@@ -31,9 +31,9 @@ int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // u
 long double Ibar= 2250.;                // B-field strength, current through rod
 int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 int diffuse; //diffuse reflection switch
-long double DiffProb = 0.16, diffuprob; // property of diffuse reflection 0.125
+long double DiffProb = 0.16; // property of diffuse reflection 0.125
 unsigned short int nodelay, slit = 0, DetOpen=0; // delays for monte carlo, is there an entrance slit?
-long double lossprob = 5.0e-4, epsi= 0, AbsProb = 0;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
+long double lossprob = 5.0e-4, epsi= 0;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
 
 // Fields
 long double dBrdr, dBrdz, dBrdphi=0.0, dBphidr, dBphidz, dBphidphi=0.0, dBzdr, dBzdz, dBzdphi=0.0;
