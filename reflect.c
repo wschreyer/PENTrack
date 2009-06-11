@@ -388,7 +388,7 @@ int ReflexGeneral(long double *y,long double r,long double vr,long double z,long
 
 // ALTE ROUTINE!!!!!!!!
 //-------------------------------------------------------------------------------
-//Reflektionsroutine für Besselfeld mit 90° Ecke
+//Reflektionsroutine fï¿½r Besselfeld mit 90ï¿½ Ecke
 void ReflektEckig(long double *y,long double r,long double vr,long double z,long double vz,long double phi,long double vphi, long double t)
 {
    long double rmi, rma;                       //Abstand von der Ecke skaliert
@@ -404,7 +404,7 @@ void ReflektEckig(long double *y,long double r,long double vr,long double z,long
 	if((z < (r-rma+LueckeR)*(LueckeZ/LueckeR)) && (r <= rmax) && (z <= LueckeZ) && (r >= rma-LueckeR)){    // Spalt im Boden
 		schlitz = true;		// do not reflect at walls
 			if((vz<0)&&(vr>0)){    // only consider lost in schlitz when moving towards walls
-				kennz=5;        // Teilchen im Füllschlitz                                                                              // Nachweis der
+				kennz=5;        // Teilchen im Fï¿½llschlitz                                                                              // Nachweis der
 				stopall=1;
 				return;
 			}                                                     // dep. Neutronen
@@ -412,12 +412,12 @@ void ReflektEckig(long double *y,long double r,long double vr,long double z,long
     }
     //Innenwand
    if( (r<= rmi+epsi) && (vr<0.0) && (!schlitz)){		
-		blankint = ReflexIn(y,r,vr,z,vz,phi,vphi,t,0,FPrealNocado,FPimNocado);
+		ReflexIn(y,r,vr,z,vz,phi,vphi,t,0,FPrealNocado,FPimNocado);
 		cout << "NEWREFLEXION!";
    }
-   //Außenwand
+   //Auï¿½enwand
    if( (r>= rma-epsi) && (vr>0.0)  && (!schlitz)){		
-		blankint = ReflexOut(y,r,vr,z,vz,phi,vphi,t,0,FPrealNocado,FPimNocado);
+		ReflexOut(y,r,vr,z,vz,phi,vphi,t,0,FPrealNocado,FPimNocado);
 		cout << "NEWREFLEXION!";
     }
    //Boden
@@ -432,13 +432,13 @@ void ReflektEckig(long double *y,long double r,long double vr,long double z,long
 			fprintf(LOGSCR,"UCN was lost in a slit at the bottom !!\n");
 			return;	
 		}		
-		 blankint =  ReflexBottom(y,r,vr,z,vz,phi,vphi,t,0,FPrealNocado,FPimNocado);
+		 ReflexBottom(y,r,vr,z,vz,phi,vphi,t,0,FPrealNocado,FPimNocado);
 		 cout << "NEWREFLEXION!";	
    }   
    // reflection at the (horizontal) lid
    if((z >= hlid-epsi) && (vz > 0)  && (!schlitz))
 	{
-		 blankint =  ReflexTop(y,r,vr,z,vz,phi,vphi,t,0,FPrealCu,FPimCu);
+		 ReflexTop(y,r,vr,z,vz,phi,vphi,t,0,FPrealCu,FPimCu);
 		 cout << "NEWREFLEXION!";	
 	}
 }
@@ -459,24 +459,24 @@ void ReflektDiffuse(long double *y,long double r,long double vr,long double z,lo
 		schlitz = true;		// do not reflect at walls
 		if((vz<0)&&(vr>0))    // only consider lost in schlitz when moving towards walls
 		{
-	                                                                                             // aussen für
+	                                                                                             // aussen fï¿½r
 			//if((r>rma)||(z<wanddicke))
 			//{
-			kennz=5;        // Teilchen im Füllschlitz                                                                              // Nachweis der
+			kennz=5;        // Teilchen im Fï¿½llschlitz                                                                              // Nachweis der
 			stopall=1;
 			//}                                                                       							 // dep. Neutronen
 		}
 	}
     }    
    if( (r<= rmi+epsi) && (vr<0.0) && (!schlitz)){           //Innenwand		 
-		 blankint =  ReflexIn(y,r,vr,z,vz,phi,vphi,t,1,FPrealNocado,FPimNocado);
+		 ReflexIn(y,r,vr,z,vz,phi,vphi,t,1,FPrealNocado,FPimNocado);
 		 cout << "NEWREFLEXION!";	
    }	
-	 //Außenwand
-   if( (r>= rma-epsi) && (vr>0.0)  && (!schlitz)){          //Außenwand		
-		blankint =  ReflexOut(y,r,vr,z,vz,phi,vphi,t,1,FPrealNocado,FPimNocado);
-		 cout << "NEWREFLEXION!";		
-		}
+	 //Auï¿½enwand
+   if( (r>= rma-epsi) && (vr>0.0)  && (!schlitz)){          //Auï¿½enwand		
+		ReflexOut(y,r,vr,z,vz,phi,vphi,t,1,FPrealNocado,FPimNocado);
+		cout << "NEWREFLEXION!";		
+	}
 	//Boden
    if((z <= wanddicke+epsi) && (vz < 0) && (!schlitz))
 	{    		
@@ -489,13 +489,13 @@ void ReflektDiffuse(long double *y,long double r,long double vr,long double z,lo
 			fprintf(LOGSCR,"UCN was lost in a slit at the bottom !!\n");
 			return;	
 		}		
-		 blankint = ReflexBottom(y,r,vr,z,vz,phi,vphi,t,1,FPrealNocado,FPimNocado);
+		 ReflexBottom(y,r,vr,z,vz,phi,vphi,t,1,FPrealNocado,FPimNocado);
 		 cout << "NEWREFLEXION!";
    }	
 	// reflection at the (horizontal) lid
    if((z >= hlid-epsi) && (vz > 0) && (!schlitz))
 	{
-		 blankint = ReflexTop(y,r,vr,z,vz,phi,vphi,t,1,FPrealNocado,FPimNocado);
+		 ReflexTop(y,r,vr,z,vz,phi,vphi,t,1,FPrealNocado,FPimNocado);
 		 cout << "NEWREFLEXION!";	
 	}	 	
 	return;

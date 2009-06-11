@@ -5,8 +5,6 @@
 
 using namespace std;
 
-enum ReflectingSurface {not_tested, invalid, valid, valid_normal_inwards, valid_normal_outwards};
-
 // root of kd-Tree
 class KDTree{
     private:
@@ -16,12 +14,12 @@ class KDTree{
             private:
                 long double v[3],w[3];    // vectors from first vertex to the other two vertices
                 long double vw,ww,vv;     // dotproducts of v and w (precalculated for intersection algorithm)
-                short normalIO; // normal points into volume (1) / out of volume (-1) / not specified (0)
             public:
                 long double vertex[3][3]; // the three vertices of the triangle (in counterclockwise order according to STL standard)
                 long double lo[3],hi[3];  // bounding box defined by the three lowest and three highest coordinates
                 long double normal[3];    // normal of triangle-plane
-                int surfacetype;
+                int surfacetype;          // user defined surface number
+                short normalIO;           // normal points into volume (1) / out of volume (-1) / not specified (0)
                 Triangle* neighbours[3];    // neighbouring triangles
                 Triangle(ifstream &f, const int asurfacetype);  // constructor, read vertices and normal from STL-file
                 bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
@@ -44,7 +42,7 @@ class KDTree{
                 ~KDNode();  // destructor
                 void AddTriangle(Triangle *tri);    // add triangle to list or to leaves
                 void Split();   // split node in two leaves
-                void FindNeighbours(Triangle* tri, const short vertexnumber); // find neighbours of a triangle
+                void FindNeighbour(Triangle* tri, const short vertexnumber); // find neighbours of a triangle
                 bool Collision(const long double p1[3], const long double p2[3], long double &s, KDNode* &lastnode, Triangle* &tri);  // find the smallest box which contains the segment p1->p2 and call TestCollision there
                 inline bool PointInBox(const long double p[3]); // test if point is inside box
                 unsigned facecount();   // count triangles in this tree and his leaves
@@ -57,8 +55,9 @@ class KDTree{
         KDTree();   // constructor
         ~KDTree();  // destructor
         long double lo[3],hi[3];    // bounding box of root node
-        void ReadFile(const char *filename, const int surfacetype, const long double ValidVolume[3] = NULL);    // read STL-file
-        void Init();    // create tree
+        void ReadFile(const char *filename, const int surfacetype);    // read STL-file
+        void Init(const long double PointInVolume[3] = NULL);    // create tree
         bool Collision(const long double p1[3], const long double p2[3], long double &s, long double normal[3], int &surfacetype);  // test segment p1->p2 for collision with triangle
         bool PointInBox(const long double p[3]);  // test if point is inside root node
+        bool PointInVolume(const long double p[3]);
 };
