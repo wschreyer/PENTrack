@@ -110,7 +110,7 @@ extern long double lengthconv, Bconv, Econv;    // Einheiten aus field Tabelle (
 
 //misc configuration
 extern int MonteCarlo, MonteCarloAnzahl;   // user choice to use MC or not, number of particles for MC simulation
-extern int reflekt, Efeldwahl, bfeldwahl, protneut, expmode, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
+extern int reflekt, newreflection, Efeldwahl, bfeldwahl, protneut, expmode, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
 extern int reflektlog, SaveIntermediate;               // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 extern int polarisation, polarisationsave, ausgabewunsch, ausgabewunschsave, Feldcount; // user choice for polarisation of neutrons und Ausgabewunsch
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
@@ -135,7 +135,7 @@ extern int BCutPlaneSampleCount;
 
 // particles
 extern long double H;                               // total energy of particle
-extern long double projz, ystart[7], ysave[7], xstart;       //z-component of velocity, initial and intermediate values of y[9]
+extern long double ystart[7], xstart;       //z-component of velocity, initial and intermediate values of y[9]
 extern int iMC;                             //  counter for MonteCarloSim
 extern bool noparticle; // true if there was NO particle simulated
 extern long double  x1, x2;                         // start and endtime handed over to integrator
@@ -169,7 +169,7 @@ extern long double phie,r_ne, z_ne, v_ne, alphae, gammae;   //initial values to
 extern long double dphi,dr_n, dz_n, dv_n, dalpha, dgamma;   //initial values step
 extern long double delx;                           // initial timestep for the integrator
 
-extern long double vr_n, vphi_n, vz_n, vtemp;          //velocity, vtemp: Geschw.komp in xy-Ebene
+extern long double vr_n, vphi_n, vz_n;          //velocity, vtemp: Geschw.komp in xy-Ebene
 extern long double delx_n;      // shorter timestep for BruteForce integration
 extern int stopall;                            //  if stopall=1: stop particle
 
@@ -186,7 +186,7 @@ extern struct initial nini, pini, eini;						// one 'initial' for each particle 
 
 // final values of particle
 extern int kennz;                                  // ending code
-extern long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues for particle
+extern long double vend, gammaend, alphaend, phiend, xend;    //endvalues for particle
 
 // geometry of bottle
 extern long double ri, ra;                      //dimensions of torus for Maple Field
@@ -237,10 +237,6 @@ extern int spinflipcheck;                          // user choice to check adiab
 extern long double vlad, vladtotal, frac;                   // adiabacity after Vladimirsky
 extern long double vladmax; // maximum values of spinflip prob
 extern long double thumbmax;
-extern long double Bxcoor, Bycoor, Bzcoor;    // B-field in cart Labor coord, cart coord of vector for spin coor sys
-//long double matoranorm, matoratime, matoratemptimeb, matoratemptimee,
-//            matoratempprob = 1.0;                     // spin flip probabiltiy per second
-//long double directprob = 1.0, directtime = 0.0, writeprob = 1.0,
 
 // file output
 extern int jobnumber;
@@ -248,7 +244,6 @@ extern unsigned long int monthinmilliseconds; // RandomSeed
 extern long Zeilencount;
 extern int Filecount, p;                                   // counts the output files, counter for last line written in outs, random generator temp value
 extern long double BahnPointSaveTime;               // default 2e-7; 0=1e-19 not changed at run time, time between two lines written in outs
-extern char msg[500];
 
 // data for material storage
 extern long double FPrealNocado, FPimNocado;     // real and imaginary part of fermi potential for milk tubes
@@ -265,7 +260,7 @@ extern int offset, BFkount, BFindex;			// counter in BFarray, offset off BFarray
 extern long double *BFBws;                    // BFpolarisation
 extern long double BFBmin, BFBminmem,BFTargetB;     // smallest value of Babs during step, Babs < BFTargetB => integrate,
 extern long double BFBxcoor, BFBycoor, BFBzcoor;        // cartesian coord of B field
-extern unsigned short int BruteForce, firstint, alwayscont, flipspin;  // enable BruteForce?, flipthespin?
+extern unsigned short int BruteForce, firstint, flipspin;  // enable BruteForce?, flipthespin?
 extern long double I_n[4], **BFypFields;        // Spinvector, intermediate field values in BFodeint
 extern long BFZeilencount; extern int BFFilecount;                  // to control output filename of BF
 extern long double BFflipprob, BFsurvprob;                         // spinflip pobability
@@ -291,23 +286,8 @@ extern long double **Bp,**Ep;                            // Arrays for intermedi
 extern int FieldOscillation;        // turn field oscillation on if 1
 extern long double OscillationFraction, OscillationFrequency;
 
-// coil data for Forbes method
-extern long double rFo, phiFo, zFo, aFo,  bFo,  R_0Fo,  J_0Fo, zoffsetFo;
-extern int sign1, sign2;
-extern long double C1a, C1b, C1R_0, C1J_0, C1zoffset;
-extern long double aF[100], bF[100], R_0[100], zoffset[100], J_0[100];
-extern int CoilNr;   // number of coils read in
-
 // blank variables
-extern long int blankint;
 extern long double time_temp;
-
-// define racetrack current bars
-// defined by two position vectors (SW1r,SW1phi,SW1z and SW2r,SW2phi,SW2z) lying on the straight wire 
-// current from outside in
-extern long double Bars_1r[14],Bars_1phi[14],Bars_1z[14],Bars_2r[14],Bars_2phi[14],Bars_2z[14]; 
-
-
 
 
 extern mt_state_t *v_mt_state; //mersenne twister state var

@@ -135,14 +135,16 @@ void MCStartwerte(long double delx)
 	while(1)
 	{	nroll++;
 		// starting point
-		r_n = powl(mt_get_double(v_mt_state) * (r_ne * r_ne - r_ns * r_ns) + r_ns * r_ns, 0.5); // weighting because of the volume element and a r^2 probability outwards
-		phi_n = phis + mt_get_double(v_mt_state) * (phie - phis); // dice starting coordinate phi
-		/*
-		// z distribution according to (rho0 * sqrt(1 - mgz / e))
-		z_n = NeutEnergie*1e9 / mg * (powl(mt_get_double(v_mt_state) * (-1) * (powl(1 - mg * z_ne / (NeutEnergie*1e9), 1.5) - powl(1 - mg * z_ns / (NeutEnergie*1e9), 1.5)) - powl(1 - mg * z_ns / (NeutEnergie*1e9), 1.5), 2.0/3.0) + 1);
-		*/
-		z_n = z_ns + (mt_get_double(v_mt_state)) * (z_ne-z_ns);
-		//cout << "Die gew�rfelte H�he ist :" << z_n << endl;
+		if (newreflection)
+			RandomPointInSourceVolume(r_n,phi_n,z_n);
+		else{
+			r_n = powl(mt_get_double(v_mt_state) * (r_ne * r_ne - r_ns * r_ns) + r_ns * r_ns, 0.5); // weighting because of the volume element and a r^2 probability outwards
+			phi_n = phis + mt_get_double(v_mt_state) * (phie - phis); // dice starting coordinate phi
+			// z distribution according to (rho0 * sqrt(1 - mgz / e))
+			//z_n = NeutEnergie*1e9 / mg * (powl(mt_get_double(v_mt_state) * (-1) * (powl(1 - mg * z_ne / (NeutEnergie*1e9), 1.5) - powl(1 - mg * z_ns / (NeutEnergie*1e9), 1.5)) - powl(1 - mg * z_ns / (NeutEnergie*1e9), 1.5), 2.0/3.0) + 1);
+			z_n = z_ns + (mt_get_double(v_mt_state)) * (z_ne-z_ns);
+			//cout << "Die gew�rfelte H�he ist :" << z_n << endl;
+		}
 		
 		// check if neutron could possiblly reached this positon by its own energy
 		BFeld(r_n, phi_n * conv, z_n, 0.0);

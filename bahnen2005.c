@@ -25,7 +25,7 @@ long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus f
 
 // misc configurations
 int MonteCarlo=0, MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
-int reflekt=0, Efeldwahl, bfeldwahl, protneut, expmode=1,Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
+int reflekt=0, newreflection = 0, Efeldwahl, bfeldwahl, protneut, expmode=1,Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
 int reflektlog = 0, SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
 long double Ibar= 2250.;                // B-field strength, current through rod
@@ -50,7 +50,7 @@ int BCutPlaneSampleCount;
 
 // particles
 long double H;                               // total energy of particle
-long double projz, ystart[7], ysave[7], xstart = 0;       //z-component of velocity, initial and intermediate values of y[9]
+long double ystart[7], xstart = 0;       //z-component of velocity, initial and intermediate values of y[9]
 long double  x1, x2;                         // start and endtime handed over to integrator
 int iMC;                             //  counter for MonteCarloSim
 long double trajlengthsum;
@@ -68,7 +68,7 @@ long double phie,r_ne, z_ne, v_ne, alphae, gammae;   //initial values to
 long double dphi,dr_n, dz_n, dv_n, dalpha, dgamma;   //initial values step
 long double delx;                            // initial timestep for the integrator
 
-long double vr_n, vphi_n, vz_n, vtemp;          //velocity, vtemp: Geschw.komp in xy-Ebene
+long double vr_n, vphi_n, vz_n;          //velocity, vtemp: Geschw.komp in xy-Ebene
 long double delx_n=0.0;
 int stopall=0, Feldcount=0;                            //  if stopall=1: stop particle
 
@@ -76,7 +76,7 @@ struct initial nini, pini, eini; 	// one 'initial' for each particle type
 
 // final values of particle
 int kennz;                                  // ending code
-long double vend, vtest, gammaend, alphaend, phiend, xend;    //endvalues for particle
+long double vend, gammaend, alphaend, phiend, xend;    //endvalues for particle
 long int kennz0[3]={0},kennz1[3]={0},kennz2[3]={0},kennz3[3]={0},kennz4[3]={0},kennz5[3]={0},kennz6[3]={0},kennz7[3]={0},kennz8[3]={0},kennz9[3]={0},kennz10[3]={0},kennz11[3]={0},kennz12[3]={0},kennz99[3]={0},nrefl; // Counter for the particle codes
 
 // geometry of bottle
@@ -128,16 +128,11 @@ int spinflipcheck = 0;                          // user choice to check adiabaci
 long double vlad=0.0, vladtotal = 1.0, frac;                   // adiabacity after Vladimirsky
 long double vladmax=0.0; // maximum values of spinflip prob
 long double thumbmax=0.0;
-long double Bxcoor, Bycoor, Bzcoor;    // B-field in cart Labor coord, cart coord of vector for spin coor sys
-//long double matoranorm, matoratime, matoratemptimeb, matoratemptimee,
-//            matoratempprob = 1.0;                     // spin flip probabiltiy per second
-//long double directprob = 1.0, directtime = 0.0, writeprob = 1.0,
 
 // file output
 long Zeilencount;
 int Filecount=1, p;                                   // counts the output files, counter for last line written in outs, random generator temp value
 long double BahnPointSaveTime = 5.0e-7;               // default 2e-7; 0=1e-19 not changed at run time, time between two lines written in outs
-char msg[500];
 
 // data for material storage
 long double FPrealNocado = 183.04, FPimNocado = 0.018985481;     // real and imaginary part of fermi potential for milk tubes
@@ -183,15 +178,7 @@ long double **Bp=NULL,**Ep=NULL;                            // Arrays for interm
 int FieldOscillation = 0;        // turn field oscillation on if 1
 long double OscillationFraction = 1e-4, OscillationFrequency = 1;    // Frequency in Hz
 
-// coil data for Forbes method
-long double rFo, phiFo, zFo, aFo,  bFo,  R_0Fo,  J_0Fo, zoffsetFo;
-int sign1, sign2;
-long double C1a = 0.02, C1b=0.015, C1R_0 = 0.515, C1J_0=3e8, C1zoffset = 0;
-long double aF[100], bF[100], R_0[100], zoffset[100], J_0[100];
-int CoilNr=0;   // number of coils read in
-
 // blank variables
-long int blankint;
 long double time_temp;
 
 // define racetrack current bars
@@ -237,53 +224,7 @@ int main(int argc, char **argv){
 	RoundBottomCornerCenterr=FillChannelrmin-RoundBottomCornerradius;
 	RoundBottomCornerCenterz=StorVolzmin-RoundBottomCornerradius;	
 	// END compute values for RoundBottomCorner
-	
-	
-	// current bar test
-	// current from outside in
-	Bars_1r[1]=0.60;Bars_1phi[1]=0.0;	Bars_1z[1]=-0.15;	Bars_2r[1]=0.0;	Bars_2phi[1]=0.0;	Bars_2z[1]=-0.15;   // lower horizontal 0 deg
-	Bars_1r[2]=0.60;Bars_1phi[2]=pi/2.0;Bars_1z[2]=-0.15;	Bars_2r[2]=0.0;	Bars_2phi[2]=pi/2.0;Bars_2z[2]=-0.15; // lower horizontal 90 deg
-	Bars_1r[3]=0.60;Bars_1phi[3]=pi;	Bars_1z[3]=-0.15;	Bars_2r[3]=0.0;	Bars_2phi[3]=pi;	Bars_2z[3]=-0.15; // lower horizontal 180 deg
-	Bars_1r[4]=0.60;Bars_1phi[4]=pi*1.5;Bars_1z[4]=-0.15;	Bars_2r[4]=0.0;	Bars_2phi[4]=pi*1.5;Bars_2z[4]=-0.15; // lower horizontal 270 deg
-	// current from inside out
-	Bars_1r[5]=0.0;Bars_1phi[5]=0.0;	Bars_1z[5]=1.35;	Bars_2r[5]=0.6;	Bars_2phi[5]=0.0;	Bars_2z[5]=1.35;   // upper horizontal 0 deg
-	Bars_1r[6]=0.0;Bars_1phi[6]=pi/2.0;	Bars_1z[6]=1.35;	Bars_2r[6]=0.6;	Bars_2phi[6]=pi/2.0;Bars_2z[6]=1.35;  // upper horizontal 90 deg
-	Bars_1r[7]=0.0;Bars_1phi[7]=pi;		Bars_1z[7]=1.35;	Bars_2r[7]=0.6;	Bars_2phi[7]=pi;	Bars_2z[7]=1.35;  // upper horizontal 180 deg
-	Bars_1r[8]=0.0;Bars_1phi[8]=pi*1.5;	Bars_1z[8]=1.35;	Bars_2r[8]=0.6;	Bars_2phi[8]=pi*1.5;Bars_2z[8]=1.35;  // upper horizontal 270 deg
-	// current from high to low
-	Bars_1r[9]=0.60;Bars_1phi[9]=0;		Bars_1z[9]=1.35;	Bars_2r[9]=0.6; Bars_2phi[9]=0;		Bars_2z[9]=-0.15;  //outer current 0 deg
-	Bars_1r[10]=0.6;Bars_1phi[10]=pi/2;	Bars_1z[10]=1.35;	Bars_2r[10]=0.6;Bars_2phi[10]=pi/2;	Bars_2z[10]=-0.15; //outer current 90 deg
-	Bars_1r[11]=0.6;Bars_1phi[11]=pi;	Bars_1z[11]=1.35;	Bars_2r[11]=0.6;Bars_2phi[11]=pi;	Bars_2z[11]=-0.15; //outer current 180 deg
-	Bars_1r[12]=0.6;Bars_1phi[12]=pi*1.5;Bars_1z[12]=1.35;	Bars_2r[12]=0.6;Bars_2phi[12]=pi*1.5;Bars_2z[12]=-0.15; //outer current 270 deg
-	// current from low to high
-	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;	Bars_1z[13]=-0.15;	Bars_2r[13]=0;	Bars_2phi[13]=0.0;	Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
-  
-  /*
-	long double err, testr = 0.25, result;
-	ystart[5]=pi/2;
-	ystart[3]=-0.1;
-	//protneut=2;
-	fprintf(TESTLOG,"coord Br Bphi Bz \n");
-	for(int p=-100;p<200;p++)
-	{
-	Br=0; Bphi=0;Bz=0;dBrdr =0;dBrdphi=0;dBrdz=0;dBphidr=0;dBphidphi =0;dBphidz=0;dBzdr=0;dBzdphi=0;dBzdz=0;
-	BarRaceTrack(0.1, -pi/3, p/100.0, 2250);	
-	cout << "z " << p/100.0 << " (" << Br << ", " << Bphi << ", " << Bz << ")" << endl;
-	//cout << "Ableitungen" << dBrdr << " " << dBrdphi << " " << dBrdz << " " << dBphidr << " " << dBphidphi << " " << dBphidz << " " << dBzdr << " " << dBzdphi << " " << dBzdz << endl;
-	fprintf(TESTLOG,"%.17LG %.17LG %.17LG %.17LG\n",(long double) p/100.0, Br,Bphi,Bz);	
-	
-		//result = dfridr(LowHor0_r, 0.25, 0.01, &err);
-	}
-	
-	cout << "All B (" << Br << ", " << Bphi << ", " << Bz << ")" << endl;
-	cout << "Componentwise B (" << BarRaceTrack_Br(0.2, pi/5, 0.2, 2250) << ", " << BarRaceTrack_Bphi(0.2, pi/5, 0.2, 2250) << ", " << BarRaceTrack_Bz(0.2, pi/5, 0.2, 2250) << ")"<< endl;
-	cout << "Ableitungen" << dBrdr << " " << dBrdphi << " " << dBrdz << " " << dBphidr << " " << dBphidphi << " " << dBphidz << " " << dBzdr << " " << dBzdphi << " " << dBzdz << endl;
-	// cin >> blankint;
-	
-	//return 0;
-	// current bar test end
-	*/
-	
+		
 	// globals init end
 	
 	if(argc>3) // if user supplied 3 args (outputfilestamp, inpath, outpath)
@@ -321,6 +262,9 @@ int main(int argc, char **argv){
 	ConfigInit();
 	OpenFiles(argc, argv);	// Open .in and .out files and write headers
 	
+	if (newreflection)
+		LoadGeometry();	// read STL-files		
+	
 	//printf("\nMonteCarlo: %i\n MonteCarloAnzahl %i \n", MonteCarlo, MonteCarloAnzahl);
 	
 	// allocate vectors and matrizes for BruteForce only if necessary
@@ -344,7 +288,7 @@ int main(int argc, char **argv){
 	}
 	
 	//printconfig();
-		
+	
 	if (bfeldwahl != 1){
 		PrepareBField();	// read fieldval.tab or coils.cond
 	}
@@ -629,11 +573,31 @@ void OpenFiles(int argc, char **argv){
 		path = inpath + "/start.in";
 		FILE *STARTIN = fopen (path.c_str(),mode_r);
 		if (STARTIN == NULL) exit(-1);        // Fehlerbehandlung
+		char msg[500];
 		fgets(msg,500,STARTIN);
 	}
 }
 
 void PrepareBField(){
+	// current bar test
+	// current from outside in
+	Bars_1r[1]=0.60;Bars_1phi[1]=0.0;	Bars_1z[1]=-0.15;	Bars_2r[1]=0.0;	Bars_2phi[1]=0.0;	Bars_2z[1]=-0.15;   // lower horizontal 0 deg
+	Bars_1r[2]=0.60;Bars_1phi[2]=pi/2.0;Bars_1z[2]=-0.15;	Bars_2r[2]=0.0;	Bars_2phi[2]=pi/2.0;Bars_2z[2]=-0.15; // lower horizontal 90 deg
+	Bars_1r[3]=0.60;Bars_1phi[3]=pi;	Bars_1z[3]=-0.15;	Bars_2r[3]=0.0;	Bars_2phi[3]=pi;	Bars_2z[3]=-0.15; // lower horizontal 180 deg
+	Bars_1r[4]=0.60;Bars_1phi[4]=pi*1.5;Bars_1z[4]=-0.15;	Bars_2r[4]=0.0;	Bars_2phi[4]=pi*1.5;Bars_2z[4]=-0.15; // lower horizontal 270 deg
+	// current from inside out
+	Bars_1r[5]=0.0;Bars_1phi[5]=0.0;	Bars_1z[5]=1.35;	Bars_2r[5]=0.6;	Bars_2phi[5]=0.0;	Bars_2z[5]=1.35;   // upper horizontal 0 deg
+	Bars_1r[6]=0.0;Bars_1phi[6]=pi/2.0;	Bars_1z[6]=1.35;	Bars_2r[6]=0.6;	Bars_2phi[6]=pi/2.0;Bars_2z[6]=1.35;  // upper horizontal 90 deg
+	Bars_1r[7]=0.0;Bars_1phi[7]=pi;		Bars_1z[7]=1.35;	Bars_2r[7]=0.6;	Bars_2phi[7]=pi;	Bars_2z[7]=1.35;  // upper horizontal 180 deg
+	Bars_1r[8]=0.0;Bars_1phi[8]=pi*1.5;	Bars_1z[8]=1.35;	Bars_2r[8]=0.6;	Bars_2phi[8]=pi*1.5;Bars_2z[8]=1.35;  // upper horizontal 270 deg
+	// current from high to low
+	Bars_1r[9]=0.60;Bars_1phi[9]=0;		Bars_1z[9]=1.35;	Bars_2r[9]=0.6; Bars_2phi[9]=0;		Bars_2z[9]=-0.15;  //outer current 0 deg
+	Bars_1r[10]=0.6;Bars_1phi[10]=pi/2;	Bars_1z[10]=1.35;	Bars_2r[10]=0.6;Bars_2phi[10]=pi/2;	Bars_2z[10]=-0.15; //outer current 90 deg
+	Bars_1r[11]=0.6;Bars_1phi[11]=pi;	Bars_1z[11]=1.35;	Bars_2r[11]=0.6;Bars_2phi[11]=pi;	Bars_2z[11]=-0.15; //outer current 180 deg
+	Bars_1r[12]=0.6;Bars_1phi[12]=pi*1.5;Bars_1z[12]=1.35;	Bars_2r[12]=0.6;Bars_2phi[12]=pi*1.5;Bars_2z[12]=-0.15; //outer current 270 deg
+	// current from low to high
+	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;	Bars_1z[13]=-0.15;	Bars_2r[13]=0;	Bars_2phi[13]=0.0;	Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
+  
 	if ((bfeldwahl == 0)||(bfeldwahl == 2))
 	{
         printf("\nPreparing the electromagnetic fields... \n");
@@ -672,7 +636,6 @@ void PrepareBField(){
 		printf("\n \n Test of integration\n");
 		//	long double TestInt;
 		BFeldSkal=1.0;
-		sign1 = 1, sign2 = 1;
 		for (int a = 0;a<1;a++)
 		{
 		
@@ -689,7 +652,7 @@ void PrepareBField(){
 }
 
 void IntegrateParticle(){
-	int schritte=0,iii=0, perc=0;   // ?? , ??, percentage of particle done counter
+	int perc=0;   // percentage of particle done counter
 	unsigned short int DetHit=0;
 		// reset some values for new particle
 	stopall=0;
@@ -748,7 +711,8 @@ void IntegrateParticle(){
 	
 	// start parameters from a file with format of end.out file
 	if (MonteCarlo==2)
-	{			
+	{
+		char msg[250];		
 		do
 		{
 			fgets(msg,250,STARTIN);
@@ -870,9 +834,9 @@ void IntegrateParticle(){
 	
 	if(protneut != BF_ONLY)
 	{
-		projz= cosl(conv*gammaa);  // projection of velocity on z-axis
+		long double projz= cosl(conv*gammaa);  // projection of velocity on z-axis
 		vz_n= v_n*projz;						// multiplied by the velocity
-		vtemp= v_n*sinl(conv*gammaa);  // projection of velocity on x-y plane
+		long double vtemp= v_n*sinl(conv*gammaa);  // projection of velocity on x-y plane
 		vr_n=  vtemp*cosl(conv*(alpha-phi_n));  // 
 		vphi_n=vtemp*sinl(conv*(alpha-phi_n));
 		ystart[1]= r_n; ystart[2]= vr_n;           // fill array for ODEint integrator
@@ -926,9 +890,6 @@ void IntegrateParticle(){
 		printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
 		fprintf(LOGSCR,"r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
 
-		schritte = 0;   // zhlt die integrationsschritte mit
-		
-
 		//-----------------------------------------------------
 		// Schleife fr ein Teilchen, bis die Zeit aus ist oder das Teilchen entkommt
 		long double timetemp = 0;                                    // temporre Variable, Zeit wann letzter Schritt in outs geschrieben wurde
@@ -946,7 +907,6 @@ void IntegrateParticle(){
 				delx_n = delx;
 
 			x1= x2; x2=x1+delx_n;                 // determine start and endtime of step
-			schritte++;
 														
 			// put phi (ystart[5]) back to [-2Pi,2Pi]
 			if(ystart[5]>(2.0*pi))
@@ -954,12 +914,41 @@ void IntegrateParticle(){
 			if(ystart[5]<(-2.0*pi))
 				ystart[5]=ystart[5]+2*pi;
 			
-			//mytime1 = clock();
-			//###################### Integrationsroutine #####################
-			if (runge==2)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,rkqs);           // runge kutta step
-			if (runge==1)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,bsstep);        // bulirsch stoer step
-														// (ystart: input vector | nvar: number of variables | x1, x2: start and end time | eps: precision to be achieved | h1: guess for first stepsize | hmin: mininum stepsize | nok,nbad: number of good and bad steps taken | derivs: function for differential equation to be integrated, rkqs, bsstep: integrator to be used (runge kutta, bulirsch stoer) )
-			//###################### Integrationsroutine #####################
+			long double xtemp = x1, *ytemp = NULL, trajlengthtemp = trajlengthsum;
+			int kounttemp = kount;
+			ytemp = dvector(1,nvar);
+			long double vladtemp = vlad, fractemp = frac, vladtotaltemp = vladtotal, vladmaxtemp = vladmax, thumbmaxtemp = thumbmax;
+			for (int i = 1; i <= nvar; i++) ytemp[i] = ystart[i];
+			
+			do{
+				//###################### Integrationsroutine #####################
+				if (runge==2)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,rkqs);           // runge kutta step
+				if (runge==1)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,bsstep);        // bulirsch stoer step
+				// (ystart: input vector | nvar: number of variables | x1, x2: start and end time | eps: precision to be achieved | h1: guess for first stepsize | hmin: mininum stepsize | nok,nbad: number of good and bad steps taken | derivs: function for differential equation to be integrated, rkqs, bsstep: integrator to be used (runge kutta, bulirsch stoer) )
+				//###################### Integrationsroutine #####################
+				
+				if (!newreflection) break;
+				
+				// check if reflection is necessary and if it was successfull
+				short ret = ReflectCheck(xtemp,ytemp,x2,ystart);
+				if (ret == 0)	// if not necessary
+					break;
+				else{ 	// else if successful: drop last integration step
+						// if failed: undo last integration step and repeat with smaller stepsize
+					x1 = xtemp;
+					for (int j = 1; j <= nvar; j++) ystart[j] = ytemp[j];
+					trajlengthsum = trajlengthtemp;
+					kount = kounttemp;
+					vlad = vladtemp;
+					frac = fractemp;
+					vladtotal = vladtotaltemp;
+					vladmax = vladmaxtemp;
+					thumbmax = thumbmaxtemp;
+					if (ret == 1)
+						break;
+				}
+			}while(true);
+			
 			nintcalls++;
 			ntotalsteps=ntotalsteps+kount;
 			
@@ -1204,7 +1193,7 @@ void IntegrateParticle(){
 		for (Energie = 0; Energie <= EnergieE; Energie++){
 			EnTest = Energie*1.0e-9 - M*gravconst*z_n + mu_n * Bws;
 			if (EnTest >= 0){
-				iii = (int) Energie;
+				int iii = (int) Energie;
 				// add the volume segment to the volume that is accessible to a neutron with energy Energie
 				VolumeB[iii] = VolumeB[iii] + pi * dz_n * ((r_n+0.5*dr_n)*(r_n+0.5*dr_n) - (r_n-0.5*dr_n)*(r_n-0.5*dr_n));
 			}

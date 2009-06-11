@@ -506,9 +506,8 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 	dydx=dvector(1,nvar);
 	
 	// +++++++++++++++++++++++++++++++
-	long double xtemp, *ytemp = NULL, hnexttemp;	// variables used to save previous point
-	ytemp=dvector(1,nvar);
-	// +++++++++++++++++++++++++++++++
+	long double rtemp, ztemp, phitemp;	// variables used to save previous point
+	// -------------------------------
 	
 	x=x1;
 	h=(x2 > x1) ? fabsl(h1) : -fabsl(h1);
@@ -522,15 +521,16 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 		
 		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		// only check for reflections of absorbtions when outside bulk of PENeLOPE storage volume
-		if((y[3]>detz-wanddicke)||(y[1]<=StorVolrmin+wanddicke)||(y[1]>=StorVolrmax-wanddicke)||(y[3]<=StorVolzmin+wanddicke)||(y[3]>=StorVolzmax)  )
-		{
-			blankint = GeomCheck(y,y[1],y[2],y[3],y[4],y[5],y[6],x);
-			if(stopall)
-				return;
-			//cout << "GEOMCHECK t: " << x <<  " r: " << y[1] << " z: " << y[3] << endl;
-			//cin >> blankint;
-		}
-		
+		if (!newreflection){
+			if((y[3]>detz-wanddicke)||(y[1]<=StorVolrmin+wanddicke)||(y[1]>=StorVolrmax-wanddicke)||(y[3]<=StorVolzmin+wanddicke)||(y[3]>=StorVolzmax)  )
+			{
+				GeomCheck(y,y[1],y[2],y[3],y[4],y[5],y[6],x);
+				if(stopall)
+					return;
+				//cout << "GEOMCHECK t: " << x <<  " r: " << y[1] << " z: " << y[3] << endl;
+				//cin >> blankint;
+			}
+		}	
 		// spin flip properties according to Vladimirsky and thumbrule
 		if (spinflipcheck == 2){   
 			// y[6]: phidot
@@ -547,11 +547,10 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 				thumbmax=log10l(frac);
 		}
 		
-		// save point before next integration step for trajectory length calculation and reflection checking
-		xtemp = x;
-		for (i=1;i<=nvar;i++) 
-			ytemp[i]=y[i];
-		hnexttemp = hnext;
+		// save point before next integration step for trajectory length calculation
+		rtemp = y[1];
+		ztemp = y[3];
+		phitemp = y[5];
 		//--------------------------------------------------------------------------
 		
 		(*derivs)(x,y,dydx);
@@ -594,26 +593,14 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 		 (*integrator)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta or bulirsch stoer step
 		
 		//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-		// check for reflection and invert velocity in ytemp when necessary
-		/*if (ReflectCheck(xtemp,ytemp,x,y)){
-			if (stopall == 1) return;
-			x = xtemp;
-			for (i=1;i<=nvar;i++) // if reflected drop last integration step and resume from previous point with inversed velocity
-				y[i] = ytemp[i];
-			hnext = hnexttemp;
-			continue;
-		}
-		*/
 		// Trajectory length calculation
-		trajlengthsum += sqrtl(powl(ytemp[1]-y[1],2)+powl(ytemp[3]-y[3],2)+powl(ytemp[5]*ytemp[1]-y[5]*y[1],2));
+		trajlengthsum += sqrtl(powl(rtemp-y[1],2)+powl(ztemp-y[3],2)+powl(phitemp*rtemp-y[5]*y[1],2));
 		//--------------------------------------------------------------------
 		
 		if (hdid == h) 
 			++(*nok); 
 		else 
 			++(*nbad);
-		if (stopall == 1) 
-			return;
 	
 		if ((x-x2)*(x2-x1) >= 0.0){	//Are we done?
 			for (i=1;i<=nvar;i++)   // save final step in ystart
@@ -649,7 +636,6 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 			free_vector(dydx,1,nvar);
 			free_vector(y,1,nvar);
 			free_vector(yscal,1,nvar);
-			free_vector(ytemp,1,nvar);
 			return;
 		}
 		
