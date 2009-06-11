@@ -19,7 +19,8 @@ void ReadVector(ifstream &f, long double v[3]){
 inline bool PointsEqual(long double p1[3], long double p2[3]){
     //return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2];
 	long double d1 = p1[0] - p2[0], d2 = p1[1] - p2[1], d3 = p1[2] - p2[2];
-    if (d1*d1 + d2*d2 + d3*d3 < TOLERANCE*TOLERANCE){
+	if (abs(d1) < TOLERANCE && abs(d2) < TOLERANCE && abs(d3) < TOLERANCE){
+    //if (d1*d1 + d2*d2 + d3*d3 < TOLERANCE*TOLERANCE){
 //        memcpy(p1,p2,3*sizeof(long double));
         return true;
     }
@@ -269,12 +270,12 @@ void KDTree::KDNode::Split(){
 }
 
 // find neighbours of triangle
-void KDTree::KDNode::FindNeighbours(Triangle* tri, const short vertexnumber){
+void KDTree::KDNode::FindNeighbour(Triangle* tri, const short vertexnumber){
     // go down to smallest node containing the triangle vertex
     if (hichild && tri->vertex[vertexnumber][splitdir] >= hichild->lo[splitdir])
-        hichild->FindNeighbours(tri,vertexnumber);
+        hichild->FindNeighbour(tri,vertexnumber);
     if (lochild && tri->vertex[vertexnumber][splitdir] <= lochild->hi[splitdir])
-        lochild->FindNeighbours(tri,vertexnumber);
+        lochild->FindNeighbour(tri,vertexnumber);
     else if (!hichild && !lochild){ // when reached smallest node, find neighbours
         for (list<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){ // search triangles sharing this vertex
             if (tri == (*i))
@@ -363,7 +364,7 @@ KDTree::~KDTree(){
 }
 
 // read triangles from STL-file
-void KDTree::ReadFile(const char *filename, const int surfacetype, const long double ValidVolume[3]){
+void KDTree::ReadFile(const char *filename, const int surfacetype){
     ifstream f(filename, fstream::binary);
     if (f.is_open()){
         unsigned i,j;
@@ -396,25 +397,40 @@ void KDTree::ReadFile(const char *filename, const int surfacetype, const long do
 }
 
 // build search tree
-void KDTree::Init(){
-    printf("Edges are (%f %f %f),(%f %f %f)\n",(float)lo[0],(float)lo[1],(float)lo[2],(float)hi[0],(float)hi[1],(float)hi[2]);  // print the size of the root node
+void KDTree::Init(const long double PointInVolume[3]){
+    printf("Edges are (%LG %LG %LG),(%LG %LG %LG)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
 
     root = new KDNode(lo,hi,0,2,NULL);  // create root node
 
-	printf("Building tree...\n");
+	cout << "Building tree...\n";
     for (list<Triangle*>::iterator it = alltris.begin(); it != alltris.end(); it++)
         root->AddTriangle(*it); // add triangles to root node
     root->Split();  // split root node
 
-	printf("Finding neighbours...\n");
-    for (list<Triangle*>::iterator it = alltris.begin(); it != alltris.end(); it++){    // find neighbours for every triangle
-        for (unsigned i = 0; i < 3; i++){   // iterate vertices
-            if (!(*it)->neighbours[i])
-                root->FindNeighbours(*it,i);
-            if (!(*it)->neighbours[i]) // if a triangle has less than three neighbours the model is broken
-                printf("%p missing neighbour %u (%f %f %f),(%f %f %f)!\n",*it,i,(float)(*it)->vertex[i][0],(float)(*it)->vertex[i][1],(float)(*it)->vertex[i][2],
-                                                                                (float)(*it)->vertex[(i+1)%3][0],(float)(*it)->vertex[(i+1)%3][1],(float)(*it)->vertex[(i+1)%3][2]);
+    if (PointInVolume){
+		cout << "Finding neighbours...\n";
+	    for (list<Triangle*>::iterator it = alltris.begin(); it != alltris.end(); it++){    // find neighbours for every triangle
+	        for (unsigned i = 0; i < 3; i++){   // iterate vertices
+	            if (!(*it)->neighbours[i])
+	                root->FindNeighbour(*it,i);
+	            if (!(*it)->neighbours[i]) // if a triangle has less than three neighbours the model is broken
+	                printf("%p missing neighbour %u (%LG %LG %LG),(%LG %LG %LG)!\n",*it,i,(*it)->vertex[i][0],(*it)->vertex[i][1],(*it)->vertex[i][2],
+	                                                                                (*it)->vertex[(i+1)%3][0],(*it)->vertex[(i+1)%3][1],(*it)->vertex[(i+1)%3][2]);
+	        }
+	    }
+
+		cout << "Defining control volume...\n";
+        long double p2[3] = {PointInVolume[0],PointInVolume[1],lo[2]};
+        long double s = INFINITY;
+        Triangle *tri = NULL;
+        if (root->Collision(PointInVolume,p2,s,lastnode,tri)){
+            if (tri->normal[2] < 0)
+                tri->SetNormal(-1);
+            else
+                tri->SetNormal(1);
         }
+        else
+            cout << "Controlpoint not inside closed surface!\n";
     }
 
     printf("Wrote %u triangles\n",root->facecount());   // print number of triangles contained in tree
@@ -433,6 +449,13 @@ bool KDTree::Collision(const long double p1[3], const long double p2[3], long do
         return true;
     }
     return false;
+}
+
+bool KDTree::PointInVolume(const long double p[3]){
+    long double p2[3] = {p[0],p[1],lo[2]};
+    long double s = INFINITY;
+    Triangle *tri = NULL;
+    return (root->Collision(p,p2,s,lastnode,tri) && ((tri->normal[2] < 0) == (tri->normalIO < 0)));
 }
 
 bool KDTree::PointInBox(const long double p[3]){   // test if point is in root node

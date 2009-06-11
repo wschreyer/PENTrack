@@ -9,6 +9,13 @@ TF1 *ForbesBrZ;
 TF1 *ForbesBzR;
 TF1 *ForbesBzZ;
 
+// coil data for Forbes method
+long double rFo, phiFo, zFo, aFo,  bFo,  R_0Fo,  J_0Fo, zoffsetFo;
+int sign1 = 1, sign2 = 1;
+long double C1a = 0.02, C1b=0.015, C1R_0 = 0.515, C1J_0=3e8, C1zoffset = 0;
+long double aF[100], bF[100], R_0[100], zoffset[100], J_0[100];
+int CoilNr=0;   // number of coils read in
+
 // Forbes: "Rapid computation of static fields produced by thick circular solenoids"
 
 // parameter array for Coils:
