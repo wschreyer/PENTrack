@@ -53,7 +53,7 @@ int Absorber(long double *y,long double r,long double vr,long double z,long doub
 			{
 				long double Er = 1.0e9*0.5*m_n*(powl(vr,2));	// in  neV			
 				prob = mt_get_double(v_mt_state);
-				AbsProb = Transmission(Er,Mf,Pf);
+				long double AbsProb = Transmission(Er,Mf,Pf);
 				cout << "r: " << r << " z: " << z << endl; 
 				cout << "vr: " << vr << " vz: " << vz << endl; 
 				if((prob < AbsProb)&&(NoAbsorption==0))
@@ -101,7 +101,7 @@ int ReflexTop(long double *y,long double r,long double vr,long double z,long dou
    long double winksenkr;  // Winkel senkrecht dazu, 0 in Ebene, sin verteilt, Lambert law around normal
    long double vabs; 
 	
-	diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
+	long double diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
 	//printf("\nDIFFUPROB %.12LG\n",diffuprob);
 	//fprintf(LOGSCR,"\nDIFFUPROB %.12LG\n",diffuprob);
 	
@@ -155,7 +155,7 @@ if((vz<0)) // only reflect particles moving down
    long double winksenkr;  // Winkel senkrecht dazu, 0 in Ebene, sin verteilt, Lambert law around normal
    long double vabs; 
 	
-	diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
+	long double diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
 	//printf("\nDIFFUPROB %.12LG\n",diffuprob);
 	//fprintf(LOGSCR,"\nDIFFUPROB %.12LG\n",diffuprob);
 	
@@ -210,7 +210,7 @@ int ReflexOut(long double *y,long double r,long double vr,long double z,long dou
    long double winksenkr;  // Winkel senkrecht dazu, 0 in Ebene, sin verteilt, Lambert law around normal
    long double vabs; 
 	
-	diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
+	long double diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
 	//printf("\nDIFFUPROB %.12LG\n",diffuprob);
 	//fprintf(LOGSCR,"\nDIFFUPROB %.12LG\n",diffuprob);
 	
@@ -264,7 +264,7 @@ int ReflexIn(long double *y,long double r,long double vr,long double z,long doub
    long double winksenkr;  // Winkel senkrecht dazu, 0 in Ebene, sin verteilt, Lambert law around normal
 	long double vabs; 
 	
-	diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
+	long double diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
 	//printf("\nDIFFUPROB %.12LG\n",diffuprob);
 	//fprintf(LOGSCR,"\nDIFFUPROB %.12LG\n",diffuprob);
 	
@@ -331,6 +331,7 @@ int ReflexGeneral(long double *y,long double r,long double vr,long double z,long
 		 //cin >> blankint;
 		
 	// specular reflexion
+	long double diffuprob = mt_get_double(v_mt_state); // dice the diffuse reflection probability
 	if ((diffuse == 1)||(diffuse==3)&&(diffuprob>=ProbDiffuse))
 	{
 		StatAbsorbtion(vsenkr,FermiReal,FermiImag);
