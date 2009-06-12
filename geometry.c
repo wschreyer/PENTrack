@@ -21,6 +21,8 @@ void LoadGeometry(){
 	geometry.ReadFile(STLfile.c_str(),SURFACE_WALL);
 	STLfile = inpath + "/absorber.STL";
 	geometry.ReadFile(STLfile.c_str(),SURFACE_ABSORBER);
+	STLfile = inpath + "/UCNdet.STL";
+	geometry.ReadFile(STLfile.c_str(),SURFACE_UCNDET);
 	STLfile = inpath + "/protdet.STL";
 	geometry.ReadFile(STLfile.c_str(),SURFACE_PROTDET);
 	//...	
@@ -114,6 +116,10 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 					fprintf(LOGSCR,"Absorber hit but no absorption!\nvr = %LG m/s\nEr = %LG neV\n", vnormal,Enormal*1e9);
 				}			
 				break;
+			case SURFACE_UCNDET: // particle hit the UCN detector, 100% efficiency is assumed
+				stopall = 1;
+				kennz = 12;
+				return 1;
 			case SURFACE_PROTDET: // particle hit the proton detector
 				if(!reflekt) // no reflection (e.g. for protons/electrons)
 				{
