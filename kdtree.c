@@ -8,27 +8,23 @@
 
 // Read vector from STL-file
 // STL format description: http://www.ennex.com/~fabbers/StL.asp
-void ReadVector(ifstream &f, long double v[3]){
-    float w;
+void ReadVector(ifstream &f, float v[3]){
     for (short i = 0; i < 3; i++){
-        f.read((char*)&w,4);
-        v[i] = (long double)w;
+        f.read((char*)&v[i],4);
     }
 }
 
-inline bool PointsEqual(long double p1[3], long double p2[3]){
+inline bool PointsEqual(float p1[3], float p2[3]){
     //return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2];
-	long double d1 = p1[0] - p2[0], d2 = p1[1] - p2[1], d3 = p1[2] - p2[2];
-	if (abs(d1) < TOLERANCE && abs(d2) < TOLERANCE && abs(d3) < TOLERANCE){
-    //if (d1*d1 + d2*d2 + d3*d3 < TOLERANCE*TOLERANCE){
-//        memcpy(p1,p2,3*sizeof(long double));
+	float d1 = p1[0] - p2[0], d2 = p1[1] - p2[1], d3 = p1[2] - p2[2];
+	if (abs(d1) < TOLERANCE && abs(d2) < TOLERANCE && abs(d3) < TOLERANCE)
+    //if (d1*d1 + d2*d2 + d3*d3 < TOLERANCE*TOLERANCE)
         return true;
-    }
     return false;
 }
 
 //Dot-Product of two vectors
-inline long double DotProduct(const long double x[3], const long double y[3]){
+template <typename coord1, typename coord2> inline long double DotProduct(const coord1 x[3], const coord2 y[3]){
     return x[0]*y[0] + x[1]*y[1] + x[2]*y[2];
 }
 
@@ -108,9 +104,11 @@ void KDTree::Triangle::SetNormal(const short anormalIO){
 // kd-tree node class definition
 
 // constructor
-KDTree::KDNode::KDNode(const long double boxlo[3], const long double boxhi[3], const int adepth, const short asplitdir, KDNode *aparent){
-    memcpy(lo,boxlo,3*sizeof(long double));   // copy box coordinates into instance variables
-    memcpy(hi,boxhi,3*sizeof(long double));
+KDTree::KDNode::KDNode(const float boxlo[3], const float boxhi[3], const int adepth, const short asplitdir, KDNode *aparent){
+    for (int i = 0; i < 3; i++){
+        lo[i] = boxlo[i];   // copy box coordinates into instance variables
+        hi[i] = boxhi[i];
+    }
     depth = adepth;         // set instance variables according to parameters
     splitdir = asplitdir;
     parent = aparent;
@@ -126,14 +124,14 @@ KDTree::KDNode::~KDNode(){
     if (lochild) delete lochild;
 }
 
-inline bool KDTree::KDNode::PointInBox(const long double p[3]){   // test if point is in this tree
+template <typename coord> inline bool KDTree::KDNode::PointInBox(const coord p[3]){   // test if point is in this tree
     return ((p[0] <= hi[0]) && (p[0] >= lo[0]) &&
 			(p[1] <= hi[1]) && (p[1] >= lo[1]) &&
 			(p[2] <= hi[2]) && (p[2] >= lo[2]));
 };
 
 // test if a segment goes through the box
-bool KDTree::KDNode::SegmentInBox(const long double p1[3], const long double p2[3]){
+template <typename coord> bool KDTree::KDNode::SegmentInBox(const coord p1[3], const coord p2[3]){
     if (PointInBox(p1) || PointInBox(p2))   // one of the segment end points in box?
        return true;
     long double s, a, b, w;
@@ -240,10 +238,12 @@ void KDTree::KDNode::AddTriangle(Triangle *tri){
 // split node into two new leaves
 void KDTree::KDNode::Split(){
     if ((depth < MAX_DEPTH) && (tricount > MAX_FACECOUNT)){ // only split if node not too deep and contains enough triangles
-        long double newlo[3], newhi[3];
+        float newlo[3], newhi[3];
         int newdepth = depth + 1, newsplitdir = (splitdir+1)%3;
-        memcpy(newlo,lo,3*sizeof(long double));
-        memcpy(newhi,hi,3*sizeof(long double));
+        for (short i = 0; i < 3; i++){
+            newlo[i] = lo[i];
+            newhi[i] = hi[i];
+        }
 
         newlo[splitdir] += (hi[splitdir] - lo[splitdir])/2 - TOLERANCE; // split this node in half in splitdirection (with small overlap)
         hichild = new KDNode(newlo,newhi,newdepth,newsplitdir,this);    // create new leaves
@@ -398,7 +398,7 @@ void KDTree::ReadFile(const char *filename, const int surfacetype){
 
 // build search tree
 void KDTree::Init(const long double PointInVolume[3]){
-    printf("Edges are (%LG %LG %LG),(%LG %LG %LG)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
+    printf("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
 
     root = new KDNode(lo,hi,0,2,NULL);  // create root node
 
@@ -414,7 +414,7 @@ void KDTree::Init(const long double PointInVolume[3]){
 	            if (!(*it)->neighbours[i])
 	                root->FindNeighbour(*it,i);
 	            if (!(*it)->neighbours[i]) // if a triangle has less than three neighbours the model is broken
-	                printf("%p missing neighbour %u (%LG %LG %LG),(%LG %LG %LG)!\n",*it,i,(*it)->vertex[i][0],(*it)->vertex[i][1],(*it)->vertex[i][2],
+	                printf("%p missing neighbour %u (%f %f %f),(%f %f %f)!\n",*it,i,(*it)->vertex[i][0],(*it)->vertex[i][1],(*it)->vertex[i][2],
 	                                                                                (*it)->vertex[(i+1)%3][0],(*it)->vertex[(i+1)%3][1],(*it)->vertex[(i+1)%3][2]);
 	        }
 	    }
