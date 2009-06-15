@@ -186,13 +186,49 @@ long double time_temp;
 long double Bars_1r[14],Bars_1phi[14],Bars_1z[14],Bars_2r[14],Bars_2phi[14],Bars_2z[14];  // lower horizontal 0 deg
 
 
-
-
-
 mt_state_t *v_mt_state = NULL; //mersenne twister state var
+
+
+/*
+ * handler:		catch_alarm(int sig)
+ * 				terminates a program if a specific signal occurs
+ * type:		void
+ * var sig:		signalnumber which called the handler; to get the right number
+ * 				for corresponding signals have a look <man signal.h>.
+ * 				e.g: <SIGFPE> is connected to number 8
+ * return: 		noreturn
+ */
+void catch_alarm (int sig){
+	printf("Program was terminated, because Signal %i occured", sig);
+	exit(1);
+}
 
 // uebergabe: jobnumber inpath outpath                 paths without last slash
 int main(int argc, char **argv){
+	//Initialize signal-analizing
+	signal (SIGUSR1, catch_alarm);
+	signal (SIGUSR2, catch_alarm);
+	signal (SIGXCPU, catch_alarm);   
+	
+	/*	
+	 *	function:	int file_rights(char path)
+	 *	It checks the rights of a file to be sure one is allowed to
+	 *	write on it. If it fails, the program will be terminated.
+	 *
+	 *	ATTENTION: The whole path is required
+	 */
+	int file_rights(char path){
+		
+		struct stat attribut;
+		
+		stat(path,&attribut);
+		//if(!(attribut.st_mode & S_IWUSR){ //Windows-Bedingung
+		if(!(attribut.st_mode & S_IWUSR) || !(attribut.st_mode & S_IWGRP) || !(attribut.st_mode & S_IWOTH)){ //Linux-Bedingung
+			printf("Die Datei <%s> besitzt keine Schreibrechte", path);
+			exit(1);
+		}
+	}
+	
 	time_t mytime;
 	tm *monthday;
 	timeval daysec;
