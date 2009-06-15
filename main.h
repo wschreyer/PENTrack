@@ -12,6 +12,8 @@
 #include <string.h>
 #include <iostream.h>
 #include <sstream>
+#include <signal.h>
+#include <sys/stat.h>
 
 // project includes
 #include "mersenne/mt.h" // mersenne twister pseudo random number generator (rng) used for MonteCarlo alg.
