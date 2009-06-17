@@ -713,9 +713,12 @@ void IntegrateParticle(){
 			MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer fr Teilchen festlegen
 			if(noparticle) break;
 			long double ytemp[7]={r_n,0,z_n,0,phi_n,0};
-			BadParticle = GeomCheck(ytemp,r_n,0,z_n,0,phi_n,0,0.0);
-			if (BadParticle==1)
-				cout << "Not within boundaries at start... redicing...!" << endl;
+			if (!newreflection){
+				BadParticle = GeomCheck(ytemp,r_n,0,z_n,0,phi_n,0,0.0);
+				if (BadParticle==1)
+					cout << "Not within boundaries at start... redicing...!" << endl;
+			}
+			else BadParticle = 0;
 		}
 		x2=xstart;    // set time starting value										
 	}	
