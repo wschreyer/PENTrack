@@ -118,7 +118,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 				break;
 			case SURFACE_UCNDET: // particle hit the UCN detector, 100% efficiency is assumed
 				stopall = 1;
-				kennz = 12;
+				kennz = KENNZAHL_UCN_DETECTOR;
 				return 1;
 			case SURFACE_PROTDET: // particle hit the proton detector
 				if(!reflekt) // no reflection (e.g. for protons/electrons)
