@@ -11,6 +11,7 @@
 #include "TF1.h"
 #include "TF2.h"
 
+extern int ReadMagnets(void);
 
 extern long double BForbes(long double r, long double phi, long double z, long double t);
 extern long double trapzd(long double (*func)(long double), long double a, long double b, int n);
