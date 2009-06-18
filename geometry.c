@@ -14,8 +14,9 @@ return 0.2e1 * sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf 
 #define SURFACE_UCNDET 2
 #define SURFACE_PROTDET 3
 
-#define REFLECT_TOLERANCE 0.00001
+#define REFLECT_TOLERANCE 0.00001 // if the integration point is farther from the reflection point, the integration will be repeated
 
+// load STL-files and create kd-trees
 void LoadGeometry(){
 	string STLfile = inpath + "/heliumtankMay09.STL";
 	geometry.ReadFile(STLfile.c_str(),SURFACE_WALL);
@@ -34,6 +35,7 @@ void LoadGeometry(){
 	sourcevolume.Init(ControlPoint);	
 }
 
+// return a random point in sourcevolume
 void RandomPointInSourceVolume(long double &r, long double &phi, long double &z){
 	long double p[3];
 	do{	
@@ -56,8 +58,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	int surface;
 	if (geometry.Collision(p1,p2,s,normal_cart,surface)){ // search in the kdtree for reflection
 		
-		long double distnormal = abs((p2[0] - p1[0])*normal_cart[0] + (p2[1] - p1[1])*normal_cart[1] + (p2[2] - p1[2])*normal_cart[2]);
-		if (abs(s*distnormal) > REFLECT_TOLERANCE){ // if first point to far from surface
+		long double distnormal = abs((p2[0] - p1[0])*normal_cart[0] + (p2[1] - p1[1])*normal_cart[1] + (p2[2] - p1[2])*normal_cart[2]); // length of integration step normal to surface
+		if (abs(s*distnormal) > REFLECT_TOLERANCE){ // if point to far from surface
 			s -= REFLECT_TOLERANCE/distnormal/100; // decrease step size
 			x2 = x1 + s*(x2-x1); // write smaller integration time into x2
 			return -1; // return fail to repeat integration step
@@ -71,7 +73,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		long double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 		
-		// handle different absorption characteristics of materials
+		
+		//************ handle different absorption characteristics of materials ****************
 		long double prob = mt_get_double(v_mt_state);	
 		long double MaterialDiffProb = DiffProb; // use DiffProb as default	
 		switch (surface){
@@ -145,7 +148,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 				MaterialDiffProb = 0.5; // reflection on CsI, rough -> probability of diffuse reflection 0.5				
 		}
 		
-		// specular reflexion
+		
+		//*************** specular reflexion ************
 		prob = mt_get_double(v_mt_state);
 		if ((diffuse == 1) || ((diffuse==3)&&(prob >= MaterialDiffProb)))
 		{
@@ -160,7 +164,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 			v[2] -= 2*vnormal*normal[2];
 		}
 		
-		// diffuse reflection
+		//************** diffuse reflection ************
 		else if ((diffuse == 2) || ((diffuse == 3)&&(prob < MaterialDiffProb)))
 		{
 			long double winkeben = 0.0 + (mt_get_double(v_mt_state)) * (2 * pi); // generate random reflection angles

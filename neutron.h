@@ -10,5 +10,4 @@ extern long double CalcCritAngle(long double r_n, long double phi, long double z
 extern long double CalcIncidentAngle(long double r, long double phi_n, long double z, long double vr, long double vphi, long double vz, long double Br0, long double Bphi0, long double Bz0, long double Bemax);
 extern void SwitchField(long double t);
 extern void PrintConfig(void);
-extern int ReadMagnets(void);
 extern long double AbsValueCart(long double x, long double y, long double z);

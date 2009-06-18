@@ -36,7 +36,6 @@ void ConfigInit(void){
 	ausgabewunschsave = 2;
 	MonteCarlo = 1;
 	MonteCarloAnzahl = 1;
-	nodelay = 1;
 	M = m_n;
 	mu_n = mu_nSI / ele_e * -1;
 	mumB = mu_n/M;
@@ -592,9 +591,9 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	if(tauSF < -9e99) tauSF = -9e99; // "-INF"?
 	
 	// output of end values
-	fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG %LG\n",
+	fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG\n",
 	jobnumber, monthinmilliseconds, protneut, polarisation,xstart,r_n,phi_n,z_n,NeutEnergie*1.0e9,v_n,alpha,gammaa,ystart[1],phiend,ystart[3],vend,alphaend,gammaend,x2,dt,H,kennz, NSF,RodFieldMultiplicator, BFflipprob,nrefl, vladmax,vladtotal,thumbmax,
-	trajlengthsum,(H-Hstart),Hmax,AbsorberHits, BFeldSkal, EFeldSkal, lossprob, tauSF, dtau);
+	trajlengthsum,(H-Hstart),Hmax,AbsorberHits, BFeldSkal, EFeldSkal, tauSF, dtau);
 	
 	
 	fflush(ENDLOG);

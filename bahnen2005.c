@@ -32,8 +32,8 @@ long double Ibar= 2250.;                // B-field strength, current through rod
 int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 int diffuse; //diffuse reflection switch
 long double DiffProb = 0.16; // property of diffuse reflection 0.125
-unsigned short int nodelay, slit = 0, DetOpen=0; // delays for monte carlo, is there an entrance slit?
-long double lossprob = 5.0e-4, epsi= 0;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
+unsigned short int slit = 0, DetOpen=0; // is there an entrance slit?
+long double epsi= 0;   // Distance from the Wall within which Reflekt is called, probability of absorption at absorber
 
 // Fields
 long double dBrdr, dBrdz, dBrdphi=0.0, dBphidr, dBphidz, dBphidphi=0.0, dBzdr, dBzdz, dBzdphi=0.0;
@@ -181,9 +181,6 @@ long double OscillationFraction = 1e-4, OscillationFrequency = 1;    // Frequenc
 // blank variables
 long double time_temp;
 
-// define racetrack current bars
-// defined by two position vectors (SW1r,SW1phi,SW1z and SW2r,SW2phi,SW2z) lying on the straight wire 
-long double Bars_1r[14],Bars_1phi[14],Bars_1z[14],Bars_2r[14],Bars_2phi[14],Bars_2z[14];  // lower horizontal 0 deg
 
 
 mt_state_t *v_mt_state = NULL; //mersenne twister state var
@@ -203,6 +200,27 @@ void catch_alarm (int sig){
 	exit(1);
 }
 
+/*	
+ *	function:	int file_rights(char path)
+ *	It checks the rights of a file to be sure one is allowed to
+ *	write on it. If it fails, the program will be terminated.
+ *
+ *	ATTENTION: The whole path is required
+ */
+int file_rights(char *path){
+	
+	struct stat attribut;
+	
+	stat(path,&attribut);
+	//if(!(attribut.st_mode & S_IWUSR){ //Windows-Bedingung
+	if(!(attribut.st_mode & S_IWUSR) || !(attribut.st_mode & S_IWGRP) || !(attribut.st_mode & S_IWOTH)){ //Linux-Bedingung
+		printf("Die Datei <%s> besitzt keine Schreibrechte", path);
+		exit(1);
+	}
+	return 0;
+}
+
+
 // uebergabe: jobnumber inpath outpath                 paths without last slash
 int main(int argc, char **argv){
 	//Initialize signal-analizing
@@ -210,24 +228,6 @@ int main(int argc, char **argv){
 	signal (SIGUSR2, catch_alarm);
 	signal (SIGXCPU, catch_alarm);   
 	
-	/*	
-	 *	function:	int file_rights(char path)
-	 *	It checks the rights of a file to be sure one is allowed to
-	 *	write on it. If it fails, the program will be terminated.
-	 *
-	 *	ATTENTION: The whole path is required
-	 */
-	int file_rights(char path){
-		
-		struct stat attribut;
-		
-		stat(path,&attribut);
-		//if(!(attribut.st_mode & S_IWUSR){ //Windows-Bedingung
-		if(!(attribut.st_mode & S_IWUSR) || !(attribut.st_mode & S_IWGRP) || !(attribut.st_mode & S_IWOTH)){ //Linux-Bedingung
-			printf("Die Datei <%s> besitzt keine Schreibrechte", path);
-			exit(1);
-		}
-	}
 	
 	time_t mytime;
 	tm *monthday;
@@ -297,10 +297,7 @@ int main(int argc, char **argv){
 	
 	ConfigInit();
 	OpenFiles(argc, argv);	// Open .in and .out files and write headers
-	
-	if (newreflection)
-		LoadGeometry();	// read STL-files		
-	
+		
 	//printf("\nMonteCarlo: %i\n MonteCarloAnzahl %i \n", MonteCarlo, MonteCarloAnzahl);
 	
 	// allocate vectors and matrizes for BruteForce only if necessary
@@ -328,6 +325,10 @@ int main(int argc, char **argv){
 	if (bfeldwahl != 1){
 		PrepareBField();	// read fieldval.tab or coils.cond
 	}
+
+	if (newreflection)
+		LoadGeometry();	// read STL-files		
+	
 
 	Startbed(1); // read in starting values of particle
 	
@@ -614,79 +615,6 @@ void OpenFiles(int argc, char **argv){
 	}
 }
 
-void PrepareBField(){
-	// current bar test
-	// current from outside in
-	Bars_1r[1]=0.60;Bars_1phi[1]=0.0;	Bars_1z[1]=-0.15;	Bars_2r[1]=0.0;	Bars_2phi[1]=0.0;	Bars_2z[1]=-0.15;   // lower horizontal 0 deg
-	Bars_1r[2]=0.60;Bars_1phi[2]=pi/2.0;Bars_1z[2]=-0.15;	Bars_2r[2]=0.0;	Bars_2phi[2]=pi/2.0;Bars_2z[2]=-0.15; // lower horizontal 90 deg
-	Bars_1r[3]=0.60;Bars_1phi[3]=pi;	Bars_1z[3]=-0.15;	Bars_2r[3]=0.0;	Bars_2phi[3]=pi;	Bars_2z[3]=-0.15; // lower horizontal 180 deg
-	Bars_1r[4]=0.60;Bars_1phi[4]=pi*1.5;Bars_1z[4]=-0.15;	Bars_2r[4]=0.0;	Bars_2phi[4]=pi*1.5;Bars_2z[4]=-0.15; // lower horizontal 270 deg
-	// current from inside out
-	Bars_1r[5]=0.0;Bars_1phi[5]=0.0;	Bars_1z[5]=1.35;	Bars_2r[5]=0.6;	Bars_2phi[5]=0.0;	Bars_2z[5]=1.35;   // upper horizontal 0 deg
-	Bars_1r[6]=0.0;Bars_1phi[6]=pi/2.0;	Bars_1z[6]=1.35;	Bars_2r[6]=0.6;	Bars_2phi[6]=pi/2.0;Bars_2z[6]=1.35;  // upper horizontal 90 deg
-	Bars_1r[7]=0.0;Bars_1phi[7]=pi;		Bars_1z[7]=1.35;	Bars_2r[7]=0.6;	Bars_2phi[7]=pi;	Bars_2z[7]=1.35;  // upper horizontal 180 deg
-	Bars_1r[8]=0.0;Bars_1phi[8]=pi*1.5;	Bars_1z[8]=1.35;	Bars_2r[8]=0.6;	Bars_2phi[8]=pi*1.5;Bars_2z[8]=1.35;  // upper horizontal 270 deg
-	// current from high to low
-	Bars_1r[9]=0.60;Bars_1phi[9]=0;		Bars_1z[9]=1.35;	Bars_2r[9]=0.6; Bars_2phi[9]=0;		Bars_2z[9]=-0.15;  //outer current 0 deg
-	Bars_1r[10]=0.6;Bars_1phi[10]=pi/2;	Bars_1z[10]=1.35;	Bars_2r[10]=0.6;Bars_2phi[10]=pi/2;	Bars_2z[10]=-0.15; //outer current 90 deg
-	Bars_1r[11]=0.6;Bars_1phi[11]=pi;	Bars_1z[11]=1.35;	Bars_2r[11]=0.6;Bars_2phi[11]=pi;	Bars_2z[11]=-0.15; //outer current 180 deg
-	Bars_1r[12]=0.6;Bars_1phi[12]=pi*1.5;Bars_1z[12]=1.35;	Bars_2r[12]=0.6;Bars_2phi[12]=pi*1.5;Bars_2z[12]=-0.15; //outer current 270 deg
-	// current from low to high
-	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;	Bars_1z[13]=-0.15;	Bars_2r[13]=0;	Bars_2phi[13]=0.0;	Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
-  
-	if ((bfeldwahl == 0)||(bfeldwahl == 2))
-	{
-        printf("\nPreparing the electromagnetic fields... \n");
-        PrepIntpol(1);          // read input table file with E and B fields
-		printf("allocating space for preinterpolation ... (about %.4LG MB)\n",(long double)n*m*12*16*3/1024/1024);
-
-		// doing the preinterpolation
-		Preinterpol(1);						
-		
-		/*
-		// interpolation test
-		wholetrackfile = (char*)malloc((outpathlength+20)*sizeof(char));
-		sprintf(wholetrackfile, "%s/%06dinterpol.out", outpath, jobnumber);
-		OUTFILE1 = fopen(wholetrackfile,mode_w);       // open outfile neut001.out
-		Zeilencount=0;
-		fprintf(OUTFILE1,"r z Br dBrdr dBrdphi dBrdz Bz dBzdr dBzdphi dBzdz Babs\n");
-		//fprintf(OUTFILE1,"indr indz c11 c12 c13 c14 c21 c22 c23 c24 c31 c32 c33 c34 c41 c42 c43 c44 \n");
-		BFeldSkal=1;
-		long double rtst = 0.45;
-		for(long double ztst = 0.137; ztst<=0.15; ztst=ztst+0.0001)
-		{
-			//BInterpol(rtst,0,ztst);
-			BInterpol(rtst,0,ztst);
-			fprintf(OUTFILE1,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
-													rtst, ztst,Br,dBrdr,dBrdphi,dBrdz,Bz,dBzdr,dBzdphi,dBzdz,Bws);
-			
-		}
-		return 0;
-		// ENDE interpolation test*/
-		
-	}
-	else if(bfeldwahl==4)
-	{
-		ReadMagnets();
-	
-		printf("\n \n Test of integration\n");
-		//	long double TestInt;
-		BFeldSkal=1.0;
-		for (int a = 0;a<1;a++)
-		{
-		
-			BFeld(0.3,0,0.1, 500.0);
-			cout << "T" << endl;
-		}
-		printf("Br = %.17LG \n",Br);
-		printf("dBrdr = %.17LG \n",dBrdr);
-		printf("dBrdz = %.17LG \n",dBrdz);
-		printf("Bz = %.17LG \n",Bz);
-		printf("dBzdr = %.17LG \n",dBzdr);
-		printf("dBzdz = %.17LG \n",dBzdz);	
-	}	
-}
-
 void IntegrateParticle(){
 	int perc=0;   // percentage of particle done counter
 	unsigned short int DetHit=0;
@@ -843,8 +771,6 @@ void IntegrateParticle(){
 			printf("\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
 			fprintf(LOGSCR,"\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
 			//iMC--;
-			 if (!nodelay)
-				csleep(1);
 			
 			if (MonteCarlo)
 			{
@@ -958,6 +884,7 @@ void IntegrateParticle(){
 			ytemp = dvector(1,nvar);
 			long double vladtemp = vlad, fractemp = frac, vladtotaltemp = vladtotal, vladmaxtemp = vladmax, thumbmaxtemp = thumbmax;
 			for (int i = 1; i <= nvar; i++) ytemp[i] = ystart[i];
+			short ret;
 			
 			do{
 				//###################### Integrationsroutine #####################
@@ -968,12 +895,9 @@ void IntegrateParticle(){
 				
 				if (!newreflection) break;
 				
-				// check if reflection is necessary and if it was successfull
-				short ret = ReflectCheck(xtemp,ytemp,x2,ystart);
-				if (ret == 0)	// if not necessary
-					break;
-				else{ 	// else if successful: drop last integration step
-						// if failed: undo last integration step and repeat with smaller stepsize
+				// check if reflection is necessary
+				ret = ReflectCheck(xtemp,ytemp,x2,ystart);
+				if (ret != 0){ 	// if necessary drop last integration step
 					x1 = xtemp;
 					for (int j = 1; j <= nvar; j++) ystart[j] = ytemp[j];
 					trajlengthsum = trajlengthtemp;
@@ -983,10 +907,8 @@ void IntegrateParticle(){
 					vladtotal = vladtotaltemp;
 					vladmax = vladmaxtemp;
 					thumbmax = thumbmaxtemp;
-					if (ret == 1)
-						break;
 				}
-			}while(true);
+			}while(ret == -1); // repeat as long as reflection failed
 			
 			nintcalls++;
 			ntotalsteps=ntotalsteps+kount;

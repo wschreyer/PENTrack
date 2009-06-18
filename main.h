@@ -77,7 +77,6 @@ using namespace std;
 extern void PrepareParticle();
 extern void derivs(long double x, long double *y, long double *dydx);
 extern void OpenFiles(int argc, char **argv); // Open in files
-extern void PrepareBField(); // Read fieldval tab and preinterpolated or read coils.cond
 extern void IntegrateParticle(); // integrate particle trajectory
 extern void BruteForceIntegration(); // integrate spin flip probability
 extern void initialStartbed();
@@ -120,8 +119,8 @@ extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  
 extern long double Ibar;                // current through rod
 extern int diffuse; // diffuse reflection switch
 extern long double DiffProb; // property of diffuse reflection 0.125
-extern unsigned short int nodelay, slit, DetOpen;                // delays for monte carlo, is there an entrance slit?
-extern long double lossprob, epsi;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
+extern unsigned short int slit, DetOpen;                // is there an entrance slit?
+extern long double epsi;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
 
 // Fields
 extern long double dBrdr, dBrdz, dBzdr, dBzdz, Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
