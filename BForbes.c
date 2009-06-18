@@ -18,6 +18,103 @@ int CoilNr=0;   // number of coils read in
 
 // Forbes: "Rapid computation of static fields produced by thick circular solenoids"
 
+
+// read the conductor data from a .cond file written by Vectorfield Opera
+int ReadMagnets(void)
+{
+	long double CoilAngle1=-1, CoilAngle2=-1, CoilAngle3=-1;
+	long double dummy, CoilZOffset, Symmetry;
+	long double CoilPoint1R, CoilPoint1Z,  CoilPoint2R,  CoilPoint2Z,  CoilPoint3R,  CoilPoint3Z,  CoilPoint4R,  CoilPoint4Z;
+	
+	
+	FILE *cfg = NULL;
+	
+	char line[1024];
+	string path(inpath + "/coils.cond");
+	cfg = fopen(path.c_str(),mode_r);
+	if(cfg == NULL){  
+		printf("File coils.cond could not be opened!!!");
+		fprintf(LOGSCR,"File coils.cond could not be opened!!!");
+		return 1;
+	}
+	
+	do // read the file
+	{
+		n=0;
+		
+		//for (i=1;i<=1024;i++)			
+		//	line[i]='0'; // reset string
+		
+		fgets(line,1024,cfg); // get a line
+		
+		//if((line[0]=='C')||(line[0]=='Q')) continue; // if its a comment goto next line
+			
+		if((line[0]=='D')&&(line[7]=='G')&&(line[8]=='R')&&(line[9]=='A'))
+		{cout << "RACETRACk COIL DETECTED" << endl; continue; }// discard racetrack coils
+			
+		if((line[0]=='D')&&(line[7]=='G')&&(line[8]=='S')&&(line[9]=='O'))
+		{
+			//printf(line);
+			fgets(line,1024,cfg); // 1st line of coil definition: local coordinate system 1, only used for racetrack so far
+		
+			fgets(line,1024,cfg); // 2nd line of coil definition: local coordinat system 2 offsets
+			sscanf(line,"%25Lf %25Lf %25Lf", &dummy, &dummy, &CoilZOffset);
+		
+			fgets(line,1024,cfg); // 3rd line of coil definition: local coordinat system 2 angles
+			sscanf(line,"%25Lf %25Lf %25Lf", &CoilAngle1, &CoilAngle2, &CoilAngle3);
+			if((CoilAngle1!=90)||(CoilAngle2!=0)||(CoilAngle3!=90))  // check if coils have right orientation: z as rotational axis
+			{
+				cout << "CoilAngle1 "	<< CoilAngle1 << "CoilAngle2 "<< CoilAngle2 << "CoilAngle3 " << CoilAngle3 << endl;
+				cout << "Reading of coil number "	<< CoilNr << " failed!!! Wrong orientation!!! Aborting!!" << endl;
+				return 1;
+			}
+		
+			fgets(line,1024,cfg); // 4th line of coil definition: cross section points 1 and 2 
+			sscanf(line,"%25Lf %25Lf %25Lf %25Lf", &CoilPoint1R, &CoilPoint1Z, &CoilPoint2R, &CoilPoint2Z);
+			
+			fgets(line,1024,cfg); // 5th line of coil definition: cross section points 3 and 4 
+			sscanf(line,"%25Lf %25Lf %25Lf %25Lf", &CoilPoint3R, &CoilPoint3Z, &CoilPoint4R, &CoilPoint4Z);
+			if (CoilPoint3Z!=CoilPoint1Z)
+				aF[CoilNr]=fabsl((CoilPoint3Z-CoilPoint1Z)/2.0);
+			else aF[CoilNr]=fabsl((CoilPoint2Z-CoilPoint1Z)/2.0);
+				
+			if (CoilPoint2R!=CoilPoint1R)
+				bF[CoilNr]=fabsl((CoilPoint2R-CoilPoint1R)/2.0);
+			else bF[CoilNr]=fabsl((CoilPoint3R-CoilPoint1R)/2.0);
+				
+			if (CoilPoint1R<CoilPoint2R)
+				R_0[CoilNr]= CoilPoint1R+(CoilPoint2R-CoilPoint1R)/2.0;
+			
+			zoffset[CoilNr]=CoilZOffset+CoilPoint1Z+(CoilPoint3Z-CoilPoint1Z)/2.0;
+			
+			fgets(line,1024,cfg); // 6th line of coil definition: Curvatures -> not used
+			
+			fgets(line,1024,cfg); // 7th line of coil definition: current density, symmetry, label
+			sscanf(line,"%25Lf %25Lf ", &J_0[CoilNr], &Symmetry);
+			if ((Symmetry!=0)&&(Symmetry!=1))
+			{
+				cout << "Reading of coil number "	<< CoilNr << " failed!!! Wrong symmetry!!! Aborting!!" << endl;
+				return 1;
+			}
+			
+			fgets(line,1024,cfg); // 8th line of coil definition: reflection codes -> not used
+			
+			fgets(line,1024,cfg); // 9th line of coil definition: accuracy of field calculation in Opera -> not used		
+			
+			cout << "Coil " << CoilNr << " a " << aF[CoilNr] << " b " << bF[CoilNr] << " R_0 " << R_0[CoilNr] << " zoffset " << zoffset[CoilNr] << " J_0 " << J_0[CoilNr] << endl ;
+			CoilNr++;
+		}
+			
+			// printf(line);
+		
+	}while(!feof(cfg));
+	
+	printf("%i solenoids were read in!!! \n",CoilNr);
+	fprintf(LOGSCR,"%i solenoids were read in!!! \n",CoilNr);
+	
+	return 0;
+}
+
 // parameter array for Coils:
 //[R_0(radius of center),a (height),b (radial dimension),r (point to calculate field),z (point to calculate),sign1 (sign1 in integregral of Br),sign2 (sign2 in integregral of Br),J_0 (current density),mu0 (clear))]
 long double BForbes(long double r, long double phi, long double z, long double t)
