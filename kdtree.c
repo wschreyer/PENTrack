@@ -1,7 +1,31 @@
+/**************************************************************
+	This algorithm uses a kd-tree structure to search 
+	for collisions with a surface consisting of a list
+	of triangles.
+	Initially, the triangles are read from a set of STL-files
+	(http://www.ennex.com/~fabbers/StL.asp)	via
+	ReadFile(filename,surfacetype) and stored in the kd-tree
+	via Init(ControlPoint).
+	You can define a surfacetype for each file which is
+	returned on collision tests to identify different surfaces
+	during runtime.
+	By passing a control point to Init, the algorithm tests
+	if the point is contained inside a closed(!) surface and
+	can then check via PointInVolume(point) if another point
+	is inside the same volume.
+	During runtime segments point1->point2 can be checked for
+	intersection with the surface via
+	Collision(point1,point2,s,n,surfacetype). Collision returns
+	true if an intersection occurred and gives the parametric
+	coordinate s of the intersection point (I=p1+s*(p2-p1)),
+	the normal n and the surfacetype of the intersected surface.
+*****************************************************************/
+
+
 #include "kdtree.h"
 
 #define MAX_DEPTH 19            // max. depth of tree
-#define MAX_FACECOUNT 10        // when the number of faces in one leave exceeds this value the leave is split up in two new leaves
+#define MAX_FACECOUNT 10        // when the number of faces in one node exceeds this value the node is split up in two new nodes
 #define TOLERANCE 1e-10         // points that are closer than this distance will be considered equal
 
 // misc functions
@@ -14,6 +38,7 @@ void ReadVector(ifstream &f, float v[3]){
     }
 }
 
+// test if two points are equal (closer than TOLERANCE)
 inline bool PointsEqual(float p1[3], float p2[3]){
     //return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2];
 	float d1 = p1[0] - p2[0], d2 = p1[1] - p2[1], d3 = p1[2] - p2[2];
@@ -32,8 +57,8 @@ template <typename coord1, typename coord2> inline long double DotProduct(const 
 // Triangle class definition
 
 // constructor
-KDTree::Triangle::Triangle(ifstream &f, const int asurfacetype){
-    surfacetype = asurfacetype;
+KDTree::Triangle::Triangle(ifstream &f, const unsigned aID){
+    ID = aID;
     normalIO = 0;
     f.seekg(3*4,fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
     short i;
@@ -364,7 +389,7 @@ KDTree::~KDTree(){
 }
 
 // read triangles from STL-file
-void KDTree::ReadFile(const char *filename, const int surfacetype){
+void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
     ifstream f(filename, fstream::binary);
     if (f.is_open()){
         unsigned i,j;
@@ -375,12 +400,14 @@ void KDTree::ReadFile(const char *filename, const int surfacetype){
             if (header[i] == ' ') header[i] = 0;    // trim trailing whitespaces
             else break;
         }
+        if (name) memcpy(name,header,80);
         f.read((char*)&filefacecount,4);
-        printf("Reading '%.80s' from '%s' containing %lu triangles...\n",header,filename,filefacecount);    // print header
+        printf("Reading '%.80s' from '%s' containing %lu triangles ... ",header,filename,filefacecount);    // print header
+        flush(cout);
 
         Triangle *tri;
         for (i = 0; i < filefacecount && !f.eof(); i++){
-            tri = new Triangle(f,surfacetype);  // read triangles from file
+            tri = new Triangle(f,ID);  // read triangles from file
             for (j = 0; j < 3; j++){
                 lo[j] = min(lo[j],tri->lo[j]);  // save lowest and highest vertices to get the size for the root node
                 hi[j] = max(hi[j],tri->hi[j]);
@@ -437,7 +464,7 @@ void KDTree::Init(const long double PointInVolume[3]){
 }
 
 // test segment p1->p2 for collision with a triangle and return parametric coordinate of intersection point, the normalized surface normal and the surfacetype
-bool KDTree::Collision(const long double p1[3], const long double p2[3], long double &s, long double normal[3], int &surfacetype){
+bool KDTree::Collision(const long double p1[3], const long double p2[3], long double &s, long double normal[3], unsigned &ID){
     s = INFINITY;  // initialize paramtric coordinate of intersection point with a value >1!
     Triangle *tri = NULL;
     if (!lastnode) lastnode = root; // start search in last tested node, when last node is not known start in root node
@@ -445,12 +472,13 @@ bool KDTree::Collision(const long double p1[3], const long double p2[3], long do
         long double n = sqrt(DotProduct(tri->normal,tri->normal));  // return normalized normal vector
         for (short i = 0; i < 3; i++)
             normal[i] = tri->normal[i]/n;
-        surfacetype = tri->surfacetype;
+        ID = tri->ID;
         return true;
     }
     return false;
 }
 
+// test if a point is located inside a closed(!) volume (volume defined by Init)
 bool KDTree::PointInVolume(const long double p[3]){
     long double p2[3] = {p[0],p[1],lo[2]};
     long double s = INFINITY;
@@ -458,6 +486,7 @@ bool KDTree::PointInVolume(const long double p[3]){
     return (root->Collision(p,p2,s,lastnode,tri) && ((tri->normal[2] < 0) == (tri->normalIO < 0)));
 }
 
+// test if a point is located in the root box
 bool KDTree::PointInBox(const long double p[3]){   // test if point is in root node
     return root->PointInBox(p);
 };

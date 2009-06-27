@@ -1,0 +1,16 @@
+[MATERIALS]
+#name	FermiReal	FermiImag	DiffuseReflectionProbability
+Nocado	183.04		0.018985481	0.16
+PE		-8.56		0.001912531	0.16
+Ti		-50.76		0.024983971	0.16
+Cu		169.98		0.023134523	0.16
+CsI		29.51		0.03		0.5
+DLC		256			0.00182		0.16
+UCNdet	0			0			0
+
+[GEOMETRY]
+#kennzahl	STLfile					material
+7			heliumtankMay09.STL		Nocado
+6			protdet.STL				CsI
+9			absorber.STL			PE
+12			UCNdet.STL				UCNdet

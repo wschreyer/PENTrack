@@ -1,3 +1,27 @@
+/**************************************************************
+	This algorithm uses a kd-tree structure to search 
+	for collisions with a surface consisting of a list
+	of triangles.
+	Initially, the triangles are read from a set of STL-files
+	(http://www.ennex.com/~fabbers/StL.asp)	via
+	ReadFile(filename,surfacetype) and stored in the kd-tree
+	via Init(ControlPoint).
+	You can define a surfacetype for each file which is
+	returned on collision tests to identify different surfaces
+	during runtime.
+	By passing a control point to Init, the algorithm tests
+	if the point is contained inside a closed(!) surface and
+	can then check via PointInVolume(point) if another point
+	is inside the same volume.
+	During runtime segments point1->point2 can be checked for
+	intersection with the surface via
+	Collision(point1,point2,s,n,surfacetype). Collision returns
+	true if an intersection occurred and gives the parametric
+	coordinate s of the intersection point (I=p1+s*(p2-p1)),
+	the normal n and the surfacetype of the intersected surface.
+*****************************************************************/
+
+
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -18,10 +42,10 @@ class KDTree{
                 float vertex[3][3]; // the three vertices of the triangle (in counterclockwise order according to STL standard)
                 float lo[3],hi[3];  // bounding box defined by the three lowest and three highest coordinates
                 long double normal[3];    // normal of triangle-plane
-                int surfacetype;          // user defined surface number
+                unsigned ID;          // user defined surface number
                 short normalIO;           // normal points into volume (1) / out of volume (-1) / not specified (0)
                 Triangle* neighbours[3];    // neighbouring triangles
-                Triangle(ifstream &f, const int asurfacetype);  // constructor, read vertices and normal from STL-file
+                Triangle(ifstream &f, const unsigned aID);  // constructor, read vertices and normal from STL-file
                 bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
                 void SetNormal(const short anormalIO);
         };
@@ -55,9 +79,9 @@ class KDTree{
         KDTree();   // constructor
         ~KDTree();  // destructor
         float lo[3],hi[3];    // bounding box of root node
-        void ReadFile(const char *filename, const int surfacetype);    // read STL-file
+        void ReadFile(const char *filename, const unsigned ID, char name[80] = NULL);    // read STL-file
         void Init(const long double PointInVolume[3] = NULL);    // create tree
-        bool Collision(const long double p1[3], const long double p2[3], long double &s, long double normal[3], int &surfacetype);  // test segment p1->p2 for collision with triangle
+        bool Collision(const long double p1[3], const long double p2[3], long double &s, long double normal[3], unsigned &ID);  // test segment p1->p2 for collision with triangle
         bool PointInBox(const long double p[3]);  // test if point is inside root node
         bool PointInVolume(const long double p[3]);
 };
