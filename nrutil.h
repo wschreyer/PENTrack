@@ -1,4 +1,4 @@
-extern long double *vector(int nl,int nh);
+//extern long double *vector(int nl,int nh);
 extern long double **matrix(int nrl, int nrh, int ncl, int nch);
 extern long double **convert_matrix(long double *a, int nrl, int nrh, int ncl, int nch);
 extern long double *dvector(int nl, int nh);
