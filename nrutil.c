@@ -13,7 +13,7 @@ void nrerror(char *error_text){
 }
 
 
-
+/*
 long double *vector(int nl,int nh)
 //int nl,nh;
 {
@@ -23,7 +23,7 @@ long double *vector(int nl,int nh)
 	if (!v) nrerror("allocation failure in vector()");
 	return v-nl;
 }
-
+*/
 int *ivector(int nl, int nh)
 //int nl,nh;
 {

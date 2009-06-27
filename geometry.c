@@ -1,7 +1,17 @@
 #include "main.h"
 #include "kdtree.h"
+#include <vector>
 
 KDTree geometry, sourcevolume;
+
+vector<string> mat_name;	// arrays to store material properties
+vector<long double> mat_FermiReal;
+vector<long double> mat_FermiImag;
+vector<long double> mat_DiffProb;
+
+vector<int> mat_map;	// arrays to associate model ID with material/name
+vector<string>name_map;
+
 
 // transmission through a wall (loss of UCN) with Fermi potential  Mf (real) and PF (im) for a UCN with energy Er perpendicular to the wall (all in neV)
 /*long double Transmission(long double Er, long double Mf, long double Pf){
@@ -9,28 +19,68 @@ return 0.2e1 * sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf 
 }
 */
 
-#define SURFACE_WALL 0
-#define SURFACE_ABSORBER 1
-#define SURFACE_UCNDET 2
-#define SURFACE_PROTDET 3
-
-#define REFLECT_TOLERANCE 0.00001 // if the integration point is farther from the reflection point, the integration will be repeated
+#define REFLECT_TOLERANCE 1e-6 // if the integration point is farther from the reflection point, the integration will be repeated
 
 // load STL-files and create kd-trees
 void LoadGeometry(){
-	string STLfile = inpath + "/heliumtankMay09.STL";
-	geometry.ReadFile(STLfile.c_str(),SURFACE_WALL);
-	STLfile = inpath + "/absorber.STL";
-	geometry.ReadFile(STLfile.c_str(),SURFACE_ABSORBER);
-	STLfile = inpath + "/UCNdet.STL";
-	geometry.ReadFile(STLfile.c_str(),SURFACE_UCNDET);
-	STLfile = inpath + "/protdet.STL";
-	geometry.ReadFile(STLfile.c_str(),SURFACE_PROTDET);
-	//...	
+	ifstream infile((inpath+"/geometry.in").c_str());
+	string line;
+	while (infile){
+		if ((infile.peek() == '[') && getline(infile,line)){	// parse geometry.in for section header
+			if (line == "[MATERIALS]"){
+				string name;
+				long double val;
+				do{	// parse material list
+					char c = infile.peek();
+					if (c == '#' || c == '\n') continue; // skip comments and empty lines
+					else if (c == '[') break;	// next section found
+					infile >> name;
+					mat_name.push_back(name);
+					infile >> val;
+					mat_FermiReal.push_back(val);
+					infile >> val;
+					mat_FermiImag.push_back(val);
+					infile >> val;
+					mat_DiffProb.push_back(val);
+				}while(infile && getline(infile,line));
+			}
+			else if (line == "[GEOMETRY]"){
+				string STLfile;
+				unsigned ID;
+				string matname;
+				char name[80];
+				do{	// parse STLfile list
+					char c = infile.peek();
+					if (c == '#' || c == '\n') continue;	// skip comments and empty lines
+					else if (c == '[') break;	// next section found
+					infile >> ID;
+					infile >> STLfile;
+					infile >> matname;
+					STLfile = inpath + '/' + STLfile;
+					geometry.ReadFile(STLfile.c_str(),ID,name);
+					if (ID >= mat_map.size()){
+						mat_map.resize(ID+1);
+						name_map.resize(ID+1,"");
+					}
+					for (unsigned i = 0; i < mat_name.size(); i++){
+						if (matname == mat_name[i]){
+							mat_map[ID] = i;
+							name_map[ID] = name;
+							break;
+						}
+						else if (i+1 == mat_name.size()){
+							fprintf(stderr,"Material %s used but not defined in geometry.in!",matname.c_str());
+							exit(-1);
+						}
+					}
+				}while(infile && getline(infile,line));
+			}
+		}
+		else getline(infile,line);
+	}
 	geometry.Init();
 	
-	STLfile = inpath + "/source.STL";
-	sourcevolume.ReadFile(STLfile.c_str(),0);
+	sourcevolume.ReadFile((inpath + "/source.STL").c_str(),0);
 	long double ControlPoint[3] = {0.3,0,0.5};
 	sourcevolume.Init(ControlPoint);	
 }
@@ -55,12 +105,12 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	long double p1[3] = {y1[1]*cos(y1[5]), y1[1]*sin(y1[5]), y1[3]}; // cart. coords
 	long double p2[3] = {y2[1]*cos(y2[5]), y2[1]*sin(y2[5]), y2[3]};
 	long double s, normal_cart[3];
-	int surface;
-	if (geometry.Collision(p1,p2,s,normal_cart,surface)){ // search in the kdtree for reflection
+	unsigned ID;
+	if (geometry.Collision(p1,p2,s,normal_cart,ID)){ // search in the kdtree for reflection
 		
-		long double distnormal = abs((p2[0] - p1[0])*normal_cart[0] + (p2[1] - p1[1])*normal_cart[1] + (p2[2] - p1[2])*normal_cart[2]); // length of integration step normal to surface
-		if (abs(s*distnormal) > REFLECT_TOLERANCE){ // if point to far from surface
-			s -= REFLECT_TOLERANCE/distnormal/100; // decrease step size
+		long double distnormal = abs((p2[0] - p1[0])*normal_cart[0] + (p2[1] - p1[1])*normal_cart[1] + (p2[2] - p1[2])*normal_cart[2]); // shortest distance of p1 to surface
+		if (s*distnormal > REFLECT_TOLERANCE){ // if p1 too far from surface
+			s -= REFLECT_TOLERANCE/distnormal/100; // decrease s by a small amount
 			x2 = x1 + s*(x2-x1); // write smaller integration time into x2
 			return -1; // return fail to repeat integration step
 		}
@@ -76,85 +126,32 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		
 		//************ handle different absorption characteristics of materials ****************
 		long double prob = mt_get_double(v_mt_state);	
-		long double MaterialDiffProb = DiffProb; // use DiffProb as default	
-		switch (surface){
-			case SURFACE_WALL: // particle hit the heliumtank wall
-				if(!reflekt) // no reflection (e.g. for protons/electrons)
-				{
-					stopall = 1;
-					kennz = KENNZAHL_HIT_WALL;
-					printf("Particle hit the walls (no reflection) at r=%LG z=%LG\n",y1[1],y1[3]);
-					fprintf(LOGSCR,"Particle hit the walls (no reflection) at r=%LG z=%LG\n",y1[1],y1[3]);	
-					return 1;	
-				}				
-				else if (prob < Transmission(Enormal*1e9,FPrealNocado,FPimNocado)) // statistical absorption
-				{
-					stopall = 1;
-					kennz = KENNZAHL_ABSORBED;
-					printf("Statistical absorption!!!");
-					fprintf(LOGSCR,"Statistical absorption!!!");
-					return 1;
-				}
-				break;
-			case SURFACE_ABSORBER: // particle hit the absorber
-				if(!reflekt) // no reflection (e.g. for protons/electrons)
-				{
-					stopall = 1;
-					kennz = KENNZAHL_HIT_WALL;
-					printf("Particle hit the walls (no reflection) at r=%LG z=%LG\n",y1[1],y1[3]);
-					fprintf(LOGSCR,"Particle hit the walls (no reflection) at r=%LG z=%LG\n",y1[1],y1[3]);	
-					return 1;	
-				}				
-				else if(prob < Transmission(Enormal*1e9,Mf,Pf)){ // statistical absorption
-					AbsorberHits++;
-					stopall=1;
-					kennz=KENNZAHL_EATEN;     // absorber hit
-					printf("Absorber hit and absorption!\nvr = %LG m/s\nEr = %LG neV\n", vnormal,Enormal*1e9);
-					fprintf(LOGSCR,"Absorber hit and absorption!\nvr = %LG m/s\nEr = %LG neV\n", vnormal,Enormal*1e9);
-					return 1;
-				}
-				else{
-					AbsorberHits++;		
-					printf("Absorber hit but no absorption!\nvr = %LG m/s\nEr = %LG neV\n", vnormal,Enormal*1e9);
-					fprintf(LOGSCR,"Absorber hit but no absorption!\nvr = %LG m/s\nEr = %LG neV\n", vnormal,Enormal*1e9);
-				}			
-				break;
-			case SURFACE_UCNDET: // particle hit the UCN detector, 100% efficiency is assumed
-				stopall = 1;
-				kennz = KENNZAHL_UCN_DETECTOR;
-				return 1;
-			case SURFACE_PROTDET: // particle hit the proton detector
-				if(!reflekt) // no reflection (e.g. for protons/electrons)
-				{
-					stopall = 1;
-					if (v[2] < 0)
-						kennz = KENNZAHL_DETECTOR_TOP;
-					else
-						kennz = KENNZAHL_DETECTOR_BOTTOM;
-					printf("Particle hit the proton detector (no reflection) at r=%LG z=%LG\n",y1[1],y1[3]);
-					fprintf(LOGSCR,"Particle hit the proton detector (no reflection) at r=%LG z=%LG\n",y1[1],y1[3]);	
-					return 1;	
-				}				
-				else if(prob < Transmission(Enormal*1e9,FPrealCsI,FPimCsI)){ // statistical absorption
-					if (v[2] < 0)
-						kennz = KENNZAHL_DETECTOR_TOP;
-					else
-						kennz = KENNZAHL_DETECTOR_BOTTOM;
-					if (vabs > 0) gammaend = acos(v[2]/vabs)/conv;
-					else gammaend=0;
-					alphaend= atan2(v[1],v[0])/conv;			
-					return 1;						
-				}
-				MaterialDiffProb = 0.5; // reflection on CsI, rough -> probability of diffuse reflection 0.5				
+		unsigned mat = mat_map[ID];
+		if(!reflekt){
+			stopall = 1;
+			kennz = ID;
+			printf("Particle hit %s (no reflection) at r=%LG z=%LG\n",name_map[ID].c_str(),y1[1],y1[3]);
+			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",name_map[ID].c_str(),y1[1],y1[3]);
+			return 1;
 		}
-		
+		else if (prob < Transmission(Enormal*1e9,mat_FermiReal[mat],mat_FermiImag[mat])) // statistical absorption
+		{
+			stopall = 1;
+			kennz = ID;
+			printf("Statistical absorption at %s (%s)!\n",name_map[ID].c_str(),mat_name[mat].c_str());
+			fprintf(LOGSCR,"Statistical absorption at %s (%s)!\n",name_map[ID].c_str(),mat_name[mat].c_str());
+			if (vabs > 0) gammaend = acos(v[2]/vabs)/conv;
+			else gammaend=0;
+			alphaend= atan2(v[1],v[0])/conv;			
+			return 1;
+		}		
 		
 		//*************** specular reflexion ************
 		prob = mt_get_double(v_mt_state);
-		if ((diffuse == 1) || ((diffuse==3)&&(prob >= MaterialDiffProb)))
+		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat_DiffProb[mat])))
 		{
-	    	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG\n",polarisation,x1,Enormal*1e9,y1[1],y1[3]);
-			fprintf(LOGSCR,"\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG\n",polarisation,x1,Enormal*1e9,y1[1],y1[3]);
+	    	printf(" pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m ",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
+			fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG\n",polarisation,x1,Enormal*1e9,y1[1],y1[3]);
 			nrefl++;
 			if(reflektlog == 1)
 				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 1 %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
@@ -165,7 +162,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		}
 		
 		//************** diffuse reflection ************
-		else if ((diffuse == 2) || ((diffuse == 3)&&(prob < MaterialDiffProb)))
+		else if ((diffuse == 2) || ((diffuse == 3)&&(prob < mat_DiffProb[mat])))
 		{
 			long double winkeben = 0.0 + (mt_get_double(v_mt_state)) * (2 * pi); // generate random reflection angles
 			long double winksenkr = acos( cos(0.0) - mt_get_double(v_mt_state) * (cos(0.0) - cos(0.5 * pi)));
@@ -176,15 +173,15 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 
 			long double cosalpha = normal[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
 			if (sinalpha > 1e-30){ // when normal not parallel to z-axis rotate new velocity into the coordinate system where the normal is the z-axis
-				long double a[3] = {-normal[1]/sinalpha, normal[0]/sinalpha, 0};	// rotation axis (z cross n)
+				long double a[2] = {-normal[1]/sinalpha, normal[0]/sinalpha};	// rotation axis (z cross n), a[2] = 0
 				long double vtemp[3] = {v[0],v[1],v[2]};
 				// rotate velocity vector
 				v[0] = (cosalpha + a[0]*a[0]*(1 - cosalpha))*	vtemp[0] +  a[0]*a[1]*(1 - cosalpha)*				vtemp[1] + a[1]*sinalpha*	vtemp[2];
 				v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
 				v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
 			}
-	       	printf("\npol %d t= %LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv);
-	       	fprintf(LOGSCR,"\npol %d t= %LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv);
+	       	printf(" pol %d t= %LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m ",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
+	       	fprintf(LOGSCR,"pol %d t= %LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv);
 	       	nrefl++;
 	       	if(reflektlog == 1)
 				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
