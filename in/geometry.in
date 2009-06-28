@@ -14,3 +14,7 @@ UCNdet	0			0			0
 6			protdet.STL				CsI
 9			absorber.STL			PE
 12			UCNdet.STL				UCNdet
+
+[SOURCE]
+#STLfile	PointInVolume(x y z)
+source.STL	0.3 0 0.5
