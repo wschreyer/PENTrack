@@ -390,6 +390,7 @@ KDTree::~KDTree(){
 
 // read triangles from STL-file
 void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
+	if (root) return; // stop if Init was called already
     ifstream f(filename, fstream::binary);
     if (f.is_open()){
         unsigned i,j;
@@ -429,10 +430,12 @@ void KDTree::Init(const long double PointInVolume[3]){
 
     root = new KDNode(lo,hi,0,2,NULL);  // create root node
 
-	cout << "Building tree...\n";
+	cout << "Building tree ... ";
+	flush(cout);
     for (list<Triangle*>::iterator it = alltris.begin(); it != alltris.end(); it++)
         root->AddTriangle(*it); // add triangles to root node
     root->Split();  // split root node
+    printf("Wrote %u triangles\n",root->facecount());   // print number of triangles contained in tree
 
     if (PointInVolume){
 		cout << "Finding neighbours...\n";
@@ -459,12 +462,11 @@ void KDTree::Init(const long double PointInVolume[3]){
         else
             cout << "Controlpoint not inside closed surface!\n";
     }
-
-    printf("Wrote %u triangles\n",root->facecount());   // print number of triangles contained in tree
 }
 
 // test segment p1->p2 for collision with a triangle and return parametric coordinate of intersection point, the normalized surface normal and the surfacetype
 bool KDTree::Collision(const long double p1[3], const long double p2[3], long double &s, long double normal[3], unsigned &ID){
+    if (!root) return false; // stop if Init was not called yet
     s = INFINITY;  // initialize paramtric coordinate of intersection point with a value >1!
     Triangle *tri = NULL;
     if (!lastnode) lastnode = root; // start search in last tested node, when last node is not known start in root node
@@ -483,10 +485,10 @@ bool KDTree::PointInVolume(const long double p[3]){
     long double p2[3] = {p[0],p[1],lo[2]};
     long double s = INFINITY;
     Triangle *tri = NULL;
-    return (root->Collision(p,p2,s,lastnode,tri) && ((tri->normal[2] < 0) == (tri->normalIO < 0)));
+    return (root && root->Collision(p,p2,s,lastnode,tri) && ((tri->normal[2] < 0) == (tri->normalIO < 0)));
 }
 
 // test if a point is located in the root box
 bool KDTree::PointInBox(const long double p[3]){   // test if point is in root node
-    return root->PointInBox(p);
+    return (root && root->PointInBox(p));
 };

@@ -93,7 +93,7 @@ extern void PrintBFieldCut();	// print cut through BField to file
 // globals
 
 // global file descriptors
-extern FILE *LOGSCR, *OUTFILE1, *REFLECTLOG, *BFLOG, *TESTLOG, *ENDLOG, *FIN, *STATEOUT, *STARTIN;
+extern FILE *LOGSCR, *OUTFILE1, *BFLOG, *TESTLOG, *ENDLOG, *FIN, *STATEOUT, *STARTIN;
 
 // files for in/output + paths
 extern string inpath,outpath;

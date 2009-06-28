@@ -7,7 +7,7 @@ pnTracker
  
 
 // files for in/output + paths
-FILE *LOGSCR = NULL, *OUTFILE1 = NULL, *REFLECTLOG = NULL, *BFLOG = NULL, *TESTLOG = NULL, *ENDLOG = NULL, *FIN = NULL, *STATEOUT = NULL, *STARTIN = NULL;
+FILE *LOGSCR = NULL, *OUTFILE1 = NULL, *BFLOG = NULL, *TESTLOG = NULL, *ENDLOG = NULL, *FIN = NULL, *STATEOUT = NULL, *STARTIN = NULL;
 string inpath, outpath;
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
@@ -879,13 +879,11 @@ void IntegrateParticle(){
 			if(ystart[5]<(-2.0*pi))
 				ystart[5]=ystart[5]+2*pi;
 			
-			long double xtemp = x1, *ytemp = NULL, trajlengthtemp = trajlengthsum;
+			long double xtemp = x1, *ytemp = dvector(1,nvar), trajlengthtemp = trajlengthsum;
 			int kounttemp = kount;
-			ytemp = dvector(1,nvar);
 			long double vladtemp = vlad, fractemp = frac, vladtotaltemp = vladtotal, vladmaxtemp = vladmax, thumbmaxtemp = thumbmax;
 			for (int i = 1; i <= nvar; i++) ytemp[i] = ystart[i];
-			short ret;
-			
+			short ret;			
 			do{
 				//###################### Integrationsroutine #####################
 				if (runge==2)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,rkqs);           // runge kutta step
@@ -909,6 +907,8 @@ void IntegrateParticle(){
 					thumbmax = thumbmaxtemp;
 				}
 			}while(ret == -1); // repeat as long as reflection failed
+			free_vector(ytemp,1,nvar);
+			if (ret == 1) continue; // if successful start a new integration step immediately
 			
 			nintcalls++;
 			ntotalsteps=ntotalsteps+kount;
