@@ -2,14 +2,16 @@
 #include "kdtree.h"
 #include <vector>
 
+FILE *REFLECTLOG = NULL;
+
 KDTree geometry, sourcevolume;
 
-vector<string> mat_name;	// arrays to store material properties
+vector<string> mat_name;	// dynamic arrays to store material properties
 vector<long double> mat_FermiReal;
 vector<long double> mat_FermiImag;
 vector<long double> mat_DiffProb;
 
-vector<int> mat_map;	// arrays to associate model ID with material/name
+vector<int> mat_map;	// dynamic arrays to associate model ID with material/name
 vector<string>name_map;
 
 
@@ -74,15 +76,35 @@ void LoadGeometry(){
 						}
 					}
 				}while(infile && getline(infile,line));
+				geometry.Init();
 			}
+			else if (line == "[SOURCE]"){
+				string name;
+				long double p[3];
+				do{	// parse source line
+					char c = infile.peek();
+					if (c == '#' || c == '\n') continue; // skip comments and empty lines
+					else if (c == '[') break;	// next section found
+					infile >> name;
+					sourcevolume.ReadFile((inpath + '/' + name).c_str(),0);
+					infile >> p[0];
+					infile >> p[1];
+					infile >> p[2];
+					sourcevolume.Init(p);
+				}while(infile && getline(infile,line));
+			}
+			else getline(infile,line);
 		}
 		else getline(infile,line);
 	}
-	geometry.Init();
 	
-	sourcevolume.ReadFile((inpath + "/source.STL").c_str(),0);
-	long double ControlPoint[3] = {0.3,0,0.5};
-	sourcevolume.Init(ControlPoint);	
+/*	
+	if(reflektlog == 1){
+		ostringstream reflectlogfile;
+		reflectlogfile << outpath << "/" << jobnumber << "reflect.out";
+		REFLECTLOG = fopen(reflectlogfile.str().c_str(),mode_w);
+		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vtang phidot dvabs\n"); // Header for Reflection File
+	}	*/
 }
 
 // return a random point in sourcevolume
@@ -122,11 +144,11 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 								normal_cart[2]};
 		long double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
+		unsigned mat = mat_map[ID]; // get material-index from ID->material map
 		
 		
 		//************ handle different absorption characteristics of materials ****************
 		long double prob = mt_get_double(v_mt_state);	
-		unsigned mat = mat_map[ID];
 		if(!reflekt){
 			stopall = 1;
 			kennz = ID;
@@ -140,9 +162,6 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 			kennz = ID;
 			printf("Statistical absorption at %s (%s)!\n",name_map[ID].c_str(),mat_name[mat].c_str());
 			fprintf(LOGSCR,"Statistical absorption at %s (%s)!\n",name_map[ID].c_str(),mat_name[mat].c_str());
-			if (vabs > 0) gammaend = acos(v[2]/vabs)/conv;
-			else gammaend=0;
-			alphaend= atan2(v[1],v[0])/conv;			
 			return 1;
 		}		
 		
