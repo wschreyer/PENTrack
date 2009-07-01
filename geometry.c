@@ -27,13 +27,15 @@ return 0.2e1 * sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf 
 void LoadGeometry(){
 	ifstream infile((inpath+"/geometry.in").c_str());
 	string line;
+	char c;
 	while (infile){
+		while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
 		if ((infile.peek() == '[') && getline(infile,line)){	// parse geometry.in for section header
-			if (line == "[MATERIALS]"){
+			if (line.compare(0,11,"[MATERIALS]") == 0){
 				string name;
 				long double val;
 				do{	// parse material list
-					char c = infile.peek();
+					while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
 					if (c == '#' || c == '\n') continue; // skip comments and empty lines
 					else if (c == '[') break;	// next section found
 					infile >> name;
@@ -46,13 +48,13 @@ void LoadGeometry(){
 					mat_DiffProb.push_back(val);
 				}while(infile && getline(infile,line));
 			}
-			else if (line == "[GEOMETRY]"){
+			else if (line.compare(0,10,"[GEOMETRY]") == 0){
 				string STLfile;
 				unsigned ID;
 				string matname;
 				char name[80];
 				do{	// parse STLfile list
-					char c = infile.peek();
+					while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
 					if (c == '#' || c == '\n') continue;	// skip comments and empty lines
 					else if (c == '[') break;	// next section found
 					infile >> ID;
@@ -78,11 +80,11 @@ void LoadGeometry(){
 				}while(infile && getline(infile,line));
 				geometry.Init();
 			}
-			else if (line == "[SOURCE]"){
+			else if (line.compare(0,8,"[SOURCE]") == 0){
 				string name;
 				long double p[3];
 				do{	// parse source line
-					char c = infile.peek();
+					while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
 					if (c == '#' || c == '\n') continue; // skip comments and empty lines
 					else if (c == '[') break;	// next section found
 					infile >> name;
@@ -132,7 +134,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		
 		long double distnormal = abs((p2[0] - p1[0])*normal_cart[0] + (p2[1] - p1[1])*normal_cart[1] + (p2[2] - p1[2])*normal_cart[2]); // shortest distance of p1 to surface
 		if (s*distnormal > REFLECT_TOLERANCE){ // if p1 too far from surface
-			s -= REFLECT_TOLERANCE/distnormal/100; // decrease s by a small amount
+			s -= REFLECT_TOLERANCE/distnormal/1e10; // decrease s by a small amount
 			x2 = x1 + s*(x2-x1); // write smaller integration time into x2
 			return -1; // return fail to repeat integration step
 		}
