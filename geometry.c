@@ -132,9 +132,11 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	unsigned ID;
 	if (geometry.Collision(p1,p2,s,normal_cart,ID)){ // search in the kdtree for reflection
 		
-		long double distnormal = abs((p2[0] - p1[0])*normal_cart[0] + (p2[1] - p1[1])*normal_cart[1] + (p2[2] - p1[2])*normal_cart[2]); // shortest distance of p1 to surface
+		long double u[3] = {p2[0]-p1[0],p2[1]-p1[1],p2[2]-p1[2]};
+		long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]); // distance p1-p2
+		long double distnormal = abs(u[0]*normal_cart[0] + u[1]*normal_cart[1] + u[2]*normal_cart[2]); // distance p1-p2 normal to surface
 		if (s*distnormal > REFLECT_TOLERANCE){ // if p1 too far from surface
-			s -= REFLECT_TOLERANCE/distnormal/1e10; // decrease s by a small amount
+			s -= dist/distnormal*1e-10; // decrease s by a small amount to avoid double reflection
 			x2 = x1 + s*(x2-x1); // write smaller integration time into x2
 			return -1; // return fail to repeat integration step
 		}
@@ -172,7 +174,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat_DiffProb[mat])))
 		{
 	    	printf(" pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m ",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
-			fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG\n",polarisation,x1,Enormal*1e9,y1[1],y1[3]);
+			fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
 			nrefl++;
 			if(reflektlog == 1)
 				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 1 %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
@@ -201,8 +203,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 				v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
 				v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
 			}
-	       	printf(" pol %d t= %LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m ",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
-	       	fprintf(LOGSCR,"pol %d t= %LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv);
+	       	printf(" pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m ",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
+	       	fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
 	       	nrefl++;
 	       	if(reflektlog == 1)
 				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
