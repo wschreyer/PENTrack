@@ -449,7 +449,7 @@ void KDTree::Init(const long double PointInVolume[3]){
 	        }
 	    }
 
-		cout << "Defining control volume...\n";
+		cout << "Defining interior...\n";
         long double p2[3] = {PointInVolume[0],PointInVolume[1],lo[2]};
         long double s = INFINITY;
         Triangle *tri = NULL;

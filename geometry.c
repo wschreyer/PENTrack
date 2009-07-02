@@ -7,12 +7,10 @@ FILE *REFLECTLOG = NULL;
 KDTree geometry, sourcevolume;
 
 vector<string> mat_name;	// dynamic arrays to store material properties
-vector<long double> mat_FermiReal;
-vector<long double> mat_FermiImag;
-vector<long double> mat_DiffProb;
+vector<long double> mat_FermiReal, mat_FermiImag, mat_DiffProb;
 
-vector<int> mat_map;	// dynamic arrays to associate model ID with material/name
-vector<string>name_map;
+vector<int> model_mat, model_kennz;	// dynamic arrays to associate models with material/kennzahl/name
+vector<string> model_name;
 
 
 // transmission through a wall (loss of UCN) with Fermi potential  Mf (real) and PF (im) for a UCN with energy Er perpendicular to the wall (all in neV)
@@ -61,19 +59,16 @@ void LoadGeometry(){
 					infile >> STLfile;
 					infile >> matname;
 					STLfile = inpath + '/' + STLfile;
-					geometry.ReadFile(STLfile.c_str(),ID,name);
-					if (ID >= mat_map.size()){
-						mat_map.resize(ID+1);
-						name_map.resize(ID+1,"");
-					}
 					for (unsigned i = 0; i < mat_name.size(); i++){
 						if (matname == mat_name[i]){
-							mat_map[ID] = i;
-							name_map[ID] = name;
+							model_mat.push_back(i);
+							model_kennz.push_back(ID);
+							geometry.ReadFile(STLfile.c_str(),model_kennz.size()-1,name);
+							model_name.push_back(name);
 							break;
 						}
 						else if (i+1 == mat_name.size()){
-							fprintf(stderr,"Material %s used but not defined in geometry.in!",matname.c_str());
+							fprintf(stderr,"Material %s used for %s but not defined in geometry.in!",matname.c_str(),name);
 							exit(-1);
 						}
 					}
@@ -81,17 +76,18 @@ void LoadGeometry(){
 				geometry.Init();
 			}
 			else if (line.compare(0,8,"[SOURCE]") == 0){
-				string name;
-				long double p[3];
 				do{	// parse source line
 					while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
 					if (c == '#' || c == '\n') continue; // skip comments and empty lines
 					else if (c == '[') break;	// next section found
+					string name;
 					infile >> name;
 					sourcevolume.ReadFile((inpath + '/' + name).c_str(),0);
-					infile >> p[0];
-					infile >> p[1];
-					infile >> p[2];
+					long double r,phi,z;
+					infile >> r;
+					infile >> phi;
+					infile >> z;
+					long double p[3] = {r*cos(phi),r*sin(phi),z};
 					sourcevolume.Init(p);
 				}while(infile && getline(infile,line));
 			}
@@ -129,8 +125,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	long double p1[3] = {y1[1]*cos(y1[5]), y1[1]*sin(y1[5]), y1[3]}; // cart. coords
 	long double p2[3] = {y2[1]*cos(y2[5]), y2[1]*sin(y2[5]), y2[3]};
 	long double s, normal_cart[3];
-	unsigned ID;
-	if (geometry.Collision(p1,p2,s,normal_cart,ID)){ // search in the kdtree for reflection
+	unsigned i;
+	if (geometry.Collision(p1,p2,s,normal_cart,i)){ // search in the kdtree for reflection
 		
 		long double u[3] = {p2[0]-p1[0],p2[1]-p1[1],p2[2]-p1[2]};
 		long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]); // distance p1-p2
@@ -148,24 +144,24 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 								normal_cart[2]};
 		long double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-		unsigned mat = mat_map[ID]; // get material-index from ID->material map
+		unsigned mat = model_mat[i]; // get material-index
 		
 		
 		//************ handle different absorption characteristics of materials ****************
 		long double prob = mt_get_double(v_mt_state);	
 		if(!reflekt){
 			stopall = 1;
-			kennz = ID;
-			printf("Particle hit %s (no reflection) at r=%LG z=%LG\n",name_map[ID].c_str(),y1[1],y1[3]);
-			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",name_map[ID].c_str(),y1[1],y1[3]);
+			kennz = model_kennz[i];
+			printf("Particle hit %s (no reflection) at r=%LG z=%LG\n",model_name[i].c_str(),y1[1],y1[3]);
+			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",model_name[i].c_str(),y1[1],y1[3]);
 			return 1;
 		}
 		else if (prob < Transmission(Enormal*1e9,mat_FermiReal[mat],mat_FermiImag[mat])) // statistical absorption
 		{
 			stopall = 1;
-			kennz = ID;
-			printf("Statistical absorption at %s (%s)!\n",name_map[ID].c_str(),mat_name[mat].c_str());
-			fprintf(LOGSCR,"Statistical absorption at %s (%s)!\n",name_map[ID].c_str(),mat_name[mat].c_str());
+			kennz = model_kennz[i];
+			printf("Statistical absorption at %s (%s)!\n",model_name[i].c_str(),mat_name[mat].c_str());
+			fprintf(LOGSCR,"Statistical absorption at %s (%s)!\n",model_name[i].c_str(),mat_name[mat].c_str());
 			return 1;
 		}		
 		
@@ -190,9 +186,9 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 			long double winkeben = 0.0 + (mt_get_double(v_mt_state)) * (2 * pi); // generate random reflection angles
 			long double winksenkr = acos( cos(0.0) - mt_get_double(v_mt_state) * (cos(0.0) - cos(0.5 * pi)));
 			if (vnormal > 0) winksenkr += pi; // if normal points out of volume rotate by 180 degrees
-			v[0] = vabs*cos(winkeben)*sin(winksenkr);	// new velocity with respect to z-axis
-			v[1] = vabs*sin(winkeben)*sin(winksenkr);
-			v[2] = vabs*cos(winksenkr);
+			v[0] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
+			v[1] = vabs*sin(winkeben)*cos(winksenkr);
+			v[2] = vabs*sin(winksenkr);
 
 			long double cosalpha = normal[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
 			if (sinalpha > 1e-30){ // when normal not parallel to z-axis rotate new velocity into the coordinate system where the normal is the z-axis

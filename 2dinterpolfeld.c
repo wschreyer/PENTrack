@@ -40,7 +40,8 @@ void PrepareBField(){
 	// current from low to high
 	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;	Bars_1z[13]=-0.15;	Bars_2r[13]=0;	Bars_2phi[13]=0.0;	Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
   
-	if ((bfeldwahl == 0)||(bfeldwahl == 2))
+  	if (BFeldSkalGlobal == 0) Emin_n = 0;
+	if ((bfeldwahl == 0 || bfeldwahl == 2) && BFeldSkalGlobal != 0)
 	{
         printf("\nPreparing the electromagnetic fields... \n");
         PrepIntpol(1);          // read input table file with E and B fields
@@ -593,62 +594,34 @@ void PrepIntpol(int k){
 
 
 void BInterpol(long double r_n, long double phi, long double z_n){
-	//long double dBrdphi = 0.0, dBzdphi = 0.0, dBphidphi = 0.0, x2, dy;
-	//int ordnung = 4, ordleft = 1, ordright = 2;   // if ordnung even ordleft = (ordnung/2)-1 , if odd ordleft = (ordnung-1)/2 
-	
-	//fprintf(LOGSCR,"BInterpol got: r,phi,z (%.12LG / %.12LG / %.12LG)\n",r_n,phi,z_n);
-	
-	if ((r_n >= r_mi) && (r_n <= r_ma) && (z_n >= z_mi) && (z_n <= z_ma))
-	{
-		//Indizes indr und indz in der Array finden, der zu r_n und z_n passt
-		//hunt(rind, m, r_n, &indr);
-		//hunt(zind, n, z_n, &indz);		
-		//printf("hunt: indr =  %i, indz = %i \n ",indr, indz);
-	
-		// new calculation of indexes
+	if (BFeldSkal != 0){
 		indr = 1+(int) ((r_n- conv_rA)/(conv_rB));    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!		
 		indz = 1+(int) ((z_n-conv_zA) / (conv_zB));  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
-		//printf("new: indr =  %i, indz = %i \n",indr, indz);
-					
-		// Abst�nde der Koordinaten voneinander
-		//dr = rind[indr + 1] - rind [indr];
-		//dz = zind[indz + 1] - zind [indz];
-		//cout << "Indizes: " << indr << " " << indz << "\n";
-
 		if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)  ){			
-			if (BFeldSkal != 0){
-										
-				// 2D polynomial interpolation
-				// for field interpolation tests 
-				/*if(indr-ordleft<2) indr = 2+ordleft*2;
-				if(indr+ordright>(m-1)) indr = m-(1+ordright)*2;
-				if(indz-ordleft<2) indz = 2+ordleft*2;
-				if(indz+ordright>(n-1)) indz = n-(1+ordright)*2;	*/
-			
-				// bicubic interpolation
-				bcuint_new(indr, indz, Brc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Br, &dBrdr, &dBrdz);
-				//bcuint_new(indr, indz, Bphic, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bphi, &dBphidr, &dBphidz);
-				bcuint_new(indr, indz, Bzc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bz, &dBzdr, &dBzdz);
+			// bicubic interpolation
+			bcuint_new(indr, indz, Brc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Br, &dBrdr, &dBrdz);
+			//bcuint_new(indr, indz, Bphic, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bphi, &dBphidr, &dBphidz);
+			bcuint_new(indr, indz, Bzc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Bz, &dBzdr, &dBzdz);
 
-				Br = BFeldSkal * Br;
-				dBrdr = BFeldSkal * dBrdr;
-				dBrdz = BFeldSkal * dBrdz;
-				Bz = BFeldSkal * Bz;
-				dBzdr = BFeldSkal * dBzdr;
-				dBzdz = BFeldSkal * dBzdz;
-			}
-		} 
+			Br = BFeldSkal * Br;
+			dBrdr = BFeldSkal * dBrdr;
+			dBrdz = BFeldSkal * dBrdz;
+			Bz = BFeldSkal * Bz;
+			dBzdr = BFeldSkal * dBzdr;
+			dBzdz = BFeldSkal * dBzdz;
+		}
 		else
 		{
-			printf("\n The array index has left boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n ,indz);
-			fprintf(LOGSCR,"\n The array index has left boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n, indz);
+			printf("\n The array index has left fieldval boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n ,indz);
+			fprintf(LOGSCR,"\n The array index has left fieldval boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n, indz);
 			OutputState(ystart,1);
 		}
+	} 
 
-		// add fields and field derivations of racetrack coils
-		
-		if((Ibar!=0)&&(RodFieldMultiplicator>0))
-		{
+	// add fields and field derivations of racetrack coils
+	
+	if((Ibar!=0)&&(RodFieldMultiplicator>0))
+	{
 		if(Racetracks==1)
 		{
 			// old implementation of racetracks as 5 infinitely long vertical current bars, fast
@@ -663,157 +636,143 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 			// new but slow implementation of racetracks including horizontal parts
 			BarRaceTrack(r_n, phi, z_n, RodFieldMultiplicator*Ibar);   // here B field is only calculated for charged particles and derivatives only for neutrons
 		}
-			
-		}  		
-			
-	}
-	else
-	{
-		//char bloed;
-		printf("The particle has entered forbidden space: r=%.17LG, z=%.17LG !!! I will terminate it now! \n", r_n, z_n);
-		fprintf(LOGSCR,"The particle has entered forbidden space: r=%.17LG, z=%.17LG !!! I will terminate it now! \n", r_n, z_n);
 		
-		//OutputState(ystart,1);
+	}  		
 		
-		kennz = 2;    // something's wrong
-		stopall=1;		
-	}
-	//if(Bphi==0)
-	//			cout << "hier";
-			//	OutputState(ystart,1);
 }
 
 
 
 void EInterpol(long double r_n, long double phi, long double z_n){
-	yyy=dvector(1,4);
-	yyy1=dvector(1,4);
-	yyy2=dvector(1,4);
-	yyy12=dvector(1,4);
-
-	if (r_n >= r_mi && r_n <= r_ma && z_n >= z_mi && z_n <= z_ma ) 
-	{
-		
-		
-		//hunt(rind, m, r_n, &indr);
-		//hunt(zind, n, z_n, &indz);
-		
-		// new calculation of indexes
-		indr = 1 + (int) ((r_n - conv_rA) / (conv_rB));   // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
-		indz = 1 + (int) ((z_n - conv_zA) / (conv_zB));  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
-
-		// Abst�nde der Koordinaten voneinander
-		//dr = rind[indr + 1] - rind [indr];
-		//dz = zind[indz + 1] - zind [indz];
-
-		// cout << "Indizes: " << indr << " " << indz << "\n";
-
-		if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)){
-			// Rechteck mit den Werten und deren Ableitungen bef�llen und Interpolieren
-			yyy[1] = ErTab[indr][indz];
-			yyy[2] = ErTab[indr+1][indz];
-			yyy[3] = ErTab[indr+1][indz+1];
-			yyy[4] = ErTab[indr][indz+1];
-        
-			yyy1[1] = ErTab1[indr][indz];
-			yyy1[2] = ErTab1[indr+1][indz];
-			yyy1[3] = ErTab1[indr+1][indz+1];
-			yyy1[4] = ErTab1[indr][indz+1];
-			
-			yyy2[1] = ErTab2[indr][indz];
-			yyy2[2] = ErTab2[indr+1][indz];
-			yyy2[3] = ErTab2[indr+1][indz+1];
-			yyy2[4] = ErTab2[indr][indz+1];
-        
-			yyy12[1] = ErTab12[indr][indz];
-			yyy12[2] = ErTab12[indr+1][indz];
-			yyy12[3] = ErTab12[indr+1][indz+1];
-			yyy12[4] = ErTab12[indr][indz+1];
-			
-			bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Er, &dErdr, &dErdz);
-
-			// Rechteck mit den Werten und deren Ableitungen bef�llen und Interpolieren
-			yyy[1] = EzTab[indr][indz];
-			yyy[2] = EzTab[indr+1][indz];
-			yyy[3] = EzTab[indr+1][indz+1];
-			yyy[4] = EzTab[indr][indz+1];
-        
-			yyy1[1] = EzTab1[indr][indz];
-			yyy1[2] = EzTab1[indr+1][indz];
-			yyy1[3] = EzTab1[indr+1][indz+1];
-			yyy1[4] = EzTab1[indr][indz+1];
-			
-			yyy2[1] = EzTab2[indr][indz];
-			yyy2[2] = EzTab2[indr+1][indz];
-			yyy2[3] = EzTab2[indr+1][indz+1];
-			yyy2[4] = EzTab2[indr][indz+1];
-			
-			yyy12[1] = EzTab12[indr][indz];
-			yyy12[2] = EzTab12[indr+1][indz];
-			yyy12[3] = EzTab12[indr+1][indz+1];
-			yyy12[4] = EzTab12[indr][indz+1];
-			
-			bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Ez, &dEzdr, &dEzdz);
-
-			// Rechteck mit den Werten und deren Ableitungen bef�llen und Interpolieren
-			yyy[1] = EphiTab[indr][indz];
-			yyy[2] = EphiTab[indr+1][indz];
-			yyy[3] = EphiTab[indr+1][indz+1];
-			yyy[4] = EphiTab[indr][indz+1];
-			
-			yyy1[1] = EphiTab1[indr][indz];
-			yyy1[2] = EphiTab1[indr+1][indz];
-			yyy1[3] = EphiTab1[indr+1][indz+1];
-			yyy1[4] = EphiTab1[indr][indz+1];
-			
-			yyy2[1] = EphiTab2[indr][indz];
-			yyy2[2] = EphiTab2[indr+1][indz];
-			yyy2[3] = EphiTab2[indr+1][indz+1];
-			yyy2[4] = EphiTab2[indr][indz+1];
-			
-			yyy12[1] = EphiTab12[indr][indz];
-			yyy12[2] = EphiTab12[indr+1][indz];
-			yyy12[3] = EphiTab12[indr+1][indz+1];
-			yyy12[4] = EphiTab12[indr][indz+1];
-			
-			bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Ephi, &dEphidr, &dEphidz);
-        }else{
-			printf("\n The array index has left boundaries!!! Exiting!!! \n");
-			fprintf(LOGSCR,"\n The array index has left boundaries!!! Exiting!!! \n");
-			csleep(10);
-			OutputState(ystart,1);
-        }
-	}
-	else	
-	{
-        //char bloed;
-        printf("The particle has entered forbidden space!!! I will terminate it now! \n");
-        fprintf(LOGSCR,"The particle has entered forbidden space!!! I will terminate it now! \n");
-			Er=0.0; Ephi=0.0; Ez=0.0;
-			kennz=99;    // something's wrong
-        stopall=1;
-        if (z_n > zmax)
-           kennz=4;    // escape to top
-        if ((r_n < rmin+wandinnen) || (r_n > rmax+wanddicke) || (z_n < zmin+wanddicke) )
-				if(!reflekt) kennz=3;   // walls
-	}
-
-	free_dvector(yyy,1,4);
-	free_dvector(yyy1,1,4);
-	free_dvector(yyy2,1,4);
-	free_dvector(yyy12,1,4);
+	if (EFeldSkal != 0){
+		yyy=dvector(1,4);
+		yyy1=dvector(1,4);
+		yyy2=dvector(1,4);
+		yyy12=dvector(1,4);
 	
-	// scale electric field if desired
-	Er = EFeldSkal * Er;
-	dErdr = EFeldSkal * dErdr;
-	dErdz = EFeldSkal * dErdz;
-	Ephi = EFeldSkal * Ephi;
-	dEphidr = EFeldSkal * dEphidr;
-	dEphidz = EFeldSkal * dEphidz;
-	Ez = EFeldSkal * Ez;
-	dEzdr = EFeldSkal * dEzdr;
-	dEzdz = EFeldSkal * dEzdz;
+		if (r_n >= r_mi && r_n <= r_ma && z_n >= z_mi && z_n <= z_ma ) 
+		{
+			
+			
+			//hunt(rind, m, r_n, &indr);
+			//hunt(zind, n, z_n, &indz);
+			
+			// new calculation of indexes
+			indr = 1 + (int) ((r_n - conv_rA) / (conv_rB));   // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
+			indz = 1 + (int) ((z_n - conv_zA) / (conv_zB));  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
+	
+			// Abst�nde der Koordinaten voneinander
+			//dr = rind[indr + 1] - rind [indr];
+			//dz = zind[indz + 1] - zind [indz];
+	
+			// cout << "Indizes: " << indr << " " << indz << "\n";
+	
+			if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)){
+				// Rechteck mit den Werten und deren Ableitungen bef�llen und Interpolieren
+				yyy[1] = ErTab[indr][indz];
+				yyy[2] = ErTab[indr+1][indz];
+				yyy[3] = ErTab[indr+1][indz+1];
+				yyy[4] = ErTab[indr][indz+1];
+	        
+				yyy1[1] = ErTab1[indr][indz];
+				yyy1[2] = ErTab1[indr+1][indz];
+				yyy1[3] = ErTab1[indr+1][indz+1];
+				yyy1[4] = ErTab1[indr][indz+1];
 				
+				yyy2[1] = ErTab2[indr][indz];
+				yyy2[2] = ErTab2[indr+1][indz];
+				yyy2[3] = ErTab2[indr+1][indz+1];
+				yyy2[4] = ErTab2[indr][indz+1];
+	        
+				yyy12[1] = ErTab12[indr][indz];
+				yyy12[2] = ErTab12[indr+1][indz];
+				yyy12[3] = ErTab12[indr+1][indz+1];
+				yyy12[4] = ErTab12[indr][indz+1];
+				
+				bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Er, &dErdr, &dErdz);
+	
+				// Rechteck mit den Werten und deren Ableitungen bef�llen und Interpolieren
+				yyy[1] = EzTab[indr][indz];
+				yyy[2] = EzTab[indr+1][indz];
+				yyy[3] = EzTab[indr+1][indz+1];
+				yyy[4] = EzTab[indr][indz+1];
+	        
+				yyy1[1] = EzTab1[indr][indz];
+				yyy1[2] = EzTab1[indr+1][indz];
+				yyy1[3] = EzTab1[indr+1][indz+1];
+				yyy1[4] = EzTab1[indr][indz+1];
+				
+				yyy2[1] = EzTab2[indr][indz];
+				yyy2[2] = EzTab2[indr+1][indz];
+				yyy2[3] = EzTab2[indr+1][indz+1];
+				yyy2[4] = EzTab2[indr][indz+1];
+				
+				yyy12[1] = EzTab12[indr][indz];
+				yyy12[2] = EzTab12[indr+1][indz];
+				yyy12[3] = EzTab12[indr+1][indz+1];
+				yyy12[4] = EzTab12[indr][indz+1];
+				
+				bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Ez, &dEzdr, &dEzdz);
+	
+				// Rechteck mit den Werten und deren Ableitungen bef�llen und Interpolieren
+				yyy[1] = EphiTab[indr][indz];
+				yyy[2] = EphiTab[indr+1][indz];
+				yyy[3] = EphiTab[indr+1][indz+1];
+				yyy[4] = EphiTab[indr][indz+1];
+				
+				yyy1[1] = EphiTab1[indr][indz];
+				yyy1[2] = EphiTab1[indr+1][indz];
+				yyy1[3] = EphiTab1[indr+1][indz+1];
+				yyy1[4] = EphiTab1[indr][indz+1];
+				
+				yyy2[1] = EphiTab2[indr][indz];
+				yyy2[2] = EphiTab2[indr+1][indz];
+				yyy2[3] = EphiTab2[indr+1][indz+1];
+				yyy2[4] = EphiTab2[indr][indz+1];
+				
+				yyy12[1] = EphiTab12[indr][indz];
+				yyy12[2] = EphiTab12[indr+1][indz];
+				yyy12[3] = EphiTab12[indr+1][indz+1];
+				yyy12[4] = EphiTab12[indr][indz+1];
+				
+				bcuint(yyy, yyy1, yyy2, yyy12, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r_n, z_n, &Ephi, &dEphidr, &dEphidz);
+	        }else{
+				printf("\n The array index has left boundaries!!! Exiting!!! \n");
+				fprintf(LOGSCR,"\n The array index has left boundaries!!! Exiting!!! \n");
+				csleep(10);
+				OutputState(ystart,1);
+	        }
+		}
+		else	
+		{
+	        //char bloed;
+	        printf("The particle has entered forbidden space!!! I will terminate it now! \n");
+	        fprintf(LOGSCR,"The particle has entered forbidden space!!! I will terminate it now! \n");
+				Er=0.0; Ephi=0.0; Ez=0.0;
+				kennz=99;    // something's wrong
+	        stopall=1;
+	        if (z_n > zmax)
+	           kennz=4;    // escape to top
+	        if ((r_n < rmin+wandinnen) || (r_n > rmax+wanddicke) || (z_n < zmin+wanddicke) )
+					if(!reflekt) kennz=3;   // walls
+		}
+	
+		free_dvector(yyy,1,4);
+		free_dvector(yyy1,1,4);
+		free_dvector(yyy2,1,4);
+		free_dvector(yyy12,1,4);
+		
+		// scale electric field if desired
+		Er = EFeldSkal * Er;
+		dErdr = EFeldSkal * dErdr;
+		dErdz = EFeldSkal * dErdz;
+		Ephi = EFeldSkal * Ephi;
+		dEphidr = EFeldSkal * dEphidr;
+		dEphidz = EFeldSkal * dEphidz;
+		Ez = EFeldSkal * Ez;
+		dEzdr = EFeldSkal * dEzdr;
+		dEzdz = EFeldSkal * dEzdz;
+	}			
 	return;
 }
 
