@@ -25,7 +25,7 @@ long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus f
 
 // misc configurations
 int MonteCarlo=0, MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
-int reflekt=0, newreflection = 0, Efeldwahl, bfeldwahl, protneut, expmode=1,Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
+int reflekt=0, newreflection = 1, Efeldwahl, bfeldwahl, protneut, expmode=1,Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
 int reflektlog = 0, SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
 long double Ibar= 2250.;                // B-field strength, current through rod
