@@ -40,8 +40,7 @@ void PrepareBField(){
 	// current from low to high
 	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;	Bars_1z[13]=-0.15;	Bars_2r[13]=0;	Bars_2phi[13]=0.0;	Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
   
-  	if (BFeldSkalGlobal == 0) Emin_n = 0;
-	if ((bfeldwahl == 0 || bfeldwahl == 2) && BFeldSkalGlobal != 0)
+	if ((bfeldwahl == 0 || bfeldwahl == 2) && (BFeldSkalGlobal != 0 || EFeldSkal != 0))
 	{
         printf("\nPreparing the electromagnetic fields... \n");
         PrepIntpol(1);          // read input table file with E and B fields
@@ -91,7 +90,9 @@ void PrepareBField(){
 		printf("Bz = %.17LG \n",Bz);
 		printf("dBzdr = %.17LG \n",dBzdr);
 		printf("dBzdz = %.17LG \n",dBzdz);	
+		Emin_n = 0;
 	}	
+	else Emin_n = 0;
 }
 
 // get the size of the array ......................
@@ -174,10 +175,6 @@ void GetDim(int *m, int *n)
 	fprintf(LOGSCR,"The r values go from %LG to %LG.\n\n",r_mi,r_ma);
 	printf("The z values go from %LG to %LG.\n\n",z_mi,z_ma);
 	fprintf(LOGSCR,"The z values go from %LG to %LG.\n\n",z_mi,z_ma);	
-	rmin=r_mi;
-	rmax=r_ma;
-	zmin=z_mi;
-	zmax=z_ma;
 	return ;
 }
 
@@ -555,12 +552,11 @@ void PrepIntpol(int k){
 			EnTemp =  m_n*gravconst*zind[k] + (mu_nSI/ele_e)*Babsmaxtmp;
 			if(Babsmax < Babsmaxtmp)
 				Babsmax = Babsmaxtmp;
-			//StorVolrmin=0.129,StorVolrmax=0.488,StorVolzmin=0.01, StorVolzmax=1.345
 			if((Babsmin > Babsmaxtmp))
 			{
 				Babsmin = Babsmaxtmp;				
 			}
-			if((EnTemp < Emin_n)&&(rind[j]<StorVolrmax)&&(rind[j]>StorVolrmin)&&(zind[k]>0)&&(zind[k]<StorVolzmax))
+			if(EnTemp < Emin_n)
 			{
 				Emin_n = EnTemp;
 				rBabsmin = rind[j];
@@ -739,7 +735,6 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 	        }else{
 				printf("\n The array index has left boundaries!!! Exiting!!! \n");
 				fprintf(LOGSCR,"\n The array index has left boundaries!!! Exiting!!! \n");
-				csleep(10);
 				OutputState(ystart,1);
 	        }
 		}
@@ -751,10 +746,6 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 				Er=0.0; Ephi=0.0; Ez=0.0;
 				kennz=99;    // something's wrong
 	        stopall=1;
-	        if (z_n > zmax)
-	           kennz=4;    // escape to top
-	        if ((r_n < rmin+wandinnen) || (r_n > rmax+wanddicke) || (z_n < zmin+wanddicke) )
-					if(!reflekt) kennz=3;   // walls
 		}
 	
 		free_dvector(yyy,1,4);
@@ -777,7 +768,7 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 }
 
 
-// produce zero Bfield
+// produce zero field
 long double Bnull()
 {
 	Br = 0.0;
@@ -797,6 +788,16 @@ long double Bnull()
 	dBdr=0;
 	dBdphi=0;
 	dBdz=0;
+	
+	Er = 0;
+	dErdr = 0;
+	dErdz = 0;
+	Ephi = 0;
+	dEphidr = 0;
+	dEphidz = 0;
+	Ez = 0;
+	dEzdr = 0;
+	dEzdz = 0;	
 	
 	return 0;
 }
