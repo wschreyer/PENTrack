@@ -14,15 +14,16 @@ vector<string> model_name;
 
 
 // transmission through a wall (loss of UCN) with Fermi potential  Mf (real) and PF (im) for a UCN with energy Er perpendicular to the wall (all in neV)
-/*long double Transmission(long double Er, long double Mf, long double Pf){
+long double Transmission(long double Er, long double Mf, long double Pf){
 return 0.2e1 * sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf + Mf * Mf + Pf * Pf) + Er - Mf) / (Er + sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf + Mf * Mf + Pf * Pf) + Er - Mf) + sqrtl(Er * Er - 0.2e1 * Er * Mf + Mf * Mf + Pf * Pf));
 }
-*/
+
 
 #define REFLECT_TOLERANCE 1e-6 // if the integration point is farther from the reflection point, the integration will be repeated
 
 // load STL-files and create kd-trees
 void LoadGeometry(){
+	cout << endl;
 	ifstream infile((inpath+"/geometry.in").c_str());
 	string line;
 	char c;
@@ -96,13 +97,13 @@ void LoadGeometry(){
 		else getline(infile,line);
 	}
 	
-/*	
+	
 	if(reflektlog == 1){
 		ostringstream reflectlogfile;
 		reflectlogfile << outpath << "/" << jobnumber << "reflect.out";
 		REFLECTLOG = fopen(reflectlogfile.str().c_str(),mode_w);
-		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vtang phidot dvabs\n"); // Header for Reflection File
-	}	*/
+		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vphi phidot dvabs\n"); // Header for Reflection File
+	}	
 }
 
 // return a random point in sourcevolume
@@ -118,11 +119,26 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z)
 	z = p[2];
 }
 
+// check if a point is inside the source volume
+bool InSourceVolume(long double r, long double phi, long double z){
+		long double p[3] = {r*cos(phi), r*sin(phi), z};
+		return sourcevolume.PointInVolume(p);
+}
+
 // check step y1->y2 for reflection, return -1 for failed reflection (step has to be repeated with smaller stepsize)
 //											0 for no reflection
 //											1 for reflection successful
 short ReflectCheck(long double x1, long double *y1, long double &x2, long double *y2){
 	long double p1[3] = {y1[1]*cos(y1[5]), y1[1]*sin(y1[5]), y1[3]}; // cart. coords
+	
+	if (!geometry.PointInBox(p1)){
+		kennz=99;  
+		stopall=1;
+		printf("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",x1,y1[1],y1[3]);
+		fprintf(LOGSCR,"Particle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",x1,y1[1],y1[3]);
+		return 1;
+	}
+	
 	long double p2[3] = {y2[1]*cos(y2[5]), y2[1]*sin(y2[5]), y2[3]};
 	long double s, normal_cart[3];
 	unsigned i;
@@ -152,7 +168,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		if(!reflekt){
 			stopall = 1;
 			kennz = model_kennz[i];
-			printf("Particle hit %s (no reflection) at r=%LG z=%LG\n",model_name[i].c_str(),y1[1],y1[3]);
+			printf("\nParticle hit %s (no reflection) at r=%LG z=%LG\n",model_name[i].c_str(),y1[1],y1[3]);
 			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",model_name[i].c_str(),y1[1],y1[3]);
 			return 1;
 		}
@@ -160,7 +176,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		{
 			stopall = 1;
 			kennz = model_kennz[i];
-			printf("Statistical absorption at %s (%s)!\n",model_name[i].c_str(),mat_name[mat].c_str());
+			printf("\nStatistical absorption at %s (%s)!\n",model_name[i].c_str(),mat_name[mat].c_str());
 			fprintf(LOGSCR,"Statistical absorption at %s (%s)!\n",model_name[i].c_str(),mat_name[mat].c_str());
 			return 1;
 		}		
@@ -169,15 +185,15 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		prob = mt_get_double(v_mt_state);
 		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat_DiffProb[mat])))
 		{
-	    	printf(" pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m ",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
+	    	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
 			fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
 			nrefl++;
-			if(reflektlog == 1)
-				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 1 %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
-									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,(long double)0.0,(long double)0.0,y1[2],y1[4],y1[1]*y1[6],y1[6]);
 			v[0] -= 2*vnormal*normal[0]; // reflect velocity
 			v[1] -= 2*vnormal*normal[1];
 			v[2] -= 2*vnormal*normal[2];
+			if(reflektlog == 1)
+				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 1 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,(long double)0.0,(long double)0.0,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs);
 		}
 		
 		//************** diffuse reflection ************
@@ -199,12 +215,12 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 				v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
 				v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
 			}
-	       	printf(" pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m ",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
+	       	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
 	       	fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
 	       	nrefl++;
 	       	if(reflektlog == 1)
-				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
-									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,winkeben,winksenkr,y1[2],y1[4],y1[1]*y1[6],y1[6]);
+				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,winkeben,winksenkr,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs);
 		}
 		y1[2] = v[0]; // write new velocity into y1-vector
 		y1[4] = v[2];

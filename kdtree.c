@@ -482,10 +482,17 @@ bool KDTree::Collision(const long double p1[3], const long double p2[3], long do
 
 // test if a point is located inside a closed(!) volume (volume defined by Init)
 bool KDTree::PointInVolume(const long double p[3]){
-    long double p2[3] = {p[0],p[1],lo[2]};
-    long double s = INFINITY;
-    Triangle *tri = NULL;
-    return (root && root->Collision(p,p2,s,lastnode,tri) && ((tri->normal[2] < 0) == (tri->normalIO < 0)));
+	if (PointInBox(p)){
+	    long double p2[3] = {p[0],p[1],p[2]};
+	    if (p[2] - lo[2] < hi[2] - p[2])
+	    	p2[2] = lo[2];
+	    else
+	    	p2[2] = hi[2];	    	
+	    long double s = INFINITY;
+	    Triangle *tri = NULL;
+	    return (root && root->Collision(p,p2,s,lastnode,tri) && ((tri->normal[2] < 0) == (tri->normalIO < 0)));
+	}
+	return false;
 }
 
 // test if a point is located in the root box

@@ -28,7 +28,6 @@ void ConfigInit(void){
 	spinflipcheck = 0;
 	BruteForce = 0;
 	neutdist = 0;
-	wanddicke = 0.01;
 	reflekt = 1;
 	diffuse = 3;
 	bfeldwahl = 0;
@@ -45,15 +44,12 @@ void ConfigInit(void){
 	/*end default values*/
 	
 	// we want do find some keywords in the config file bah[][] contains the possible variables and bah2[][] the regions
-	char bah[28][17]={{'s','l','i','t'},{'B','r','u','t','e','F','o','r','c','e'},{'r','e','f','l','e','k','t'},
-		{'s','p','i','n','f','l','i','p','c','h','e','c','k'},{'p','r','o','t','n','e','u','t'},{'r','u','n','g','e'},{'p','o','l','a','r','i','s','a','t','i','o','n'},
-		{'n','e','u','t','d','i','s','t'},{'w','a','n','d','d','i','c','k','e'},{'d','i','f','f','u','s','e'},{'b','f','e','l','d','w','a','h','l'},
-		{'a','u','s','g','a','b','e','w','u','n','s','c','h'},{'M','o','n','t','e','C','a','r','l','o',' '},{'M','o','n','t','e','C','a','r','l','o','A','n','z','a','h','l'},
-		{'R','a','m','p','U','p','T','i','m','e'},{'R','a','m','p','D','o','w','n','T','i','m','e'},{'F','u','l','l','F','i','e','l','d','T','i','m','e'},{'C','l','e','a','n','i','n','g','T','i','m','e'},{'E','m','p','t','y','i','n','g','T','i','m','e'},{'s','t','o','r','a','g','e','t','i','m','e'},
-		{'B','F','T','a','r','g','e','t','B'},{'d','e','c','a','y'},{'a','b','s','o','r','b','e','r'},{'F','i','l','l','i','n','g','T','i','m','e'},{'D','e','t','O','p','e','n'},{'B','F','e','l','d','S','k','a','l','G','l','o','b','a','l'},{'E','F','e','l','d','S','k','a','l'},
-			{'e','x','p','m','o','d','e'}};
+	char bah[24][17]={{"BruteForce"},{"reflekt"},{"spinflipcheck"},{"protneut"},{"runge"},{"polarisation"},
+		{"neutdist"},{"diffuse"},{"bfeldwahl"},{"ausgabewunsch"},{"MonteCarlo "},{"MonteCarloAnzahl"},
+		{"RampUpTime"},{"RampDownTime"},{"FullFieldTime"},{"CleaningTime"},{"EmptyingTime"},{"storagetime"},
+		{"BFTargetB"},{"decay"},{"FillingTime"},{"BFeldSkalGlobal"},{"EFeldSkal"},{"expmode"}};
 			
-	char bah2[7][10]={{'g','l','o','b','a','l'},{'r','a','m','p','u','p'},{'f','u','l','l','f','i','e','l','d'},{'r','a','m','p','d','o','w','n'},{'f','i','l','l','i','n','g'},{'c','o','u','n','t','i','n','g'},{'c','l','e','a','n','i','n','g'}};
+	char bah2[7][10]={{"global"},{"rampup"},{"fullfield"},{"rampdown"},{"filling"},{"counting"},{"cleaning"}};
 	
 	do // read the file
 	{
@@ -80,7 +76,7 @@ void ConfigInit(void){
 			}else if(strstr(line,bah2[5]) != NULL){
 				b=6;
 				continue;
-				}else if(strstr(line,bah2[6]) != NULL){
+			}else if(strstr(line,bah2[6]) != NULL){
 				b=7;
 				continue;
 			}else{
@@ -91,137 +87,107 @@ void ConfigInit(void){
 			switch(b){
 				case 1:
 					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %hu",&slit);
-					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %hu",&BruteForce);
-					else if(strstr(line,bah[2]) != NULL)
+					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&reflekt);
-					else if(strstr(line,bah[3]) != NULL)
+					else if(strstr(line,bah[2]) != NULL)
 						sscanf(line,"%*s %i",&spinflipcheck);
-					else if(strstr(line,bah[4]) != NULL)
+					else if(strstr(line,bah[3]) != NULL)
 						sscanf(line,"%*s %i",&protneut);
-					else if(strstr(line,bah[5]) != NULL)
+					else if(strstr(line,bah[4]) != NULL)
 						sscanf(line,"%*s %d",&runge);
-					else if(strstr(line,bah[6]) != NULL)
+					else if(strstr(line,bah[5]) != NULL)
 						sscanf(line,"%*s %i",&polarisation);
-					else if(strstr(line,bah[7]) != NULL)
+					else if(strstr(line,bah[6]) != NULL)
 						sscanf(line,"%*s %i",&neutdist);
-					else if(strstr(line,bah[8]) != NULL)
-						sscanf(line,"%*s %5LG",&wanddicke);
-					else if(strstr(line,bah[9]) != NULL)
+					else if(strstr(line,bah[7]) != NULL)
 						sscanf(line,"%*s %i",&diffuse);
-					else if(strstr(line,bah[10]) != NULL)
+					else if(strstr(line,bah[8]) != NULL)
 						sscanf(line,"%*s %i",&bfeldwahl);
-					else if(strstr(line,bah[11]) != NULL)
+					else if(strstr(line,bah[9]) != NULL)
 						sscanf(line,"%*s %i",&ausgabewunsch);
-					else if(strstr(line,bah[12]) != NULL)
+					else if(strstr(line,bah[10]) != NULL)
 						sscanf(line,"%*s %i",&MonteCarlo);
-					else if(strstr(line,bah[13]) != NULL)
+					else if(strstr(line,bah[11]) != NULL)
 						sscanf(line,"%*s %i",&MonteCarloAnzahl);
-					else if(strstr(line,bah[14]) != NULL)
+					else if(strstr(line,bah[12]) != NULL)
 						sscanf(line,"%*s %7LG",&RampUpTime);
-					else if(strstr(line,bah[15]) != NULL)
+					else if(strstr(line,bah[13]) != NULL)
 						sscanf(line,"%*s %7LG",&RampDownTime);
-					else if(strstr(line,bah[16]) != NULL)
+					else if(strstr(line,bah[14]) != NULL)
 						sscanf(line,"%*s %7LG",&FullFieldTime);
-					else if(strstr(line,bah[17]) != NULL)
+					else if(strstr(line,bah[15]) != NULL)
 						sscanf(line,"%*s %7LG",&CleaningTime);
-					else if(strstr(line,bah[18]) != NULL)
+					else if(strstr(line,bah[16]) != NULL)
 						sscanf(line,"%*s %7LG",&EmptyingTime);
-		            else if(strstr(line,bah[19]) != NULL)
-						sscanf(line,"%*s %7LG",&storagetime);
-					else if(strstr(line,bah[20]) != NULL)
+		            else if(strstr(line,bah[17]) != NULL)
+						sscanf(line,"%*s %7LG",&StorageTime);
+					else if(strstr(line,bah[18]) != NULL)
 						sscanf(line,"%*s %3LG",&BFTargetB);
-					else if(strstr(line,bah[21]) != NULL)
+					else if(strstr(line,bah[19]) != NULL)
 						sscanf(line,"%*s %hu",&decay.on);
-					else if(strstr(line,bah[22]) != NULL)
-						sscanf(line,"%*s %d",&AbsorberChoice);
-					else if(strstr(line,bah[23]) != NULL)
+					else if(strstr(line,bah[20]) != NULL)
 						sscanf(line,"%*s %7LG",&FillingTime);
-					else if(strstr(line,bah[25]) != NULL)
+					else if(strstr(line,bah[21]) != NULL)
 						sscanf(line,"%*s %7LG",&BFeldSkalGlobal);
-					else if(strstr(line,bah[26]) != NULL)
+					else if(strstr(line,bah[22]) != NULL)
 						sscanf(line,"%*s %7LG",&EFeldSkal);
-					else if(strstr(line,bah[27]) != NULL)
+					else if(strstr(line,bah[23]) != NULL)
 						sscanf(line,"%*s %d",&expmode);
 				break;
 				
 				case 2:
 					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&ruslit);
-					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&ruBruteForce);
-					else if(strstr(line,bah[2]) != NULL)
+					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&rureflekt);
-					else if(strstr(line,bah[3]) != NULL)
+					else if(strstr(line,bah[2]) != NULL)
 						sscanf(line,"%*s %i",&ruspinflipcheck);
-					else if(strstr(line,bah[24]) != NULL)
-						sscanf(line,"%*s %i",&ruDetOpen);
 				break;
 			
 				case 3:
 					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&ffslit);
-					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&ffBruteForce);
-					else if(strstr(line,bah[2]) != NULL)
+					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&ffreflekt);
-					else if(strstr(line,bah[3]) != NULL)
+					else if(strstr(line,bah[2]) != NULL)
 						sscanf(line,"%*s %i",&ffspinflipcheck);
-					else if(strstr(line,bah[24]) != NULL)
-						sscanf(line,"%*s %i",&ffDetOpen);
 				break;
 				
 				case 4:
 					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&rdslit);
-					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&rdBruteForce);
-					else if(strstr(line,bah[2]) != NULL)
+					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&rdreflekt);
-					else if(strstr(line,bah[3]) != NULL)
+					else if(strstr(line,bah[2]) != NULL)
 						sscanf(line,"%*s %i",&rdspinflipcheck);
-					else if(strstr(line,bah[24]) != NULL)
-						sscanf(line,"%*s %i",&rdDetOpen);
 				break;
 					
 				case 5:
 					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&fislit);
-					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&fiBruteForce);
-					else if(strstr(line,bah[2]) != NULL)
+					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&fireflekt);
-					else if(strstr(line,bah[3]) != NULL)
+					else if(strstr(line,bah[2]) != NULL)
 						sscanf(line,"%*s %i",&fispinflipcheck);
-					else if(strstr(line,bah[24]) != NULL)
-						sscanf(line,"%*s %i",&fiDetOpen);
 				break;
 					
 				case 6:
 					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&coslit);
-					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&coBruteForce);
-					else if(strstr(line,bah[2]) != NULL)
+					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&coreflekt);
-					else if(strstr(line,bah[3]) != NULL)
+					else if(strstr(line,bah[2]) != NULL)
 						sscanf(line,"%*s %i",&cospinflipcheck);
-					else if(strstr(line,bah[24]) != NULL)
-						sscanf(line,"%*s %i",&coDetOpen);
 				break;
 					
-					case 7:
+				case 7:
 					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&clslit);
-					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&clBruteForce);
-					else if(strstr(line,bah[2]) != NULL)
+					else if(strstr(line,bah[1]) != NULL)
 						sscanf(line,"%*s %i",&clreflekt);
-					else if(strstr(line,bah[3]) != NULL)
+					else if(strstr(line,bah[2]) != NULL)
 						sscanf(line,"%*s %i",&clspinflipcheck);
-					else if(strstr(line,bah[24]) != NULL)
-						sscanf(line,"%*s %i",&clDetOpen);
 				break;
 				
 				case 0:
@@ -236,21 +202,13 @@ void ConfigInit(void){
 		
 	}while(!feof(cfg));
 	
-	if(decay.on)
-	{	protneut = NEUTRON; // neutron is needed as decay educt
-		decay.ed = 0;
-	}
+	if(protneut != NEUTRON) decay.on = false;
+	else if(decay.on) decay.ed = 0;
 	
 	polarisationsave = polarisation; // save polarisation choise
 	
 	if(protneut == NEUTRON)
-	{	// make absorber choice
-		if(AbsorberChoice==1) //PE
-		{	Mf=FPrealPE; Pf=FPimPE;
-		}
-		else if(AbsorberChoice==2) //Ti
-		{	Mf=FPrealTi; Pf=FPimTi;
-		}
+	{
 		if (neutdist == 1) prepndist(1);
 	}
 	
@@ -262,8 +220,6 @@ void ConfigInit(void){
 	
 	Efeldwahl=0;
 	ausgabewunschsave=ausgabewunsch;
-	BFeldSkalGlobalSave=BFeldSkalGlobal;
-	EFeldSkalSave=EFeldSkal;
 	fclose(cfg);
 	return;
 }
@@ -286,22 +242,10 @@ void initialStartbed()
 						break;
 	}
 	EnergieS = particleini.EnergieS * edm; // [eV]
-	dEnergie = particleini.dEnergie * edm; // [eV]
 	EnergieE = particleini.EnergieE * edm; // [eV]
-	z_ns = particleini.zs;
-	dz_n = particleini.dz;
-	z_ne = particleini.ze;
-	r_ns = particleini.rs;
-	dr_n = particleini.dr;
-	r_ne = particleini.re;
-	phis = particleini.phis;
-	dphi = particleini.dphi;
-	phie = particleini.phie;
 	alphas = particleini.alphas;
-	dalpha = particleini.dalpha;
 	alphae = particleini.alphae;
 	gammas = particleini.gammas;
-	dgamma = particleini.dgamma;
 	gammae = particleini.gammae;
 	delx = particleini.delx;
 	xend = particleini.xend;
@@ -332,53 +276,35 @@ void Startbed(int k)
 		switch (i)
 		{	case  2:	ncont = sscanf(cline, "%LG %LG %LG ", &DiceRodField, &RodFieldMultiplicator, &Ibar);
 						break;
-			case  4:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.EnergieS, &nini.dEnergie, &nini.EnergieE);
+			case  4:	ncont = sscanf(cline, "%LG %LG ", &nini.EnergieS, &nini.EnergieE);
 						break;
-			case  5:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.zs, &nini.dz, &nini.ze);
+			case  5:	ncont = sscanf(cline, "%LG %LG ", &nini.alphas, &nini.alphae);
 						break;
-			case  6:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.rs, &nini.dr , &nini.re);
+			case  6:	ncont = sscanf(cline, "%LG %LG ", &nini.gammas, &nini.gammae);
 						break;
-			case  7:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.phis, &nini.dphi, &nini.phie);
-						break;			
-			case  8:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.alphas, &nini.dalpha, &nini.alphae);
+			case 7:		ncont = sscanf(cline, "%LG %LG ", &nini.delx, &nini.xend);
 						break;
-			case  9:	ncont = sscanf(cline, "%LG %LG %LG ", &nini.gammas, &nini.dgamma, &nini.gammae);
+			case 9:		ncont = sscanf(cline, "%LG %LG ", &pini.EnergieS, &pini.EnergieE);
 						break;
-			case 10:	ncont = sscanf(cline, "%LG %LG ", &nini.delx, &nini.xend);
+			case 10:	ncont = sscanf(cline, "%LG %LG ", &pini.alphas, &pini.alphae);
 						break;
-			case 12:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.EnergieS, &pini.dEnergie, &pini.EnergieE);
+			case 11:	ncont = sscanf(cline, "%LG %LG ", &pini.gammas, &pini.gammae);
 						break;
-			case 13:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.zs, &pini.dz, &pini.ze);
+			case 12:	ncont = sscanf(cline, "%LG %LG ", &pini.delx, &pini.xend);
 						break;
-			case 14:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.rs, &pini.dr , &pini.re);
+			case 14:	ncont = sscanf(cline, "%LG %LG ", &eini.EnergieS, &eini.EnergieE);
 						break;
-			case 15:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.phis, &pini.dphi, &pini.phie);
-						break;			
-			case 16:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.alphas, &pini.dalpha, &pini.alphae);
+			case 15:	ncont = sscanf(cline, "%LG %LG ", &eini.alphas, &eini.alphae);
 						break;
-			case 17:	ncont = sscanf(cline, "%LG %LG %LG ", &pini.gammas, &pini.dgamma, &pini.gammae);
+			case 16:	ncont = sscanf(cline, "%LG %LG ", &eini.gammas, &eini.gammae);
 						break;
-			case 18:	ncont = sscanf(cline, "%LG %LG ", &pini.delx, &pini.xend);
+			case 17:	ncont = sscanf(cline, "%LG %LG ", &eini.delx, &eini.xend);
 						break;
-			case 20:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.EnergieS, &eini.dEnergie, &eini.EnergieE);
+			case 19:	ncont = sscanf(cline, "%LG %LG %LG ", &BCutPlanePoint[0], &BCutPlanePoint[1], &BCutPlanePoint[2]);
 						break;
-			case 21:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.zs, &eini.dz, &eini.ze);
+			case 20:	ncont = sscanf(cline, "%LG %LG ", &BCutPlaneNormalAlpha, &BCutPlaneNormalGamma);
 						break;
-			case 22:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.rs, &eini.dr , &eini.re);
-						break;
-			case 23:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.phis, &eini.dphi, &eini.phie);
-						break;			
-			case 24:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.alphas, &eini.dalpha, &eini.alphae);
-						break;
-			case 25:	ncont = sscanf(cline, "%LG %LG %LG ", &eini.gammas, &eini.dgamma, &eini.gammae);
-						break;
-			case 26:	ncont = sscanf(cline, "%LG %LG ", &eini.delx, &eini.xend);
-						break;
-			case 28:	ncont = sscanf(cline, "%LG %LG %LG ", &BCutPlanePoint[0], &BCutPlanePoint[1], &BCutPlanePoint[2]);
-						break;
-			case 29:	ncont = sscanf(cline, "%LG %LG ", &BCutPlaneNormalAlpha, &BCutPlaneNormalGamma);
-						break;
-			case 30:	ncont = sscanf(cline, "%LG %u ", &BCutPlaneSampleDist, &BCutPlaneSampleCount);
+			case 21:	ncont = sscanf(cline, "%LG %u ", &BCutPlaneSampleDist, &BCutPlaneSampleCount);
 						break;
 		}
 		if(ncont < 1) printf("an error occourd while reading the %i. item in line %i of all3inone.in", ncont, i);
@@ -387,56 +313,6 @@ void Startbed(int k)
     // closing 'inistream' to all3inone.in
  	fclose(inistream);
 	
-	// setting path for dimensions.in
-	path = inpath + "/dimensions.in";
-	
-	// creating 'dimstream' to dimensions.in	
-	FILE *dimstream = fopen (path.c_str(), mode_r);
-	if (dimstream == NULL)
-	{	cout << "Can't open " << path << "\n";
-		exit(-1);
-	}   
-	
-	// looping  over the lines of dimensions.in and reading them in
-	for(i = 1; i < 29; i++)
-	{	fgets(cline, 200, dimstream);
-		ncont = 42;
-		switch(i)
-		{	case  2:	ncont = sscanf(cline, "%LG %LG ", &zmin, &zmax);
-						break;
-			case  3:	ncont = sscanf(cline, "%LG %LG ", &rmin, &rmax);
-						break;
-			case  4:	ncont = sscanf(cline, "%LG ", &detz);
-						break;
-			case  5:	ncont = sscanf(cline, "%LG %LG ", &detrmin, &detrmax);
-						break;
-			case  6:	ncont = sscanf(cline, "%LG %LG ", &abszmin, &abszmax);
-						break;
-			case  7:	ncont = sscanf(cline, "%LG %LG ", &absrmin, &absrmax);
-						break;
-			case  8:	ncont = sscanf(cline, "%LG %LG ", &absphimin, &absphimax);
-						break;
-			case  9:	ncont = sscanf(cline, "%LG ", &hlid);	
-						break;
-			case 11:	ncont = sscanf(cline, "%LG %LG", &FPrealNocado, &FPimNocado);
-						break;
-			case 12:	ncont = sscanf(cline, "%LG %LG", &FPrealPE, &FPimPE);
-						break;
-			case 13:	ncont = sscanf(cline, "%LG %LG", &FPrealTi, &FPimTi);
-						break;
-			case 14:	ncont = sscanf(cline, "%LG %LG", &FPrealCu, &FPimCu);
-						break;
-			case 15:	ncont = sscanf(cline, "%LG %LG", &FPrealCsI, &FPimCsI);
-						break;
-			case 16:	ncont = sscanf(cline, "%LG %LG", &FPrealDLC, &FPimDLC);
-						break;						
-		}
-		if(ncont < 1) printf("an error occourd while reading the %i. item in line %i of dimensions.in", ncont, i);				
-	}
-	
-	// closing 'dimstream' to all3inone.in
-	fclose(dimstream);
-
 	// initalizes initial values from record to used variables
 	initialStartbed();
 
@@ -452,7 +328,7 @@ void Startbed(int k)
 	}
 	
 	// check if lower neutron energy boundary is possible, if not set to possible value
-	if((z_ns >= 0) && ((FillingTime = 0) && (CleaningTime = 0) && (RampUpTime = 0) && ((FullFieldTime != 0) || (RampDownTime != 0))))
+	if((FillingTime == 0) && (CleaningTime == 0) && (RampUpTime == 0) && ((FullFieldTime != 0) || (RampDownTime != 0)))
 	{	nini.EnergieS = max(Emin_n*1e9, nini.EnergieS); // higher energy of the neutron
 		if(protneut == NEUTRON) EnergieS = nini.EnergieS; // reinitializes initial value
 	}
@@ -468,7 +344,7 @@ void Startbed(int k)
 			case 3:	particleini = eini;
 					break;
 		}
-		if((particleini.EnergieS > particleini.EnergieE) || (particleini.zs > particleini.ze) || (particleini.rs > particleini.re) || (particleini.phis > particleini.phie) || (particleini.alphas > particleini.alphae) || (particleini.gammas > particleini.gammae))
+		if((particleini.EnergieS > particleini.EnergieE) || (particleini.alphas > particleini.alphae) || (particleini.gammas > particleini.gammae))
 		{	printf("\n\n\nERROR: Two or more initial values are inconsistent.\n"
 			             "       Check ALL starting and final values in all3inone.in!\n\n"
 			             "EXIT!!\n");
@@ -479,26 +355,12 @@ void Startbed(int k)
 		}
 	}
 
-	// the inner wall thickness is set to the same size then the outer, but if there is no inner wall (/coils) the thickness is set to zero.
-	// (mainly used for AbEx)
-	wandinnen = wanddicke;
-	if(rmin <= 0.0) wandinnen = 0.0;
-
-	// logging dimensions to *log.out
-	fprintf(LOGSCR, "dimensions.in: rmin = %.17LG, rmax = %.17LG, zmin = %.17LG, zmax = %.17LG\n"
-	                "  detz = %.17LG, detrmin = %.17LG, detrmax = %.17LG, hlid = %.17LG",
-	                rmin, rmax, zmin, zmax,
-	                detz, detrmin, detrmax, hlid);
-
 	// writing parameters to screen
 	printf("\nStart parameters:\n"
-	       "  Energy (min, step, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
+	       "  Energy (min, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
 	       "  Maximum runtime: %.17LG s\n"
-	       "  r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	       "  z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	       "  phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	       "  Alpha (min, step, max): %.17LG degree, %.17LG degree, %.17LG degree\n"
-	       "  Gamma (min, step, max): %.17LG degree, %.17LG degree, %.17LG degree\n"
+	       "  Alpha (min, max): %.17LG degree, %.17LG degree\n"
+	       "  Gamma (min, max): %.17LG degree, %.17LG degree\n"
 	       "  Filling time: %LG s\n"
 	       "  Cleaning time: %.17LG s\n"
 	       "  Ramp up time: %.17LG s\n"
@@ -506,13 +368,10 @@ void Startbed(int k)
 	       "  RampDownTime: %.17LG s\n"
 	       "  B field scaling factor: %.17LG s\n"
 	       "  E field scaling factor: %.17LG s\n",
-	       EnergieS, dEnergie, EnergieE,
+	       EnergieS, EnergieE,
 	       xend,
-	       r_ns, dr_n, r_ne,
-	       z_ns, dz_n, z_ne,
-	       phis, dphi, phie,
-	       alphas, dalpha, alphae,
-	       gammas, dgamma, gammae,
+	       alphas, alphae,
+	       gammas,  gammae,
 	       FillingTime,
 	       CleaningTime,
 	       RampUpTime,
@@ -523,13 +382,10 @@ void Startbed(int k)
 
 	// logging parameters to *log.out
 	fprintf(LOGSCR, "\nStart parameters:\n"
-	                "  Energy (min, step, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
+	                "  Energy (min, step, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
 	                "  Maximum runtime: %.17LG s\n"
-	                "  r (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	                "  z (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	                "  phi (min, step, max): %.17LG m, %.17LG m, %.17LG m\n"
-	                "  Alpha (min, step, max): %.17LG degree, %.17LG degree, %.17LG degree\n"
-	                "  Gamma (min, step, max): %.17LG degree, %.17LG degree, %.17LG degree\n"
+	                "  Alpha (min, step, max): %.17LG degree, %.17LG degree\n"
+	                "  Gamma (min, step, max): %.17LG degree, %.17LG degree\n"
 	                "  Filling time %LG s\n"
 	                "  Cleaning time: %.17LG s\n"
 	                "  Ramp up time: %.17LG s\n"
@@ -537,13 +393,10 @@ void Startbed(int k)
 	                "  RampDownTime: %.17LG s\n"
 	                "  B field scaling factor: %.17LG s\n"
 	                "  E field scaling factor: %.17LG s\n",
-	                EnergieS, dEnergie, EnergieE,
+	                EnergieS, EnergieE,
 	                xend,
-	                r_ns, dr_n, r_ne,
-	                z_ns, dz_n, z_ne,
-	                phis, dphi, phie,
-	                alphas, dalpha, alphae,
-	                gammas, dgamma, gammae,
+	                alphas, alphae,
+	                gammas, gammae,
 	                FillingTime,
 	                CleaningTime,
 	                RampUpTime,
@@ -579,6 +432,8 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 		{	kennz = 1; // particle survived until xend
 		}			
 	}
+	else if (x2 >= StorageTime)
+		kennz = 1;
 		
 	if(vend>0) gammaend= acosl(ystart[4]/vend) /conv;
 	else gammaend=0;
@@ -591,9 +446,9 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	if(tauSF < -9e99) tauSF = -9e99; // "-INF"?
 	
 	// output of end values
-	fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %i %LG %LG %LG %LG\n",
+	fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
 	jobnumber, monthinmilliseconds, protneut, polarisation,xstart,r_n,phi_n,z_n,NeutEnergie*1.0e9,v_n,alpha,gammaa,ystart[1],phiend,ystart[3],vend,alphaend,gammaend,x2,dt,H,kennz, NSF,RodFieldMultiplicator, BFflipprob,nrefl, vladmax,vladtotal,thumbmax,
-	trajlengthsum,(H-Hstart),Hmax,AbsorberHits, BFeldSkal, EFeldSkal, tauSF, dtau);
+	trajlengthsum,(H-Hstart),Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
 	
 	
 	fflush(ENDLOG);
@@ -734,28 +589,12 @@ void OutputState(long double *y, int l){
 	fprintf(STATEOUT,"Magnetic Field Derivatives: \n  %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG \n", dBrdr,dBrdphi,dBrdz,dBphidr,dBphidphi,dBphidz,dBzdr,dBzdphi,dBzdz);
 	fprintf(STATEOUT,"Reflection state (1 is on): %i \n",reflekt);
 	fprintf(STATEOUT,"Diffuse reflection state (1 is specular, 2 diffuse, 3 statistical): %i \n",diffuse);
-	fprintf(STATEOUT,"Diffuprob:  %.10LG\n", DiffProb);
-	fprintf(STATEOUT,"Rmax: %.10LG\n", rmax);
-	fprintf(STATEOUT,"Wanddicke %.10LG\n",wanddicke);
-	fprintf(STATEOUT,"Epsi: %.10LG\n", epsi);
 	fprintf(STATEOUT,"timestep: %.10LG\n", (x2-x1));
 	fprintf(STATEOUT,"Reflekt while Rampdown: %i\n", rdreflekt);
-	fprintf(STATEOUT,"Slit: %i\n", slit);
 	kennz=88;
 	stopall =1;
-	exit(-1);
+//	exit(-1);
 	iMC = MonteCarloAnzahl +1;
-}
-
-void csleep(int sec){
-time_t start_time, cur_time;
-
-         time(&start_time);
-         do
-         {
-                 time(&cur_time);
-         }
-         while((cur_time - start_time) < sec);	
 }
 
 // print cut through BField to file
@@ -827,5 +666,42 @@ void PrintBFieldCut(){
 	printf("Called BFeld %u times in %fs (%fms per call)",BCutPlaneSampleCount*BCutPlaneSampleCount, start, start/BCutPlaneSampleCount/BCutPlaneSampleCount);
 }
 
+void PrintBField(){
+	fprintf(ENDLOG,"r phi z Br Bphi Bz 0 0 Babs\n");
+	BFeldSkal = 1.0;
+	int E;
+	long double rmin = 0.12, rmax = 0.5, zmin = 0, zmax = 1.2;
+	long double dr = 0.1, dz = 0.1;
+	long double VolumeB[(int)(nini.EnergieE) + 1];
+	for (E = 0; E <= nini.EnergieE; E++) VolumeB[E] = 0;
+	
+	long double EnTest;
+	for (long double r = rmin; r <= rmax; r += dr){
+		for (long double z = zmin; z <= zmax; z += dz){
+			BFeld(r, 0, z, 500.0);
+			fprintf(ENDLOG,"%LG %G %LG %LG %LG %LG %G %G %LG \n",r/lengthconv,0.0,z/lengthconv,Br/Bconv,Bphi/Bconv,Bz/Bconv,0.0,0.0,Bws/Bconv);
+			cout << "r= " << r << " z= " << z << " Br= " << Br << " T, Bz= " << Bz << " T"  << endl;
+			
+			// Ramp Heating Analysis
+			for (E = 0; E <= nini.EnergieE; E++){
+				EnTest = E*1.0e-9 - m_n*gravconst*z + mu_n * Bws;
+				if (EnTest >= 0){
+					// add the volume segment to the volume that is accessible to a neutron with energy Energie
+					VolumeB[E] = VolumeB[E] + pi * dz * ((r+0.5*dr)*(r+0.5*dr) - (r-0.5*dr)*(r-0.5*dr));
+				}
+			}
+		}
+	}
 
+	// for investigating ramp heating of neutrons, volume accessible to neutrons with and
+	// without B-field is calculated and the heating approximated by thermodynamical means
+	fprintf(LOGSCR,"\nEnergie [neV], Volumen ohne B-Feld, mit B-Feld, 'Erwaermung'");
+	long double Volume;
+	for (E = 0; E <= nini.EnergieE; E++) 
+	{
+		Volume = ((E * 1.0e-9 / (m_n * gravconst))) * pi * (rmax*rmax-rmin*rmin);
+		// isentropische zustandsnderung, kappa=5/3
+		fprintf(LOGSCR,"\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * powl((Volume/VolumeB[E]),(2.0/3.0)) - E);
+	}
+}
 

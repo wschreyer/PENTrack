@@ -22,10 +22,8 @@
 #include "bruteforce.h"
 #include "2dinterpolfeld.h"
 #include "adiabacity.h"
-#include "reflect.h"
 #include "maplefield.h"
 #include "BForbes.h"
-#include "geomcheck.h"
 #include "geometry.h"
 
 
@@ -53,16 +51,6 @@
 
 #define KENNZAHL_UNKNOWN 0
 #define KENNZAHL_NOT_FINISH 1
-#define KENNZAHL_HIT_BOTTOM 2
-#define KENNZAHL_HIT_WALL 3
-#define KENNZAHL_ESCAPE_TOP 4
-#define KENNZAHL_ESCAPE_SLIT 5
-#define KENNZAHL_DETECTOR_BOTTOM 6
-#define KENNZAHL_ABSORBED 7
-#define KENNZAHL_STILL_THERE 8
-#define KENNZAHL_EATEN 9
-#define KENNZAHL_DETECTOR_TOP 10
-#define KENNZAHL_UCN_DETECTOR 12
 
 #define TRUE 1
 #define FALSE 0
@@ -74,26 +62,27 @@ using namespace std;
 //typedef unsigned short int bool;
 
 //functions
-extern void PrepareParticle();
-extern void derivs(long double x, long double *y, long double *dydx);
-extern void OpenFiles(int argc, char **argv); // Open in files
-extern void IntegrateParticle(); // integrate particle trajectory
-extern void BruteForceIntegration(); // integrate spin flip probability
-extern void initialStartbed();
-extern void Startbed(int k);
-extern void ausgabe(long double x2, long double *ystart, long double vend, long double H);
-extern void prepndist(int k);
-extern void fillndist(int k);
-extern void outndist(int k);
-extern void ConfigInit(void);
-extern void OutputState(long double *y, int l);
-extern void csleep(int sec);
-extern void PrintBFieldCut();	// print cut through BField to file
+void derivs(long double x, long double *y, long double *dydx);
+void OpenFiles(int argc, char **argv); // Open in files
+void PrepareParticle();
+void IntegrateParticle(); // integrate particle trajectory
+void PrintIntegrationStep(long double &timetemp);
+void BruteForceIntegration(); // integrate spin flip probability
+void initialStartbed();
+void Startbed(int k);
+void ausgabe(long double x2, long double *ystart, long double vend, long double H);
+void prepndist(int k);
+void fillndist(int k);
+void outndist(int k);
+void ConfigInit(void);
+void OutputState(long double *y, int l);
+void PrintBFieldCut();	// print cut through BField to file
+void PrintBField();	// print Bfield to file and investigate ramp heating
 
 // globals
 
 // global file descriptors
-extern FILE *LOGSCR, *OUTFILE1, *BFLOG, *TESTLOG, *ENDLOG, *FIN, *STATEOUT, *STARTIN;
+extern FILE *LOGSCR, *OUTFILE1, *BFLOG, *ENDLOG, *STATEOUT, *STARTIN;
 
 // files for in/output + paths
 extern string inpath,outpath;
@@ -112,26 +101,20 @@ extern long double lengthconv, Bconv, Econv;    // Einheiten aus field Tabelle (
 
 //misc configuration
 extern int MonteCarlo, MonteCarloAnzahl;   // user choice to use MC or not, number of particles for MC simulation
-extern int reflekt, newreflection, Efeldwahl, bfeldwahl, protneut, expmode, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
+extern int reflekt, Efeldwahl, bfeldwahl, protneut, expmode, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
 extern int reflektlog, SaveIntermediate;               // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 extern int polarisation, polarisationsave, ausgabewunsch, ausgabewunschsave, Feldcount; // user choice for polarisation of neutrons und Ausgabewunsch
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 extern long double Ibar;                // current through rod
 extern int diffuse; // diffuse reflection switch
-extern long double DiffProb; // property of diffuse reflection 0.125
-extern unsigned short int slit, DetOpen;                // is there an entrance slit?
-extern long double epsi;   // Lossprobability per Wallbounce, Distance from the Wall within which Reflekt is called, probability of absorption at absorber
 
 // Fields
 extern long double dBrdr, dBrdz, dBzdr, dBzdz, Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
 extern long double dBphidr, dBphidz, dBrdphi, dBzdphi, dBphidphi;
 extern long double Ez,Er, Ephi, dErdr, dErdz, dEzdr, dEzdz, dEphidr, dEphidz;    // electric field
 extern long double BFeldSkal, EFeldSkal, BFeldSkalGlobal;                        // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
-extern long double EFeldSkalSave, BFeldSkalGlobalSave;    // temperorary variables to save initial values
 extern int n, m;                               // number of colums and rows in the input B-field matrices
-extern long double Vflux, Bre0, Bphie0, Bze0, Be0, Bemax, FluxStep, CritAngle, ElecAngleB, IncidentAngle, DetEnergy, RodFieldMultiplicator;
-extern long double DiceRodField;
-extern long double VolumeB[200];   // Volume[E] accessible to neutrons at energy E without and with B-field
+extern long double DiceRodField, RodFieldMultiplicator;
 extern long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist; // plane for cut through BField
 extern int BCutPlaneSampleCount;
 
@@ -165,23 +148,19 @@ extern struct decayinfo decay;	// containing all data from neutron decay for the
 // initial values of particle
 extern long double EnergieS,dEnergie, EnergieE, Energie;    //initial energy range
 extern long double r_n, phi_n, z_n, v_n;                //initial particle coordinates
-extern long double alpha, gammaa,phia, hmin;                  //initial angle to x-Achse, zo z-Achse, Schrittweite
-extern long double phis,r_ns, z_ns, v_ns, alphas, gammas;   //initial values from
-extern long double phie,r_ne, z_ne, v_ne, alphae, gammae;   //initial values to
-extern long double dphi,dr_n, dz_n, dv_n, dalpha, dgamma;   //initial values step
+extern long double alpha, gammaa, hmin;                  //initial angle to x-Achse, zo z-Achse, Schrittweite
+extern long double alphas, gammas;   //initial values from
+extern long double alphae, gammae;   //initial values to
+extern long double dalpha, dgamma;   //initial values step
 extern long double delx;                           // initial timestep for the integrator
 
-extern long double vr_n, vphi_n, vz_n;          //velocity, vtemp: Geschw.komp in xy-Ebene
 extern long double delx_n;      // shorter timestep for BruteForce integration
 extern int stopall;                            //  if stopall=1: stop particle
 
 struct initial												// record for initial values of all 3 particle types (for more details see "all3inone.in")
-{	long double EnergieS, dEnergie, EnergieE;				// E
-	long double zs, dz, ze;									// z
-	long double rs, dr, re;									// r
-	long double phis, dphi, phie;							// phi
-	long double alphas, dalpha, alphae;						// alpha
-	long double gammas, dgamma, gammae;						// gamma
+{	long double EnergieS, EnergieE;				// E
+	long double alphas, alphae;						// alpha
+	long double gammas, gammae;						// gamma
 	long double delx, xend;									// delx | xend
 };
 extern struct initial nini, pini, eini;						// one 'initial' for each particle type
@@ -189,24 +168,6 @@ extern struct initial nini, pini, eini;						// one 'initial' for each particle 
 // final values of particle
 extern int kennz;                                  // ending code
 extern long double vend, gammaend, alphaend, phiend, xend;    //endvalues for particle
-
-// geometry of bottle
-extern long double ri, ra;                      //dimensions of torus for Maple Field
-extern long double zmax, zmin;    //dimensions of torus
-extern long double hlid;    // height of a possible lid to be put on the storage bottle [m]
-extern long double R, rmax, rmin;
-extern long double LueckeR, LueckeZ, Luecke;      // size of the gab in the outer left corner (m)
-extern long double wanddicke, wandinnen;                        // Dicke des Bereichs innerhalb der Spulen, der ben�tigt wird
-extern long double detz, detrmin, detrmax;          // where is the detector?
-extern long double StorVolrmin,StorVolrmax,StorVolzmin, StorVolzmax;
-extern long double FillChannelrmin,FillChannelrmax,FillChannelzmin, FillChannelzmax,FillChannelBlockageAngle;
-extern long double Bufferrmin,Bufferrmax,Bufferzmin, Bufferzmax;
-extern long double DetVolrmin,DetVolrmax,DetVolzmin,DetVolzmax;
-extern long double DetConertop, DetConerbot,DetConezbot,DetConeztop;
-extern long double FillConertop,FillConerbot,FillConeztop,FillConezbot;
-extern long double UCNdetradius,UCNdetr,UCNdetphi;
-extern long double UCNentrancermax;
-extern long double RoundBottomCornerCenterr,RoundBottomCornerCenterz,RoundBottomCornerradius;
 
 //particle distribution
 extern long double rdist, zdist;
@@ -226,13 +187,13 @@ extern long double RampUpTime;                          // ramping up coils
 extern long double FullFieldTime;                       // storing in full field
 extern long double RampDownTime;                        // ramping down coils
 extern long double EmptyingTime;                        // emptying without field
-extern long double storagetime;                     // time when ramping down shall start, if xend > storage time, let neutron decay
-extern int ffslit,ffBruteForce,ffreflekt,ffspinflipcheck,ffDetOpen;  // fullfield
-extern int ruslit,ruBruteForce,rureflekt,ruspinflipcheck,ruDetOpen; // rampup
-extern int rdslit,rdBruteForce,rdreflekt,rdspinflipcheck,rdDetOpen;  // rampdown
-extern int fislit,fiBruteForce,fireflekt,fispinflipcheck,fiDetOpen;  // filling
-extern int coslit,coBruteForce,coreflekt,cospinflipcheck,coDetOpen;  // counting UCN
-extern int clslit,clBruteForce,clreflekt,clspinflipcheck,clDetOpen;  // cleaning time
+extern long double StorageTime;                     // time when ramping down shall start, if xend > storage time, let neutron decay
+extern int ffBruteForce,ffreflekt,ffspinflipcheck;  // fullfield
+extern int ruBruteForce,rureflekt,ruspinflipcheck; // rampup
+extern int rdBruteForce,rdreflekt,rdspinflipcheck;  // rampdown
+extern int fiBruteForce,fireflekt,fispinflipcheck;  // filling
+extern int coBruteForce,coreflekt,cospinflipcheck;  // counting UCN
+extern int clBruteForce,clreflekt,clspinflipcheck;  // cleaning time
 
 // Spintracking
 extern int spinflipcheck;                          // user choice to check adiabacity
@@ -247,15 +208,6 @@ extern long Zeilencount;
 extern int Filecount, p;                                   // counts the output files, counter for last line written in outs, random generator temp value
 extern long double BahnPointSaveTime;               // default 2e-7; 0=1e-19 not changed at run time, time between two lines written in outs
 
-// data for material storage
-extern long double FPrealNocado, FPimNocado;     // real and imaginary part of fermi potential for milk tubes
-extern long double FPrealPE, FPimPE;  			// for polyethylene
-extern long double FPrealTi , FPimTi;			// for titanium
-extern long double FPrealCu, FPimCu;			// for Copper
-extern long double FPrealCsI, FPimCsI;      // CsI on detector
-extern long double FPrealDLC, FPimDLC;      // diamond like carbon
-extern int AbsorberChoice;    // 1: PE, 2: Ti
-
 // variables for BruteForce Bloch integration BEGIN
 extern long double *BFtime, **BFField;    // time, Bx, By, Bz, r, z array
 extern int offset, BFkount, BFindex;			// counter in BFarray, offset off BFarray, maximum index of intermediate values , index in BFarray;
@@ -267,16 +219,6 @@ extern long double I_n[4], **BFypFields;        // Spinvector, intermediate fiel
 extern long BFZeilencount; extern int BFFilecount;                  // to control output filename of BF
 extern long double BFflipprob, BFsurvprob;                         // spinflip pobability
 
- // Absorber integrieren
-extern long double abszmin;
-extern long double abszmax;
-extern long double absrmin; // 48.5, if absorber shall be effectiv, 50.0 if not
-extern long double absrmax;
-extern long double absphimin;
-extern long double absphimax;
-extern long double Mf, Pf;  // real and imaginary part if neutron fermi potential of absorber, absorption cross section [1e-28 m^2]
-extern int NoAbsorption, AbsorberHits;
-
 //for the output of intermediate steps
 extern int kmax, BFkmax;                                         // number of steps for intermediate output
 extern long double nintcalls, ntotalsteps;					// counters to determine average steps per integrator call
@@ -287,9 +229,6 @@ extern long double **Bp,**Ep;                            // Arrays for intermedi
 // incorporate B-fieldoszillations into the code
 extern int FieldOscillation;        // turn field oscillation on if 1
 extern long double OscillationFraction, OscillationFrequency;
-
-// blank variables
-extern long double time_temp;
 
 
 extern mt_state_t *v_mt_state; //mersenne twister state var

@@ -520,17 +520,6 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 	for (nstp=1;nstp<=MAXSTP;nstp++){                          //Step loop: Take at most MAXSTP steps. 
 		
 		//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-		// only check for reflections of absorbtions when outside bulk of PENeLOPE storage volume
-		if (!newreflection){
-			if((y[3]>detz-wanddicke)||(y[1]<=StorVolrmin+wanddicke)||(y[1]>=StorVolrmax-wanddicke)||(y[3]<=StorVolzmin+wanddicke)||(y[3]>=StorVolzmax)  )
-			{
-				GeomCheck(y,y[1],y[2],y[3],y[4],y[5],y[6],x);
-				if(stopall)
-					return;
-				//cout << "GEOMCHECK t: " << x <<  " r: " << y[1] << " z: " << y[3] << endl;
-				//cin >> blankint;
-			}
-		}	
 		// spin flip properties according to Vladimirsky and thumbrule
 		if (spinflipcheck == 2){   
 			// y[6]: phidot
