@@ -91,23 +91,12 @@ long double mapleBzdz(long double r,long double z)
 
 void Bwsomaple(long double r,long double phi,long double z)
 {
-	if((z>=0) & (z<=1.2) ){
-		if ((r<=ra) & (r>=ri)){
-      		Br= BFeldSkal * mapleBrp(r,z);
-      		Bz= BFeldSkal * mapleBzp(r,z);
-      		dBrdr= BFeldSkal * mapleBrdr(r,z);
-      		dBrdz= BFeldSkal * mapleBrdz(r,z);
-      		dBzdr= BFeldSkal * mapleBzdr(r,z);
-      		dBzdz= BFeldSkal * mapleBzdz(r,z);
-      	}
-    }
-
-   else{     
-     	dBrdr=0.0;
-     	dBrdz=0.0;
-     	dBzdr=0.0;
-     	dBzdz=0.0;
-  	}
+	Br= BFeldSkal * mapleBrp(r,z);
+	Bz= BFeldSkal * mapleBzp(r,z);
+	dBrdr= BFeldSkal * mapleBrdr(r,z);
+	dBrdz= BFeldSkal * mapleBrdz(r,z);
+	dBzdr= BFeldSkal * mapleBzdr(r,z);
+	dBzdz= BFeldSkal * mapleBzdz(r,z);
 
   	Bphi= Ibar*mu0/(2*pi*r);
   	dBphidr= -Bphi/r;

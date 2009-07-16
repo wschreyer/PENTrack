@@ -17,4 +17,4 @@ void CenterCurrent(long double r,long double phi,long double z,  long double I_r
 void StraightWireField(long double r,long double phi,long double z, long double I_rt, long double SW1r, long double SW1phi, long double SW1z, long double SW2r, long double SW2phi, long double SW2z);
 void BarRaceTrack(long double r_current, long double phi_current, long double z_current, long double I_bar);
 
-extern long double Babsmax, Babsmin,  rBabsmin, zBabsmin, Emin_n, Babsmaxtmp,Eabsmax, Eabsmin, Eabsmaxtmp;  // for calculating maximum values for B and E
+extern long double Emin_n;

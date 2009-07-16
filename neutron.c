@@ -34,16 +34,7 @@ void PrintConfig(void)
 		if (fiBruteForce == 1)
 			printf("Brute Force on, ");
 		else if (fiBruteForce == 0)
-			printf("Brute Force off, ");
-		if(fislit == 1)
-			printf("slit on.\n");
-		else if(fislit == 0)
-			printf("slit off.\n");
-		if(fiDetOpen == 1)
-			printf("The detector is visible to UCN.\n");
-		else if(fiDetOpen == 0)
-			printf("The detector is hidden from UCN.\n");
-		
+			printf("Brute Force off, ");		
 		
 		if (clreflekt == 1)
 			printf("Cleaning Time %LG \n Reflection is on, ", CleaningTime );
@@ -53,14 +44,6 @@ void PrintConfig(void)
 			printf("Brute Force on, ");
 		else if (clBruteForce == 0)
 			printf("Brute Force off, ");
-		if(clslit == 1)
-			printf("slit on.\n");
-		else if(clslit == 0)
-			printf("slit off.\n");
-		if(clDetOpen == 1)
-			printf("The detector is visible to UCN.\n");
-		else if(clDetOpen == 0)
-			printf("The detector is hidden from UCN.\n");		
 		
 		if (rureflekt == 1)
 			printf("Ramp Up Time %LG \n Reflection is on, ", RampUpTime );
@@ -70,14 +53,6 @@ void PrintConfig(void)
 			printf("Brute Force on, ");
 		else if (ruBruteForce == 0)
 			printf("Brute Force off, ");
-		if(ruslit == 1)
-			printf("slit on.\n");
-		else if(ruslit == 0)
-			printf("slit off.\n");
-		if(clDetOpen == 1)
-			printf("The detector is visible to UCN.\n");
-		else if(fiDetOpen == 0)
-			printf("The detector is hidden from UCN.\n");
 		
 		if (ffreflekt == 1)
 			printf("Full Field Time %LG \n Reflection is on, ", FullFieldTime );
@@ -87,14 +62,6 @@ void PrintConfig(void)
 			printf("Brute Force on, ");
 		else if (ffBruteForce == 0)
 			printf("Brute Force off, ");
-		if(ffslit == 1)
-			printf("slit on.\n");
-		else if(ffslit == 0)
-			printf("slit off.\n");
-		if(ffDetOpen == 1)
-			printf("The detector is visible to UCN.\n");
-		else if(ffDetOpen == 0)
-			printf("The detector is hidden from UCN.\n");		
 		
 		if (rdreflekt == 1)
 			printf("Ramp Down Time  %LG \n Reflection is on, ", RampDownTime );
@@ -104,14 +71,6 @@ void PrintConfig(void)
 			printf("Brute Force on, ");
 		else if (rdBruteForce == 0)
 			printf("Brute Force off, ");
-		if(rdslit == 1)
-			printf("slit on.\n");
-		else if(rdslit == 0)
-			printf("slit off.\n");
-		if(rdDetOpen == 1)
-			printf("The detector is visible to UCN.\n");
-		else if(rdDetOpen == 0)
-			printf("The detector is hidden from UCN.\n");		
 		
 		if (coreflekt == 1)
 			printf("Counting Time  \n Reflection is on, ");
@@ -121,20 +80,11 @@ void PrintConfig(void)
 			printf("Brute Force on, ");
 		else if (coBruteForce == 0)
 			printf("Brute Force off, ");
-		if(coslit == 1)
-			printf("slit on.\n");
-		else if(coslit == 0)
-			printf("slit off.\n");
-		if(coDetOpen == 1)
-			printf("The detector is visible to UCN.\n");
-		else if(coDetOpen == 0)
-			printf("The detector is hidden from UCN.\n");		
 		
 			
 	}
 	printf("The choice of Bfield is: %i  (0) interpolated field, (1) no field, (2) check interpolation routine \n",bfeldwahl);
 	printf("The choice of reflection is: %i  (1) specular, (2) diffuse, (3) statistically specular or diffuse \n",diffuse);
-	printf("The probability for diffuse reflection is: %LG\n", DiffProb);
 	printf("Choice of output: %i  (1) Endpoints and track (2) only endpoints (3) Endpoints, track and spin \n (4) Endpoints and spin (5) nothing \n ", ausgabewunsch);
 	
 	// LOGSCREEN
@@ -167,15 +117,6 @@ void PrintConfig(void)
 			fprintf(LOGSCR,"Brute Force on, ");
 		else if (fiBruteForce == 0)
 			fprintf(LOGSCR,"Brute Force off, ");
-		if(fislit == 1)
-			fprintf(LOGSCR,"slit on.\n");
-		else if(fislit == 0)
-			fprintf(LOGSCR,"slit off.\n");
-		if(fiDetOpen == 1)
-			fprintf(LOGSCR,"The detector is visible to UCN.\n");
-		else if(fiDetOpen == 0)
-			fprintf(LOGSCR,"The detector is hidden from UCN.\n");
-		
 		
 		if (clreflekt == 1)
 			fprintf(LOGSCR,"Cleaning Time %LG \n Reflection is on, ", CleaningTime );
@@ -185,14 +126,6 @@ void PrintConfig(void)
 			fprintf(LOGSCR,"Brute Force on, ");
 		else if (clBruteForce == 0)
 			fprintf(LOGSCR,"Brute Force off, ");
-		if(clslit == 1)
-			fprintf(LOGSCR,"slit on.\n");
-		else if(clslit == 0)
-			fprintf(LOGSCR,"slit off.\n");
-		if(clDetOpen == 1)
-			fprintf(LOGSCR,"The detector is visible to UCN.\n");
-		else if(clDetOpen == 0)
-			fprintf(LOGSCR,"The detector is hidden from UCN.\n");		
 		
 		if (rureflekt == 1)
 			fprintf(LOGSCR,"Ramp Up Time %LG \n Reflection is on, ", RampUpTime );
@@ -202,14 +135,6 @@ void PrintConfig(void)
 			fprintf(LOGSCR,"Brute Force on, ");
 		else if (ruBruteForce == 0)
 			fprintf(LOGSCR,"Brute Force off, ");
-		if(ruslit == 1)
-			fprintf(LOGSCR,"slit on.\n");
-		else if(ruslit == 0)
-			fprintf(LOGSCR,"slit off.\n");
-		if(clDetOpen == 1)
-			fprintf(LOGSCR,"The detector is visible to UCN.\n");
-		else if(fiDetOpen == 0)
-			fprintf(LOGSCR,"The detector is hidden from UCN.\n");
 		
 		if (ffreflekt == 1)
 			fprintf(LOGSCR,"Full Field Time %LG \n Reflection is on, ", FullFieldTime );
@@ -219,14 +144,6 @@ void PrintConfig(void)
 			fprintf(LOGSCR,"Brute Force on, ");
 		else if (ffBruteForce == 0)
 			fprintf(LOGSCR,"Brute Force off, ");
-		if(ffslit == 1)
-			fprintf(LOGSCR,"slit on.\n");
-		else if(ffslit == 0)
-			fprintf(LOGSCR,"slit off.\n");
-		if(ffDetOpen == 1)
-			fprintf(LOGSCR,"The detector is visible to UCN.\n");
-		else if(ffDetOpen == 0)
-			fprintf(LOGSCR,"The detector is hidden from UCN.\n");		
 		
 		if (rdreflekt == 1)
 			fprintf(LOGSCR,"Ramp Down Time %LG \n Reflection is on, ", RampDownTime );
@@ -236,14 +153,6 @@ void PrintConfig(void)
 			fprintf(LOGSCR,"Brute Force on, ");
 		else if (rdBruteForce == 0)
 			fprintf(LOGSCR,"Brute Force off, ");
-		if(rdslit == 1)
-			fprintf(LOGSCR,"slit on.\n");
-		else if(rdslit == 0)
-			fprintf(LOGSCR,"slit off.\n");
-		if(rdDetOpen == 1)
-			fprintf(LOGSCR,"The detector is visible to UCN.\n");
-		else if(rdDetOpen == 0)
-			fprintf(LOGSCR,"The detector is hidden from UCN.\n");		
 		
 		if (coreflekt == 1)
 			fprintf(LOGSCR,"Counting Time  \n Reflection is on, ");
@@ -253,41 +162,15 @@ void PrintConfig(void)
 			fprintf(LOGSCR,"Brute Force on, ");
 		else if (coBruteForce == 0)
 			fprintf(LOGSCR,"Brute Force off, ");
-		if(coslit == 1)
-			fprintf(LOGSCR,"slit on.\n");
-		else if(coslit == 0)
-			fprintf(LOGSCR,"slit off.\n");
-		if(coDetOpen == 1)
-			fprintf(LOGSCR,"The detector is visible to UCN.\n");
-		else if(coDetOpen == 0)
-			fprintf(LOGSCR,"The detector is hidden from UCN.\n");		
 		
 		
 		
 	}
 	fprintf(LOGSCR,"The choice of Bfield is: %i  (0) interpolated field, (1) no field, (2) check interpolation routine \n",bfeldwahl);
 	fprintf(LOGSCR,"The choice of reflection is: %i  (1) speculat, (2) diffuse, (3) statistically specular or diffuse \n",bfeldwahl);
-	fprintf(LOGSCR,"The probability for diffuse reflection is: %LG\n", DiffProb);
 	fprintf(LOGSCR,"Choice of output: %i  (1) Endpoints and track (2) only endpoints (3) Endpoints, track and spin \n (4) Endpoints and spin (5) nothing \n ", ausgabewunsch);
 	
 	
-}
-
-
-
-void Entkommen(long double *ystart, long double t, long double H)        //Klassifizierung des Endes der Neutronenbahn und Abbruch des aktuellen Teilchens
-{	
-	if((ystart[1]<rmin)&&(ystart[1]>rmax)&&(ystart[3]<zmin)&&(ystart[3]>zmax))
-	{
-		kennz=2;  
-		stopall=1;
-		printf("Particle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",t,ystart[1],ystart[3]);
-	   fprintf(LOGSCR,"Particle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",t,ystart[1],ystart[3]);
-		return;
-	}
-	   
-	
-	return;
 }
 
 
@@ -384,8 +267,6 @@ void SwitchField(long double t)
 		if ((t < FillingTime)&&(FillingTime>0))
 		{      // filling in neutrons
 			BFeldSkal = 0;
-			DetOpen=fiDetOpen; // detector hidden
-			slit = fislit;     // emptying slit closed
 			BruteForce = fiBruteForce; // no spin tracking
 			reflekt = fireflekt;
 			spinflipcheck = fispinflipcheck;		
@@ -394,8 +275,6 @@ void SwitchField(long double t)
 		else if ((t>=FillingTime)&&(t < (CleaningTime+FillingTime)) && (CleaningTime>0))
 		{      // spectrum cleaning
 			BFeldSkal = 0;
-			DetOpen= clDetOpen; // detector hidden
-			slit = clslit;     // emptying slit closed
 			BruteForce = clBruteForce; // no spin tracking
 			reflekt = clreflekt;
 			spinflipcheck = clspinflipcheck;
@@ -405,8 +284,6 @@ void SwitchField(long double t)
 			//linear: BFeldSkal = (t-CleaningTime+1e-15)/RampUpTime; // ramp field
 			//now smoothly with a cosine 
 			BFeldSkal=(0.5-0.5*cosl(pi*(t-CleaningTime-FillingTime)/RampUpTime)) * BFeldSkalGlobal ;
-			DetOpen=ruDetOpen; // detector hidden
-			slit = ruslit;
 			BruteForce = ruBruteForce; 
 			reflekt = rureflekt;
 			spinflipcheck = ruspinflipcheck;
@@ -414,8 +291,6 @@ void SwitchField(long double t)
 		else if ((FullFieldTime>0)&&(t >= (RampUpTime+CleaningTime+FillingTime)) && (t < (RampUpTime+CleaningTime+FullFieldTime+FillingTime)))
 		{  // storage time
 			BFeldSkal = BFeldSkalGlobal;
-			DetOpen=ffDetOpen;  // detect high field seeker and marginal UCN
-			slit = ffslit; // emptying slit open for depolarised neutrons
 			if(protneut == NEUTRON)
 			{
 				BruteForce = ffBruteForce;  // start spin tracking
@@ -428,8 +303,6 @@ void SwitchField(long double t)
 			//linear: BFeldSkal = 1- (t-(RampUpTime+CleaningTime+FullFieldTime)) / RampDownTime + 1e-15;  // ramp down field
 			//now smoothly with a cosine 
 			BFeldSkal=(0.5+0.5*cosl(pi*(t-(RampUpTime+CleaningTime+FillingTime+FullFieldTime)) / RampDownTime)) * BFeldSkalGlobal;
-			DetOpen=rdDetOpen;  // detect UCN
-			slit = rdslit; // slit open to empty neutrons already
 			BruteForce = rdBruteForce; // no spin tracking, neutrons shall stay in trap through reflection
 			reflekt = rdreflekt;
 			spinflipcheck=rdspinflipcheck;
@@ -437,8 +310,6 @@ void SwitchField(long double t)
 		else if (t >=  (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime))
 		{      // emptying of neutrons into detector
 			BFeldSkal = 0;
-			DetOpen= coDetOpen;  // detect UCN
-			slit = coslit;
 			BruteForce = coBruteForce;
 			spinflipcheck= cospinflipcheck;
 		}
@@ -664,83 +535,9 @@ void OutputCodes(int iMC)
 }
 //======== end of OutputCodes ==============================================================================================
 
-
-// This function takes a point, follows along a flux line in positive z-direction (up and in the r-z-plane),
-// ends the line at the walls of after 5m and returns one for a detector hit and zero for no hit
-int CalcFluxLine(long double r, long double phi, long double z, long double FluxStep){
-	ystart[5]=0;
-	BFeld(r,phi,z,500.0);
-	EFeld(r,phi,z);
-	Be0 = Bws;
-	Bemax = Bws;
-	Vflux=  0.0;                             // potential difference to the starting point
-	long double AngleZ = tanl(Br/Bz), Vorzeichen = 1;        // angle of the magnetic field vector with respect to z-axis
-	
-	int i;
-	for (i=1;i<=5000;i++){
-		r = r + Vorzeichen * sinl(AngleZ) * FluxStep;
-		z = z + Vorzeichen * cosl(AngleZ) * FluxStep;
-		Vflux = Vflux + (sinl(AngleZ)*Er + cosl(AngleZ)*Ez)*FluxStep;    // linearised electric field strength integral along the step
-		ystart[1]=r;
-		ystart[3]=z;
-		ystart[4]=cosl(AngleZ);
-		Entkommen(ystart,  x2, H);
-		if (stopall == 1)
-		{
-			if (kennz == KENNZAHL_DETECTOR_BOTTOM)    // 6
-				return 1;
-			else if ((kennz != KENNZAHL_DETECTOR_BOTTOM) && (Vorzeichen == 1))   // 6 
-				Vorzeichen = -1;
-			else if ((kennz != 6) && (Vorzeichen == -1))
-				return 0;
-		}
-		BFeld(r,phi,z, 500.0);
-		EFeld(r,phi,z);
-		if (Bws>Bemax)
-			Bemax = Bws;
-		AngleZ = tanl(Br/Bz);
-	}
-	return 0;
-}
-
-// This function computes the critical angle for an electron with respect to the Bfield to hit the detector
-long double CalcCritAngle(long double r_n, long double phi_n, long double z_n, long double Energie){
-	long double frac1 =sqrtl((Bemax/Be0)-1), vpar = 0;
-	gammarel =  Energie/m_e+1;
-	v_n = c_0 * sqrtl(1-(1/(gammarel*gammarel)));                   // relatistic velocity from E_kin
-
-	if (frac1 != 0 )
-	vpar =v_n*sqrtl(1/(1+1/(frac1*frac1)));             // velocity parallel to flux line
-
-	long double Epar =m_e*c_0*c_0*((1/sqrtl(1-vpar*vpar/(c_0*c_0)))-1) - Vflux; // Energy parallel to flux needed to hit det + electrostatic potential to overcome
-	long double vparnew =c_0*sqrtl(1-((m_e*c_0*c_0)/(Epar+m_e*c_0*c_0))*((m_e*c_0*c_0)/(Epar+m_e*c_0*c_0)));  // corresponding velocity
-	long double frac2 =fabsl((vparnew)/(v_n/sqrtl(1+frac1*frac1)));
-	long double angle =atan2l(1,frac2) * 180 / pi;
-
-	return angle;
-}
-
-// a function to calculate angle of incidence on the detector of an electron starting at r,z with vr, vz, vphi
-long double CalcIncidentAngle(long double r, long double phi, long double z, long double vr, long double vphi, long double vz, long double Br0, long double Bphi0, long double Bz0, long double Bemax){
-	long double B0 = sqrtl(Br0*Br0+Bphi0*Bphi0+Bz0*Bz0);
-	long double vpar = (vr*Br0+vphi*Bphi0+vz*Bz0)/B0;     //projection onto flux vector
-	if (vpar > 0){
-        ElecAngleB = acosl((vr*Br0+vphi*Bphi0+vz*Bz0)/(B0*v_n))/conv;
-        if (ElecAngleB < CritAngle) {
-			gammarel =  Energie/m_e+1;
-			long double vnew = c_0 * sqrtl(1-(1/(gammarel*gammarel)));
-			long double vperp = sqrtl(Bemax/B0*(vnew*vnew-vpar*vpar));
-			long double IncidentAngle = atan2l(vperp,sqrtl(vnew*vnew-vperp*vperp));
-			return IncidentAngle/conv;
-		}
-	}
-	ElecAngleB = 0.0;
-	return 0.0;
-}
-
 // return absolute value of a 3 vector in cartesian coordinates
 long double AbsValueCart(long double x, long double y, long double z)
 {
-	return sqrtl(powl(x,2)+powl(y,2)+powl(z,2));
+	return sqrt(x*x + y*y + z*z);
 }
 

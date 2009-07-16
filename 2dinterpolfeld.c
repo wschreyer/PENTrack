@@ -2,7 +2,7 @@
 // them and calculate derivatives
 
 #include "main.h"
-
+FILE *FIN = NULL;
 int fehler, indr, indz ;          // indr, indz: current indices for field interpolation
 long double r_mi, r_ma, z_mi, z_ma; // minimum and maximum values, counter for field calls
 long double *rind = NULL, *zind = NULL, **BrTab = NULL, **BzTab = NULL,**BphiTab = NULL,**BrTab1 = NULL,**BzTab1 = NULL,**BphiTab1 = NULL;  //B Arrays
@@ -14,7 +14,7 @@ long double **ya=NULL, *rvec=NULL, *zvec=NULL;
 long double rdist, zdist;
 long double conv_rA, conv_rB, conv_zA, conv_zB; 
 
-long double Babsmax=-999, Babsmin=999, rBabsmin=-999, zBabsmin=-999, Emin_n = 1e30, Babsmaxtmp,Eabsmax, Eabsmin, Eabsmaxtmp;  // for calculating maximum values for B and E
+long double Emin_n = 1e30;  // minimum energy of neutrons in the B-field
 
 // define racetrack current bars
 // defined by two position vectors (SW1r,SW1phi,SW1z and SW2r,SW2phi,SW2z) lying on the straight wire 
@@ -40,7 +40,7 @@ void PrepareBField(){
 	// current from low to high
 	Bars_1r[13]=0.0;Bars_1phi[13]=0.0;	Bars_1z[13]=-0.15;	Bars_2r[13]=0;	Bars_2phi[13]=0.0;	Bars_2z[13]=1.35;   // center current 4 TIMES THE CURRENT OF OTHERS!!!
   
-	if ((bfeldwahl == 0 || bfeldwahl == 2) && (BFeldSkalGlobal != 0 || EFeldSkal != 0))
+	if (bfeldwahl == 0 || bfeldwahl == 2)
 	{
         printf("\nPreparing the electromagnetic fields... \n");
         PrepIntpol(1);          // read input table file with E and B fields
@@ -90,9 +90,9 @@ void PrepareBField(){
 		printf("Bz = %.17LG \n",Bz);
 		printf("dBzdr = %.17LG \n",dBzdr);
 		printf("dBzdz = %.17LG \n",dBzdz);	
-		Emin_n = 0;
 	}	
-	else Emin_n = 0;
+	if (Emin_n == 1e30) Emin_n = 0; // if Emin_n was not set, set it to zero
+	
 }
 
 // get the size of the array ......................
@@ -111,8 +111,8 @@ void GetDim(int *m, int *n)
 	
 	// in der ersten zeile stehen die dimensionen auch drin
 	sscanf(fgets(str,1024,FIN),"%d %d %d %LG",m,&intmuell,n,&muell);
-	printf("The header says: \nThe arrays are %i by %i.\n\n",*m,*n);
-	fprintf(LOGSCR,"The header says: \nThe arrays are %i by %i.\n\n",*m,*n);
+	printf("The header says: \nThe arrays are %i by %i.\n",*m,*n);
+	fprintf(LOGSCR,"The header says: \nThe arrays are %i by %i.\n",*m,*n);
 	
 	// discard next 10 lines because of header stuff
 	int i;
@@ -169,12 +169,12 @@ void GetDim(int *m, int *n)
 	
 	*m=ri; *n=zi; // set to maximum index values found in file
 	
-	printf("In reality they are %d by %d.\n\n",*m,*n);
-	fprintf(LOGSCR,"In reality they are %d by %d.\n\n",*m,*n);
-	printf("The r values go from %LG to %LG\n\n",r_mi,r_ma);
-	fprintf(LOGSCR,"The r values go from %LG to %LG.\n\n",r_mi,r_ma);
-	printf("The z values go from %LG to %LG.\n\n",z_mi,z_ma);
-	fprintf(LOGSCR,"The z values go from %LG to %LG.\n\n",z_mi,z_ma);	
+	printf("In reality they are %d by %d.\n",*m,*n);
+	fprintf(LOGSCR,"In reality they are %d by %d.\n",*m,*n);
+	printf("The r values go from %LG to %LG\n",r_mi,r_ma);
+	fprintf(LOGSCR,"The r values go from %LG to %LG.\n",r_mi,r_ma);
+	printf("The z values go from %LG to %LG.\n",z_mi,z_ma);
+	fprintf(LOGSCR,"The z values go from %LG to %LG.\n",z_mi,z_ma);	
 	return ;
 }
 
@@ -231,8 +231,8 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 	char str[1024]; //retstr[1024];
 	int mtmp=*m,ntmp=*n;
 	
-	printf("In readWert they are %d by %d.\n\n",*m,*n);
-	fprintf(LOGSCR,"In readWert they are %d by %d.\n\n",*m,*n);
+	printf("In readWert they are %d by %d.\n",*m,*n);
+	fprintf(LOGSCR,"In readWert they are %d by %d.\n",*m,*n);
 
 	
 	// close file if it already open
@@ -542,6 +542,8 @@ void PrepIntpol(int k){
 	printf("r_mi = %LG, r_ma = %LG, z_mi = %LG, z_ma = %LG\n",r_mi,r_ma,z_mi,z_ma);
 	fprintf(LOGSCR,"r_mi = %LG, r_ma = %LG, z_mi = %LG, z_ma = %LG\n",r_mi,r_ma,z_mi,z_ma);	
 		
+	long double Babsmax, Babsmin, Babsmaxtmp, Eabsmax, Eabsmin, Eabsmaxtmp;
+	long double rBabsmin, zBabsmin;
 	for (int j=1; j <= m; j++)
 	{
 		for (int k=1; k <= n; k++)
@@ -556,7 +558,7 @@ void PrepIntpol(int k){
 			{
 				Babsmin = Babsmaxtmp;				
 			}
-			if(EnTemp < Emin_n)
+			if(EnTemp < Emin_n && InSourceVolume(rind[j],0,zind[k]))
 			{
 				Emin_n = EnTemp;
 				rBabsmin = rind[j];
