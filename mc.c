@@ -38,21 +38,6 @@ void MCStartwerte(long double delx)
 		}
 	}
 
-	// dicing scaling factor for the global B-field 'BFeldSkalGlobal' 
-	if(BFeldSkalGlobalSave == -1)
-	{
-		BFeldSkalGlobal = mt_get_double(v_mt_state);
-		cout << "BFeldSkalGlobal: " << BFeldSkalGlobal << endl;
-	}
-
-	// dicing scaling factor for the E-field 'EFeldSkal'
-	if(EFeldSkalSave == -1)
-	{
-		EFeldSkal = mt_get_double(v_mt_state);
-		cout << "EFeldSkal: " << EFeldSkal << endl;
-	}
-
-
 	/*
 	// neutron energy distribution for AbEx@ILL
 	long double p1 = -77.6138, p2 = -1.34704, p3 = 0.00739579, p4 = 0.00012494, p5 = -1.88103e-6 , p6 = 8.52798e-9;
@@ -135,17 +120,8 @@ void MCStartwerte(long double delx)
 	while(1)
 	{	nroll++;
 		// starting point
-		if (newreflection)
-			RandomPointInSourceVolume(r_n,phi_n,z_n);
-		else{
-			r_n = powl(mt_get_double(v_mt_state) * (r_ne * r_ne - r_ns * r_ns) + r_ns * r_ns, 0.5); // weighting because of the volume element and a r^2 probability outwards
-			phi_n = phis + mt_get_double(v_mt_state) * (phie - phis); // dice starting coordinate phi
-			// z distribution according to (rho0 * sqrt(1 - mgz / e))
-			//z_n = NeutEnergie*1e9 / mg * (powl(mt_get_double(v_mt_state) * (-1) * (powl(1 - mg * z_ne / (NeutEnergie*1e9), 1.5) - powl(1 - mg * z_ns / (NeutEnergie*1e9), 1.5)) - powl(1 - mg * z_ns / (NeutEnergie*1e9), 1.5), 2.0/3.0) + 1);
-			z_n = z_ns + (mt_get_double(v_mt_state)) * (z_ne-z_ns);
-			//cout << "Die gew�rfelte H�he ist :" << z_n << endl;
-		}
-		
+		RandomPointInSourceVolume(r_n,phi_n,z_n);
+					
 		// check if neutron could possiblly reached this positon by its own energy
 		BFeld(r_n, phi_n * conv, z_n, 0.0);
 		crit = NeutEnergie - m_n * gravconst * z_n + mu_n * Bws; // crit = initial energie - potenial energy by gravitation + potential energie by B-field // [eV]
@@ -178,7 +154,7 @@ void MCStartwerte(long double delx)
 		xstart = (mt_get_double(v_mt_state))*2e-5;
 
 	// random start time during filling period
-	if((FillingTime > 0) && (r_ne < 0.12) && (protneut == NEUTRON))
+	if((FillingTime > 0) && (protneut == NEUTRON))
 		xstart = FillingTime * (mt_get_double(v_mt_state));
 
 	// set time span till decay

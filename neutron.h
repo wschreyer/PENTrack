@@ -1,13 +1,9 @@
-extern void Entkommen(long double *ystart, long double x2, long double H);
 extern void BFeld (long double rloc, long double philoc, long double zloc, long double t);
 extern void EFeld(long double rloc, long double philoc, long double zloc);
 extern void CylKartCoord(long double Wr, long double Wphi, long double Wz, long double phi, long double *Wx0, long double *Wy0, long double *Wz0);
 extern void KartCylCoord(long double Wx, long double Wy, long double Wz, long double phi, long double *Wr0, long double *Wphi0, long double *Wz0);
 extern void IncrementCodes(int kennz);
 extern void OutputCodes(int iMC);
-extern int CalcFluxLine(long double r, long double phi, long double z, long double FluxStep);
-extern long double CalcCritAngle(long double r_n, long double phi, long double z_n, long double Energie);
-extern long double CalcIncidentAngle(long double r, long double phi_n, long double z, long double vr, long double vphi, long double vz, long double Br0, long double Bphi0, long double Bz0, long double Bemax);
 extern void SwitchField(long double t);
 extern void PrintConfig(void);
 extern long double AbsValueCart(long double x, long double y, long double z);
