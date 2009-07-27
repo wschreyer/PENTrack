@@ -142,6 +142,13 @@ struct decayinfo				// containing all data from neutron decay for the emerging p
 	long double Ngamma;			// = 'gammaend' of decayed neutron
 	long double Nx;				// = 'x2' (t) of decayed neutron
 	long double NH;				// = 'H' (total energie) of decayed neutron (gravitational + kinetic + B-potential) [neV]
+	long double PEnergie;		// = kinetic energy of decay proton
+	long double Palpha;			// = 'alphastart' of decay proton
+	long double Pgamma;			// = 'gammastart' of decay proton
+	long double EEnergie;		// = kinetic energy of decay electron
+	long double Ealpha;			// = 'alphastart' of decay electron
+	long double Egamma;			// = 'gammastart' of decay electron
+	long double error;			// decay error (square root of delta s)
 };
 extern struct decayinfo decay;	// containing all data from neutron decay for the emerging proton and electron
 

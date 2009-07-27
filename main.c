@@ -40,7 +40,7 @@ void ConfigInit(void){
 	mumB = mu_n/M;
 	decay.on = 0;
 	decay.ed = 0;
-	decay.counter = 0;
+	decay.error = 0;
 	/*end default values*/
 	
 	// we want do find some keywords in the config file bah[][] contains the possible variables and bah2[][] the regions
@@ -202,8 +202,12 @@ void ConfigInit(void){
 		
 	}while(!feof(cfg));
 	
-	if(protneut != NEUTRON) decay.on = false;
-	else if(decay.on) decay.ed = 0;
+	if((decay.on == 2) && ((protneut == PROTON) || (protneut == ELECTRONS))) protneut = NEUTRON;
+	
+	if(decay.on)
+	{	decay.ed = 0;
+		decay.error = 0;
+	}
 	
 	polarisationsave = polarisation; // save polarisation choise
 	
@@ -409,10 +413,14 @@ void Startbed(int k)
 
 
 
-void ausgabe(long double x2, long double *ystart, long double vend, long double H){
-	
+void ausgabe(long double x2, long double *ystart, long double vend, long double H)
+{	
 	long double dt = x2 - xstart; // simulation time dt
-		
+
+	if(vend>0) gammaend= acosl(ystart[4]/vend) /conv;
+	else gammaend=0;
+	alphaend= atan2l(ystart[6]*ystart[1],ystart[2])/conv;
+
 	if(dt>=xend) 
 	{                                                           //Zeit abgelaufen
 		if (decay.on && (protneut == NEUTRON))
@@ -434,11 +442,7 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	}
 	else if (x2 >= StorageTime)
 		kennz = 1;
-		
-	if(vend>0) gammaend= acosl(ystart[4]/vend) /conv;
-	else gammaend=0;
-	alphaend= atan2l(ystart[6]*ystart[1],ystart[2])/conv;
-	
+
 	// calculate spin flip lifetime tauSF and influence on lifetime measurement 
 	long double tauSF = -x2/logl(1-BFflipprob);
 	long double dtau=tau-1/(1/tau+1/tauSF) ;
@@ -446,11 +450,23 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	if(tauSF < -9e99) tauSF = -9e99; // "-INF"?
 	
 	// output of end values
-	fprintf(ENDLOG,"%i %li %i %i %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %i %i %LG %LG %li %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
-	jobnumber, monthinmilliseconds, protneut, polarisation,xstart,r_n,phi_n,z_n,NeutEnergie*1.0e9,v_n,alpha,gammaa,ystart[1],phiend,ystart[3],vend,alphaend,gammaend,x2,dt,H,kennz, NSF,RodFieldMultiplicator, BFflipprob,nrefl, vladmax,vladtotal,thumbmax,
-	trajlengthsum,(H-Hstart),Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
-	
-	
+	fprintf(ENDLOG,"%i %li %i %i "
+	               "%LG %LG %LG %LG %LG "
+	               "%LG %LG %LG %LG "
+	               "%LG %LG %LG "
+	               "%LG %LG %LG %LG %LG "
+	               "%LG %i %i %LG %LG "
+	               "%li %LG %LG %LG %LG "
+	               "%LG %LG %LG %LG %LG %LG\n",
+	               jobnumber, monthinmilliseconds, protneut, polarisation,
+	               xstart, r_n, phi_n, z_n, NeutEnergie*1.0e9,
+	               v_n, alpha, gammaa, decay.error,
+	               ystart[1], phiend, ystart[3],
+	               vend, alphaend, gammaend, x2, dt,
+	               H, kennz, NSF, RodFieldMultiplicator, BFflipprob,
+	               nrefl, vladmax, vladtotal, thumbmax, trajlengthsum,
+	               (H-Hstart), Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
+
 	fflush(ENDLOG);
     return;
 }

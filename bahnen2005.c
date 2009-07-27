@@ -198,7 +198,7 @@ int main(int argc, char **argv){
 	gettimeofday(&daysec, 0);
 	divresult = div((long int)(daysec.tv_usec), (long int)(1000));
 	monthinmilliseconds = monthinmilliseconds + (unsigned long int)(divresult.quot); // add milliseconds
-	
+
 	mt_set (v_mt_state, monthinmilliseconds);
 	
 	// setting some default values
@@ -363,6 +363,7 @@ void PrepareParticle()
 							mumB = mu_n/M;	// [c^2/T]
 						}
 						decay.ed = 0;
+						decay.error = 0;
 						break;		
 		case PROTON:	M = m_p;			// [eV/c^2]
 						Qm0 = 1.0/M;
@@ -383,7 +384,6 @@ void PrepareParticle()
 						dxsav = 2e-12;	// kleinster ausgabeschritt der zwischenwerte im integrator
 						BahnPointSaveTime = 5e-12;
 						reflekt = 0;
-						//fprintf(ENDLOG,"rstart zstart vr vphi vz ElecAngleB Dethit? CritAngle Ekin Br0 Bz0 Babs0 Babsm rend zend Babsend Vdiff EnergyonDet IncAngle\n");
 						break;
 	}
 }
@@ -470,10 +470,14 @@ void OpenFiles(int argc, char **argv){
 	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
 	if (protneut != BF_ONLY) 
 	{
-        fprintf(ENDLOG,"jobnumber RandomSeed protneut polarisation tstart rstart phistart zstart NeutEnergie vstart alphastart "
-        			   "gammastart rend phiend zend vend alphaend gammaend tend dt H kennz "
-        			   "NSF RodFieldMult BFflipprob AnzahlRefl vladmax vladtotal thumbmax trajlength Hdiff Hmax "
-        			   "BFeldSkal EFeldSkal lossprob tauSF dtau\n");
+        fprintf(ENDLOG,"jobnumber RandomSeed protneut polarisation "
+                       "tstart rstart phistart zstart NeutEnergie "
+                       "vstart alphastart gammastart decayerror "
+                       "rend phiend zend "
+                       "vend alphaend gammaend tend dt "
+                       "H kennz NSF RodFieldMult BFflipprob "
+                       "AnzahlRefl vladmax vladtotal thumbmax trajlength "
+                       "Hdiff Hmax BFeldSkal EFeldSkal tauSF dtau\n");
 	}		
 	
 	// Print track to file
