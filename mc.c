@@ -264,7 +264,6 @@ void MCZerfallsstartwerte()
 		p[0] = Energie / c_0 + m_p * c_0;
 		// momentum norm of proton
 		p[4] = sqrtl(powl(p[0], 2) - powl(m_p * c_0, 2));
-		//cout << "Test 1 : " << ( p[0]*p[0]-p[4]*p[4]-m_p*m_p*c_0*c_0 ) << endl; // ZERO in ideal case
 
 //-------- Step 2 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
@@ -278,7 +277,6 @@ void MCZerfallsstartwerte()
 		p[1] = p[4] * epx;
 		p[2] = p[4] * epy;
 		p[3] = p[4] * epz;
-		//cout << "Test 2 : " << ( p[4]*p[4]-p[1]*p[1]-p[2]*p[2]-p[3]*p[3] ) << endl; // ZERO in ideal case
 		
 //-------- Step 3 ----------------------------------------------------------------------------------------------------------
 		// energy distribution of electrons (0 < 'Energie' < 782 keV)			
@@ -304,7 +302,6 @@ void MCZerfallsstartwerte()
 		e[0] = Energie / c_0 + m_e * c_0;
 		// momentum norm of electron
 		e[4] = sqrtl(powl(e[0], 2) - powl(m_e * c_0, 2));
-		//cout << "Test 3 : " << ( e[0]*e[0]-e[4]*e[4]-m_e*m_e*c_0*c_0 ) << endl; // ZERO in ideal case
 
 //-------- Step 4 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
@@ -320,7 +317,6 @@ void MCZerfallsstartwerte()
 		e[1] = e[4] * epx;
 		e[2] = e[4] * epy;
 		e[3] = e[4] * epz;
-		//cout << "Test 4 : " << ( e[4]*e[4]-e[1]*e[1]-e[2]*e[2]-e[3]*e[3] ) << endl; // ZERO in ideal case
 
 //-------- Step 5 ----------------------------------------------------------------------------------------------------------
 		// momentum norm of neutrino
@@ -335,24 +331,12 @@ void MCZerfallsstartwerte()
 		long double C = M2 * powl(c_0, 2) - EP; 
 		long double E = 2 * (p[0] + e[0]);
 		long double P = 2 * ((p[1] * epx + p[2] * epy + p[3] * epz) + e[4]);
-		nue[4] = (C * P + E * sqrtl(powl(C, 2) + (powl(P, 2) - powl(E, 2)) * powl(m_nue, 2))) / (powl(E, 2) - powl(P, 2));
+		nue[4] = (C * P + E * sqrtl(powl(C, 2) + (powl(P, 2) - powl(E, 2)) * powl(m_nue * c_0, 2))) / (powl(E, 2) - powl(P, 2));
 		// 4-momentum of neutrino
 		nue[0] = sqrtl(powl(nue[4], 2) + powl(m_nue * c_0, 2));
 		nue[1] = nue[4] * epx;
 		nue[2] = nue[4] * epy;
 		nue[3] = nue[4] * epz;
-		//{
-		//	s = 0;
-		//	sign = 1;
-		//	for(int i = 0; i < 4; i++)
-		//	{	s = s + sign * powl((p[i] + e[i] + nue[i]) * c_0, 2);
-		//		sign = -1;
-		//	}
-		//	ds = s - powl(m_n * powl(c_0, 2),2);
-		//	sign = ds / fabs(ds);
-		//	decay.error = sign * sqrtl(fabs(ds));				
-		//}		
-		//cout << "Test 5 : " << decay.error << " eV" << endl;  // ZERO in ideal case
 
 //-------- Step 6 ----------------------------------------------------------------------------------------------------------
 		// Lorentz boost in z''-direction with neutron velocity
@@ -368,18 +352,6 @@ void MCZerfallsstartwerte()
 		// for neutrino
 		zBOOST(decay.Nv / c_0, &nue[0], &nue[3]);
 		nue[4] = sqrtl(powl(nue[1], 2) + powl(nue[2], 2) + powl(nue[3], 2));
-		//{
-		//	s = 0;
-		//	sign = 1;
-		//	for(int i = 0; i < 4; i++)
-		//	{	s = s + sign * powl((p[i] + e[i] + nue[i]) * c_0, 2);
-		//		sign = -1;
-		//	}
-		//	ds = s - powl(m_n * powl(c_0, 2),2);
-		//	sign = ds / fabs(ds);
-		//	decay.error = sign * sqrtl(fabs(ds));				
-		//}
-		//cout << "Test 6 : " << decay.error << " eV" << endl; // ZERO in ideal case
 
 //-------- Step 7 ----------------------------------------------------------------------------------------------------------
 		// rotation around z''-axis with (alpha_n) and rotation around y'-axis with (gamma_n)  
@@ -435,8 +407,13 @@ void MCZerfallsstartwerte()
 			sign = -1;
 		}
 		ds = s - powl(m_n * powl(c_0, 2),2);
-		sign = ds / fabs(ds);
-		decay.error = sign * sqrtl(fabs(ds));				
+		if(ds != 0)
+		{	sign = ds / fabs(ds);
+			decay.error = sign * sqrtl(fabs(ds));
+		}
+		else
+		{	decay.error = 0;
+		}				
 		
 		printf("\n   +++ decay error : %LG eV +++\n", decay.error);
 		fprintf(LOGSCR, "\n   +++ decay error : %LG eV +++\n", decay.error);
