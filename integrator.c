@@ -591,7 +591,7 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 		else 
 			++(*nbad);
 	
-		if ((x-x2)*(x2-x1) >= 0.0){	//Are we done?
+		if ((x-x2)*(x2-x1) >= 0.0 || stopall){	//Are we done?
 			for (i=1;i<=nvar;i++)   // save final step in ystart
 				ystart[i]=y[i];
 			if (kmax){  // war kmax, ist nun deaktiviert

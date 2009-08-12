@@ -612,7 +612,8 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 		{
 			printf("\n The array index has left fieldval boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n ,indz);
 			fprintf(LOGSCR,"\n The array index has left fieldval boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n, indz);
-			OutputState(ystart,1);
+			kennz = 99;
+			stopall = 1;
 		}
 	} 
 
@@ -737,7 +738,8 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 	        }else{
 				printf("\n The array index has left boundaries!!! Exiting!!! \n");
 				fprintf(LOGSCR,"\n The array index has left boundaries!!! Exiting!!! \n");
-				OutputState(ystart,1);
+				kennz = 99;
+				stopall = 1;
 	        }
 		}
 		else	
@@ -745,8 +747,7 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 	        //char bloed;
 	        printf("The particle has entered forbidden space!!! I will terminate it now! \n");
 	        fprintf(LOGSCR,"The particle has entered forbidden space!!! I will terminate it now! \n");
-				Er=0.0; Ephi=0.0; Ez=0.0;
-				kennz=99;    // something's wrong
+			kennz=99;    // something's wrong
 	        stopall=1;
 		}
 	
