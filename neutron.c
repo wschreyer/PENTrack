@@ -394,8 +394,8 @@ void OutputCodes(int iMC)
 		       "   3       %*li (hit the walls)                            \t%*li (hit the walls)                            \t%*li (hit the walls)\n"
 		       "   4       %*li (escaped to the top)                       \t%*li (escaped to the top)                       \t%*li (escaped to the top)\n"
 		       "   5       %*li (escaped through the exit slit)            \t%*li (escaped through the exit slit)            \t%*li (escaped through the exit slit)\n"
-		       "   6       %*li (hit the detector from the bottom)         \t%*li (hit the detector from the bottom)         \t%*li (hit the detector from the bottom)\n"
-		       "   7       %*li (statistically absorbed)                   \t%*li (hit the detector from the top)            \t%*li (hit the detector from the top)\n"
+		       "   6       %*li (hit the detector)         					\t%*li (hit the detector)         				\t%*li (hit the detector)\n"
+		       "   7       %*li (statistically absorbed)                   \t%*li (statistically absorbed)            		\t%*li (statistically absorbed)\n"
 		       "   8       %*li (decayed)                                  \t   -                                            	   -\n"
 		       "   9       %*li (were eaten by the absorber)               \t%*li (were eaten by the absorber)               \t%*li (were eaten by the absorber)\n"
 		       "  10       %*li (absorbed at the detector top)             \t%*li (absorbed at the detector top)             \t%*li (absorbed at the detector top)\n"
@@ -426,8 +426,8 @@ void OutputCodes(int iMC)
 		               "   3       %*li (hit the walls)                            \t%*li (hit the walls)                            \t%*li (hit the walls)\n"
 		               "   4       %*li (escaped to the top)                       \t%*li (escaped to the top)                       \t%*li (escaped to the top)\n"
 		               "   5       %*li (escaped through the exit slit)            \t%*li (escaped through the exit slit)            \t%*li (escaped through the exit slit)\n"
-		               "   6       %*li (hit the detector from the bottom)         \t%*li (hit the detector from the bottom)         \t%*li (hit the detector from the bottom)\n"
-		               "   7       %*li (statistically absorbed)                   \t%*li (hit the detector from the top)            \t%*li (hit the detector from the top)\n"
+		               "   6       %*li (hit the detector)         					\t%*li (hit the detector)         				\t%*li (hit the detector)\n"
+		               "   7       %*li (statistically absorbed)                   \t%*li (statistically absorbed)            		\t%*li (statistically absorbed)\n"
 		               "   8       %*li (decayed)                                  \t   -                                            	   -\n"
 		               "   9       %*li (were eaten by the absorber)               \t%*li (were eaten by the absorber)               \t%*li (were eaten by the absorber)\n"
 		               "  10       %*li (absorbed at the detector top)             \t%*li (absorbed at the detector top)             \t%*li (absorbed at the detector top)\n"
@@ -464,7 +464,8 @@ void OutputCodes(int iMC)
 		       "  %li hit the walls (kennz=3).\n"
 		       "  %li escaped to the top (kennz=4).\n"
 		       "  %li escaped through the exit slit (kennz=5).\n"
-		       "  %li hit the detector from the bottom (kennz=6).\n",
+		       "  %li hit the detector (kennz=6).\n"
+		       "  %li were statistically absorbed (kennz=7). \n",
 		       (iMC - 1),
 		       kennz0[p3],
 		       kennz1[p3], xend,
@@ -472,15 +473,8 @@ void OutputCodes(int iMC)
 		       kennz3[p3],
 		       kennz4[p3],
 		       kennz5[p3],
-		       kennz6[p3]);
+		       kennz6[p3],kennz7[p3]);
 
-		if(protneut==NEUTRON)
-		{	printf("  %li were statistically absorbed (kennz=7). \n",kennz7[p3]);
-		}
-		else
-		{	printf("  %li hit the detector from the top (kennz=7).\n",kennz7[p3]);
-		}
-	
 		printf("  %li decayed (kennz=8).\n"
 		       "  %li were eaten by the absorber (kennz=9).\n"
 		       "  %li were absorbed at the detector top (kennz=10).\n"
@@ -502,7 +496,8 @@ void OutputCodes(int iMC)
 		               "  %li hit the walls (kennz=3).\n"
 		               "  %li escaped to the top (kennz=4).\n"
 		               "  %li escaped through the exit slit (kennz=5).\n"
-		               "  %li hit the detector from the bottom (kennz=6).\n",
+		               "  %li hit the detector from the bottom (kennz=6).\n"
+		               "  %li were statistically absorbed (kennz=7). \n",
 		               (iMC - 1),
 		               kennz0[p3],
 		               kennz1[p3], xend,
@@ -510,14 +505,9 @@ void OutputCodes(int iMC)
 		               kennz3[p3],
 		               kennz4[p3],
 		               kennz5[p3],
-		               kennz6[p3]);
+		               kennz6[p3],
+		               kennz7[p3]);
 
-		if(protneut==NEUTRON)
-		{	fprintf(LOGSCR,"  %li were statistically absorbed (kennz=7). \n",kennz7[p3]);
-		}
-		else
-		{	fprintf(LOGSCR,"  %li hit the detector from the top (kennz=7).\n",kennz7[p3]);
-		}
 	
 		fprintf(LOGSCR,"  %li decayed (kennz=8).\n"
 		               "  %li were eaten by the absorber (kennz=9).\n"
