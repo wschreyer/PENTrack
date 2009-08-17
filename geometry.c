@@ -1,6 +1,7 @@
 #include "main.h"
 #include "kdtree.h"
 #include <vector>
+#include <set>
 
 FILE *REFLECTLOG = NULL;
 
@@ -11,6 +12,12 @@ vector<long double> mat_FermiReal, mat_FermiImag, mat_DiffProb;
 
 vector<int> model_mat, model_kennz;	// dynamic arrays to associate models with material/kennzahl/name
 vector<string> model_name;
+vector< set<int> > model_ignoretimes;
+
+
+long double r_min = INFINITY, r_max = -INFINITY, 
+			phi_min = INFINITY, phi_max = -INFINITY, 
+			z_min = INFINITY, z_max = -INFINITY;
 
 
 // transmission through a wall (loss of UCN) with Fermi potential  Mf (real) and PF (im) for a UCN with energy Er perpendicular to the wall (all in neV)
@@ -27,16 +34,18 @@ void LoadGeometry(){
 	ifstream infile((inpath+"/geometry.in").c_str());
 	string line;
 	char c;
-	while (infile){
-		while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
-		if ((infile.peek() == '[') && getline(infile,line)){	// parse geometry.in for section header
+	while (infile.good()){
+		infile >> ws; // ignore whitespaces
+		c = infile.peek();
+		if ((infile.peek() == '[') && getline(infile,line).good()){	// parse geometry.in for section header
 			if (line.compare(0,11,"[MATERIALS]") == 0){
 				string name;
 				long double val;
 				do{	// parse material list
-					while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
-					if (c == '#' || c == '\n') continue; // skip comments and empty lines
-					else if (c == '[') break;	// next section found
+					infile >> ws; // ignore whitespaces
+					c = infile.peek();
+					if (c == '#') continue; // skip comments
+					else if (!infile.good() || c == '[') break;	// next section found
 					infile >> name;
 					mat_name.push_back(name);
 					infile >> val;
@@ -45,17 +54,19 @@ void LoadGeometry(){
 					mat_FermiImag.push_back(val);
 					infile >> val;
 					mat_DiffProb.push_back(val);
-				}while(infile && getline(infile,line));
+				}while(infile.good() && getline(infile,line).good());
 			}
 			else if (line.compare(0,10,"[GEOMETRY]") == 0){
 				string STLfile;
 				unsigned ID;
 				string matname;
 				char name[80];
+				int ignoretime;
 				do{	// parse STLfile list
-					while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
-					if (c == '#' || c == '\n') continue;	// skip comments and empty lines
-					else if (c == '[') break;	// next section found
+					infile >> ws; // ignore whitespaces
+					c = infile.peek();
+					if (c == '#') continue;	// skip comments
+					else if (!infile.good() || c == '[') break;	// next section found
 					infile >> ID;
 					infile >> STLfile;
 					infile >> matname;
@@ -73,24 +84,40 @@ void LoadGeometry(){
 							exit(-1);
 						}
 					}
-				}while(infile && getline(infile,line));
+					while ((c = infile.peek()) == '\t' || c == ' ')
+						infile.ignore();
+					set<int> ignoretimes;
+					while (infile && c != '#' && c != '\n'){
+						infile >> ignoretime;
+						ignoretimes.insert(ignoretime);
+						while ((c = infile.peek()) == '\t' || c == ' ')
+							infile.ignore();
+					}
+					model_ignoretimes.push_back(ignoretimes);
+				}while(infile.good() && getline(infile,line).good());
 				geometry.Init();
 			}
 			else if (line.compare(0,8,"[SOURCE]") == 0){
 				do{	// parse source line
-					while (infile && (c = infile.peek()) == ' ') infile.ignore(); // ignore whitespaces
-					if (c == '#' || c == '\n') continue; // skip comments and empty lines
-					else if (c == '[') break;	// next section found
+					infile >> ws; // ignore whitespaces
+					c = infile.peek();
+					if (c == '#') continue; // skip comments
+					else if (!infile.good() || c == '[') break;	// next section found
 					string name;
 					infile >> name;
-					sourcevolume.ReadFile((inpath + '/' + name).c_str(),0);
-					long double r,phi,z;
-					infile >> r;
-					infile >> phi;
-					infile >> z;
-					long double p[3] = {r*cos(phi),r*sin(phi),z};
-					sourcevolume.Init(p);
-				}while(infile && getline(infile,line));
+					if (name == "custom")
+						infile >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max;
+					else{
+						sourcevolume.ReadFile((inpath + '/' + name).c_str(),0);
+/*						long double r,phi,z;
+						infile >> r;
+						infile >> phi;
+						infile >> z;
+						long double p[3] = {r*cos(phi),r*sin(phi),z};
+*/
+						sourcevolume.Init(/*p*/);
+					}
+				}while(infile.good() && getline(infile,line).good());
 			}
 			else getline(infile,line);
 		}
@@ -108,21 +135,60 @@ void LoadGeometry(){
 
 // return a random point in sourcevolume
 void RandomPointInSourceVolume(long double &r, long double &phi, long double &z){
-	long double p[3];
+	long double p1[3],p2[3];
+	bool valid;
 	do{	
-		p[0] = mt_get_double(v_mt_state)*(sourcevolume.hi[0] - sourcevolume.lo[0]) + sourcevolume.lo[0];
-		p[1] = mt_get_double(v_mt_state)*(sourcevolume.hi[1] - sourcevolume.lo[1]) + sourcevolume.lo[1];
-		p[2] = mt_get_double(v_mt_state)*(sourcevolume.hi[2] - sourcevolume.lo[2]) + sourcevolume.lo[2];
-	}while(!sourcevolume.PointInVolume(p));
-	r = sqrt(p[0]*p[0] + p[1]*p[1]);
-	phi = atan2(p[1],p[0]);
-	z = p[2];
+		valid = false;
+		list<TCollision> c;
+		if (r_min == INFINITY){
+			p1[0] = p2[0] = mt_get_double(v_mt_state)*(sourcevolume.hi[0] - sourcevolume.lo[0]) + sourcevolume.lo[0]; // random point 
+			p1[1] = p2[1] = mt_get_double(v_mt_state)*(sourcevolume.hi[1] - sourcevolume.lo[1]) + sourcevolume.lo[1];
+			p1[2] = mt_get_double(v_mt_state)*(sourcevolume.hi[2] - sourcevolume.lo[2]) + sourcevolume.lo[2];
+			p2[2] = sourcevolume.lo[2];
+			valid = (sourcevolume.Collision(p1,p2,c) && c.front().normalz < 0); // random point inside source volume (surface normals pointing away from it)?
+			c.clear();
+			r = sqrt(p1[0]*p1[0] + p1[1]*p1[1]);
+			phi = atan2(p1[1],p1[0]);
+			z = p1[2];
+		}
+		else{
+			r = mt_get_double(v_mt_state)*(r_max - r_min) + r_min;
+			phi = mt_get_double(v_mt_state)*(phi_max - phi_min) + phi_min;
+			z = mt_get_double(v_mt_state)*(z_max - z_min) + z_min;
+			p1[0] = p2[0] = r*cos(phi);
+			p1[1] = p2[1] = r*sin(phi);
+			p1[2] = z;
+			valid = true;
+		}
+		p2[2] = geometry.lo[2];
+		if (valid && geometry.Collision(p1,p2,c)){	// test if random point is inside solid
+			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+				list<TCollision>::iterator j = i;
+				for (j++; j != c.end(); j++){
+					if (i->tri == j->tri) 
+						j = c.erase(j);	// delete identical entries in collision-list
+				}
+			}
+			int count = 0;
+			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+				if (i->normalz > 0) count++; // count surfaces whose normals point to random point
+				else count--; // count surfaces whose normals point away from random point
+			}
+			valid &= (count == 0); // count is zero, if all surfaces are closed -> point does not lie in a solid
+		}
+	}while(!valid);
 }
 
 // check if a point is inside the source volume
 bool InSourceVolume(long double r, long double phi, long double z){
-		long double p[3] = {r*cos(phi), r*sin(phi), z};
-		return sourcevolume.PointInVolume(p);
+	if (r_min == INFINITY){
+		long double p1[3] = {r*cos(phi), r*sin(phi), z};
+		long double p2[3] = {p1[0], p1[1], sourcevolume.lo[2]};
+		list<TCollision> c;
+		return (sourcevolume.Collision(p1,p2,c) && c.front().normalz < 0);
+	}
+	else
+		return (r >= r_min && r <= r_max && phi >= phi_min && phi <= phi_max && z >= z_min && z <= z_max);
 }
 
 // check step y1->y2 for reflection, return -1 for failed reflection (step has to be repeated with smaller stepsize)
@@ -140,9 +206,29 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	}
 	
 	long double p2[3] = {y2[1]*cos(y2[5]), y2[1]*sin(y2[5]), y2[3]};
-	long double s, normal_cart[3];
-	unsigned i;
-	if (geometry.Collision(p1,p2,s,normal_cart,i)){ // search in the kdtree for reflection
+	list<TCollision> colls;
+	if (geometry.Collision(p1,p2,colls)){ // search in the kdtree for reflection
+		list<TCollision>::iterator it;
+		for (it = colls.begin(); it != colls.end(); it++){
+			if (!model_ignoretimes[(*it).ID].empty()){
+				long double x = x1 + (*it).s*(x2-x1);
+				set<int> itimes = model_ignoretimes[(*it).ID];
+				if ((x < FillingTime && itimes.count(1) > 0) ||
+					(x >= FillingTime && x < FillingTime + CleaningTime && itimes.count(2) > 0) ||
+					(x >= FillingTime + CleaningTime && x < FillingTime + CleaningTime + RampUpTime && itimes.count(3) > 0) ||
+					(x >= FillingTime + CleaningTime + RampUpTime && x < FillingTime + CleaningTime + RampUpTime + FullFieldTime && itimes.count(4) > 0) ||
+					(x >= FillingTime + CleaningTime + RampUpTime + FullFieldTime && x < FillingTime + CleaningTime + RampUpTime + FullFieldTime + RampDownTime && itimes.count(5) > 0) ||
+					(x >= FillingTime + CleaningTime + RampUpTime + FullFieldTime + RampDownTime && itimes.count(6) > 0))
+					continue;
+			}
+			break;
+		}
+		if (it == colls.end())
+			return 0;
+			
+		long double normal_cart[3] = {(*it).normalx,(*it).normaly,(*it).normalz};
+		long double s = (*it).s;
+		unsigned i = (*it).ID;
 		
 		long double u[3] = {p2[0]-p1[0],p2[1]-p1[1],p2[2]-p1[2]};
 		long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]); // distance p1-p2
