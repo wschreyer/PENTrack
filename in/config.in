@@ -36,8 +36,8 @@ CleaningTime 0
 RampUpTime   0
 FullFieldTime 50
 RampDownTime 100
-#storagetime = max. simulation time
 storagetime 2000
+# simulation will be stopped after all these times!
 
 # flux density below which the spin will also be tracked, when BF is turned on
 BFTargetB 0.2

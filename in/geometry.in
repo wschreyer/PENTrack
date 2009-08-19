@@ -10,16 +10,21 @@ UCNdet	0			0			0		# 100% efficiency assumed
 
 [GEOMETRY]
 #models the program will load, particle absorbed at the surface will be flagged with the kennzahl of the surface
+#kennzahlen 0-5 are reserved for special events
 #kennzahl	STLfile					material name as defined above		ignore times (1 = filling, 2 = cleaning, 3 = rampup, 4 = fullfield, 5 = rampdown, 6 = storage)
 7			heliumtankMay09.STL		Nocado
 6			protdet.STL				CsI
-9			absorber.STL			PE
-12			UCNdet.STL				UCNdet
+8			absorber.STL			PE
+9			UCNdet.STL				UCNdet
 
 [SOURCE]
-#define source volume here, inital conditions will be randomly picked from this volume (must have closed surface!)
+#set source volume here, inital conditions will be randomly picked from this volume (must have closed surface!)
 #source.STL
 
-#define custom parameter range for inital conditions (source volume above will be ignored if this section is present!!!)
+#define custom parameter rage for inital conditions (source volume above will be ignored if this section is present!!!)
 #custom	r_min	r_max	phi_min	phi_max		z_min	z_max
 custom	0.125	0.495	0		360			0.005	1.145
+
+[FIELDS]
+#field table-file
+fieldval.tab

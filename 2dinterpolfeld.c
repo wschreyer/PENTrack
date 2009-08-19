@@ -106,7 +106,7 @@ void GetDim(int *m, int *n)
 	
 	if(FIN != NULL) 
 		fclose(FIN);
-	string path = inpath + "/fieldval.tab";
+	string path = inpath + '/' + fieldvaltab;
 	FIN = fopen(path.c_str(),mode_r);
 	
 	// in der ersten zeile stehen die dimensionen auch drin
@@ -238,7 +238,7 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 	// close file if it already open
 	if(FIN != NULL)  
 		fclose(FIN);
-	string path(inpath + "/fieldval.tab");
+	string path(inpath + '/' + fieldvaltab);
 	FIN = fopen(path.c_str(),mode_r);
 	
 	// discard first eleven lines with header
@@ -249,7 +249,7 @@ int readWert(long double rind[], long double zind[], long double **BrTab,long do
 	}
 
 	
-	printf("\nreading fieldval.tab \n");
+	printf("\nreading %s \n",fieldvaltab.c_str());
 	
    // Schleife �ber alle Zeilen der Input Datei
 	do{
@@ -482,7 +482,7 @@ void PrepIntpol(int k){
   //long double muell;
 // Gr��e der Arrays f�r das Einlesen der Tabelle bestimmen
    long double EnTemp;
-	string path(inpath + "/fieldval.tab");
+	string path(inpath + '/' + fieldvaltab);
 	FIN = fopen(path.c_str(),mode_r);
 	if (FIN == NULL) 
 		exit(-1);        // Fehlerbehandlung
@@ -612,7 +612,7 @@ void BInterpol(long double r_n, long double phi, long double z_n){
 		{
 			printf("\n The array index has left fieldval boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n ,indz);
 			fprintf(LOGSCR,"\n The array index has left fieldval boundaries: r=%LG:%d, z=%LG:%i   Exiting!!! \n", r_n,indr,z_n, indz);
-			kennz = 99;
+			kennz = KENNZAHL_LEFT_FIELD;
 			stopall = 1;
 		}
 	} 
@@ -738,7 +738,7 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 	        }else{
 				printf("\n The array index has left boundaries!!! Exiting!!! \n");
 				fprintf(LOGSCR,"\n The array index has left boundaries!!! Exiting!!! \n");
-				kennz = 99;
+				kennz = KENNZAHL_LEFT_FIELD;
 				stopall = 1;
 	        }
 		}
@@ -747,7 +747,7 @@ void EInterpol(long double r_n, long double phi, long double z_n){
 	        //char bloed;
 	        printf("The particle has entered forbidden space!!! I will terminate it now! \n");
 	        fprintf(LOGSCR,"The particle has entered forbidden space!!! I will terminate it now! \n");
-			kennz=99;    // something's wrong
+			kennz=KENNZAHL_LEFT_FIELD;    // something's wrong
 	        stopall=1;
 		}
 	

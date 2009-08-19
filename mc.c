@@ -93,6 +93,7 @@ void MCStartwerte(long double delx)
 		//NeutEnergie =  15.0e-9 + mt_get_double(v_mt_state) * (110.0e-9 - 15.0e-9); // equal weighted neutron energy		
 		// END temporary for energy dependence test of proton extraction efficiency
 	
+																					// add 1neV to avoid infinite initial condition dicing
 		NeutEnergie  = powl((powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS*1e-9 + 1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS*1e-9 + 1e-9, 1.5), 2.0/3.0); // [eV]
 	}
 	
@@ -113,6 +114,7 @@ void MCStartwerte(long double delx)
  
 		}while(WktTMP > Elvert);
 
+																					// add 1neV to avoid infinite initial condition dicing
 		NeutEnergie  = powl( (powl(nini.EnergieE*1e-9, 1.5) - powl(nini.EnergieS*1e-9 + 1e-9, 1.5)) * mt_get_double(v_mt_state) + powl(nini.EnergieS*1e-9 + 1e-9, 1.5), 2.0/3.0); // [eV]			
 	}
 
@@ -140,7 +142,7 @@ void MCStartwerte(long double delx)
 			break;
 		}
 		if(nroll == 42000000)
-		{	kennz = 99;
+		{	kennz = KENNZAHL_INITIAL_NOT_FOUND;
 			noparticle = true;
 			printf("... ABORT: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
 			fprintf(LOGSCR,"... ABORT: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
