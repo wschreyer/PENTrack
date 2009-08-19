@@ -2,18 +2,29 @@
 #include "kdtree.h"
 #include <vector>
 #include <set>
+#include <numeric>
 
 FILE *REFLECTLOG = NULL;
 
 KDTree geometry, sourcevolume;
 
-vector<string> mat_name;	// dynamic arrays to store material properties
-vector<long double> mat_FermiReal, mat_FermiImag, mat_DiffProb;
+struct material{
+	string name;
+	long double FermiReal, FermiImag, DiffProb;
+};
 
-vector<int> model_mat, model_kennz;	// dynamic arrays to associate models with material/kennzahl/name
-vector<string> model_name;
-vector< set<int> > model_ignoretimes;
+struct solid{
+	string name;
+	material mat;
+	unsigned kennz;
+	set<int> ignoretimes;
+};
 
+vector<solid> solids;	// dynamic array to associate solids with material/kennzahl/name
+
+vector<int> kennz_counter[3];
+
+string fieldvaltab = "fieldval.tab";
 
 long double r_min = INFINITY, r_max = -INFINITY, 
 			phi_min = INFINITY, phi_max = -INFINITY, 
@@ -33,32 +44,25 @@ void LoadGeometry(){
 	cout << endl;
 	ifstream infile((inpath+"/geometry.in").c_str());
 	string line;
+	vector<material> materials;	// dynamic array to store material properties
 	char c;
 	while (infile.good()){
 		infile >> ws; // ignore whitespaces
 		c = infile.peek();
 		if ((infile.peek() == '[') && getline(infile,line).good()){	// parse geometry.in for section header
 			if (line.compare(0,11,"[MATERIALS]") == 0){
-				string name;
-				long double val;
 				do{	// parse material list
 					infile >> ws; // ignore whitespaces
 					c = infile.peek();
 					if (c == '#') continue; // skip comments
 					else if (!infile.good() || c == '[') break;	// next section found
-					infile >> name;
-					mat_name.push_back(name);
-					infile >> val;
-					mat_FermiReal.push_back(val);
-					infile >> val;
-					mat_FermiImag.push_back(val);
-					infile >> val;
-					mat_DiffProb.push_back(val);
+					material mat;
+					infile >> mat.name >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb;
+					materials.push_back(mat);
 				}while(infile.good() && getline(infile,line).good());
 			}
 			else if (line.compare(0,10,"[GEOMETRY]") == 0){
 				string STLfile;
-				unsigned ID;
 				string matname;
 				char name[80];
 				int ignoretime;
@@ -67,33 +71,37 @@ void LoadGeometry(){
 					c = infile.peek();
 					if (c == '#') continue;	// skip comments
 					else if (!infile.good() || c == '[') break;	// next section found
-					infile >> ID;
+					solid model;
+					infile >> model.kennz;
+					if (kennz_counter[0].size() < model.kennz){
+						kennz_counter[0].resize(model.kennz+1,0);
+						kennz_counter[1].resize(model.kennz+1,0);
+						kennz_counter[2].resize(model.kennz+1,0);
+					}
 					infile >> STLfile;
 					infile >> matname;
 					STLfile = inpath + '/' + STLfile;
-					for (unsigned i = 0; i < mat_name.size(); i++){
-						if (matname == mat_name[i]){
-							model_mat.push_back(i);
-							model_kennz.push_back(ID);
-							geometry.ReadFile(STLfile.c_str(),model_kennz.size()-1,name);
-							model_name.push_back(name);
+					for (unsigned i = 0; i < materials.size(); i++){
+						if (matname == materials[i].name){
+							model.mat = materials[i];
+							geometry.ReadFile(STLfile.c_str(),solids.size(),name);
+							model.name = name;
 							break;
 						}
-						else if (i+1 == mat_name.size()){
+						else if (i+1 == materials.size()){
 							fprintf(stderr,"Material %s used for %s but not defined in geometry.in!",matname.c_str(),name);
 							exit(-1);
 						}
 					}
 					while ((c = infile.peek()) == '\t' || c == ' ')
 						infile.ignore();
-					set<int> ignoretimes;
 					while (infile && c != '#' && c != '\n'){
 						infile >> ignoretime;
-						ignoretimes.insert(ignoretime);
+						model.ignoretimes.insert(ignoretime);
 						while ((c = infile.peek()) == '\t' || c == ' ')
 							infile.ignore();
 					}
-					model_ignoretimes.push_back(ignoretimes);
+					solids.push_back(model);
 				}while(infile.good() && getline(infile,line).good());
 				geometry.Init();
 			}
@@ -117,6 +125,15 @@ void LoadGeometry(){
 */
 						sourcevolume.Init(/*p*/);
 					}
+				}while(infile.good() && getline(infile,line).good());
+			}
+			else if (line.compare(0,8,"[FIELDS]") == 0){
+				do{	// parse STLfile list
+					infile >> ws; // ignore whitespaces
+					c = infile.peek();
+					if (c == '#') continue;	// skip comments
+					else if (!infile.good() || c == '[') break;	// next section found
+					infile >> fieldvaltab;
 				}while(infile.good() && getline(infile,line).good());
 			}
 			else getline(infile,line);
@@ -210,9 +227,9 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	if (geometry.Collision(p1,p2,colls)){ // search in the kdtree for reflection
 		list<TCollision>::iterator it;
 		for (it = colls.begin(); it != colls.end(); it++){
-			if (!model_ignoretimes[(*it).ID].empty()){
+			if (!solids[(*it).ID].ignoretimes.empty()){
 				long double x = x1 + (*it).s*(x2-x1);
-				set<int> itimes = model_ignoretimes[(*it).ID];
+				set<int> itimes = solids[(*it).ID].ignoretimes;
 				if ((x < FillingTime && itimes.count(1) > 0) ||
 					(x >= FillingTime && x < FillingTime + CleaningTime && itimes.count(2) > 0) ||
 					(x >= FillingTime + CleaningTime && x < FillingTime + CleaningTime + RampUpTime && itimes.count(3) > 0) ||
@@ -246,30 +263,30 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 								normal_cart[2]};
 		long double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-		unsigned mat = model_mat[i]; // get material-index
+		material mat = solids[i].mat; // get material-index
 		
 		
 		//************ handle different absorption characteristics of materials ****************
 		long double prob = mt_get_double(v_mt_state);	
 		if(!reflekt){
 			stopall = 1;
-			kennz = model_kennz[i];
-			printf("\nParticle hit %s (no reflection) at r=%LG z=%LG\n",model_name[i].c_str(),y1[1],y1[3]);
-			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",model_name[i].c_str(),y1[1],y1[3]);
+			kennz = solids[i].kennz;
+			printf("\nParticle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),y1[1],y1[3]);
+			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),y1[1],y1[3]);
 			return 1;
 		}
-		else if (prob < Transmission(Enormal*1e9,mat_FermiReal[mat],mat_FermiImag[mat])) // statistical absorption
+		else if (prob < Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag)) // statistical absorption
 		{
 			stopall = 1;
-			kennz = model_kennz[i];
-			printf("\nStatistical absorption at %s (%s)!\n",model_name[i].c_str(),mat_name[mat].c_str());
-			fprintf(LOGSCR,"Statistical absorption at %s (%s)!\n",model_name[i].c_str(),mat_name[mat].c_str());
+			kennz = solids[i].kennz;
+			printf("\nStatistical absorption at %s (%s)!\n",solids[i].name.c_str(),mat.name.c_str());
+			fprintf(LOGSCR,"Statistical absorption at %s (%s)!\n",solids[i].name.c_str(),mat.name.c_str());
 			return 1;
 		}		
 		
 		//*************** specular reflexion ************
 		prob = mt_get_double(v_mt_state);
-		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat_DiffProb[mat])))
+		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat.DiffProb)))
 		{
 	    	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
 			fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
@@ -283,7 +300,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		}
 		
 		//************** diffuse reflection ************
-		else if ((diffuse == 2) || ((diffuse == 3)&&(prob < mat_DiffProb[mat])))
+		else if ((diffuse == 2) || ((diffuse == 3)&&(prob < mat.DiffProb)))
 		{
 			long double winkeben = 0.0 + (mt_get_double(v_mt_state)) * (2 * pi); // generate random reflection angles
 			long double winksenkr = acos( cos(0.0) - mt_get_double(v_mt_state) * (cos(0.0) - cos(0.5 * pi)));
@@ -316,3 +333,70 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	}
 	return 0;
 }
+
+//======== The endcodes of trajectories are added up here regarding the particle typ =======================================
+void IncrementCodes(int kennz)
+{	// protneut % 3 = {0, 1, 2} <<<	ELECTRONS (=6) % 3 = 0
+	// 								NEUTRON   (=1) % 3 = 1	
+	// 								PROTON    (=2) % 3 = 2
+	kennz_counter[protneut % 3][kennz]++;
+}
+//======== end of IncrementCodes ===========================================================================================
+
+//======== Output of the endcodes ==========================================================================================
+void OutputCodes(int iMC){
+	int ncount = accumulate(kennz_counter[1].begin(),kennz_counter[1].end(),0);
+	int pcount = accumulate(kennz_counter[2].begin(),kennz_counter[2].end(),0);
+	int ecount = accumulate(kennz_counter[0].begin(),kennz_counter[0].end(),0);
+	printf("\nThe calculations of %li particle(s) yielded:\n"
+	       "endcode		of %i neutron(s)	of %i proton(s)	of %i electron(s)\n"
+	       "   0		%i		%i		%i 		(were not categorized)\n"
+	       "   1		%i		%i		%i 		(did not finish)\n"
+	       "   2		%i		%i		%i 		(hit outer boundaries)\n"
+	       "   3		%i		%i		%i 		(left field boundaries)\n"
+	       "   4		%i		%i		%i 		(decayed)\n"
+	       "   5		%i		%i		%i 		(found no initial position)\n",
+	       (iMC - 1 + 2 * decay.counter),
+	       ncount, pcount, ecount,
+	       kennz_counter[1][0], kennz_counter[2][0], kennz_counter[0][0],
+	       kennz_counter[1][1], kennz_counter[2][1], kennz_counter[0][1],
+	       kennz_counter[1][2], kennz_counter[2][2], kennz_counter[0][2],
+	       kennz_counter[1][3], kennz_counter[2][3], kennz_counter[0][3],
+	       kennz_counter[1][4], kennz_counter[2][4], kennz_counter[0][4],
+	       kennz_counter[1][5], kennz_counter[2][5], kennz_counter[0][5]);
+	for (unsigned i = 6; i < kennz_counter[0].size(); i++){
+		string solidnames;
+		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
+			if (it->kennz == i)
+				solidnames += '/' + it->name;
+		printf("   %i		%i		%i		%i		(were statistically absorbed by %s)\n",
+				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
+	}
+				
+	fprintf(LOGSCR,"\nThe calculations of %li particle(s) yielded:\n"
+	       "endcode		of %i neutron(s)	of %i proton(s)	of %i electron(s)\n"
+	       "   0		%i		%i		%i 		(were not categorized)\n"
+	       "   1		%i		%i		%i 		(did not finish)\n"
+	       "   2		%i		%i		%i 		(hit outer boundaries)\n"
+	       "   3		%i		%i		%i 		(left field boundaries)\n"
+	       "   4		%i		%i		%i 		(decayed)\n"
+	       "   5		%i		%i		%i 		(found no initial position)\n",
+	       (iMC - 1 + 2 * decay.counter),
+	       ncount, pcount, ecount,
+	       kennz_counter[1][0], kennz_counter[2][0], kennz_counter[0][0],
+	       kennz_counter[1][1], kennz_counter[2][1], kennz_counter[0][1],
+	       kennz_counter[1][2], kennz_counter[2][2], kennz_counter[0][2],
+	       kennz_counter[1][3], kennz_counter[2][3], kennz_counter[0][3],
+	       kennz_counter[1][4], kennz_counter[2][4], kennz_counter[0][4],
+	       kennz_counter[1][5], kennz_counter[2][5], kennz_counter[0][5]);
+	for (unsigned i = 6; i < kennz_counter[0].size(); i++){
+		string solidnames;
+		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
+			if (it->kennz == i)
+				solidnames += '/' + it->name;
+		fprintf(LOGSCR,"   %i		%i		%i		%i		(were statistically absorbed by %s)\n",
+				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
+	}
+}
+//======== end of OutputCodes ==============================================================================================
+
