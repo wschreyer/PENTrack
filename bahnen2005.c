@@ -113,7 +113,6 @@ long double *BFtime=NULL, **BFField=NULL;   // time, Bx, By, Bz, r, z array
 int offset=0, BFkount, BFindex = 3;			// counter in BFarray, offset of BFarray, maximum index of intermediate values , index in BFarray
 long double BFpol, *BFBws=NULL;                    // BFpolarisation
 long double BFBmin = 10.0, BFBminmem=10.0, BFTargetB=0.1;     // smallest value of Babs during step, memorize value during value accumulation, Babs < BFTargetB => integrate,
-long double BFBxcoor, BFBycoor, BFBzcoor;        // cartesian coord of B field
 unsigned short int BruteForce = 0, firstint = 1, flipspin=1;  // enable BruteForce?,
 long double I_n[4], **BFypFields=NULL;        // Spinvector, intermediate field values in BFodeint
 long BFZeilencount; int BFFilecount=1;                  // to control output filename of BF
@@ -499,7 +498,7 @@ void IntegrateParticle(){
 	int perc=0;   // percentage of particle done counter
 		// reset some values for new particle
 	stopall=0;
-	kennz=0; // not categorized yet									
+	kennz=KENNZAHL_UNKNOWN; // not categorized yet									
 	// initial values for Brute-Force Spinintegration 
 		BFpol = 0.5;
 		I_n[3]=0.5; I_n[2]=I_n[1]=0;
@@ -598,7 +597,7 @@ void IntegrateParticle(){
 
 	trajlengthsum = 0;
 	nrefl=0;
-	kennz=0;
+	kennz=KENNZAHL_UNKNOWN;
 	stopall=0;
 	
 	Feldcount=0;
@@ -794,7 +793,8 @@ void IntegrateParticle(){
 			
 			PrintIntegrationStep(timetemp);
 			
-		}while (((x2-xstart)<=xend) && (!stopall) && (x2 <= StorageTime)); // end integration do - loop
+		}while (((x2-xstart)<=xend) && (!stopall) && (x2 <= FillingTime + CleaningTime + RampUpTime + 
+															FullFieldTime + RampDownTime + StorageTime)); // end integration do - loop
 		// END of loop for one partice
 		
 		vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
@@ -890,6 +890,7 @@ void BruteForceIntegration(){
 			//	klauf++;
 			BFtime[offset+klauf-(klaufstart-1)]=xp[klauf];
 			// transform cylindrical into kartesian lokal coordinates
+			long double BFBxcoor, BFBycoor, BFBzcoor;
 			CylKartCoord(Bp[1][klauf], Bp[5][klauf], Bp[9][klauf],  yp[5][klauf], &BFBxcoor, &BFBycoor, &BFBzcoor);
 			BFField[1][offset+klauf-(klaufstart-1)]=BFBxcoor;
 			BFField[2][offset+klauf-(klaufstart-1)]=BFBycoor;

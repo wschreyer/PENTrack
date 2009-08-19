@@ -51,6 +51,10 @@
 
 #define KENNZAHL_UNKNOWN 0
 #define KENNZAHL_NOT_FINISH 1
+#define KENNZAHL_HIT_BOUNDARIES 2
+#define KENNZAHL_LEFT_FIELD 3
+#define KENNZAHL_DECAYED 4
+#define KENNZAHL_INITIAL_NOT_FOUND 5
 
 #define TRUE 1
 #define FALSE 0
@@ -109,6 +113,7 @@ extern long double Ibar;                // current through rod
 extern int diffuse; // diffuse reflection switch
 
 // Fields
+extern string fieldvaltab;	// filename of field table-file
 extern long double dBrdr, dBrdz, dBzdr, dBzdz, Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
 extern long double dBphidr, dBphidz, dBrdphi, dBzdphi, dBphidphi;
 extern long double Ez,Er, Ephi, dErdr, dErdz, dEzdr, dEzdz, dEphidr, dEphidz;    // electric field
@@ -124,7 +129,7 @@ extern long double ystart[7], xstart;       //z-component of velocity, initial a
 extern int iMC;                             //  counter for MonteCarloSim
 extern bool noparticle; // true if there was NO particle simulated
 extern long double  x1, x2;                         // start and endtime handed over to integrator
-extern long int kennz0[3],kennz1[3],kennz2[3],kennz3[3],kennz4[3],kennz5[3],kennz6[3],kennz7[3],kennz8[3],kennz9[3],kennz10[3],kennz11[3],kennz12[3],kennz99[3],nrefl; // Counter for the particle codes
+extern long int nrefl; // reflection counter
 extern long double trajlengthsum;
 extern long double Hstart, Hend, Hmax;     //maximum energy
 
@@ -153,7 +158,7 @@ struct decayinfo				// containing all data from neutron decay for the emerging p
 extern struct decayinfo decay;	// containing all data from neutron decay for the emerging proton and electron
 
 // initial values of particle
-extern long double EnergieS,dEnergie, EnergieE, Energie;    //initial energy range
+extern long double EnergieS, EnergieE, Energie;    //initial energy range
 extern long double r_n, phi_n, z_n, v_n;                //initial particle coordinates
 extern long double alpha, gammaa, hmin;                  //initial angle to x-Achse, zo z-Achse, Schrittweite
 extern long double alphas, gammas;   //initial values from
@@ -220,7 +225,6 @@ extern long double *BFtime, **BFField;    // time, Bx, By, Bz, r, z array
 extern int offset, BFkount, BFindex;			// counter in BFarray, offset off BFarray, maximum index of intermediate values , index in BFarray;
 extern long double *BFBws;                    // BFpolarisation
 extern long double BFBmin, BFBminmem,BFTargetB;     // smallest value of Babs during step, Babs < BFTargetB => integrate,
-extern long double BFBxcoor, BFBycoor, BFBzcoor;        // cartesian coord of B field
 extern unsigned short int BruteForce, firstint, flipspin;  // enable BruteForce?, flipthespin?
 extern long double I_n[4], **BFypFields;        // Spinvector, intermediate field values in BFodeint
 extern long BFZeilencount; extern int BFFilecount;                  // to control output filename of BF

@@ -424,7 +424,7 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	if(dt>=xend) 
 	{                                                           //Zeit abgelaufen
 		if (decay.on && (protneut == NEUTRON))
-		{	kennz = 8; // neutron decayed
+		{	kennz = KENNZAHL_DECAYED; // neutron decayed
 			decay.ed = 1;
 			decay.Npolarisation = polarisation;
 			decay.Nr = ystart[1];
@@ -437,11 +437,11 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 			decay.NH = H; // [neV]
 		}
 		else
-		{	kennz = 1; // particle survived until xend
+		{	kennz = KENNZAHL_NOT_FINISH; // particle survived until xend
 		}			
 	}
 	else if (x2 >= StorageTime)
-		kennz = 1;
+		kennz = KENNZAHL_NOT_FINISH;
 
 	// calculate spin flip lifetime tauSF and influence on lifetime measurement 
 	long double tauSF = -x2/logl(1-BFflipprob);
@@ -609,7 +609,7 @@ void OutputState(long double *y, int l){
 	fprintf(STATEOUT,"Reflekt while Rampdown: %i\n", rdreflekt);
 	kennz=88;
 	stopall =1;
-//	exit(-1);
+	exit(-1);
 	iMC = MonteCarloAnzahl +1;
 }
 
