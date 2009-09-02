@@ -169,7 +169,7 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z)
 			z = p1[2];
 		}
 		else{
-			r = mt_get_double(v_mt_state)*(r_max - r_min) + r_min;
+			r = sqrt(mt_get_double(v_mt_state) * (r_max*r_max - r_min*r_min) + r_min*r_min); // weighting because of the volume element and a r^2 probability outwards
 			phi = mt_get_double(v_mt_state)*(phi_max - phi_min) + phi_min;
 			z = mt_get_double(v_mt_state)*(z_max - z_min) + z_min;
 			p1[0] = p2[0] = r*cos(phi);
@@ -349,13 +349,13 @@ void OutputCodes(int iMC){
 	int pcount = accumulate(kennz_counter[2].begin(),kennz_counter[2].end(),0);
 	int ecount = accumulate(kennz_counter[0].begin(),kennz_counter[0].end(),0);
 	printf("\nThe calculations of %li particle(s) yielded:\n"
-	       "endcode		of %i neutron(s)	of %i proton(s)	of %i electron(s)\n"
-	       "   0		%i		%i		%i 		(were not categorized)\n"
-	       "   1		%i		%i		%i 		(did not finish)\n"
-	       "   2		%i		%i		%i 		(hit outer boundaries)\n"
-	       "   3		%i		%i		%i 		(left field boundaries)\n"
-	       "   4		%i		%i		%i 		(decayed)\n"
-	       "   5		%i		%i		%i 		(found no initial position)\n",
+	       "endcode:  of %4i neutron(s) ; of %4i proton(s) ; of %4i electron(s)\n"
+	       "   0 %12i %20i %19i 		(were not categorized)\n"
+	       "   1 %12i %20i %19i 		(did not finish)\n"
+	       "   2 %12i %20i %19i 		(hit outer boundaries)\n"
+	       "   3 %12i %20i %19i 		(left field boundaries)\n"
+	       "   4 %12i %20i %19i 		(decayed)\n"
+	       "   5 %12i %20i %19i 		(found no initial position)\n",
 	       (iMC - 1 + 2 * decay.counter),
 	       ncount, pcount, ecount,
 	       kennz_counter[1][0], kennz_counter[2][0], kennz_counter[0][0],
@@ -369,18 +369,18 @@ void OutputCodes(int iMC){
 		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
 			if (it->kennz == i)
 				solidnames += '/' + it->name;
-		printf("   %i		%i		%i		%i		(were statistically absorbed by %s)\n",
+		printf("   %i %12i %20i %19i		(were statistically absorbed by %s)\n",
 				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
 	}
 				
 	fprintf(LOGSCR,"\nThe calculations of %li particle(s) yielded:\n"
-	       "endcode		of %i neutron(s)	of %i proton(s)	of %i electron(s)\n"
-	       "   0		%i		%i		%i 		(were not categorized)\n"
-	       "   1		%i		%i		%i 		(did not finish)\n"
-	       "   2		%i		%i		%i 		(hit outer boundaries)\n"
-	       "   3		%i		%i		%i 		(left field boundaries)\n"
-	       "   4		%i		%i		%i 		(decayed)\n"
-	       "   5		%i		%i		%i 		(found no initial position)\n",
+	       "endcode:  of %4i neutron(s) ; of %4i proton(s) ; of %4i electron(s)\n"
+	       "   0 %12i %20i %19i 		(were not categorized)\n"
+	       "   1 %12i %20i %19i 		(did not finish)\n"
+	       "   2 %12i %20i %19i 		(hit outer boundaries)\n"
+	       "   3 %12i %20i %19i 		(left field boundaries)\n"
+	       "   4 %12i %20i %19i 		(decayed)\n"
+	       "   5 %12i %20i %19i 		(found no initial position)\n",
 	       (iMC - 1 + 2 * decay.counter),
 	       ncount, pcount, ecount,
 	       kennz_counter[1][0], kennz_counter[2][0], kennz_counter[0][0],
@@ -394,7 +394,7 @@ void OutputCodes(int iMC){
 		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
 			if (it->kennz == i)
 				solidnames += '/' + it->name;
-		fprintf(LOGSCR,"   %i		%i		%i		%i		(were statistically absorbed by %s)\n",
+		fprintf(LOGSCR,"   %i %12i %20i %19i		(were statistically absorbed by %s)\n",
 				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
 	}
 }
