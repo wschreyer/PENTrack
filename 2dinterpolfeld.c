@@ -5,12 +5,14 @@
 FILE *FIN = NULL;
 int fehler, indr, indz ;          // indr, indz: current indices for field interpolation
 long double r_mi, r_ma, z_mi, z_ma; // minimum and maximum values, counter for field calls
+int n = 0, m = 0;                               // number of colums and rows in the input B-field matrices
 long double *rind = NULL, *zind = NULL, **BrTab = NULL, **BzTab = NULL,**BphiTab = NULL,**BrTab1 = NULL,**BzTab1 = NULL,**BphiTab1 = NULL;  //B Arrays
 long double **BrTab2 = NULL, **BzTab2 = NULL, **BphiTab2 = NULL, **BrTab12 = NULL, **BzTab12 = NULL, **BphiTab12 = NULL;          //B Arrays
 long double *erind = NULL, *ezind = NULL, **ErTab = NULL, **EzTab = NULL, **EphiTab = NULL, **ErTab1 = NULL, **EzTab1 = NULL, **EphiTab1 = NULL;  //E Arrays
 long double **ErTab2 = NULL, **EzTab2 = NULL, **EphiTab2 = NULL, **ErTab12 = NULL, **EzTab12 = NULL, **EphiTab12 = NULL;          //E Arrays
 long double ****Brc  = NULL, ****Bphic  = NULL, ****Bzc  = NULL;
 long double **ya=NULL, *rvec=NULL, *zvec=NULL;
+long double *yyy = NULL, *yyy1 = NULL, *yyy2 = NULL, *yyy12 = NULL;        //rectangle with values at the 4 corners for interpolation
 long double rdist, zdist;
 long double conv_rA, conv_rB, conv_zA, conv_zB; 
 
@@ -91,7 +93,7 @@ void PrepareBField(){
 		printf("dBzdr = %.17LG \n",dBzdr);
 		printf("dBzdz = %.17LG \n",dBzdz);	
 	}	
-	if (Emin_n == 1e30) Emin_n = 0; // if Emin_n was not set, set it to zero
+	if (Emin_n >= 1e20) Emin_n = 0; // if Emin_n was not set, set it to zero
 	
 }
 

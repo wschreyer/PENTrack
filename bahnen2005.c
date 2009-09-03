@@ -24,20 +24,20 @@ long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus f
 												// cm => m,  Gauss => Tesla,   V/cm => V/m    Bconv temporr von 1e-4 auf 1 gesetzt
 
 // misc configurations
-int MonteCarlo=1, MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
-int reflekt=0, Efeldwahl, bfeldwahl, protneut, expmode=1,Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
-int reflektlog = 0, SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
+int MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
+int reflekt=0, bfeldwahl, protneut, Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
+int SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
 long double Ibar= 2250.;                // B-field strength, current through rod
 int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 int diffuse; //diffuse reflection switch
+int neutdist;
 
 // Fields
 long double dBrdr, dBrdz, dBrdphi=0.0, dBphidr, dBphidz, dBphidphi=0.0, dBzdr, dBzdz, dBzdphi=0.0;
 long double Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
 long double Ez,Er, Ephi, dErdr, dErdz, dEzdr, dEzdz, dEphidr, dEphidz;    // electric field
 long double BFeldSkal = 1.0, EFeldSkal = 1.0, BFeldSkalGlobal = 1.0;          // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
-int n, m;                               // number of colums and rows in the input B-field matrices
 long double DiceRodField=0, RodFieldMultiplicator;
 long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist;	// plane for B field cut
 int BCutPlaneSampleCount;
@@ -70,11 +70,6 @@ struct initial nini, pini, eini; 	// one 'initial' for each particle type
 int kennz;                                  // ending code
 long double vend, gammaend, alphaend, phiend, xend;    //endvalues for particle
 long int kennz0[3]={0},kennz1[3]={0},kennz2[3]={0},kennz3[3]={0},kennz4[3]={0},kennz5[3]={0},kennz6[3]={0},kennz7[3]={0},kennz8[3]={0},kennz9[3]={0},kennz10[3]={0},kennz11[3]={0},kennz12[3]={0},kennz99[3]={0},nrefl; // Counter for the particle codes
-
-// particle distribution
-long double *ndistr = NULL, *ndistz = NULL, **ndistW = NULL;    // matrix for probability of finding particle
-int v=300,w=1200, neutdist;                                       // dimension of matrix above, user choice for ndist
-long double *yyy = NULL, *yyy1 = NULL, *yyy2 = NULL, *yyy12 = NULL;        //rectangle with values at the 4 corners for interpolation
 
 // integrator params
 long double  eps, h1;  // desired accuracy in ODEINT: normal, for polarisation and phase, trial time step
@@ -445,7 +440,7 @@ void derivs(long double x, long double *y, long double *dydx){
 void OpenFiles(int argc, char **argv){
 	// printing the path into the vars
 	ostringstream logscrfile;
-	logscrfile << outpath << "/" << jobnumber << "log.out";
+	logscrfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "log.out";
 	LOGSCR = fopen(logscrfile.str().c_str(),mode_w);
 
 	fprintf(LOGSCR,
@@ -458,14 +453,14 @@ void OpenFiles(int argc, char **argv){
 	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
 	{
 		ostringstream BFoutfile1;
-		BFoutfile1 << outpath << "/" << jobnumber << "BF1.out";
+		BFoutfile1 << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "BF1.out";
 		BFLOG = fopen(BFoutfile1.str().c_str(),mode_w);
 		fprintf(BFLOG,"t Babs Polar logPolar Ixnorm Iynorm Iznorm Bxnorm Bynorm Bznorm dx dy dz\n");
 	}
 	
 	// Endpunkte
 	ostringstream endlogfile;
-	endlogfile << outpath << "/" << jobnumber << "end.out";
+	endlogfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "end.out";
 	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
 	if (protneut != BF_ONLY) 
 	{
@@ -485,7 +480,7 @@ void OpenFiles(int argc, char **argv){
 		SaveIntermediate=1; // turn on saving of intermediate values in integrator
 		kmax=KMDEF;
 		ostringstream wholetrackfile;
-		wholetrackfile << outpath << "/" << jobnumber << "track1.out";
+		wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track001.out";
 		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
 		Zeilencount=0;
 		fprintf(OUTFILE1,"Teilchen protneut t r drdt z dzdt phi dphidt x y "
@@ -508,28 +503,8 @@ void IntegrateParticle(){
 	Hmax=0.0;
 	x2=x1= 0.;     //set time to zero
 	
-	// randomly chosen start parameters
-	if(MonteCarlo==1)
-	{			
-		MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer fr Teilchen festlegen
-		x2=xstart;    // set time starting value										
-	}	
-	// start parameters from a file with format of end.out file
-	else if (MonteCarlo==2)
-	{
-		char msg[250];		
-		do
-		{
-			fgets(msg,250,STARTIN);
-		}while(!feof(STARTIN));
-		if(protneut == PROTON)
-		{
-			long double rtmp=r_n, phitmp=phi_n,ztmp=z_n;  // store position values for later 
-			MCStartwerte(delx);  // determine energy and velocity vector of proton randomly...
-			r_n=rtmp; phi_n=phitmp; ztmp=z_n;   // put position values read in back in place
-			
-		}
-	}
+	MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer fr Teilchen festlegen
+	x2=xstart;    // set time starting value										
 	
 	
 	// remember starting energy of particle
@@ -793,8 +768,7 @@ void IntegrateParticle(){
 			
 			PrintIntegrationStep(timetemp);
 			
-		}while (((x2-xstart)<=xend) && (!stopall) && (x2 <= FillingTime + CleaningTime + RampUpTime + 
-															FullFieldTime + RampDownTime + StorageTime)); // end integration do - loop
+		}while (((x2-xstart)<=xend) && (!stopall) && (x2 <= StorageTime)); // end integration do - loop
 		// END of loop for one partice
 		
 		vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
@@ -826,9 +800,7 @@ void BruteForceIntegration(){
 	// Array fr BruteForce Integration wird gebildet
 	int klauf, klaufstart;
 	BFdxsav=5e-7;  // timestep for intermediate output
-	bool BFPolmin;
-	
-	BFPolmin = (BFBmin < BFTargetB);
+	bool BFPolmin = (BFBmin < BFTargetB);
 	// if at last step there was BFintegration => true
 	// if there was no integration => false
 	
@@ -1061,7 +1033,7 @@ void PrintIntegrationStep(long double &timetemp){
 		fclose(OUTFILE1);
 		Filecount++;
 		ostringstream wholetrackfile;
-		wholetrackfile << outpath << "/" << jobnumber << "track" << Filecount << ".out";
+		wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track" << setw(3) << Filecount << setw(0) << ".out";
 		OUTFILE1=fopen(wholetrackfile.str().c_str(),mode_w);
 		fprintf(OUTFILE1,"Teilchen protneut t r drdt z dzdt phi dphidt x y "
 						 "v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr "
@@ -1081,7 +1053,7 @@ void PrintIntegrationStep(long double &timetemp){
 		fclose(BFLOG);
 		BFFilecount++;
 		ostringstream BFoutfile1;
-		BFoutfile1 << outpath << "/" << jobnumber << "BF" << BFFilecount << ".out";
+		BFoutfile1 << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "BF" << setw(3) << BFFilecount << setw(0) << ".out";
 		if(!(BFLOG = fopen(BFoutfile1.str().c_str(),mode_w))) 
 		{
 			perror("fopen");

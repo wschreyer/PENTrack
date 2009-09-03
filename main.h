@@ -9,11 +9,17 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <stddef.h>
-#include <string.h>
-#include <iostream.h>
+#include <string>
+#include <iostream>
 #include <sstream>
-#include <signal.h>
+#include <fstream>
+#include <iomanip>
 #include <sys/stat.h>
+#include <signal.h>
+#include <vector>
+#include <set>
+#include <numeric>
+#include <map>
 
 // project includes
 #include "mersenne/mt.h" // mersenne twister pseudo random number generator (rng) used for MonteCarlo alg.
@@ -78,7 +84,8 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 void prepndist(int k);
 void fillndist(int k);
 void outndist(int k);
-void ConfigInit(void);
+void ConfigInit();
+void PrintConfig();
 void OutputState(long double *y, int l);
 void PrintBFieldCut();	// print cut through BField to file
 void PrintBField();	// print Bfield to file and investigate ramp heating
@@ -95,22 +102,23 @@ extern char mode_r[2],mode_rw[3],mode_w[2];
 // physical constants
 extern long double ele_e, Qm0;      //elementary charge in SI, charge/proton mass
 extern long double gravconst, conv, mu0;      //g, Pi/180, permeability,
-extern long double m_n, mu_n, pi;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
-extern long double M,m_p;        //proton mass (eV/c^2), tempmass
-extern long double m_e, c_0, gammarel, NeutEnergie; //electron mass, lightspeed, relativistic gamma factor
+extern long double m_n, pi;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
+extern long double m_p;        //proton mass (eV/c^2), tempmass
+extern long double m_e, c_0; //electron mass, lightspeed
 extern long double hquer, mu_nSI;          // Neutron magn Mom (in J/T)
 extern long double gamma_n;
-extern long double mumB, tau;              // magn. moment of neutron/mass,  neutron lifetime
+extern long double tau;              // magn. moment of neutron/mass,  neutron lifetime
 extern long double lengthconv, Bconv, Econv;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 												
 
 //misc configuration
-extern int MonteCarlo, MonteCarloAnzahl;   // user choice to use MC or not, number of particles for MC simulation
-extern int reflekt, Efeldwahl, bfeldwahl, protneut, expmode, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
-extern int reflektlog, SaveIntermediate;               // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
+extern int MonteCarloAnzahl;   // user choice to use MC or not, number of particles for MC simulation
+extern int reflekt, bfeldwahl, protneut, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
+extern int SaveIntermediate;               // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 extern int polarisation, polarisationsave, ausgabewunsch, ausgabewunschsave, Feldcount; // user choice for polarisation of neutrons und Ausgabewunsch
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 extern long double Ibar;                // current through rod
 extern int diffuse; // diffuse reflection switch
+extern int neutdist;
 
 // Fields
 extern string fieldvaltab;	// filename of field table-file
@@ -118,13 +126,12 @@ extern long double dBrdr, dBrdz, dBzdr, dBzdz, Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; 
 extern long double dBphidr, dBphidz, dBrdphi, dBzdphi, dBphidphi;
 extern long double Ez,Er, Ephi, dErdr, dErdz, dEzdr, dEzdz, dEphidr, dEphidz;    // electric field
 extern long double BFeldSkal, EFeldSkal, BFeldSkalGlobal;                        // parameter to scale the magnetic field for ramping, scale electric field, Global: also scale ramping etc...
-extern int n, m;                               // number of colums and rows in the input B-field matrices
 extern long double DiceRodField, RodFieldMultiplicator;
 extern long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist; // plane for cut through BField
 extern int BCutPlaneSampleCount;
 
 // particles
-extern long double H;                               // total energy of particle
+extern long double M, H, mu_n, mumB;                               // total energy of particle
 extern long double ystart[7], xstart;       //z-component of velocity, initial and intermediate values of y[9]
 extern int iMC;                             //  counter for MonteCarloSim
 extern bool noparticle; // true if there was NO particle simulated
@@ -132,6 +139,7 @@ extern long double  x1, x2;                         // start and endtime handed 
 extern long int nrefl; // reflection counter
 extern long double trajlengthsum;
 extern long double Hstart, Hend, Hmax;     //maximum energy
+extern long double gammarel, NeutEnergie; // relativistic gamma factor, neutron energy
 
 struct decayinfo				// containing all data from neutron decay for the emerging proton and electron
 {	unsigned short int on;		// (!=0) if neutron decay is allowed // "do the neutrons decay?"
@@ -180,13 +188,6 @@ extern struct initial nini, pini, eini;						// one 'initial' for each particle 
 // final values of particle
 extern int kennz;                                  // ending code
 extern long double vend, gammaend, alphaend, phiend, xend;    //endvalues for particle
-
-//particle distribution
-extern long double rdist, zdist;
-extern long double *ndistr, *ndistz, **ndistW;                                            // matrix for probability of finding particle
-extern int v,w, neutdist;                                                            // dimension of matrix above, user choice for ndist
-extern long double *yyy, *yyy1,*yyy2,*yyy12;        //rectangle with values at the 4 corners for interpolation
-extern long double dr, dz;                          // distance between field values in r and z-direction
 
 //integrator params
 extern long double  eps, h1;  // desired accuracy in ODEINT: normal, for polarisation and phase, trial time step
