@@ -24,7 +24,6 @@
 // project includes
 #include "mersenne/mt.h" // mersenne twister pseudo random number generator (rng) used for MonteCarlo alg.
 #include "mc.h" // MonteCarlo related functions
-#include "neutron.h"
 #include "bruteforce.h"
 #include "2dinterpolfeld.h"
 #include "adiabacity.h"
@@ -89,6 +88,9 @@ void PrintConfig();
 void OutputState(long double *y, int l);
 void PrintBFieldCut();	// print cut through BField to file
 void PrintBField();	// print Bfield to file and investigate ramp heating
+void CylKartCoord(long double Wr, long double Wphi, long double Wz, long double phi, long double *Wx0, long double *Wy0, long double *Wz0);
+void KartCylCoord(long double Wx, long double Wy, long double Wz, long double phi, long double *Wr0, long double *Wphi0, long double *Wz0);
+long double AbsValueCart(long double x, long double y, long double z);
 
 // globals
 

@@ -264,9 +264,7 @@ int main(int argc, char **argv){
 	
 	LoadGeometry();	// read STL-files		
 	
-	if (bfeldwahl != 1){
-		PrepareBField();	// read fieldval.tab or coils.cond
-	}
+	PrepareFields();	// read fieldval.tab or coils.cond
 
 
 	Startbed(1); // read in starting values of particle
