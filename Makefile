@@ -1,4 +1,4 @@
-SRC = bahnen2005.c bruteforce.c cel.c 2dinterpolfeld.c nrutil.c adiabacity.c integrator.c main.c mc.c neutron.c mersenne/mt.c maplefield.c BForbes.c geometry.c kdtree.c
+SRC = bahnen2005.c bruteforce.c cel.c 2dinterpolfeld.c nrutil.c adiabacity.c integrator.c main.c mc.c mersenne/mt.c maplefield.c BForbes.c geometry.c kdtree.c
 OBJ=$(SRC:.c=.o)
 
 

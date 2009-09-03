@@ -799,3 +799,30 @@ void PrintBField(){
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Vektor W (kein Ortsvektor, sondern B-Feld o.�hnliches) von zyl in kart koord xyz umrechnen ## Wr, Wphi, Wz: Eingabewerte ## Wx0, Wy0, Wz0 werden ver�ndert von CylKartCoord
+// phi ist dabei die winkelkoordinate des aktuellen ortsvektors
+void CylKartCoord(long double Wr, long double Wphi, long double Wz, long double phi, long double *Wx0, long double *Wy0, long double *Wz0){
+	(*Wx0) = cosl(phi) * Wr - sinl(phi) * Wphi;
+	(*Wy0) = sinl(phi) * Wr + cosl(phi) * Wphi;
+	(*Wz0) = Wz;
+	return;
+}
+
+
+//-----------------------------------------------------------------------------
+// Vektor W (kein Ortsvektor, sondern B-Feld o.�hnliches) von kart in zyl koord xyz umrechnen ## Wx, Wy, Wz: Eingabewerte ## Wr0, Wphi0, Wz0 werden ver�ndert von KartCylCoord
+// phi ist dabei die winkelkoordinate des aktuellen ortsvektors
+void KartCylCoord(long double Wx, long double Wy, long double Wz, long double phi, long double *Wr0, long double *Wphi0, long double *Wz0){
+	(*Wr0) = cosl(phi) * Wx + sinl(phi) * Wy;
+	(*Wphi0) = (-1) * sinl(phi) * Wx + cosl(phi) * Wy;
+	(*Wz0) = Wz;
+	return;
+}
+
+
+// return absolute value of a 3 vector in cartesian coordinates
+long double AbsValueCart(long double x, long double y, long double z)
+{
+	return sqrt(x*x + y*y + z*z);
+}
