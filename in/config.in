@@ -1,8 +1,4 @@
-#kommentare bitte immer ber die variable und nicht dahinter schreiben sonst darf man keine
-#variablennamen oder bereichnamen verwenden
 [global]
-# expmode: 1 => only single particle, 2 => p+e from same point, 3 => neutron first, then p+e
-expmode 1
 # protneut: 1 => neutron, 2 => proton, 3 => Bfeld, 4 => cut through BField, 6 => electrons
 protneut 1
 BruteForce 0
@@ -23,11 +19,13 @@ bfeldwahl 0
 BFeldSkalGlobal 1
 # scaling of E field with respect to input table file
 EFeldSkal 1
+# racetrack fields: 0 => none, 1 => infinite wires, 2 => finite wires
+Racetracks 2
 # ausgabewunsch: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
 # 1 => only endpoints, but BFspin track, 5 => nothing
-ausgabewunsch 2
-# 0=> ordered starting values, 1=>randomly chosen starting parameters, 2=> read in start.in for starting values
-MonteCarlo 1
+ausgabewunsch 1
+# write reflections into extra file?
+reflektlog 0
 # number of particles 
 MonteCarloAnzahl 1
 
@@ -36,14 +34,16 @@ CleaningTime 0
 RampUpTime   0
 FullFieldTime 50
 RampDownTime 100
+#storagetime = max. simulation time
 storagetime 2000
-# simulation will be stopped after all these times!
 
 # flux density below which the spin will also be tracked, when BF is turned on
 BFTargetB 0.2
 # decay: 0 => NO neutron decay, 1 => neutrons will decay (and xend will not be regarded),
 #								2 => neutrons will decay (and xend will not be regarded) and a proton and electron will be simulated
 decay 2
+
+tau 885.7	# neutron lifetime
 [/global]
 
 

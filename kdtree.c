@@ -63,7 +63,7 @@ KDTree::Triangle::Triangle(ifstream &f, const unsigned aID){
     f.seekg(3*4,fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
     short i;
     for (i = 0; i < 3; i++){
-        neighbours[i] = NULL;
+//        neighbours[i] = NULL;
         ReadVector(f, vertex[i]);   // read vertices
     }
     f.seekg(2,fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
@@ -287,7 +287,7 @@ void KDTree::KDNode::Split(){
 }
 
 // find neighbours of triangle
-void KDTree::KDNode::FindNeighbour(Triangle* tri, const short vertexnumber){
+/*void KDTree::KDNode::FindNeighbour(Triangle* tri, const short vertexnumber){
     // go down to smallest node containing the triangle vertex
     if (hichild && tri->vertex[vertexnumber][splitdir] >= hichild->lo[splitdir])
         hichild->FindNeighbour(tri,vertexnumber);
@@ -304,16 +304,16 @@ void KDTree::KDNode::FindNeighbour(Triangle* tri, const short vertexnumber){
                         (*i)->neighbours[(k+2)%3] = tri;
                         return;
                     }
-/*                    else if (PointsEqual(tri->vertex[(vertexnumber+1)%3],(*i)->vertex[(k+1)%3])){
-                        tri->AddNeighbour(*i,vertexnumber);
-                        (*i)->AddNeighbour(tri,k);
-                        return;
-                    }*/
+//                    else if (PointsEqual(tri->vertex[(vertexnumber+1)%3],(*i)->vertex[(k+1)%3])){
+//                        tri->AddNeighbour(*i,vertexnumber);
+//                        (*i)->AddNeighbour(tri,k);
+//                        return;
+                    }
                 }
             }
         }
     }
-}
+}*/
 
 // test all triangles in this node and his leaves for intersection with segment p1->p2
 bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2[3], list<TCollision> &colls){

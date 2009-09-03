@@ -8,19 +8,11 @@ b = 3  full field
 b = 4  ramp down
 */
 
+long double *ndistr = NULL, *ndistz = NULL, **ndistW = NULL;    // matrix for probability of finding particle
+int v=300,w=1200;                                       // dimension of matrix above, user choice for ndist
+
+
 void ConfigInit(void){
-	FILE *cfg = NULL;
-	int n=0,b=0;
-	char line[1024];
-	
-	string path;
-	path = inpath + "/config.in";
-	cfg = fopen(path.c_str(),mode_r);
-	if(cfg == NULL){  
-		exit(-1);
-		return;
-	}
-	
 	/* setting default values */
 	protneut = NEUTRON;
 	runge = 2;
@@ -33,7 +25,6 @@ void ConfigInit(void){
 	bfeldwahl = 0;
 	ausgabewunsch = 2;
 	ausgabewunschsave = 2;
-	MonteCarlo = 1;
 	MonteCarloAnzahl = 1;
 	M = m_n;
 	mu_n = mu_nSI / ele_e * -1;
@@ -43,165 +34,85 @@ void ConfigInit(void){
 	decay.error = 0;
 	/*end default values*/
 	
-	// we want do find some keywords in the config file bah[][] contains the possible variables and bah2[][] the regions
-	char bah[24][17]={{"BruteForce"},{"reflekt"},{"spinflipcheck"},{"protneut"},{"runge"},{"polarisation"},
-		{"neutdist"},{"diffuse"},{"bfeldwahl"},{"ausgabewunsch"},{"MonteCarlo "},{"MonteCarloAnzahl"},
-		{"RampUpTime"},{"RampDownTime"},{"FullFieldTime"},{"CleaningTime"},{"EmptyingTime"},{"storagetime"},
-		{"BFTargetB"},{"decay"},{"FillingTime"},{"BFeldSkalGlobal"},{"EFeldSkal"},{"expmode"}};
-			
-	char bah2[7][10]={{"global"},{"rampup"},{"fullfield"},{"rampdown"},{"filling"},{"counting"},{"cleaning"}};
-	
-	do // read the file
-	{
-		n=0;
-		fgets(line,1024,cfg); // get a line
-		if(line[0]=='#') continue; // if its a comment goto next line
-		if((b == 0) && (line[0]!='[')) continue; // if no region specified and this line doesn't start with [ goto next line
-		if(line[0]=='['){ // no region specified but we found [ as a first char now we go to find out which region 
-			if(strstr(line,bah2[0]) != NULL){
-				b=1;
-				continue;
-			}else if(strstr(line,bah2[1]) != NULL){
-				b=2;
-				continue;
-			}else if(strstr(line,bah2[2]) != NULL){
-				b=3;
-				continue;
-			}else if(strstr(line,bah2[3]) != NULL){
-				b=4;
-				continue;
-			}else if(strstr(line,bah2[4]) != NULL){
-				b=5;
-				continue;
-			}else if(strstr(line,bah2[5]) != NULL){
-				b=6;
-				continue;
-			}else if(strstr(line,bah2[6]) != NULL){
-				b=7;
-				continue;
-			}else{
-				b=0;
-				continue;
+	ifstream infile((inpath+"/config.in").c_str());
+	map<string, map<string, string> > config;
+	char c;
+	string rest,section,key;
+	while (infile.good() && (infile >> ws) && (c = infile.peek())){
+		if (c == '[' && infile.ignore()){
+			if (infile.peek() == '/'){
+				section = "";
+//				cout << endl;
 			}
-		}else{ // we have a region and want to analyse the line
-			switch(b){
-				case 1:
-					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %hu",&BruteForce);
-					else if(strstr(line,bah[1]) != NULL)
-						sscanf(line,"%*s %i",&reflekt);
-					else if(strstr(line,bah[2]) != NULL)
-						sscanf(line,"%*s %i",&spinflipcheck);
-					else if(strstr(line,bah[3]) != NULL)
-						sscanf(line,"%*s %i",&protneut);
-					else if(strstr(line,bah[4]) != NULL)
-						sscanf(line,"%*s %d",&runge);
-					else if(strstr(line,bah[5]) != NULL)
-						sscanf(line,"%*s %i",&polarisation);
-					else if(strstr(line,bah[6]) != NULL)
-						sscanf(line,"%*s %i",&neutdist);
-					else if(strstr(line,bah[7]) != NULL)
-						sscanf(line,"%*s %i",&diffuse);
-					else if(strstr(line,bah[8]) != NULL)
-						sscanf(line,"%*s %i",&bfeldwahl);
-					else if(strstr(line,bah[9]) != NULL)
-						sscanf(line,"%*s %i",&ausgabewunsch);
-					else if(strstr(line,bah[10]) != NULL)
-						sscanf(line,"%*s %i",&MonteCarlo);
-					else if(strstr(line,bah[11]) != NULL)
-						sscanf(line,"%*s %i",&MonteCarloAnzahl);
-					else if(strstr(line,bah[12]) != NULL)
-						sscanf(line,"%*s %7LG",&RampUpTime);
-					else if(strstr(line,bah[13]) != NULL)
-						sscanf(line,"%*s %7LG",&RampDownTime);
-					else if(strstr(line,bah[14]) != NULL)
-						sscanf(line,"%*s %7LG",&FullFieldTime);
-					else if(strstr(line,bah[15]) != NULL)
-						sscanf(line,"%*s %7LG",&CleaningTime);
-					else if(strstr(line,bah[16]) != NULL)
-						sscanf(line,"%*s %7LG",&EmptyingTime);
-		            else if(strstr(line,bah[17]) != NULL)
-						sscanf(line,"%*s %7LG",&StorageTime);
-					else if(strstr(line,bah[18]) != NULL)
-						sscanf(line,"%*s %3LG",&BFTargetB);
-					else if(strstr(line,bah[19]) != NULL)
-						sscanf(line,"%*s %hu",&decay.on);
-					else if(strstr(line,bah[20]) != NULL)
-						sscanf(line,"%*s %7LG",&FillingTime);
-					else if(strstr(line,bah[21]) != NULL)
-						sscanf(line,"%*s %7LG",&BFeldSkalGlobal);
-					else if(strstr(line,bah[22]) != NULL)
-						sscanf(line,"%*s %7LG",&EFeldSkal);
-					else if(strstr(line,bah[23]) != NULL)
-						sscanf(line,"%*s %d",&expmode);
-				break;
-				
-				case 2:
-					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&ruBruteForce);
-					else if(strstr(line,bah[1]) != NULL)
-						sscanf(line,"%*s %i",&rureflekt);
-					else if(strstr(line,bah[2]) != NULL)
-						sscanf(line,"%*s %i",&ruspinflipcheck);
-				break;
-			
-				case 3:
-					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&ffBruteForce);
-					else if(strstr(line,bah[1]) != NULL)
-						sscanf(line,"%*s %i",&ffreflekt);
-					else if(strstr(line,bah[2]) != NULL)
-						sscanf(line,"%*s %i",&ffspinflipcheck);
-				break;
-				
-				case 4:
-					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&rdBruteForce);
-					else if(strstr(line,bah[1]) != NULL)
-						sscanf(line,"%*s %i",&rdreflekt);
-					else if(strstr(line,bah[2]) != NULL)
-						sscanf(line,"%*s %i",&rdspinflipcheck);
-				break;
-					
-				case 5:
-					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&fiBruteForce);
-					else if(strstr(line,bah[1]) != NULL)
-						sscanf(line,"%*s %i",&fireflekt);
-					else if(strstr(line,bah[2]) != NULL)
-						sscanf(line,"%*s %i",&fispinflipcheck);
-				break;
-					
-				case 6:
-					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&coBruteForce);
-					else if(strstr(line,bah[1]) != NULL)
-						sscanf(line,"%*s %i",&coreflekt);
-					else if(strstr(line,bah[2]) != NULL)
-						sscanf(line,"%*s %i",&cospinflipcheck);
-				break;
-					
-				case 7:
-					if(strstr(line,bah[0]) != NULL)
-						sscanf(line,"%*s %i",&clBruteForce);
-					else if(strstr(line,bah[1]) != NULL)
-						sscanf(line,"%*s %i",&clreflekt);
-					else if(strstr(line,bah[2]) != NULL)
-						sscanf(line,"%*s %i",&clspinflipcheck);
-				break;
-				
-				case 0:
-					continue;
-				break;
-				
-				default:
-					continue;
-				break;
+			else{
+				getline(infile, section, ']');
+//				cout << "section: " << section << endl;
 			}
+			getline(infile,rest);
 		}
-		
-	}while(!feof(cfg));
+		else if (c == '#')
+			getline(infile,rest);
+		else if (section != ""){
+			infile >> key;
+			infile >> config[section][key];
+//			cout << key << ": " << config[section][key] << "; ";
+			getline(infile,rest);
+		}
+		else
+			getline(infile,rest);
+	}
 	
+	istringstream(config["global"]["protneut"])				>> protneut;
+	istringstream(config["global"]["BruteForce"])			>> BruteForce;
+	istringstream(config["global"]["reflekt"])				>> reflekt;
+	istringstream(config["global"]["spinflipcheck"])		>> spinflipcheck;
+	istringstream(config["global"]["runge"])				>> runge;
+	istringstream(config["global"]["polarisation"])			>> polarisation;
+	istringstream(config["global"]["neutdist"])				>> neutdist;
+	istringstream(config["global"]["diffuse"])				>> diffuse;
+	istringstream(config["global"]["bfeldwahl"])			>> bfeldwahl;
+	istringstream(config["global"]["BFeldSkalGlobal"])		>> BFeldSkalGlobal;
+	istringstream(config["global"]["EFeldSkal"])			>> EFeldSkal;
+	istringstream(config["global"]["Racetracks"])			>> Racetracks;	
+	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
+	istringstream(config["global"]["reflektlog"])			>> reflektlog;
+	istringstream(config["global"]["MonteCarloAnzahl"])		>> MonteCarloAnzahl;
+	istringstream(config["global"]["FillingTime"])			>> FillingTime;
+	istringstream(config["global"]["CleaningTime"])			>> CleaningTime;
+	istringstream(config["global"]["RampUpTime"])			>> RampUpTime;
+	istringstream(config["global"]["FullFieldTime"])		>> FullFieldTime;
+	istringstream(config["global"]["RampDownTime"])			>> RampDownTime;
+	istringstream(config["global"]["EmptyingTime"])			>> EmptyingTime;
+	istringstream(config["global"]["storagetime"])			>> StorageTime;
+	istringstream(config["global"]["BFTargetB"])			>> BFTargetB;
+	istringstream(config["global"]["decay"])				>> decay.on;
+	istringstream(config["global"]["tau"])					>> tau;	
+	
+	istringstream(config["filling"]["BruteForce"])			>> fiBruteForce;
+	istringstream(config["filling"]["reflekt"])				>> fireflekt;
+	istringstream(config["filling"]["spinflipcheck"])		>> fispinflipcheck;
+	                                    
+	istringstream(config["cleaning"]["BruteForce"])			>> clBruteForce;
+	istringstream(config["cleaning"]["reflekt"])			>> clreflekt;
+	istringstream(config["cleaning"]["spinflipcheck"])		>> clspinflipcheck;
+
+	istringstream(config["rampup"]["BruteForce"])			>> ruBruteForce;
+	istringstream(config["rampup"]["reflekt"])				>> rureflekt;
+	istringstream(config["rampup"]["spinflipcheck"])		>> ruspinflipcheck;
+	                                    
+	istringstream(config["fullfield"]["BruteForce"])		>> ffBruteForce;
+	istringstream(config["fullfield"]["reflekt"])			>> ffreflekt;
+	istringstream(config["fullfield"]["spinflipcheck"])		>> ffspinflipcheck;
+	                                    
+	istringstream(config["rampdown"]["BruteForce"])			>> rdBruteForce	;
+	istringstream(config["rampdown"]["reflekt"])			>> rdreflekt;
+	istringstream(config["rampdown"]["spinflipcheck"])		>> rdspinflipcheck;
+	                                    
+	istringstream(config["counting"]["BruteForce"])			>> coBruteForce;
+	istringstream(config["counting"]["reflekt"])			>> coreflekt;
+	istringstream(config["counting"]["spinflipcheck"])		>> cospinflipcheck;
+
+
 	if((decay.on == 2) && ((protneut == PROTON) || (protneut == ELECTRONS))) protneut = NEUTRON;
 	
 	if(decay.on)
@@ -222,13 +133,180 @@ void ConfigInit(void){
 		kmax=KMDEF;
 	}
 	
-	Efeldwahl=0;
 	ausgabewunschsave=ausgabewunsch;
-	fclose(cfg);
 	return;
 }
 
-
+// write the current configuration of the programm to screen and to the logfile
+void PrintConfig(void)
+{
+	// ONSCREEN
+	printf("The following parameters were set for program execution: \n");
+	printf("protneut: %i => (1) neutron, (2) proton tracking, (3) magnetic field evaluation \n",protneut);
+	if (protneut == NEUTRON)
+	{
+		if (polarisation == 1)
+		{
+			printf("Low field seekers are tracked! \n");		
+		}
+		else if (polarisation == 2)
+		{
+			printf("High field seekers are tracked! \n");		
+		}
+		else if (polarisation == 3)
+		{
+			printf("No polarisation! \n");		
+		}
+		else if (polarisation == 4)
+		{
+			printf("Polarisation is diced! \n");		
+		}
+		
+		if (fireflekt == 1)
+			printf("Filling Time %LG \n Reflection is on, ", FillingTime );
+		else if (fireflekt == 0)
+			printf("Filling Time %LG \n Reflection is off, ",FillingTime);
+		if (fiBruteForce == 1)
+			printf("Brute Force on, ");
+		else if (fiBruteForce == 0)
+			printf("Brute Force off, ");		
+		
+		if (clreflekt == 1)
+			printf("Cleaning Time %LG \n Reflection is on, ", CleaningTime );
+		else if (clreflekt == 0)
+			printf("Cleaning  Time %LG \n Reflection is off, ",CleaningTime);
+		if (clBruteForce == 1)
+			printf("Brute Force on, ");
+		else if (clBruteForce == 0)
+			printf("Brute Force off, ");
+		
+		if (rureflekt == 1)
+			printf("Ramp Up Time %LG \n Reflection is on, ", RampUpTime );
+		else if (rureflekt == 0)
+			printf("Ramp Up  Time %LG \n Reflection is off, ",RampUpTime);
+		if (ruBruteForce == 1)
+			printf("Brute Force on, ");
+		else if (ruBruteForce == 0)
+			printf("Brute Force off, ");
+		
+		if (ffreflekt == 1)
+			printf("Full Field Time %LG \n Reflection is on, ", FullFieldTime );
+		else if (ffreflekt == 0)
+			printf("Full Field Time %LG \n Reflection is off, ",FullFieldTime);
+		if (ffBruteForce == 1)
+			printf("Brute Force on, ");
+		else if (ffBruteForce == 0)
+			printf("Brute Force off, ");
+		
+		if (rdreflekt == 1)
+			printf("Ramp Down Time  %LG \n Reflection is on, ", RampDownTime );
+		else if (rdreflekt == 0)
+			printf("Ramp Down Time  %LG \n Reflection is off, ",RampDownTime);
+		if (rdBruteForce == 1)
+			printf("Brute Force on, ");
+		else if (rdBruteForce == 0)
+			printf("Brute Force off, ");
+		
+		if (coreflekt == 1)
+			printf("Counting Time  \n Reflection is on, ");
+		else if (coreflekt == 0)
+			printf("Coutning Time  \n Reflection is off, ");
+		if (coBruteForce == 1)
+			printf("Brute Force on, ");
+		else if (coBruteForce == 0)
+			printf("Brute Force off, ");
+		
+			
+	}
+	printf("The choice of Bfield is: %i  (0) interpolated field, (1) no field, (2) check interpolation routine \n",bfeldwahl);
+	printf("The choice of reflection is: %i  (1) specular, (2) diffuse, (3) statistically specular or diffuse \n",diffuse);
+	printf("Choice of output: %i  (1) Endpoints and track (2) only endpoints (3) Endpoints, track and spin \n (4) Endpoints and spin (5) nothing \n ", ausgabewunsch);
+	
+	// LOGSCREEN
+	fprintf(LOGSCR,"The following parameters were set for program execution: \n");
+	fprintf(LOGSCR,"protneut: %i => (1) neutron, (2) proton tracking, (3) magnetic field evaluation \n",protneut);
+	if (protneut == NEUTRON)
+	{
+		if (polarisation == 1)
+		{
+			fprintf(LOGSCR,"Low field seekers are tracked! \n");		
+		}
+		else if (polarisation == 2)
+		{
+			fprintf(LOGSCR,"High field seekers are tracked! \n");		
+		}
+		else if (polarisation == 3)
+		{
+			fprintf(LOGSCR,"No polarisation! \n");		
+		}
+		else if (polarisation == 4)
+		{
+			fprintf(LOGSCR,"Polarisation is diced! \n");		
+		}
+		
+		if (fireflekt == 1)
+			fprintf(LOGSCR,"Filling Time %LG \n Reflection is on, ", FillingTime );
+		else if (fireflekt == 0)
+			fprintf(LOGSCR,"Filling Time %LG \n Reflection is off, ",FillingTime);
+		if (fiBruteForce == 1)
+			fprintf(LOGSCR,"Brute Force on, ");
+		else if (fiBruteForce == 0)
+			fprintf(LOGSCR,"Brute Force off, ");
+		
+		if (clreflekt == 1)
+			fprintf(LOGSCR,"Cleaning Time %LG \n Reflection is on, ", CleaningTime );
+		else if (clreflekt == 0)
+			fprintf(LOGSCR,"Cleaning  Time %LG \n Reflection is off, ",CleaningTime);
+		if (clBruteForce == 1)
+			fprintf(LOGSCR,"Brute Force on, ");
+		else if (clBruteForce == 0)
+			fprintf(LOGSCR,"Brute Force off, ");
+		
+		if (rureflekt == 1)
+			fprintf(LOGSCR,"Ramp Up Time %LG \n Reflection is on, ", RampUpTime );
+		else if (rureflekt == 0)
+			fprintf(LOGSCR,"Ramp Up  Time %LG \n Reflection is off, ",RampUpTime);
+		if (ruBruteForce == 1)
+			fprintf(LOGSCR,"Brute Force on, ");
+		else if (ruBruteForce == 0)
+			fprintf(LOGSCR,"Brute Force off, ");
+		
+		if (ffreflekt == 1)
+			fprintf(LOGSCR,"Full Field Time %LG \n Reflection is on, ", FullFieldTime );
+		else if (ffreflekt == 0)
+			fprintf(LOGSCR,"Full Field Time %LG \n Reflection is off, ",FullFieldTime);
+		if (ffBruteForce == 1)
+			fprintf(LOGSCR,"Brute Force on, ");
+		else if (ffBruteForce == 0)
+			fprintf(LOGSCR,"Brute Force off, ");
+		
+		if (rdreflekt == 1)
+			fprintf(LOGSCR,"Ramp Down Time %LG \n Reflection is on, ", RampDownTime );
+		else if (rdreflekt == 0)
+			fprintf(LOGSCR,"Ramp Down Time %LG \n Reflection is off, ",RampDownTime);
+		if (rdBruteForce == 1)
+			fprintf(LOGSCR,"Brute Force on, ");
+		else if (rdBruteForce == 0)
+			fprintf(LOGSCR,"Brute Force off, ");
+		
+		if (coreflekt == 1)
+			fprintf(LOGSCR,"Counting Time  \n Reflection is on, ");
+		else if (coreflekt == 0)
+			fprintf(LOGSCR,"Coutning Time  \n Reflection is off, ");
+		if (coBruteForce == 1)
+			fprintf(LOGSCR,"Brute Force on, ");
+		else if (coBruteForce == 0)
+			fprintf(LOGSCR,"Brute Force off, ");
+		
+		
+		
+	}
+	fprintf(LOGSCR,"The choice of Bfield is: %i  (0) interpolated field, (1) no field, (2) check interpolation routine \n",bfeldwahl);
+	fprintf(LOGSCR,"The choice of reflection is: %i  (1) speculat, (2) diffuse, (3) statistically specular or diffuse \n",bfeldwahl);
+	fprintf(LOGSCR,"Choice of output: %i  (1) Endpoints and track (2) only endpoints (3) Endpoints, track and spin \n (4) Endpoints and spin (5) nothing \n ", ausgabewunsch);
+	
+	
+}
 
 //======== initalizes initial values from record to used variables ==============================================
 void initialStartbed()
@@ -370,8 +448,8 @@ void Startbed(int k)
 	       "  Ramp up time: %.17LG s\n"
 	       "  Full field time: %.17LG s\n"
 	       "  RampDownTime: %.17LG s\n"
-	       "  B field scaling factor: %.17LG s\n"
-	       "  E field scaling factor: %.17LG s\n",
+	       "  B field scaling factor: %.17LG\n"
+	       "  E field scaling factor: %.17LG\n",
 	       EnergieS, EnergieE,
 	       xend,
 	       alphas, alphae,
@@ -395,8 +473,8 @@ void Startbed(int k)
 	                "  Ramp up time: %.17LG s\n"
 	                "  Full field time: %.17LG s\n"
 	                "  RampDownTime: %.17LG s\n"
-	                "  B field scaling factor: %.17LG s\n"
-	                "  E field scaling factor: %.17LG s\n",
+	                "  B field scaling factor: %.17LG\n"
+	                "  E field scaling factor: %.17LG\n",
 	                EnergieS, EnergieE,
 	                xend,
 	                alphas, alphae,
@@ -563,7 +641,7 @@ void outndist(int k)
 	//printf("\nOutputting the particle spacial distribution... \n");
 		
 	ostringstream path;
-	path << outpath << "/" << jobnumber << "ndist.out";
+	path << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "ndist.out";
 	FILE *NDIST=fopen(path.str().c_str(),mode_w);
 	int Treffer = 0;
 	
@@ -587,7 +665,7 @@ void outndist(int k)
 
 void OutputState(long double *y, int l){
 	ostringstream stateoutfile;
-	stateoutfile << outpath << "/" << jobnumber << "state.out";
+	stateoutfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "state.out";
 	STATEOUT = fopen(stateoutfile.str().c_str(),mode_w);	
 	printf("\n \n Something happened! \n \n ");
 	fprintf(STATEOUT,"In this file the state of the programm will be written, when something happens for debug porposes... \n");
