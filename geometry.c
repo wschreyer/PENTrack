@@ -1,9 +1,7 @@
 #include "main.h"
 #include "kdtree.h"
-#include <vector>
-#include <set>
-#include <numeric>
 
+int reflektlog = 0;
 FILE *REFLECTLOG = NULL;
 
 KDTree geometry, sourcevolume;
@@ -144,7 +142,7 @@ void LoadGeometry(){
 	
 	if(reflektlog == 1){
 		ostringstream reflectlogfile;
-		reflectlogfile << outpath << "/" << jobnumber << "reflect.out";
+		reflectlogfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "reflect.out";
 		REFLECTLOG = fopen(reflectlogfile.str().c_str(),mode_w);
 		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vphi phidot dvabs\n"); // Header for Reflection File
 	}	

@@ -52,7 +52,7 @@ class KDTree{
                 long double normal[3];    // normal of triangle-plane
                 unsigned ID;          // user defined surface number
 //                short normalIO;           // normal points into volume (1) / out of volume (-1) / not specified (0)
-                Triangle* neighbours[3];    // neighbouring triangles
+//                Triangle* neighbours[3];    // neighbouring triangles
                 Triangle(ifstream &f, const unsigned aID);  // constructor, read vertices and normal from STL-file
                 bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
 //                void SetNormal(const short anormalIO);
@@ -74,7 +74,7 @@ class KDTree{
                 ~KDNode();  // destructor
                 void AddTriangle(Triangle *tri);    // add triangle to list or to leaves
                 void Split();   // split node in two leaves
-                void FindNeighbour(Triangle* tri, const short vertexnumber); // find neighbours of a triangle
+//                void FindNeighbour(Triangle* tri, const short vertexnumber); // find neighbours of a triangle
                 bool Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls);  // find the smallest box which contains the segment p1->p2 and call TestCollision there
                 template <typename coord> bool PointInBox(const coord p[3]) {
                 	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) &&

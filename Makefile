@@ -3,7 +3,7 @@ OBJ=$(SRC:.c=.o)
 
 
 CC=g++
-CFLAGS=-Wall  `root-config --cflags`  -o3   -g  -Wno-deprecated    # -o3: optimize -g: debug switch -std=c99 -pedantic
+CFLAGS=-Wall  `root-config --cflags`  -o3   -g    # -o3: optimize -g: debug switch -std=c99 -pedantic
 LDFLAGS=-lm -lc `root-config --libs` #/lib/mingw/libmingwex.a /lib/mingw/libmsvcrt.a
 RM=rm
 EXE=Track2009

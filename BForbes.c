@@ -40,8 +40,6 @@ int ReadMagnets(void)
 	
 	do // read the file
 	{
-		n=0;
-		
 		//for (i=1;i<=1024;i++)			
 		//	line[i]='0'; // reset string
 		
