@@ -13,6 +13,7 @@
 //	(9) histograms of 'EFeldSkal' and 'BFeldSkal'
 //	(10) histogram of 'kennz'
 //	(11) 'zstart' versus 'rstart'
+// (12) 'kennz' versus 'zend' versus 'rend'
 //
 //	User Instructions:
 //	(1) Make sure the ROOT tree exists and is named "mytree"!
@@ -93,7 +94,7 @@ void DRAWendlog(TString filename)
 	vnamey = "zstart"; // dummy ~ y-variable
 	vnamec = "kennz";  // dummy ~ z-variable
 
-	TCanvas *c1 = new TCanvas("c1", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 20, 20, 800, 600);
+	TCanvas *c1 = new TCanvas("c1", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 20, 20, 400, 800);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c1->SetFillColor(0);
 	c1->SetBorderMode(0);
@@ -121,7 +122,7 @@ void DRAWendlog(TString filename)
 	//======== (1) Finished =============================================================================================
 
 	//======== (2) Drawing and saving the histogram of 't' ==============================================================
-	vnamex = "t";      // dummy ~ x-variable
+	vnamex = "dt";      // dummy ~ x-variable
 	vnamey = "counts"; // dummy ~ y-axis title
 
 	TCanvas *c2 = new TCanvas("c2", vnamex + " data from " + rootfilename, 40, 40, 800, 600);
@@ -304,7 +305,7 @@ void DRAWendlog(TString filename)
 	//======== (7) Finished =============================================================================================
 
 	//======== (8) Drawing and saving 'NeutEnergie' versus 't' ==========================================================
-	vnamex = "t";           // dummy ~ x-variable
+	vnamex = "dt";           // dummy ~ x-variable
 	vnamey = "NeutEnergie"; // dummy ~ y-variable
 	vnamec = "kennz==6";    // dummy ~ selection criterion
 
@@ -492,7 +493,7 @@ void DRAWendlog(TString filename)
 	xmin = 0.1;          // dummy ~ x-minimum
 	xmax = 0.5;          // dummy ~ x-maximum
 
-	TCanvas *c11 = new TCanvas("c11", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + rootfilename, 200, 200, 800, 600);
+	TCanvas *c11 = new TCanvas("c11", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + rootfilename, 200, 200, 500, 800);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c11->SetFillColor(0);
 	c11->SetBorderMode(0);
@@ -551,6 +552,38 @@ void DRAWendlog(TString filename)
 //	delete h111; // deleting histograms
 //	delete h112;
 	//======== (11) Finished ============================================================================================
+	
+	//======== (12) Drawing and saving 'kennz' versus 'zend' versus 'rend' ===========================================
+	vnamex = "rend"; // dummy ~ x-variable
+	vnamey = "zend"; // dummy ~ y-variable
+	vnamec = "kennz";  // dummy ~ z-variable
+
+	TCanvas *c12 = new TCanvas("c12", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 500, 20, 400, 800);
+	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
+	c12->SetFillColor(0);
+	c12->SetBorderMode(0);
+	c12->cd(); // select pad
+	c12->SetFrameFillColor(0);
+	c12->SetFrameBorderMode(0);
+	mytree->SetEstimate(nentries); // setting the estimated lenght of V1, V2 and V3
+	mytree->Draw(vnamec + ":" + vnamey + ":" + vnamex, pnamec, "goff"); // drawing "[vnamec]:[vnamey]:[vnamex]" without
+	                                                                    // graphical output
+	g12 = new TGraph2D(nentries, mytree->GetV3(), mytree->GetV2(), mytree->GetV1()); // generating graph and retrieving
+	                                                                                // data from the draw command above
+	g12->SetTitle(vnamec + ":" + vnamey + ":" + vnamex + ";" + vnamex + " [m];" + vnamey + " [m];" + vnamec);
+	// setting title (including axis titles seperated by ";")
+	g12->SetMarkerStyle(21);
+	g12->SetMarkerSize(0.4);
+	gStyle->SetPalette(1, 0); //++++++++ options: 1, 0 ~ coloured palette +++++++++++++++++++++++++++++++++++++++++++++++
+	                          //+++++++++++++++++ 20, grayscale ~ gray scale palette with 20 shades +++++++++++++++++++++
+	g12->Draw("PCOL"); //++++++++ options: "P" ~ markers, "COL" ~ coloured z-values, "Z" ~ colour palette ++++++++++++++++
+
+	vnamec = rootfilename + "_" + vnamec + "-" + vnamey + "-" + vnamex;
+	c12->SaveAs(vnamec + ".cxx");   // saving canvas as macro
+	c12->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
+//	delete c12; // closing canvas window
+//	delete g1; // deleting graph
+	//======== (1) Finished =============================================================================================
 
 	std::cout << "Drawing done." << std::endl;
 
