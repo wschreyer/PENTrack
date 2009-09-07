@@ -738,9 +738,9 @@ void PrintBFieldCut(){
 		printf("Could not open %s!",path.c_str());
 		exit(-1);
 	}
-	fprintf(cutfile, "r phi z x y Br Bphi Bz Bx By dBrdr dBrdphi dBrdz dBphidr dBphidphi dBphidz dBzdr dBzdphi dBzdz Babs dBdr dBdphi dBdz\n");
+	fprintf(cutfile, "r phi z x y Br Bphi Bz Bx By dBrdr dBrdphi dBrdz dBphidr dBphidphi dBphidz dBzdr dBzdphi dBzdz Babs dBdr dBdphi dBdz Er Ephi Ez Ex Ey dErdr dErdz dEphidr dEphidz dEzdr dEzdz\n");
 	
-	long double Pp[3],r,phi,Bx,By;
+	long double Pp[3],r,phi,Bx,By,Ex,Ey;
 	float start = clock();
 	for (i = -BCutPlaneSampleCount/2; i <= BCutPlaneSampleCount/2; i++) {
 		for (j = -BCutPlaneSampleCount/2; j <= BCutPlaneSampleCount/2; j++){
@@ -751,13 +751,18 @@ void PrintBFieldCut(){
 			BFeld(r, phi, Pp[2], 0);
 			Bx = Br*cosl(phi) - Bphi*sinl(phi);
 			By = Br*sinl(phi) + Bphi*cosl(phi);
-			fprintf(cutfile, "%LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+			fprintf(cutfile, "%LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG ",
 							  r,phi,Pp[2],Pp[0],Pp[1],Br,Bphi,Bz,Bx,By,dBrdr,dBrdphi,dBrdz,dBphidr,dBphidphi,dBphidz,dBzdr,dBzdphi,dBzdz,Bws,dBdr,dBdphi,dBdz);
+			EFeld(r,phi,Pp[2]);
+			Ex = Er*cos(phi) - Ephi*sin(phi);
+			Ey = Er*sin(phi) + Ephi*cos(phi);
+			fprintf(cutfile, "%LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+							  Er,Ephi,Ez,Ex,Ey,dErdr,dErdz,dEphidr,dEphidz,dEzdr,dEzdz);
 		}
 	}
 	start = (clock() - start)/CLOCKS_PER_SEC;
 	fclose(cutfile);
-	printf("Called BFeld %u times in %fs (%fms per call)",BCutPlaneSampleCount*BCutPlaneSampleCount, start, start/BCutPlaneSampleCount/BCutPlaneSampleCount);
+	printf("Called BFeld and EFeld %u times in %fs (%fms per call)",BCutPlaneSampleCount*BCutPlaneSampleCount, start, start/BCutPlaneSampleCount/BCutPlaneSampleCount);
 }
 
 void PrintBField(){
