@@ -340,34 +340,38 @@ void TabField::PreInterpol(long double ****&Brc, long double ****&Bzc, long doub
 
 
 bool TabField::BInterpol(long double r, long double z){
-	int indr = 1 + (int)((r - conv_rA)/conv_rB);    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!		
-	int indz = 1 + (int)((z - conv_zA)/conv_zB);  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
-	if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)  ){
-		// bicubic interpolation
-		long double Brtemp, dBrdrtemp, dBrdztemp, Bztemp, dBzdrtemp, dBzdztemp;
-		bcuint_new(indr, indz, Brc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r, z, &Brtemp, &dBrdrtemp, &dBrdztemp);
-		bcuint_new(indr, indz, Bzc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r, z, &Bztemp, &dBzdrtemp, &dBzdztemp);
-		Br += BFeldSkal*Brtemp; Bz += BFeldSkal*Bztemp;
-		dBrdr += BFeldSkal*dBrdrtemp; dBrdz += BFeldSkal*dBrdztemp;
-		dBzdr += BFeldSkal*dBzdrtemp; dBzdz += BFeldSkal*dBzdztemp;
-		return true;
+	if (Brc && Bzc){
+		int indr = 1 + (int)((r - conv_rA)/conv_rB);    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!		
+		int indz = 1 + (int)((z - conv_zA)/conv_zB);  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
+		if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)  ){
+			// bicubic interpolation
+			long double Brtemp, dBrdrtemp, dBrdztemp, Bztemp, dBzdrtemp, dBzdztemp;
+			bcuint_new(indr, indz, Brc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r, z, &Brtemp, &dBrdrtemp, &dBrdztemp);
+			bcuint_new(indr, indz, Bzc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r, z, &Bztemp, &dBzdrtemp, &dBzdztemp);
+			Br += BFeldSkal*Brtemp; Bz += BFeldSkal*Bztemp;
+			dBrdr += BFeldSkal*dBrdrtemp; dBrdz += BFeldSkal*dBrdztemp;
+			dBzdr += BFeldSkal*dBzdrtemp; dBzdz += BFeldSkal*dBzdztemp;
+			return true;
+		}
 	}
 	return false;
 }
 
 
 bool TabField::EInterpol(long double r, long double z){
-	int indr = 1 + (int)((r - conv_rA)/conv_rB);    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!		
-	int indz = 1 + (int)((z - conv_zA)/conv_zB);  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
-	if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)  ){			
-		// bicubic interpolation
-		long double Ertemp, dErdrtemp, dErdztemp, Eztemp, dEzdrtemp, dEzdztemp;
-		bcuint_new(indr, indz, Erc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r, z, &Ertemp, &dErdrtemp, &dErdztemp);
-		bcuint_new(indr, indz, Ezc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r, z, &Eztemp, &dEzdrtemp, &dEzdztemp);
-		Er += EFeldSkal*Ertemp; Ez += EFeldSkal*Eztemp;
-		dErdr += EFeldSkal*dErdrtemp; dErdz += EFeldSkal*dErdztemp;
-		dEzdr += EFeldSkal*dEzdrtemp; dEzdz += EFeldSkal*dEzdztemp;
-		return true;
+	if (Erc && Ezc){
+		int indr = 1 + (int)((r - conv_rA)/conv_rB);    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!		
+		int indz = 1 + (int)((z - conv_zA)/conv_zB);  // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!
+		if ((indr <= m-2) && (indr >= 3) && (indz <= n-2) && (indz >= 3)  ){			
+			// bicubic interpolation
+			long double Ertemp, dErdrtemp, dErdztemp, Eztemp, dEzdrtemp, dEzdztemp;
+			bcuint_new(indr, indz, Erc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r, z, &Ertemp, &dErdrtemp, &dErdztemp);
+			bcuint_new(indr, indz, Ezc, rdist, zdist, rind[indr], rind[indr +1], zind[indz], zind[indz +1], r, z, &Eztemp, &dEzdrtemp, &dEzdztemp);
+			Er += EFeldSkal*Ertemp; Ez += EFeldSkal*Eztemp;
+			dErdr += EFeldSkal*dErdrtemp; dErdz += EFeldSkal*dErdztemp;
+			dEzdr += EFeldSkal*dEzdrtemp; dEzdz += EFeldSkal*dEzdztemp;
+			return true;
+		}
 	}
 	return false;
 }

@@ -4,7 +4,7 @@ list<TabField*> fields;
 
 
 void PrepareFields(){
-	if (bfeldwahl == 0 || bfeldwahl == 2)
+	if ((bfeldwahl == 0 || bfeldwahl == 2) && (BFeldSkalGlobal != 0 || EFeldSkal != 0))
 	{
 		TabField *tf;
 		for (list<string>::iterator i = fieldvaltab.begin(); i != fieldvaltab.end(); i++){
@@ -52,31 +52,36 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 	
 	Bnull();
 	long double Brtemp, Bztemp, dBdrtemp, dBdztemp;
-	bool infieldrange = false;
 	switch (bfeldwahl)
 	{
 		
 		case 0:	if (BFeldSkal != 0){
-					for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++)
-						infieldrange |= (*i)->BInterpol(rloc, zloc);
-					if (!infieldrange){
-						printf("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-						fprintf(LOGSCR,"\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-						kennz = KENNZAHL_LEFT_FIELD;
-						stopall = 1;
-					}						
+					list<TabField*>::iterator i = fields.begin(); 
+					while (i != fields.end()){						
+						if ((*i)->BInterpol(rloc, zloc))
+							break;
+						else if (++i == fields.end()){
+							printf("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+							fprintf(LOGSCR,"\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+							kennz = KENNZAHL_LEFT_FIELD;
+							stopall = 1;
+						}		
+					}				
 				}
 				RacetrackField(rloc,philoc,zloc);
 				break;
 		case 2:	if (BFeldSkal != 0){
-					for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++)
-						infieldrange |= (*i)->BInterpol(rloc, zloc);
-					if (!infieldrange){
-						printf("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-						fprintf(LOGSCR,"\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-						kennz = KENNZAHL_LEFT_FIELD;
-						stopall = 1;
-					}							
+					list<TabField*>::iterator i = fields.begin(); 
+					while (i != fields.end()){						
+						if ((*i)->BInterpol(rloc, zloc))
+							break;
+						else if (++i == fields.end()){
+							printf("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+							fprintf(LOGSCR,"\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+							kennz = KENNZAHL_LEFT_FIELD;
+							stopall = 1;
+						}		
+					}				
 				}
 				RacetrackField(rloc,philoc,zloc);
 				Brtemp = Br; Bztemp = Bz; dBdrtemp = dBdr; dBdztemp = dBdz;
