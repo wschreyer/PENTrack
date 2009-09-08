@@ -169,17 +169,7 @@ long double BForbes(long double r, long double phi, long double z, long double t
 	dBzdr *= BFeldSkal;
 	dBzdphi = 0.0;
 	dBzdz *= BFeldSkal;
-	
-	
-	if((BFeldSkal!=0)&&(protneut!=BF_ONLY)) // don't calculate the racetrack of field is off and also don't if we write the Bfield 
-	{
-		Racetrack(r, phi, z, -0.424264, -0.424264, BFeldSkal*Ibar);
-		Racetrack(r, phi, z, 0.424264, -0.424264, BFeldSkal*Ibar); 
-		Racetrack(r, phi, z, -0.424264, 0.424264, BFeldSkal*Ibar);
-		Racetrack(r, phi, z, 0.424264, 0.424264, BFeldSkal*Ibar); 
-		CenterCurrent(r, phi, z, -4.0*BFeldSkal*Ibar);
-	}  	
-	
+		
 	return Br;
 	
 }

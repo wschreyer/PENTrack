@@ -8,3 +8,4 @@ extern void BFodeintrk(long double ystart[], int nvar, long double x1, long doub
 extern void BFderivs_new(long double x, long double *y, long double *dydx,long double *B);
 extern void BFinterpol_new(long double x,long double *B);
 
+void hunt(long double xx[], int n, long double x, int *jlo);

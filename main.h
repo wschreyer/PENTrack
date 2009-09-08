@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <sys/stat.h>
 #include <signal.h>
+#include <list>
 #include <vector>
 #include <set>
 #include <numeric>
@@ -25,8 +26,10 @@
 #include "mersenne/mt.h" // mersenne twister pseudo random number generator (rng) used for MonteCarlo alg.
 #include "mc.h" // MonteCarlo related functions
 #include "bruteforce.h"
-#include "2dinterpolfeld.h"
+#include "racetrack.h"
 #include "adiabacity.h"
+#include "fields.h"
+#include "2dinterpolfeld.h"
 #include "maplefield.h"
 #include "BForbes.h"
 #include "geometry.h"
@@ -123,7 +126,7 @@ extern int diffuse; // diffuse reflection switch
 extern int neutdist;
 
 // Fields
-extern string fieldvaltab;	// filename of field table-file
+extern list<string> fieldvaltab;	// filenames of field table-files
 extern long double dBrdr, dBrdz, dBzdr, dBzdz, Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
 extern long double dBphidr, dBphidz, dBrdphi, dBzdphi, dBphidphi;
 extern long double Ez,Er, Ephi, dErdr, dErdz, dEzdr, dEzdz, dEphidr, dEphidz;    // electric field
@@ -131,6 +134,7 @@ extern long double BFeldSkal, EFeldSkal, BFeldSkalGlobal;                       
 extern long double DiceRodField, RodFieldMultiplicator;
 extern long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist; // plane for cut through BField
 extern int BCutPlaneSampleCount;
+extern long double Emin_n;
 
 // particles
 extern long double M, H, mu_n, mumB;                               // total energy of particle

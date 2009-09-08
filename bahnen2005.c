@@ -34,6 +34,7 @@ int diffuse; //diffuse reflection switch
 int neutdist;
 
 // Fields
+list<string> fieldvaltab; // filenames of field table files
 long double dBrdr, dBrdz, dBrdphi=0.0, dBphidr, dBphidz, dBphidphi=0.0, dBzdr, dBzdz, dBzdphi=0.0;
 long double Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
 long double Ez,Er, Ephi, dErdr, dErdz, dEzdr, dEzdz, dEphidr, dEphidz;    // electric field
@@ -41,6 +42,7 @@ long double BFeldSkal = 1.0, EFeldSkal = 1.0, BFeldSkalGlobal = 1.0;          //
 long double DiceRodField=0, RodFieldMultiplicator;
 long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist;	// plane for B field cut
 int BCutPlaneSampleCount;
+long double Emin_n = 1e30;  // minimum energy of neutrons in the B-field
 
 // particles
 long double M, H, mu_n, mumB;                               // mass, total energy, magnetic moment, moment per mass
@@ -314,6 +316,7 @@ int main(int argc, char **argv){
 	fprintf(LOGSCR,"That's it... Have a nice day!\n");
 	
 	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
+	FreeFields();
 	/*if(LOGSCR != NULL)
 		fclose(LOGSCR);
 	if(ausgabewunsch == OUTPUT_EVERYTHING)
