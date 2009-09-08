@@ -22,8 +22,6 @@ vector<solid> solids;	// dynamic array to associate solids with material/kennzah
 
 vector<int> kennz_counter[3];
 
-string fieldvaltab = "fieldval.tab";
-
 long double r_min = INFINITY, r_max = -INFINITY, 
 			phi_min = INFINITY, phi_max = -INFINITY, 
 			z_min = INFINITY, z_max = -INFINITY;
@@ -131,7 +129,9 @@ void LoadGeometry(){
 					c = infile.peek();
 					if (c == '#') continue;	// skip comments
 					else if (!infile.good() || c == '[') break;	// next section found
-					infile >> fieldvaltab;
+					string ft;
+					infile >> ft;
+					fieldvaltab.push_back(ft);
 				}while(infile.good() && getline(infile,line).good());
 			}
 			else getline(infile,line);
@@ -367,7 +367,7 @@ void OutputCodes(int iMC){
 		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
 			if (it->kennz == i)
 				solidnames += '/' + it->name;
-		printf("   %i %12i %20i %19i		(were statistically absorbed by %s)\n",
+		printf("  %2i %12i %20i %19i		(were statistically absorbed by %s)\n",
 				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
 	}
 				
@@ -392,7 +392,7 @@ void OutputCodes(int iMC){
 		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
 			if (it->kennz == i)
 				solidnames += '/' + it->name;
-		fprintf(LOGSCR,"   %i %12i %20i %19i		(were statistically absorbed by %s)\n",
+		fprintf(LOGSCR,"  %2i %12i %20i %19i		(were statistically absorbed by %s)\n",
 				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
 	}
 }

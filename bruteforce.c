@@ -331,3 +331,60 @@ void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, 
 	}
 	nrerror("Too many steps in routine odeint");
 }
+
+
+// Routine um in einer 1D Array xx den Index zu finden, so dass der Wert x in
+// der Array zwischen den Indizes n und n+1 liegt  (jlo ist ein first guess des indexes und der r�ckgabewert)
+//Given an array
+// xx[1..n], and given a value x,returns a value jlo such that x is between
+//xx[jlo] and xx[jlo+1]. xx[1..n] must be monotonic, either increasing or decreasing.
+// jlo=0 or jlo=n is returned to indicate that x is out of range. jlo on input is taken as the
+//initialguess for jlo on output.
+ void hunt(long double xx[], int n, long double x, int *jlo){
+	int jm,jhi,inc,ascnd;
+
+	ascnd=(xx[n] > xx[1]);
+	if (*jlo <= 0 || *jlo > n) {
+		*jlo=0;
+		jhi=n+1;
+	} else {
+		inc=1;
+		if (x >= xx[*jlo] == ascnd) {
+			if (*jlo == n) return;
+			jhi=(*jlo)+1;
+			while (x >= xx[jhi] == ascnd) {
+				*jlo=jhi;
+				inc += inc;
+				jhi=(*jlo)+inc;
+				if (jhi > n) {
+					jhi=n+1;
+					break;
+				}
+			}
+		} else {
+			if (*jlo == 1) {
+				*jlo=0;
+				return;
+			}
+			jhi=(*jlo);
+			*jlo -= 1;
+			while (x < xx[*jlo] == ascnd) {
+				jhi=(*jlo);
+				inc += inc;
+				*jlo=jhi-inc;
+				if (*jlo < 1) {
+					*jlo=0;
+					break;
+				}
+			}
+		}
+	}
+	while (jhi-(*jlo) != 1) {
+		jm=(jhi+(*jlo)) >> 1;
+		if (x > xx[jm] == ascnd)
+			*jlo=jm;
+		else
+			jhi=jm;
+	}
+}
+
