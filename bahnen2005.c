@@ -693,7 +693,8 @@ void IntegrateParticle(){
 			int kounttemp = kount;
 			long double vladtemp = vlad, fractemp = frac, vladtotaltemp = vladtotal, vladmaxtemp = vladmax, thumbmaxtemp = thumbmax;
 			for (int i = 1; i <= nvar; i++) ytemp[i] = ystart[i];
-			short ret;			
+			short ret;
+			int itercounts = 0;			
 			do{
 				//###################### Integrationsroutine #####################
 				if (runge==2)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,rkqs);           // runge kutta step
@@ -703,7 +704,7 @@ void IntegrateParticle(){
 				nintcalls++;
 				
 				// check if reflection is necessary
-				ret = ReflectCheck(xtemp,ytemp,x2,ystart);
+				ret = ReflectCheck(xtemp,ytemp,x2,ystart,itercounts);
 				if (ret != 0){ 	// if necessary drop last integration step
 					x1 = xtemp;
 					for (int j = 1; j <= nvar; j++) ystart[j] = ytemp[j];

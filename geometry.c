@@ -33,7 +33,7 @@ return 0.2e1 * sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf 
 }
 
 
-#define REFLECT_TOLERANCE 1e-6 // if the integration point is farther from the reflection point, the integration will be repeated
+#define REFLECT_TOLERANCE 1e-10 // if the integration point is farther from the reflection point, the integration will be repeated
 
 // load STL-files and create kd-trees
 void LoadGeometry(){
@@ -209,11 +209,11 @@ bool InSourceVolume(long double r, long double phi, long double z){
 // check step y1->y2 for reflection, return -1 for failed reflection (step has to be repeated with smaller stepsize)
 //											0 for no reflection
 //											1 for reflection successful
-short ReflectCheck(long double x1, long double *y1, long double &x2, long double *y2){
+short ReflectCheck(long double x1, long double *y1, long double &x2, long double *y2, int &itercount){
 	long double p1[3] = {y1[1]*cos(y1[5]), y1[1]*sin(y1[5]), y1[3]}; // cart. coords
 	
 	if (!geometry.PointInBox(p1)){
-		kennz=99;  
+		kennz=KENNZAHL_HIT_BOUNDARIES;  
 		stopall=1;
 		printf("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",x1,y1[1],y1[3]);
 		fprintf(LOGSCR,"Particle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",x1,y1[1],y1[3]);
@@ -241,6 +241,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		if (it == colls.end())
 			return 0;
 			
+		itercount++;
 		long double normal_cart[3] = {(*it).normalx,(*it).normaly,(*it).normalz};
 		long double s = (*it).s;
 		unsigned i = (*it).ID;
@@ -249,7 +250,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]); // distance p1-p2
 		long double distnormal = abs(u[0]*normal_cart[0] + u[1]*normal_cart[1] + u[2]*normal_cart[2]); // distance p1-p2 normal to surface
 		if (s*distnormal > REFLECT_TOLERANCE){ // if p1 too far from surface
-			s -= dist/distnormal*1e-10; // decrease s by a small amount to avoid double reflection
+			s -= dist/distnormal*1e-20*pow(10.0,itercount); // decrease s by a small amount to avoid double reflection
 			x2 = x1 + s*(x2-x1); // write smaller integration time into x2
 			return -1; // return fail to repeat integration step
 		}
@@ -269,16 +270,16 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		if(!reflekt){
 			stopall = 1;
 			kennz = solids[i].kennz;
-			printf("\nParticle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),y1[1],y1[3]);
-			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),y1[1],y1[3]);
+			printf("\nParticle hit %s (no reflection) at r=%LG z=%LG tol=%LG tries=%i\n",solids[i].name.c_str(),y1[1],y1[3],s*distnormal,itercount);
+			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG tol=%LG tries=%i\n",solids[i].name.c_str(),y1[1],y1[3],s*distnormal,itercount);
 			return 1;
 		}
 		else if (prob < Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag)) // statistical absorption
 		{
 			stopall = 1;
 			kennz = solids[i].kennz;
-			printf("\nStatistical absorption at %s (%s)!\n",solids[i].name.c_str(),mat.name.c_str());
-			fprintf(LOGSCR,"Statistical absorption at %s (%s)!\n",solids[i].name.c_str(),mat.name.c_str());
+			printf("\nStatistical absorption at %s (material=%s r=%LG z=%LG tol=%LG tries=%i)!\n",solids[i].name.c_str(),mat.name.c_str(),y1[1],y1[3],s*distnormal,itercount);
+			fprintf(LOGSCR,"Statistical absorption at %s (material=%s r=%LG z=%LG tol=%LG tries=%i)!\n",solids[i].name.c_str(),mat.name.c_str(),y1[1],y1[3],s*distnormal,itercount);
 			return 1;
 		}		
 		
@@ -286,8 +287,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		prob = mt_get_double(v_mt_state);
 		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat.DiffProb)))
 		{
-	    	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
-			fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG m\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal);
+	    	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG tries=%i",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal,itercount);
+			fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG tries=%i\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal,itercount);
 			nrefl++;
 			v[0] -= 2*vnormal*normal[0]; // reflect velocity
 			v[1] -= 2*vnormal*normal[1];
@@ -316,8 +317,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 				v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
 				v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
 			}
-	       	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
-	       	fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG m\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal);
+	       	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%i",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount);
+	       	fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%i\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount);
 	       	nrefl++;
 	       	if(reflektlog == 1)
 				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
