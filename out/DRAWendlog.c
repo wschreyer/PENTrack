@@ -94,7 +94,7 @@ void DRAWendlog(TString filename)
 	vnamey = "zstart"; // dummy ~ y-variable
 	vnamec = "kennz";  // dummy ~ z-variable
 
-	TCanvas *c1 = new TCanvas("c1", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 20, 20, 400, 800);
+	TCanvas *c1 = new TCanvas("c1", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 20, 20, 500, 800);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c1->SetFillColor(0);
 	c1->SetBorderMode(0);
@@ -558,7 +558,7 @@ void DRAWendlog(TString filename)
 	vnamey = "zend"; // dummy ~ y-variable
 	vnamec = "kennz";  // dummy ~ z-variable
 
-	TCanvas *c12 = new TCanvas("c12", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 500, 20, 400, 800);
+	TCanvas *c12 = new TCanvas("c12", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 500, 20, 500, 800);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c12->SetFillColor(0);
 	c12->SetBorderMode(0);
