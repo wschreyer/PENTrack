@@ -1,26 +1,30 @@
 #define KMDEF 1000
 #define BFKMDEF 50000
 
-// stdincludes
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
+// C includes
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <ctime>
+#include <cerrno>
+#include <cstddef>
+#include <csignal>
+
+// Unix includes
 #include <sys/time.h>
-#include <errno.h>
-#include <stddef.h>
+#include <sys/stat.h>
+
+// C++ includes
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <iomanip>
-#include <sys/stat.h>
-#include <signal.h>
 #include <list>
 #include <vector>
 #include <set>
-#include <numeric>
 #include <map>
+#include <numeric>
 
 // project includes
 #include "mersenne/mt.h" // mersenne twister pseudo random number generator (rng) used for MonteCarlo alg.

@@ -33,7 +33,7 @@ return 0.2e1 * sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf 
 }
 
 
-#define REFLECT_TOLERANCE 1e-10 // if the integration point is farther from the reflection point, the integration will be repeated
+#define REFLECT_TOLERANCE 1e-6 // if the integration point is farther from the reflection point, the integration will be repeated
 
 // load STL-files and create kd-trees
 void LoadGeometry(){
@@ -111,7 +111,7 @@ void LoadGeometry(){
 					infile >> name;
 					if (name == "custom")
 						infile >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max;
-					else{
+					else if (r_min == INFINITY){
 						sourcevolume.ReadFile((inpath + '/' + name).c_str(),0);
 /*						long double r,phi,z;
 						infile >> r;
@@ -250,9 +250,16 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]); // distance p1-p2
 		long double distnormal = abs(u[0]*normal_cart[0] + u[1]*normal_cart[1] + u[2]*normal_cart[2]); // distance p1-p2 normal to surface
 		if (s*distnormal > REFLECT_TOLERANCE){ // if p1 too far from surface
-			s -= dist/distnormal*1e-20*pow(10.0,itercount); // decrease s by a small amount to avoid double reflection
-			x2 = x1 + s*(x2-x1); // write smaller integration time into x2
-			return -1; // return fail to repeat integration step
+			long double stepback = dist/distnormal*1e-10*pow(10.0,itercount); // increase little step by a factor 10 on every iteration to avoid very long search
+			if (stepback < s){
+				s -= stepback; // decrease s by a small amount to avoid double reflection
+				x2 = x1 + s*(x2-x1); // write smaller integration time into x2
+				return -1; // return fail to repeat integration step
+			}
+			else{
+				printf("\nReflectCheck did not converge after %i iterations! Overriding tolerance check! (tolerance=%LG)\n",itercount,s*distnormal);
+				fprintf(LOGSCR,"\nReflectCheck did not converge after %i iterations! Overriding tolerance check! (tolerance=%LG)\n",itercount,s*distnormal);
+			}
 		}
 		
 		long double v[3] = {y1[2], y1[1]*y1[6], y1[4]}; // reflection velocity in local cylindrical coord.
