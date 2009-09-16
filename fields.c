@@ -44,11 +44,7 @@ void FreeFields(){
 
 
 void BFeld (long double rloc, long double philoc, long double zloc, long double t){      //B-Feld am Ort des Teilchens berechnen
-	if (protneut == NEUTRON || decay.on == 2) // switching of field only for neutrons valid
-		SwitchField(t);
-	else if(protneut == PROTON || protneut == ELECTRONS || protneut == BF_CUT)
-		BFeldSkal=BFeldSkalGlobal;
-		
+	SwitchField(t); // set BFeldSkal for different experiment phases	
 	
 	Bnull();
 	long double Brtemp, Bztemp, dBdrtemp, dBdztemp;
