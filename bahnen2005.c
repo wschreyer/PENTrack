@@ -690,8 +690,7 @@ void IntegrateParticle(){
 				ystart[5]=ystart[5]+2*pi;
 			
 			long double xtemp = x1, *ytemp = dvector(1,nvar), trajlengthtemp = trajlengthsum;
-			int kounttemp = kount;
-			long double vladtemp = vlad, fractemp = frac, vladtotaltemp = vladtotal, vladmaxtemp = vladmax, thumbmaxtemp = thumbmax;
+			long double vladtotaltemp = vladtotal, vladmaxtemp = vladmax, thumbmaxtemp = thumbmax;
 			for (int i = 1; i <= nvar; i++) ytemp[i] = ystart[i];
 			short ret;
 			int itercounts = 0;			
@@ -709,9 +708,6 @@ void IntegrateParticle(){
 					x1 = xtemp;
 					for (int j = 1; j <= nvar; j++) ystart[j] = ytemp[j];
 					trajlengthsum = trajlengthtemp;
-					kount = kounttemp;
-					vlad = vladtemp;
-					frac = fractemp;
 					vladtotal = vladtotaltemp;
 					vladmax = vladmaxtemp;
 					thumbmax = thumbmaxtemp;
