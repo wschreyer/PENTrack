@@ -11,20 +11,42 @@ UCNdet	0			0			0		# 100% efficiency assumed
 [GEOMETRY]
 #models the program will load, particle absorbed at the surface will be flagged with the kennzahl of the surface
 #kennzahlen 0-5 are reserved for special events
-#kennzahl	STLfile					material name as defined above		ignore times (1 = filling, 2 = cleaning, 3 = rampup, 4 = fullfield, 5 = rampdown, 6 = storage)
-7			heliumtankMay09.STL		Nocado
+#kennzahl	STLfile					material name as defined above		ignore times (1 = filling, 2 = cleaning, 3 = rampup, 4 = fullfield, 5 = rampdown, 6 = counting)
+7			heliumtank+buffernew.STL		Nocado
 6			protdet.STL				CsI
-8			absorber.STL			PE
-9			UCNdet.STL				UCNdet
+7			protdet_support.STL		PE
+7			lightguide.STL			PE
+7			detelektrode.STL		Cu
+9			absorber.STL			PE
+12			UCNdet.STL				UCNdet
 
 [SOURCE]
-#set source volume here, inital conditions will be randomly picked from this volume (must have closed surface!)
-#source.STL
-
-#define custom parameter rage for inital conditions (source volume above will be ignored if this section is present!!!)
+#define custom parameter rage for inital conditions (source volume below will be ignored if this section is present!)
 #custom	r_min	r_max	phi_min	phi_max		z_min	z_max
 custom	0.125	0.495	0		360			0.005	1.145
+
+#set source volume here, inital conditions will be randomly picked from this volume (has to be a solid body in Solidworks)
+#source.STL
 
 [FIELDS]
 #field table-file
 fieldval.tab
+
+
+############# How to use STL-files ############
+# STL files use a list of triangles to describe 3D-surfaces (see here for file format: http://www.ennex.com/~fabbers/StL.asp)
+# They can be created with Solidworks via "Datei - Speichern unter... - Dateityp STL - Save"
+# Note the "Optionen..." button in the Save dialog, there you can change format (only binary supported), resolution, coordinate system etc.
+# If you want to export several parts of an Solidworks assembly you can do the following (if you know a nicer/easier way, please add it here)
+# - select the part(s) to be exported and rightclick
+# - select "Auswahl invertieren" and then use "Unterdrücken" on all other parts
+# - WARNING! You might not be able to undo the "Unterdrücken"-command but have to reload the assembly, so save any changes before that!
+# - now you can save that single part as STL (make sure the option "STL-Ausgabedaten nicht auf positiven Raum übertragen" is checked
+#		and to use the same coordinate system for every part or else the different parts will not fit together)
+# You can check the positioning of the parts with Minimagics (http://www1.materialise.com/materialise/view/en/2562719-MiniMagics.html)
+# 	(Minimagics needs a looong time to start (~1min), so be patient. It may also report errors where are none, you can check for errors
+#	by opening the STL file with Solidworks)
+# Solidworks makes sure that the surface normals always point outside a solid body (you can check that with MiniMagics, too: Solid bodies
+#	("shells") should be marked red). This is used to check if the source volume overlaps with other solids so that no particle is created
+#	inside a solid body.
+# memory consumption of loading STL-files into program is about 5 times the file size
