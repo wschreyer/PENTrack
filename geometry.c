@@ -246,6 +246,16 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		long double s = (*it).s;
 		unsigned i = (*it).ID;
 		
+		if (!reflekt){ // skip exact reflection point iteration when !reflekt
+			stopall = 1;
+			kennz = solids[i].kennz;
+			long double r = sqrt( pow(p1[0] + s*(p2[0] - p1[0]),2) + pow(p1[1] + s*(p2[1] - p1[1]),2) );
+			long double z = p1[2] + s*(p2[2] - p1[2]); 
+			printf("\nParticle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),r,z);
+			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),r,z);
+			return 1;
+		}			
+		
 		long double u[3] = {p2[0]-p1[0],p2[1]-p1[1],p2[2]-p1[2]};
 		long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]); // distance p1-p2
 		long double distnormal = abs(u[0]*normal_cart[0] + u[1]*normal_cart[1] + u[2]*normal_cart[2]); // distance p1-p2 normal to surface
@@ -272,16 +282,11 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		material mat = solids[i].mat; // get material-index
 		
 		
-		//************ handle different absorption characteristics of materials ****************
+	//************ handle different absorption characteristics of materials ****************
+	
+		//************** statistical absorption ***********
 		long double prob = mt_get_double(v_mt_state);	
-		if(!reflekt){
-			stopall = 1;
-			kennz = solids[i].kennz;
-			printf("\nParticle hit %s (no reflection) at r=%LG z=%LG tol=%LG tries=%i\n",solids[i].name.c_str(),y1[1],y1[3],s*distnormal,itercount);
-			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG tol=%LG tries=%i\n",solids[i].name.c_str(),y1[1],y1[3],s*distnormal,itercount);
-			return 1;
-		}
-		else if (prob < Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag)) // statistical absorption
+		if (prob < Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag))
 		{
 			stopall = 1;
 			kennz = solids[i].kennz;
