@@ -6,9 +6,9 @@
 void nrerror(char *error_text){	
 	//void exit(int c);
 
-	fprintf(stderr,"Numerical Recipes run-time error...\n");
-	fprintf(stderr,"%s\n",error_text);
-	fprintf(stderr,"...now exiting to system...\n");
+	Log("Numerical Recipes run-time error...\n");
+	Log("%s\n",error_text);
+	Log("...now exiting to system...\n");
 	exit(-1);
 }
 

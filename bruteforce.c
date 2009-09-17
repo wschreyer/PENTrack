@@ -244,7 +244,6 @@ void BFrkqs(long double y[], long double dydx[], int n, long double *x, long dou
 		}     // avoid stepsize underflow
         if (xnew == *x){
 			nrerror("stepsize underflow in rkqs"); 
-			fprintf(LOGSCR,"stepsize underflow in rkqs\n");
 			}
 	}
 	if (errmax > ERRCON) 

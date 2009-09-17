@@ -85,7 +85,7 @@ void LoadGeometry(){
 							break;
 						}
 						else if (i+1 == materials.size()){
-							fprintf(stderr,"Material %s used for %s but not defined in geometry.in!",matname.c_str(),name);
+							Log("Material %s used for %s but not defined in geometry.in!",matname.c_str(),name);
 							exit(-1);
 						}
 					}
@@ -215,8 +215,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	if (!geometry.PointInBox(p1)){
 		kennz=KENNZAHL_HIT_BOUNDARIES;  
 		stopall=1;
-		printf("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",x1,y1[1],y1[3]);
-		fprintf(LOGSCR,"Particle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",x1,y1[1],y1[3]);
+		Log("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",x1,y1[1],y1[3]);
 		return 1;
 	}
 	
@@ -251,8 +250,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 			kennz = solids[i].kennz;
 			long double r = sqrt( pow(p1[0] + s*(p2[0] - p1[0]),2) + pow(p1[1] + s*(p2[1] - p1[1]),2) );
 			long double z = p1[2] + s*(p2[2] - p1[2]); 
-			printf("\nParticle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),r,z);
-			fprintf(LOGSCR,"Particle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),r,z);
+			Log("\nParticle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),r,z);
 			return 1;
 		}			
 		
@@ -267,8 +265,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 				return -1; // return fail to repeat integration step
 			}
 			else{
-				printf("\nReflectCheck did not converge after %i iterations! Overriding tolerance check! (tolerance=%LG)\n",itercount,s*distnormal);
-				fprintf(LOGSCR,"\nReflectCheck did not converge after %i iterations! Overriding tolerance check! (tolerance=%LG)\n",itercount,s*distnormal);
+				Log("\nReflectCheck did not converge after %i iterations! Overriding tolerance check! (tolerance=%LG)\n",itercount,s*distnormal);
 			}
 		}
 		
@@ -290,8 +287,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		{
 			stopall = 1;
 			kennz = solids[i].kennz;
-			printf("\nStatistical absorption at %s (material=%s r=%LG z=%LG tol=%LG tries=%i)!\n",solids[i].name.c_str(),mat.name.c_str(),y1[1],y1[3],s*distnormal,itercount);
-			fprintf(LOGSCR,"Statistical absorption at %s (material=%s r=%LG z=%LG tol=%LG tries=%i)!\n",solids[i].name.c_str(),mat.name.c_str(),y1[1],y1[3],s*distnormal,itercount);
+			Log("\nStatistical absorption at %s (material=%s r=%LG z=%LG tol=%LG tries=%i)!\n",solids[i].name.c_str(),mat.name.c_str(),y1[1],y1[3],s*distnormal,itercount);
 			return 1;
 		}		
 		
@@ -299,8 +295,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		prob = mt_get_double(v_mt_state);
 		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat.DiffProb)))
 		{
-	    	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG tries=%i",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal,itercount);
-			fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG tries=%i\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal,itercount);
+	    	Log("\nReflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG tries=%i",
+	    			solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal,itercount);
 			nrefl++;
 			v[0] -= 2*vnormal*normal[0]; // reflect velocity
 			v[1] -= 2*vnormal*normal[1];
@@ -329,8 +325,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 				v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
 				v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
 			}
-	       	printf("\npol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%i",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount);
-	       	fprintf(LOGSCR,"pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%i\n",polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount);
+	       	Log("\nReflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%i",
+	       			solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount);
 	       	nrefl++;
 	       	if(reflektlog == 1)
 				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
@@ -359,7 +355,7 @@ void OutputCodes(int iMC){
 	int ncount = accumulate(kennz_counter[1].begin(),kennz_counter[1].end(),0);
 	int pcount = accumulate(kennz_counter[2].begin(),kennz_counter[2].end(),0);
 	int ecount = accumulate(kennz_counter[0].begin(),kennz_counter[0].end(),0);
-	printf("\nThe calculations of %li particle(s) yielded:\n"
+	Log("\nThe calculations of %li particle(s) yielded:\n"
 	       "endcode:  of %4i neutron(s) ; of %4i proton(s) ; of %4i electron(s)\n"
 	       "   0 %12i %20i %19i 		(were not categorized)\n"
 	       "   1 %12i %20i %19i 		(did not finish)\n"
@@ -380,32 +376,7 @@ void OutputCodes(int iMC){
 		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
 			if (it->kennz == i)
 				solidnames += '/' + it->name;
-		printf("  %2i %12i %20i %19i		(were statistically absorbed by %s)\n",
-				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
-	}
-				
-	fprintf(LOGSCR,"\nThe calculations of %li particle(s) yielded:\n"
-	       "endcode:  of %4i neutron(s) ; of %4i proton(s) ; of %4i electron(s)\n"
-	       "   0 %12i %20i %19i 		(were not categorized)\n"
-	       "   1 %12i %20i %19i 		(did not finish)\n"
-	       "   2 %12i %20i %19i 		(hit outer boundaries)\n"
-	       "   3 %12i %20i %19i 		(left field boundaries)\n"
-	       "   4 %12i %20i %19i 		(decayed)\n"
-	       "   5 %12i %20i %19i 		(found no initial position)\n",
-	       (iMC - 1 + 2 * decay.counter),
-	       ncount, pcount, ecount,
-	       kennz_counter[1][0], kennz_counter[2][0], kennz_counter[0][0],
-	       kennz_counter[1][1], kennz_counter[2][1], kennz_counter[0][1],
-	       kennz_counter[1][2], kennz_counter[2][2], kennz_counter[0][2],
-	       kennz_counter[1][3], kennz_counter[2][3], kennz_counter[0][3],
-	       kennz_counter[1][4], kennz_counter[2][4], kennz_counter[0][4],
-	       kennz_counter[1][5], kennz_counter[2][5], kennz_counter[0][5]);
-	for (unsigned i = 6; i < kennz_counter[0].size(); i++){
-		string solidnames;
-		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
-			if (it->kennz == i)
-				solidnames += '/' + it->name;
-		fprintf(LOGSCR,"  %2i %12i %20i %19i		(were statistically absorbed by %s)\n",
+		Log("  %2i %12i %20i %19i		(were statistically absorbed by %s)\n",
 				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
 	}
 }
