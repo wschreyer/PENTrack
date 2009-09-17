@@ -86,6 +86,7 @@ void PrintIntegrationStep(long double &timetemp);
 void BruteForceIntegration(); // integrate spin flip probability
 void initialStartbed();
 void Startbed(int k);
+void Log(const char* format, ...);
 void ausgabe(long double x2, long double *ystart, long double vend, long double H);
 void prepndist(int k);
 void fillndist(int k);

@@ -143,7 +143,7 @@ mt_state_t *v_mt_state = NULL; //mersenne twister state var
  * return: 		noreturn
  */
 void catch_alarm (int sig){
-	printf("Program was terminated, because Signal %i occured", sig);
+	Log("Program was terminated, because Signal %i occured", sig);
 	exit(1);
 }
 
@@ -161,7 +161,7 @@ int file_rights(char *path){
 	stat(path,&attribut);
 	//if(!(attribut.st_mode & S_IWUSR){ //Windows-Bedingung
 	if(!(attribut.st_mode & S_IWUSR) || !(attribut.st_mode & S_IWGRP) || !(attribut.st_mode & S_IWOTH)){ //Linux-Bedingung
-		printf("Die Datei <%s> besitzt keine Schreibrechte", path);
+		Log("Die Datei <%s> besitzt keine Schreibrechte", path);
 		exit(1);
 	}
 	return 0;
@@ -231,15 +231,15 @@ int main(int argc, char **argv){
 	}
 	
 	// initial step ... reading userinput, inputfiles etc ...
-	printf(
+	ConfigInit();
+	OpenFiles(argc, argv);	// Open .in and .out files and write headers
+		
+	Log(
 	" ################################################################\n"
 	" ###                 Welcome to PNTracker,                    ###\n"
 	" ###     the tracking program for neutrons and protons        ###\n"
 	" ################################################################\n");
-	
-	ConfigInit();
-	OpenFiles(argc, argv);	// Open .in and .out files and write headers
-		
+
 	//printf("\nMonteCarlo: %i\n MonteCarloAnzahl %i \n", MonteCarlo, MonteCarloAnzahl);
 	
 	// allocate vectors and matrizes for BruteForce only if necessary
@@ -307,13 +307,10 @@ int main(int argc, char **argv){
 	
 	//printf("The B field time is:%.17LG\n",timer1);
 	//printf("The integration time is:%.17LG\n",timer2);
-	printf("Integrator used (1 Bulirsch Stoer, 2 Runge Kutta): %d \n", runge);
-	fprintf(LOGSCR,"Integrator used (1 Bulirsch Stoer, 2 Runge Kutta): %d \n ", runge);
+	Log("Integrator used (1 Bulirsch Stoer, 2 Runge Kutta): %d \n", runge);
 	// printf("We spent %.17LG seconds for BF-field interpolation\n",timer3);
-	printf("The integrator was called: %LF times with %LF internal steps on average. \n", nintcalls,ntotalsteps/nintcalls);
-	fprintf(LOGSCR,"The integrator was called: %LF times with %LF internal steps on average. \n", nintcalls,ntotalsteps/nintcalls);
-	printf("That's it... Have a nice day!\n");
-	fprintf(LOGSCR,"That's it... Have a nice day!\n");
+	Log("The integrator was called: %LF times with %LF internal steps on average. \n", nintcalls,ntotalsteps/nintcalls);
+	Log("That's it... Have a nice day!\n");
 	
 	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
 	FreeFields();
@@ -444,13 +441,6 @@ void OpenFiles(int argc, char **argv){
 	logscrfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "log.out";
 	LOGSCR = fopen(logscrfile.str().c_str(),mode_w);
 
-	fprintf(LOGSCR,
-	" ################################################################\n"
-	" ###                 Welcome to PNTracker,                    ###\n"
-	" ###     the tracking program for neutrons and protons        ###\n"
-	" ################################################################\n");
-
-
 	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
 	{
 		ostringstream BFoutfile1;
@@ -566,10 +556,8 @@ void IntegrateParticle(){
 	}
 	//-------- Finished ----------------------------------------------------------------------------------------------------
 	
-	printf("\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
-	fprintf(LOGSCR,"\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
-	printf("Feldcount = %i\n\n",Feldcount);
-	fprintf(LOGSCR,"Feldcount = %i\n\n",Feldcount);
+	Log("\nRodFieldMultiplicator: %.17LG\n",RodFieldMultiplicator);
+	Log("Feldcount = %i\n\n",Feldcount);
 
 	trajlengthsum = 0;
 	nrefl=0;
@@ -595,8 +583,7 @@ void IntegrateParticle(){
 			v_n=0.0;
 			stopall=1;
 			ausgabewunsch=5;
-			printf("\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
-			fprintf(LOGSCR,"\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
+			Log("\nEkin: %.17LG  smaller than Zero!!! \n",Ekin);
 			//iMC--;
 			
 			return;
@@ -656,14 +643,10 @@ void IntegrateParticle(){
 		}
 */		
 		
-		printf("Teilchennummer: %i\n",iMC);
-		fprintf(LOGSCR,"Teilchennummer: %i\n",iMC);
+		Log("Teilchennummer: %i\n",iMC);
 		if(decay.on == 2)
-		{	printf("Teilchensorte : %i\n", protneut);
-			fprintf(LOGSCR,"Teilchensorte : %i\n", protneut);
-		}
-		printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
-		fprintf(LOGSCR,"r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
+			Log("Teilchensorte : %i\n", protneut);
+		Log("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
 
 		//-----------------------------------------------------
 		// Schleife fr ein Teilchen, bis die Zeit aus ist oder das Teilchen entkommt
@@ -784,8 +767,7 @@ void IntegrateParticle(){
 
 		ausgabe(x2,ystart, vend, H);// Endwerte schreiben
 
-		printf("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);
-		fprintf(LOGSCR,"Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);
+		Log("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);
 		
 		
 		IncrementCodes(kennz);
@@ -1037,12 +1019,9 @@ void PrintIntegrationStep(long double &timetemp){
 						 "v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr "
 						 "dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Polar Er Ez "
 						 "timestep Bcheck logvlad logthumb\n");
-		printf(" ##");
-		printf(wholetrackfile.str().c_str());
-		printf("## \n");
-		fprintf(LOGSCR," ##");
-		fprintf(LOGSCR,wholetrackfile.str().c_str());
-		fprintf(LOGSCR,"## \n");
+		Log(" ##");
+		Log(wholetrackfile.str().c_str());
+		Log("## \n");
 		Zeilencount=1;
 	}
 
@@ -1058,12 +1037,9 @@ void PrintIntegrationStep(long double &timetemp){
 			exit(1);
 		}
 		fprintf(BFLOG,"t Babs Polar logPolar Ix Iy Iz Bx By Bz\n");
-		printf(" ##");
-		printf(BFoutfile1.str().c_str());
-		printf("## \n");
-		fprintf(LOGSCR," ##");
-		fprintf(LOGSCR,BFoutfile1.str().c_str());
-		fprintf(LOGSCR,"## \n");
+		Log(" ##");
+		Log(BFoutfile1.str().c_str());
+		Log("## \n");
 		BFZeilencount=1;
 	}
 
