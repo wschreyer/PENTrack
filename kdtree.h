@@ -5,17 +5,13 @@
 	Initially, the triangles are read from a set of STL-files
 	(http://www.ennex.com/~fabbers/StL.asp)	via
 	ReadFile(filename,surfacetype) and stored in the kd-tree
-	via Init(ControlPoint).
+	via Init().
 	You can define a surfacetype for each file which is
 	returned on collision tests to identify different surfaces
 	during runtime.
-	By passing a control point to Init, the algorithm tests
-	if the point is contained inside a closed(!) surface and
-	can then check via PointInVolume(point) if another point
-	is inside the same volume.
 	During runtime segments point1->point2 can be checked for
 	intersection with the surface via
-	Collision(point1,point2,s,n,surfacetype). Collision returns
+	Collision(point1,point2,list of TCollision). Collision returns
 	true if an intersection occurred and gives the parametric
 	coordinate s of the intersection point (I=p1+s*(p2-p1)),
 	the normal n and the surfacetype of the intersected surface.
@@ -30,11 +26,12 @@
 
 using namespace std;
 
+// structure that is returned by KDTree::Collision
 struct TCollision{
-	long double s, normalx,normaly,normalz;
-	unsigned ID;	
-	void *tri;
-	bool operator < (TCollision c){ return s < c.s; };
+	long double s, normalx,normaly,normalz; // parametric coordinate of intersection point, normal of intersected surface
+	unsigned ID;	// ID of intersected surface
+	void *tri;	// pointer to intersected triangle
+	bool operator < (TCollision c){ return s < c.s; };	// overloaded operator, needed for sorting
 };
 
 // root of kd-Tree
@@ -77,11 +74,9 @@ class KDTree{
 //                void FindNeighbour(Triangle* tri, const short vertexnumber); // find neighbours of a triangle
                 bool Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls);  // find the smallest box which contains the segment p1->p2 and call TestCollision there
                 template <typename coord> bool PointInBox(const coord p[3]) {
-                	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) &&
-							(p[1] <= hi[1]) && (p[1] >= lo[1]) &&
-							(p[2] <= hi[2]) && (p[2] >= lo[2]));
+                	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) && (p[1] <= hi[1]) && (p[1] >= lo[1]) && (p[2] <= hi[2]) && (p[2] >= lo[2]));
                 }; // test if point is inside box
-                unsigned facecount();   // count triangles in this tree and his leaves
+                unsigned facecount();   // count triangles in this node and his leaves
         };
 
         list<Triangle*> alltris; // list of all triangles in the tree
