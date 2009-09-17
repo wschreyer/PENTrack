@@ -5,17 +5,13 @@
 	Initially, the triangles are read from a set of STL-files
 	(http://www.ennex.com/~fabbers/StL.asp)	via
 	ReadFile(filename,surfacetype) and stored in the kd-tree
-	via Init(ControlPoint).
+	via Init().
 	You can define a surfacetype for each file which is
 	returned on collision tests to identify different surfaces
 	during runtime.
-	By passing a control point to Init, the algorithm tests
-	if the point is contained inside a closed(!) surface and
-	can then check via PointInVolume(point) if another point
-	is inside the same volume.
 	During runtime segments point1->point2 can be checked for
 	intersection with the surface via
-	Collision(point1,point2,s,n,surfacetype). Collision returns
+	Collision(point1,point2,list of TCollision). Collision returns
 	true if an intersection occurred and gives the parametric
 	coordinate s of the intersection point (I=p1+s*(p2-p1)),
 	the normal n and the surfacetype of the intersected surface.

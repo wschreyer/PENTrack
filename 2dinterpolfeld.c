@@ -3,6 +3,8 @@
 
 #include "main.h"
 
+
+// constructor
 TabField::TabField(const char *tabfile){	
 	rind = NULL;
 	zind = NULL;
@@ -35,6 +37,7 @@ TabField::TabField(const char *tabfile){
 }
 
 
+// read table file given in the constructor parameter
 void TabField::ReadTabFile(const char *tabfile, long double **&BrTab, long double **&BzTab, long double **&ErTab, long double **&EzTab){
 	ifstream FIN(tabfile, ifstream::in);
 	printf("\nReading %s\n",tabfile);
@@ -130,6 +133,7 @@ void TabField::ReadTabFile(const char *tabfile, long double **&BrTab, long doubl
 }
 
 
+// print info about tablefile, calculate min/max fields and Emin_n
 void TabField::CheckTab(long double **BrTab, long double **BzTab, long double **ErTab, long double **EzTab){
 	//  calculate factors for conversion of coordinates to indexes  r = conv_rA + index * conv_rB	
 	long double r_mi = rind[1];
@@ -192,38 +196,27 @@ void TabField::CheckTab(long double **BrTab, long double **BzTab, long double **
 }
 
 
-// Zu den Arrays BrTab, BphiTab, BphiTab werden die entsprechenden Ableitungen berechnet:
-// z.B: BrTab1 = dBrTab / dr
-void TabField::CalcDeriv4th(long double **BrTab, long double **BzTab, 
-							long double **BrTab1, long double **BrTab2,long double **BrTab12, 
-							long double **BzTab1, long double **BzTab2, long double **BzTab12)
+// calculate derivatives of Tab and write them to Tab1/2/12
+void TabField::CalcDeriv4th(long double **Tab, long double **Tab1, long double **Tab2,long double **Tab12)
 {
 	int j, k;
 	for (j=3; j <= m-2; j++)
 	{
 		for (k=3; k <= n-2; k++)
 		{
-			BrTab1[j][k] = 1 / (12*(rind[j]-rind[j-1] )) *  ( (-1)*BrTab[j+2][k] + 8*BrTab[j+1][k] - 8*BrTab[j-1][k] + BrTab[j-2][k] ) ;   // derivative in r direction
-			BrTab2[j][k] = 1 / (12*(zind[k]-zind[k-1] )) *  ( (-1)*BrTab[j][k+2] + 8*BrTab[j][k+1] - 8*BrTab[j][k-1] + BrTab[j][k-2] ) ;     // derivative in z direction
-			BrTab12[j][k] = 1 / (12*(rind[j]-rind[j-1] )*12*(zind[k]-zind[k-1] )) 
-								*(	-1*  ( (-1)*BrTab[j+2][k+2] + 8*BrTab[j+2][k+1] - 8*BrTab[j+2][k-1] + BrTab[j+2][k-2] ) 
-										+8*  ( (-1)*BrTab[j+1][k+2] + 8*BrTab[j+1][k+1] - 8*BrTab[j+1][k-1] + BrTab[j+1][k-2] ) 
-										-8*  ( (-1)*BrTab[j-1][k+2] + 8*BrTab[j-1][k+1] - 8*BrTab[j-1][k-1] + BrTab[j-1][k-2] )  
-										+    ( (-1)*BrTab[j-2][k+2] + 8*BrTab[j-2][k+1] - 8*BrTab[j-2][k-1] + BrTab[j-2][k-2] )     );// cross derivative
-			  
-			BzTab1[j][k] = 1 / (12*(rind[j]-rind[j-1] )) *  ( (-1)*BzTab[j+2][k] + 8*BzTab[j+1][k] - 8*BzTab[j-1][k] + BzTab[j-2][k] ) ;   // derivative in r direction
-			BzTab2[j][k] = 1 / (12*(zind[k]-zind[k-1] )) *  ( (-1)*BzTab[j][k+2] + 8*BzTab[j][k+1] - 8*BzTab[j][k-1] + BzTab[j][k-2] ) ;     // derivative in z direction
-			BzTab12[j][k] = 1 / (12*(rind[j]-rind[j-1] )*12*(zind[k]-zind[k-1] )) 
-									*(	-1*  ( (-1)*BzTab[j+2][k+2] + 8*BzTab[j+2][k+1] - 8*BzTab[j+2][k-1] + BzTab[j+2][k-2] ) 
-										+8*  ( (-1)*BzTab[j+1][k+2] + 8*BzTab[j+1][k+1] - 8*BzTab[j+1][k-1] + BzTab[j+1][k-2] )
-										-8*  ( (-1)*BzTab[j-1][k+2] + 8*BzTab[j-1][k+1] - 8*BzTab[j-1][k-1] + BzTab[j-1][k-2] )
-										+    ( (-1)*BzTab[j-2][k+2] + 8*BzTab[j-2][k+1] - 8*BzTab[j-2][k-1] + BzTab[j-2][k-2] )        );// cross derivative
-			  
+			Tab1[j][k] = 1 / (12*(rind[j]-rind[j-1] )) *  ( (-1)*Tab[j+2][k] + 8*Tab[j+1][k] - 8*Tab[j-1][k] + Tab[j-2][k] ) ;   // derivative in r direction
+			Tab2[j][k] = 1 / (12*(zind[k]-zind[k-1] )) *  ( (-1)*Tab[j][k+2] + 8*Tab[j][k+1] - 8*Tab[j][k-1] + Tab[j][k-2] ) ;     // derivative in z direction
+			Tab12[j][k] = 1 / (12*(rind[j]-rind[j-1] )*12*(zind[k]-zind[k-1] )) 
+									*(	-1*  ( (-1)*Tab[j+2][k+2] + 8*Tab[j+2][k+1] - 8*Tab[j+2][k-1] + Tab[j+2][k-2] ) 
+										+8*  ( (-1)*Tab[j+1][k+2] + 8*Tab[j+1][k+1] - 8*Tab[j+1][k-1] + Tab[j+1][k-2] ) 
+										-8*  ( (-1)*Tab[j-1][k+2] + 8*Tab[j-1][k+1] - 8*Tab[j-1][k-1] + Tab[j-1][k-2] )  
+										+    ( (-1)*Tab[j-2][k+2] + 8*Tab[j-2][k+1] - 8*Tab[j-2][k-1] + Tab[j-2][k-2] )     );// cross derivative			  
         }
 	}
 }
 
 
+// calculate interpolation coefficients Brc, Bzc to speed up interpolation
 void TabField::PreInterpol(long double ****&Brc, long double ****&Bzc, long double **BrTab, long double **BzTab){
 	long double **BrTab1 = NULL, **BzTab1 = NULL;	// dBi/dr
 	long double **BrTab2 = NULL, **BzTab2 = NULL;	// dBi/dz
@@ -236,7 +229,8 @@ void TabField::PreInterpol(long double ****&Brc, long double ****&Bzc, long doub
 	BzTab2=dmatrix(2,m-1,2,n-1);
 	BrTab12=dmatrix(2,m-1,2,n-1);
 	BzTab12=dmatrix(2,m-1,2,n-1);
-	CalcDeriv4th(BrTab,BzTab,BrTab1,BrTab2,BrTab12,BzTab1,BzTab2,BzTab12);
+	CalcDeriv4th(BrTab,BrTab1,BrTab2,BrTab12);
+	CalcDeriv4th(BzTab,BzTab1,BzTab2,BzTab12);
 	printf("Derivatives calculated.\n");
 	fprintf(LOGSCR,"Derivatives calculated.\n");
 	
@@ -339,6 +333,7 @@ void TabField::PreInterpol(long double ****&Brc, long double ****&Bzc, long doub
 }
 
 
+// interpolate B-field
 bool TabField::BInterpol(long double r, long double z){
 	if (Brc && Bzc){
 		int indr = 1 + (int)((r - conv_rA)/conv_rB);    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!		
@@ -358,6 +353,7 @@ bool TabField::BInterpol(long double r, long double z){
 }
 
 
+// interpolate E-field
 bool TabField::EInterpol(long double r, long double z){
 	if (Erc && Ezc){
 		int indr = 1 + (int)((r - conv_rA)/conv_rB);    // 1 + ..., weil die werte nicht von 0, sondern von 1 beginnen!!!!!!		
@@ -377,6 +373,7 @@ bool TabField::EInterpol(long double r, long double z){
 }
 
 
+// destructor -> free memory
 TabField::~TabField(){
 	if (rind) free_dvector(rind,1,m);
 	if (zind) free_dvector(zind,1,n);
