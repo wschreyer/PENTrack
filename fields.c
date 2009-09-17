@@ -3,6 +3,7 @@
 list<TabField*> fields;
 
 
+// read table files or conductor file
 void PrepareFields(){
 	if ((bfeldwahl == 0 || bfeldwahl == 2) && (BFeldSkalGlobal != 0 || EFeldSkal != 0))
 	{
@@ -37,16 +38,18 @@ void PrepareFields(){
 }
 
 
+// free memory
 void FreeFields(){
 	for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++)
 		delete (*i);	
 }
 
 
+// fill global B field variables with values
 void BFeld (long double rloc, long double philoc, long double zloc, long double t){      //B-Feld am Ort des Teilchens berechnen
 	SwitchField(t); // set BFeldSkal for different experiment phases	
 	
-	Bnull();
+	Bnull();	// first, set all to zero
 	long double Brtemp, Bztemp, dBdrtemp, dBdztemp;
 	switch (bfeldwahl)
 	{
@@ -66,6 +69,7 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 				}
 				RacetrackField(rloc,philoc,zloc);
 				break;
+				
 		case 2:	if (BFeldSkal != 0){
 					list<TabField*>::iterator i = fields.begin(); 
 					while (i != fields.end()){						
@@ -85,9 +89,11 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 				printf("BrI BrM deltaBr %17LG %17LG %17LG \n", Brtemp, Br, (Brtemp-Br)/Br);
 				printf("BzI BzM deltaBz %17LG %17LG %17LG \n", Bztemp, Bz, (Bztemp-Bz)/Bz);						
 				Br=(Brtemp-Br)/Br; Bz=(Bztemp-Bz)/Bz; dBdr=(dBdrtemp-dBdr)/dBdr; dBdz=(dBdztemp-dBdz)/dBdz;
-				break;		
+				break;	
+					
 		case 3: Banalytic(rloc, philoc, zloc, t);
 				break;
+				
 		case 4: BForbes(rloc, philoc, zloc, t);
 				RacetrackField(rloc,philoc,zloc);
 				break;
@@ -233,7 +239,7 @@ long double Banalytic(long double r,long double phi,long double z, long double t
 
 
 
-
+// fill global E field variables with values
 void EFeld(long double rloc, long double philoc, long double zloc){
 	Er = 0.0;
 	Ephi = 0.0;
@@ -246,8 +252,17 @@ void EFeld(long double rloc, long double philoc, long double zloc){
 	dEzdz=0.0;
 
 	if (EFeldSkal != 0 && (bfeldwahl == 0 || bfeldwahl == 2)){
-		for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++)
-			(*i)->EInterpol(rloc, zloc);
+		list<TabField*>::iterator i = fields.begin(); 
+		while (i != fields.end()){						
+			if ((*i)->EInterpol(rloc, zloc))
+				break;
+			else if (++i == fields.end()){
+				printf("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+				fprintf(LOGSCR,"\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+				kennz = KENNZAHL_LEFT_FIELD;
+				stopall = 1;
+			}		
+		}				
 		/*switch (Efeldwahl){
 			case 0: EInterpol(rloc, philoc, zloc); break;
 			case 2: ETrichter(rloc,philoc,zloc); break;
