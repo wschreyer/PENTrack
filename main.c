@@ -141,171 +141,86 @@ void ConfigInit(void){
 void PrintConfig(void)
 {
 	// ONSCREEN
-	printf("The following parameters were set for program execution: \n");
-	printf("protneut: %i => (1) neutron, (2) proton tracking, (3) magnetic field evaluation \n",protneut);
+	Log("The following parameters were set for program execution: \n");
+	Log("protneut: %i => (1) neutron, (2) proton tracking, (3) magnetic field evaluation \n",protneut);
 	if (protneut == NEUTRON)
 	{
 		if (polarisation == 1)
 		{
-			printf("Low field seekers are tracked! \n");		
+			Log("Low field seekers are tracked! \n");		
 		}
 		else if (polarisation == 2)
 		{
-			printf("High field seekers are tracked! \n");		
+			Log("High field seekers are tracked! \n");		
 		}
 		else if (polarisation == 3)
 		{
-			printf("No polarisation! \n");		
+			Log("No polarisation! \n");		
 		}
 		else if (polarisation == 4)
 		{
-			printf("Polarisation is diced! \n");		
+			Log("Polarisation is diced! \n");		
 		}
 		
 		if (fireflekt == 1)
-			printf("Filling Time %LG \n Reflection is on, ", FillingTime );
+			Log("Filling Time %LG \n Reflection is on, ", FillingTime );
 		else if (fireflekt == 0)
-			printf("Filling Time %LG \n Reflection is off, ",FillingTime);
+			Log("Filling Time %LG \n Reflection is off, ",FillingTime);
 		if (fiBruteForce == 1)
-			printf("Brute Force on, ");
+			Log("Brute Force on, ");
 		else if (fiBruteForce == 0)
-			printf("Brute Force off, ");		
+			Log("Brute Force off, ");		
 		
 		if (clreflekt == 1)
-			printf("Cleaning Time %LG \n Reflection is on, ", CleaningTime );
+			Log("Cleaning Time %LG \n Reflection is on, ", CleaningTime );
 		else if (clreflekt == 0)
-			printf("Cleaning  Time %LG \n Reflection is off, ",CleaningTime);
+			Log("Cleaning  Time %LG \n Reflection is off, ",CleaningTime);
 		if (clBruteForce == 1)
-			printf("Brute Force on, ");
+			Log("Brute Force on, ");
 		else if (clBruteForce == 0)
-			printf("Brute Force off, ");
+			Log("Brute Force off, ");
 		
 		if (rureflekt == 1)
-			printf("Ramp Up Time %LG \n Reflection is on, ", RampUpTime );
+			Log("Ramp Up Time %LG \n Reflection is on, ", RampUpTime );
 		else if (rureflekt == 0)
-			printf("Ramp Up  Time %LG \n Reflection is off, ",RampUpTime);
+			Log("Ramp Up  Time %LG \n Reflection is off, ",RampUpTime);
 		if (ruBruteForce == 1)
-			printf("Brute Force on, ");
+			Log("Brute Force on, ");
 		else if (ruBruteForce == 0)
-			printf("Brute Force off, ");
+			Log("Brute Force off, ");
 		
 		if (ffreflekt == 1)
-			printf("Full Field Time %LG \n Reflection is on, ", FullFieldTime );
+			Log("Full Field Time %LG \n Reflection is on, ", FullFieldTime );
 		else if (ffreflekt == 0)
-			printf("Full Field Time %LG \n Reflection is off, ",FullFieldTime);
+			Log("Full Field Time %LG \n Reflection is off, ",FullFieldTime);
 		if (ffBruteForce == 1)
-			printf("Brute Force on, ");
+			Log("Brute Force on, ");
 		else if (ffBruteForce == 0)
-			printf("Brute Force off, ");
+			Log("Brute Force off, ");
 		
 		if (rdreflekt == 1)
-			printf("Ramp Down Time  %LG \n Reflection is on, ", RampDownTime );
+			Log("Ramp Down Time  %LG \n Reflection is on, ", RampDownTime );
 		else if (rdreflekt == 0)
-			printf("Ramp Down Time  %LG \n Reflection is off, ",RampDownTime);
+			Log("Ramp Down Time  %LG \n Reflection is off, ",RampDownTime);
 		if (rdBruteForce == 1)
-			printf("Brute Force on, ");
+			Log("Brute Force on, ");
 		else if (rdBruteForce == 0)
-			printf("Brute Force off, ");
+			Log("Brute Force off, ");
 		
 		if (coreflekt == 1)
-			printf("Counting Time  \n Reflection is on, ");
+			Log("Counting Time  \n Reflection is on, ");
 		else if (coreflekt == 0)
-			printf("Coutning Time  \n Reflection is off, ");
+			Log("Coutning Time  \n Reflection is off, ");
 		if (coBruteForce == 1)
-			printf("Brute Force on, ");
+			Log("Brute Force on, ");
 		else if (coBruteForce == 0)
-			printf("Brute Force off, ");
+			Log("Brute Force off, ");
 		
 			
 	}
-	printf("The choice of Bfield is: %i  (0) interpolated field, (1) no field, (2) check interpolation routine \n",bfeldwahl);
-	printf("The choice of reflection is: %i  (1) specular, (2) diffuse, (3) statistically specular or diffuse \n",diffuse);
-	printf("Choice of output: %i  (1) Endpoints and track (2) only endpoints (3) Endpoints, track and spin \n (4) Endpoints and spin (5) nothing \n ", ausgabewunsch);
-	
-	// LOGSCREEN
-	fprintf(LOGSCR,"The following parameters were set for program execution: \n");
-	fprintf(LOGSCR,"protneut: %i => (1) neutron, (2) proton tracking, (3) magnetic field evaluation \n",protneut);
-	if (protneut == NEUTRON)
-	{
-		if (polarisation == 1)
-		{
-			fprintf(LOGSCR,"Low field seekers are tracked! \n");		
-		}
-		else if (polarisation == 2)
-		{
-			fprintf(LOGSCR,"High field seekers are tracked! \n");		
-		}
-		else if (polarisation == 3)
-		{
-			fprintf(LOGSCR,"No polarisation! \n");		
-		}
-		else if (polarisation == 4)
-		{
-			fprintf(LOGSCR,"Polarisation is diced! \n");		
-		}
-		
-		if (fireflekt == 1)
-			fprintf(LOGSCR,"Filling Time %LG \n Reflection is on, ", FillingTime );
-		else if (fireflekt == 0)
-			fprintf(LOGSCR,"Filling Time %LG \n Reflection is off, ",FillingTime);
-		if (fiBruteForce == 1)
-			fprintf(LOGSCR,"Brute Force on, ");
-		else if (fiBruteForce == 0)
-			fprintf(LOGSCR,"Brute Force off, ");
-		
-		if (clreflekt == 1)
-			fprintf(LOGSCR,"Cleaning Time %LG \n Reflection is on, ", CleaningTime );
-		else if (clreflekt == 0)
-			fprintf(LOGSCR,"Cleaning  Time %LG \n Reflection is off, ",CleaningTime);
-		if (clBruteForce == 1)
-			fprintf(LOGSCR,"Brute Force on, ");
-		else if (clBruteForce == 0)
-			fprintf(LOGSCR,"Brute Force off, ");
-		
-		if (rureflekt == 1)
-			fprintf(LOGSCR,"Ramp Up Time %LG \n Reflection is on, ", RampUpTime );
-		else if (rureflekt == 0)
-			fprintf(LOGSCR,"Ramp Up  Time %LG \n Reflection is off, ",RampUpTime);
-		if (ruBruteForce == 1)
-			fprintf(LOGSCR,"Brute Force on, ");
-		else if (ruBruteForce == 0)
-			fprintf(LOGSCR,"Brute Force off, ");
-		
-		if (ffreflekt == 1)
-			fprintf(LOGSCR,"Full Field Time %LG \n Reflection is on, ", FullFieldTime );
-		else if (ffreflekt == 0)
-			fprintf(LOGSCR,"Full Field Time %LG \n Reflection is off, ",FullFieldTime);
-		if (ffBruteForce == 1)
-			fprintf(LOGSCR,"Brute Force on, ");
-		else if (ffBruteForce == 0)
-			fprintf(LOGSCR,"Brute Force off, ");
-		
-		if (rdreflekt == 1)
-			fprintf(LOGSCR,"Ramp Down Time %LG \n Reflection is on, ", RampDownTime );
-		else if (rdreflekt == 0)
-			fprintf(LOGSCR,"Ramp Down Time %LG \n Reflection is off, ",RampDownTime);
-		if (rdBruteForce == 1)
-			fprintf(LOGSCR,"Brute Force on, ");
-		else if (rdBruteForce == 0)
-			fprintf(LOGSCR,"Brute Force off, ");
-		
-		if (coreflekt == 1)
-			fprintf(LOGSCR,"Counting Time  \n Reflection is on, ");
-		else if (coreflekt == 0)
-			fprintf(LOGSCR,"Coutning Time  \n Reflection is off, ");
-		if (coBruteForce == 1)
-			fprintf(LOGSCR,"Brute Force on, ");
-		else if (coBruteForce == 0)
-			fprintf(LOGSCR,"Brute Force off, ");
-		
-		
-		
-	}
-	fprintf(LOGSCR,"The choice of Bfield is: %i  (0) interpolated field, (1) no field, (2) check interpolation routine \n",bfeldwahl);
-	fprintf(LOGSCR,"The choice of reflection is: %i  (1) speculat, (2) diffuse, (3) statistically specular or diffuse \n",bfeldwahl);
-	fprintf(LOGSCR,"Choice of output: %i  (1) Endpoints and track (2) only endpoints (3) Endpoints, track and spin \n (4) Endpoints and spin (5) nothing \n ", ausgabewunsch);
-	
-	
+	Log("The choice of Bfield is: %i  (0) interpolated field, (1) no field, (2) check interpolation routine \n",bfeldwahl);
+	Log("The choice of reflection is: %i  (1) specular, (2) diffuse, (3) statistically specular or diffuse \n",diffuse);
+	Log("Choice of output: %i  (1) Endpoints and track (2) only endpoints (3) Endpoints, track and spin \n (4) Endpoints and spin (5) nothing \n ", ausgabewunsch);
 }
 
 //======== initalizes initial values from record to used variables ==============================================
@@ -389,7 +304,7 @@ void Startbed(int k)
 			case 21:	ncont = sscanf(cline, "%LG %u ", &BCutPlaneSampleDist, &BCutPlaneSampleCount);
 						break;
 		}
-		if(ncont < 1) printf("an error occourd while reading the %i. item in line %i of all3inone.in", ncont, i);
+		if(ncont < 1) Log("an error occourd while reading the %i. item in line %i of all3inone.in", ncont, i);
     }
     
     // closing 'inistream' to all3inone.in
@@ -400,12 +315,9 @@ void Startbed(int k)
 
 	// minimal necessary energy (Emin_n) > maximum input energy (nini.EnergieE)?? EXIT !!
 	if(Emin_n*1e9 > nini.EnergieE)
-	{	printf("\n\n\nERROR: Emin_n (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
+	{	Log("\n\n\nERROR: Emin_n (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
 		             "       Check the energy range of the neutrons and / or the B-field configuration!\n\n"
 		             "EXIT!!\n", (Emin_n*1e9), nini.EnergieE);
-		fprintf(LOGSCR, "\n\n\nERROR: Emin_n (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
-		                      "       Check the energy range of the neutrons and / or the B-field configuration!\n\n"
-		                      "EXIT!!\n", (Emin_n*1e9), nini.EnergieE);
 		exit(-1);
 	}
 	
@@ -427,18 +339,15 @@ void Startbed(int k)
 					break;
 		}
 		if((particleini.EnergieS > particleini.EnergieE) || (particleini.alphas > particleini.alphae) || (particleini.gammas > particleini.gammae))
-		{	printf("\n\n\nERROR: Two or more initial values are inconsistent.\n"
+		{	Log("\n\n\nERROR: Two or more initial values are inconsistent.\n"
 			             "       Check ALL starting and final values in all3inone.in!\n\n"
 			             "EXIT!!\n");
-			fprintf(LOGSCR, "\n\n\nERROR: Two or more initial values are inconsistent.\n"
-			                      "       Check ALL starting and final values in all3inone.in!\n\n"
-			                      "EXIT!!\n");
 			exit(-1);
 		}
 	}
 
 	// writing parameters to screen
-	printf("\nStart parameters:\n"
+	Log("\nStart parameters:\n"
 	       "  Energy (min, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
 	       "  Maximum runtime: %.17LG s\n"
 	       "  Alpha (min, max): %.17LG degree, %.17LG degree\n"
@@ -461,34 +370,19 @@ void Startbed(int k)
 	       RampDownTime,
 	       BFeldSkalGlobal,
 	       EFeldSkal);
-
-	// logging parameters to *log.out
-	fprintf(LOGSCR, "\nStart parameters:\n"
-	                "  Energy (min, step, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
-	                "  Maximum runtime: %.17LG s\n"
-	                "  Alpha (min, step, max): %.17LG degree, %.17LG degree\n"
-	                "  Gamma (min, step, max): %.17LG degree, %.17LG degree\n"
-	                "  Filling time %LG s\n"
-	                "  Cleaning time: %.17LG s\n"
-	                "  Ramp up time: %.17LG s\n"
-	                "  Full field time: %.17LG s\n"
-	                "  RampDownTime: %.17LG s\n"
-	                "  B field scaling factor: %.17LG\n"
-	                "  E field scaling factor: %.17LG\n",
-	                EnergieS, EnergieE,
-	                xend,
-	                alphas, alphae,
-	                gammas, gammae,
-	                FillingTime,
-	                CleaningTime,
-	                RampUpTime,
-	                FullFieldTime,
-	                RampDownTime,
-	                BFeldSkalGlobal,
-	                EFeldSkal);	
 }
 //======== end of Startbed ======================================================================================
 
+
+// works like printf, prints to logfile and, if jobnumber == 0, to stdout 
+void Log(const char* format, ...){
+	va_list args;
+	va_start(args, format);
+	if (jobnumber == 0)
+		vprintf(format, args); 
+	vfprintf(LOGSCR, format, args);
+	va_end(args);
+}
 
 
 void ausgabe(long double x2, long double *ystart, long double vend, long double H)
@@ -735,7 +629,7 @@ void PrintBFieldCut(){
 	string path = outpath + "/BFCut.out";
 	FILE *cutfile = fopen(path.c_str(), mode_w);
 	if (!cutfile){
-		printf("Could not open %s!",path.c_str());
+		Log("Could not open %s!",path.c_str());
 		exit(-1);
 	}
 	fprintf(cutfile, "r phi z x y Br Bphi Bz Bx By dBrdr dBrdphi dBrdz dBphidr dBphidphi dBphidz dBzdr dBzdphi dBzdz Babs dBdr dBdphi dBdz Er Ephi Ez Ex Ey dErdr dErdz dEphidr dEphidz dEzdr dEzdz\n");
@@ -794,13 +688,13 @@ void PrintBField(){
 
 	// for investigating ramp heating of neutrons, volume accessible to neutrons with and
 	// without B-field is calculated and the heating approximated by thermodynamical means
-	fprintf(LOGSCR,"\nEnergie [neV], Volumen ohne B-Feld, mit B-Feld, 'Erwaermung'");
+	Log("\nEnergie [neV], Volumen ohne B-Feld, mit B-Feld, 'Erwaermung'");
 	long double Volume;
 	for (E = 0; E <= nini.EnergieE; E++) 
 	{
 		Volume = ((E * 1.0e-9 / (m_n * gravconst))) * pi * (rmax*rmax-rmin*rmin);
 		// isentropische zustandsnderung, kappa=5/3
-		fprintf(LOGSCR,"\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * powl((Volume/VolumeB[E]),(2.0/3.0)) - E);
+		Log("\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * powl((Volume/VolumeB[E]),(2.0/3.0)) - E);
 	}
 }
 

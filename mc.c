@@ -119,8 +119,7 @@ void MCStartwerte(long double delx)
 	}
 
 
-	printf("\nDice starting position ... (Please be patient!)\n");
-	fprintf(LOGSCR,"\nDice starting position ... (Please be patient!)\n");
+	Log("\nDice starting position ... (Please be patient!)\n");
 	// repeat dicing for starting point until particle is valid (energy is possible at this specific point) because neutrons
 	// are filled in according to the energy spectrum above, the points in the trap that are reachable are determined by that
 	nroll = 0;
@@ -136,16 +135,14 @@ void MCStartwerte(long double delx)
 		//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n", NeutEnergie*1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
 		//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie * 1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
 
-		if (crit >= 0.0)
-		{	printf("... %li dice(s) rolled\n", nroll);
-			fprintf(LOGSCR,"... %li dice(s) rolled\n", nroll);
+		if (crit >= 0.0){	
+			Log("... %li dice(s) rolled\n", nroll);
 			break;
 		}
 		if(nroll == 42000000)
 		{	kennz = KENNZAHL_INITIAL_NOT_FOUND;
 			noparticle = true;
-			printf("... ABORT: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
-			fprintf(LOGSCR,"... ABORT: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
+			Log("... ABORT: Failed %li times to find a compatible spot!! NO particle will be simulated!!\n\n", nroll);
 			return;
 		}		
 	}
@@ -417,8 +414,7 @@ void MCZerfallsstartwerte()
 		{	decay.error = 0;
 		}				
 		
-		printf("\n   +++ decay error : %LG eV +++\n", decay.error);
-		fprintf(LOGSCR, "\n   +++ decay error : %LG eV +++\n", decay.error);
+		Log("\n   +++ decay error : %LG eV +++\n", decay.error);
 		
 //-------- Finished --------------------------------------------------------------------------------------------------------
 		

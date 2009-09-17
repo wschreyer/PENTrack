@@ -50,7 +50,7 @@ for (;;) {
                printf("!");
                break; }     // avoid stepsize underflow
         if (xnew == *x)
-                {nrerror("stepsize underflow in rkqs"); fprintf(LOGSCR,"stepsize underflow in rkqs\n");}
+                {nrerror("stepsize underflow in rkqs");}
         }
 if (errmax > ERRCON) *hnext=SAFETY*h*powl(errmax,PGROW);
 else *hnext=5.0*h;                                             //No more than a factor of 5 increase.

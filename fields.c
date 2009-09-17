@@ -60,8 +60,7 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 						if ((*i)->BInterpol(rloc, zloc))
 							break;
 						else if (++i == fields.end()){
-							printf("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-							fprintf(LOGSCR,"\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+							Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
 							kennz = KENNZAHL_LEFT_FIELD;
 							stopall = 1;
 						}		
@@ -76,8 +75,7 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 						if ((*i)->BInterpol(rloc, zloc))
 							break;
 						else if (++i == fields.end()){
-							printf("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-							fprintf(LOGSCR,"\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+							Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
 							kennz = KENNZAHL_LEFT_FIELD;
 							stopall = 1;
 						}		
@@ -257,8 +255,7 @@ void EFeld(long double rloc, long double philoc, long double zloc){
 			if ((*i)->EInterpol(rloc, zloc))
 				break;
 			else if (++i == fields.end()){
-				printf("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-				fprintf(LOGSCR,"\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+				Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
 				kennz = KENNZAHL_LEFT_FIELD;
 				stopall = 1;
 			}		

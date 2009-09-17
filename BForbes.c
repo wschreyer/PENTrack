@@ -33,8 +33,7 @@ int ReadMagnets(void)
 	string path(inpath + "/coils.cond");
 	cfg = fopen(path.c_str(),mode_r);
 	if(cfg == NULL){  
-		printf("File coils.cond could not be opened!!!");
-		fprintf(LOGSCR,"File coils.cond could not be opened!!!");
+		Log("File coils.cond could not be opened!!!");
 		return 1;
 	}
 	
@@ -107,8 +106,7 @@ int ReadMagnets(void)
 		
 	}while(!feof(cfg));
 	
-	printf("%i solenoids were read in!!! \n",CoilNr);
-	fprintf(LOGSCR,"%i solenoids were read in!!! \n",CoilNr);
+	Log("%i solenoids were read in!!! \n",CoilNr);
 	
 	return 0;
 }

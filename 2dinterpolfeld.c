@@ -18,7 +18,7 @@ TabField::TabField(const char *tabfile){
 	
 	CheckTab(BrTab,BzTab,ErTab,EzTab);
 
-	printf("\nStart Preinterpolation!\n");	
+	Log("\nStart Preinterpolation!\n");	
 	if (BrTab){
 		if (BFeldSkalGlobal != 0){
 			PreInterpol(Brc,Bzc,BrTab,BzTab);
@@ -33,14 +33,14 @@ TabField::TabField(const char *tabfile){
 		free_dmatrix(ErTab,1,m,1,n);
 		free_dmatrix(EzTab,1,m,1,n);		
 	}
-	printf("Done with Preinterpolation!\n");
+	Log("Done with Preinterpolation!\n");
 }
 
 
 // read table file given in the constructor parameter
 void TabField::ReadTabFile(const char *tabfile, long double **&BrTab, long double **&BzTab, long double **&ErTab, long double **&EzTab){
 	ifstream FIN(tabfile, ifstream::in);
-	printf("\nReading %s\n",tabfile);
+	Log("\nReading %s\n",tabfile);
 	int intval;
 	string line;
 	FIN >> m >> intval >> n;
@@ -72,7 +72,7 @@ void TabField::ReadTabFile(const char *tabfile, long double **&BrTab, long doubl
 	}
 
 	if (!FIN || line.substr(0,2) != " 0"){
-		printf("%s not found or corrupt! Exiting...\n",tabfile);	
+		Log("%s not found or corrupt! Exiting...\n",tabfile);	
 		exit(-1);
 	}
 	
@@ -126,7 +126,7 @@ void TabField::ReadTabFile(const char *tabfile, long double **&BrTab, long doubl
 	}
 	printf("\n");
 	if (ri != m || zi != n){
-		printf("The header says the size is %i by %i, actually it is %i by %i! Exiting...\n", m, n, ri, zi);
+		Log("The header says the size is %i by %i, actually it is %i by %i! Exiting...\n", m, n, ri, zi);
 		exit(-1);
 	}
 	FIN.close();
@@ -144,18 +144,15 @@ void TabField::CheckTab(long double **BrTab, long double **BzTab, long double **
 	long double z_ma = zind[n];
 	conv_zA = z_mi; 													// y Abschnitt von z
 	conv_zB = (z_ma-z_mi)/(n-1);						// Steigung von z
-	printf("The arrays are %d by %d.\n",m,n);
-	fprintf(LOGSCR,"The arrays are %d by %d.\n",m,n);
-	printf("The r values go from %LG to %LG\n",r_mi,r_ma);
-	fprintf(LOGSCR,"The r values go from %LG to %LG.\n",r_mi,r_ma);
-	printf("The z values go from %LG to %LG.\n",z_mi,z_ma);
-	fprintf(LOGSCR,"The z values go from %LG to %LG.\n",z_mi,z_ma);
-	printf("conv_rA =  %LG, conv_rB = %LG\n",conv_rA, conv_rB);
-	printf("conv_zA =  %LG, conv_zB = %LG\n",conv_zA, conv_zB);	
+	Log("The arrays are %d by %d.\n",m,n);
+	Log("The r values go from %LG to %LG\n",r_mi,r_ma);
+	Log("The z values go from %LG to %LG.\n",z_mi,z_ma);
+	Log("conv_rA =  %LG, conv_rB = %LG\n",conv_rA, conv_rB);
+	Log("conv_zA =  %LG, conv_zB = %LG\n",conv_zA, conv_zB);	
 	// calculate distances of coordinates, normally 0.002 m
 	rdist = rind[4] - rind[3];
 	zdist = zind[4] - zind[3];
-	printf("rdist = %LG zdist = %LG\n",rdist,zdist);
+	Log("rdist = %LG zdist = %LG\n",rdist,zdist);
 		
 	long double Babsmax = -INFINITY, Babsmin = INFINITY, Babs;
 	long double Eabsmax = -INFINITY, Eabsmin = INFINITY, Eabs;
@@ -187,12 +184,9 @@ void TabField::CheckTab(long double **BrTab, long double **BzTab, long double **
 		}
 	}
 	
-	printf("The interpolation can be done from r = %LG to %LG and from z = %LG to %LG\n",rind[3],rind[m-2],zind[3],zind[n-2]);
-	printf("The input table file has values of |B| from %LG T to %LG T\n and values of |E| from %LG V/m to %LG V/m\n",Babsmin,Babsmax,Eabsmin,Eabsmax);
-	printf("The minimum energy a low field seeking neutron has to have is %.3LG eV (at r:%.3LG, z: %.3LG).\n",Emin_n,rBabsmin,zBabsmin);
-	fprintf(LOGSCR,"The interpolation can done from r = %LG to %LG and from n z = %LG to %LG\n",rind[3],rind[m-2],zind[3],zind[n-2]);
-	fprintf(LOGSCR,"The input table file has values of |B| from %LG T to %.17LG T\n and values of |E| from %LG V/m to %LG V/m\n",Babsmin,Babsmax,Eabsmin,Eabsmax);
-	fprintf(LOGSCR,"The minimum energy a low field seeking neutron has to have is %.3LG eV (at r:%.3LG, z: %.3LG).\n",Emin_n,rBabsmin,zBabsmin);
+	Log("The interpolation can be done from r = %LG to %LG and from z = %LG to %LG\n",rind[3],rind[m-2],zind[3],zind[n-2]);
+	Log("The input table file has values of |B| from %LG T to %LG T\n and values of |E| from %LG V/m to %LG V/m\n",Babsmin,Babsmax,Eabsmin,Eabsmax);
+	Log("The minimum energy a low field seeking neutron has to have is %.3LG eV (at r:%.3LG, z: %.3LG).\n",Emin_n,rBabsmin,zBabsmin);
 }
 
 
@@ -221,8 +215,7 @@ void TabField::PreInterpol(long double ****&Brc, long double ****&Bzc, long doub
 	long double **BrTab1 = NULL, **BzTab1 = NULL;	// dBi/dr
 	long double **BrTab2 = NULL, **BzTab2 = NULL;	// dBi/dz
 	long double **BrTab12 = NULL, **BzTab12 = NULL;	// d²Bi/drdz
-	printf("allocating memory for derivatives (%.4LG MB)\n",6*(long double)(m-2)*(n-2)*sizeof(long double)/1024/1024);	
-	fprintf(LOGSCR,"allocating memory for derivatives (%.4LG MB)\n",6*(long double)(m-2)*(n-2)*sizeof(long double)/1024/1024);	
+	Log("allocating memory for derivatives (%.4LG MB)\n",6*(long double)(m-2)*(n-2)*sizeof(long double)/1024/1024);	
 	BrTab1=dmatrix(2,m-1,2,n-1);
 	BzTab1=dmatrix(2,m-1,2,n-1);
 	BrTab2=dmatrix(2,m-1,2,n-1);
@@ -231,11 +224,9 @@ void TabField::PreInterpol(long double ****&Brc, long double ****&Bzc, long doub
 	BzTab12=dmatrix(2,m-1,2,n-1);
 	CalcDeriv4th(BrTab,BrTab1,BrTab2,BrTab12);
 	CalcDeriv4th(BzTab,BzTab1,BzTab2,BzTab12);
-	printf("Derivatives calculated.\n");
-	fprintf(LOGSCR,"Derivatives calculated.\n");
+	Log("Derivatives calculated.\n");
 	
-	printf("allocating memory for interpolation coefficients (%.4LG MB)\n",2*(long double)m*n*4*4*sizeof(long double)/1024/1024);	
-	fprintf(LOGSCR,"allocating memory for interpolation coefficients (%.4LG MB)\n",2*(long double)m*n*4*4*sizeof(long double)/1024/1024);	
+	Log("allocating memory for interpolation coefficients (%.4LG MB)\n",2*(long double)m*n*4*4*sizeof(long double)/1024/1024);	
 	// allocating space for the preinterpolation
 	// The B*c are 4D arrays with m x n x 4 x 4 fields
 	Brc = viertensor(1,m,1,n,1,4,1,4);
