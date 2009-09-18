@@ -75,35 +75,44 @@
 
 using namespace std;
 
-//typedef unsigned short int bool;
 
-//functions
-void derivs(long double x, long double *y, long double *dydx);
-void OpenFiles(int argc, char **argv); // Open in files
-void PrepareParticle();
+
+// ************ functions (in execution order) ***********
+// program start
+void ConfigInit(); // read config.in
+void Startbed(int k); // read initial values from all3inone.in
+void OpenFiles(int argc, char **argv); // open out-files and write file headers
+void PrintConfig(); // print info on config
+
+// repeated for every particle
+void initialStartbed(); // set initial values depending on particle type
+void PrepareParticle(); // set particle properties depending on particle type
 void IntegrateParticle(); // integrate particle trajectory
-void PrintIntegrationStep(long double &timetemp);
+void PrintIntegrationStep(long double &timetemp); // print step to track-file
 void BruteForceIntegration(); // integrate spin flip probability
-void initialStartbed();
-void Startbed(int k);
-void Log(const char* format, ...);
-void ausgabe(long double x2, long double *ystart, long double vend, long double H);
+void ausgabe(long double x2, long double *ystart, long double vend, long double H); // write finished particle to endlog
+
+// functions to save and print neutron distribution
 void prepndist(int k);
 void fillndist(int k);
 void outndist(int k);
-void ConfigInit();
-void PrintConfig();
-void OutputState(long double *y, int l);
+
+// misc functions 
+void derivs(long double x, long double *y, long double *dydx); // calculates derivatives of state vector
+void Log(const char* format, ...); // works like printf, prints to logfile and, if jobnumber == 0, to stdout
+void OutputState(long double *y, int l); // print debug info
 void PrintBFieldCut();	// print cut through BField to file
 void PrintBField();	// print Bfield to file and investigate ramp heating
 void CylKartCoord(long double Wr, long double Wphi, long double Wz, long double phi, long double *Wx0, long double *Wy0, long double *Wz0);
 void KartCylCoord(long double Wx, long double Wy, long double Wz, long double phi, long double *Wr0, long double *Wphi0, long double *Wz0);
 long double AbsValueCart(long double x, long double y, long double z);
 
-// globals
+
+
+// ************************* globals ********************
 
 // global file descriptors
-extern FILE *LOGSCR, *OUTFILE1, *BFLOG, *ENDLOG, *STATEOUT, *STARTIN;
+extern FILE *OUTFILE1, *BFLOG;
 
 // files for in/output + paths
 extern string inpath,outpath;
@@ -139,14 +148,14 @@ extern long double BFeldSkal, EFeldSkal, BFeldSkalGlobal;                       
 extern long double DiceRodField, RodFieldMultiplicator;
 extern long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist; // plane for cut through BField
 extern int BCutPlaneSampleCount;
-extern long double Emin_n;
+extern long double Emin_n;	// minimum energy a neutron must have to exist in the magnetic field
 
 // particles
-extern long double M, H, mu_n, mumB;                               // total energy of particle
-extern long double ystart[7], xstart;       //z-component of velocity, initial and intermediate values of y[9]
-extern int iMC;                             //  counter for MonteCarloSim
+extern long double M, H, mu_n, mumB; // mass, energy, magnetic moment, magnetic moment per mass
+extern long double ystart[7], xstart; // vector for integrator {unused,r,dr/dt,t,dz/dt,phi,dphi/dt}, start time for integrator
+extern int iMC;  //  counter for MonteCarloSim
 extern bool noparticle; // true if there was NO particle simulated
-extern long double  x1, x2;                         // start and endtime handed over to integrator
+extern long double  x1, x2; // start and endtime handed over to integrator
 extern long int nrefl; // reflection counter
 extern long double trajlengthsum;
 extern long double Hstart, Hend, Hmax;     //maximum energy

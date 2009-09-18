@@ -4,7 +4,7 @@
 int reflektlog = 0;
 FILE *REFLECTLOG = NULL;
 
-KDTree geometry, sourcevolume;
+KDTree geometry(Log), sourcevolume(Log);
 
 struct material{
 	string name;
