@@ -11,7 +11,10 @@ b = 4  ramp down
 long double *ndistr = NULL, *ndistz = NULL, **ndistW = NULL;    // matrix for probability of finding particle
 int v=300,w=1200;                                       // dimension of matrix above, user choice for ndist
 
+FILE *LOGSCR = NULL, *ENDLOG = NULL;
 
+
+// read config.in
 void ConfigInit(void){
 	/* setting default values */
 	protneut = NEUTRON;
@@ -137,6 +140,53 @@ void ConfigInit(void){
 	return;
 }
 
+
+// create out-files and write file headers
+void OpenFiles(int argc, char **argv){
+	ostringstream logscrfile;
+	logscrfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "log.out";
+	LOGSCR = fopen(logscrfile.str().c_str(),mode_w);
+
+	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
+	{
+		ostringstream BFoutfile1;
+		BFoutfile1 << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "BF1.out";
+		BFLOG = fopen(BFoutfile1.str().c_str(),mode_w);
+		fprintf(BFLOG,"t Babs Polar logPolar Ixnorm Iynorm Iznorm Bxnorm Bynorm Bznorm dx dy dz\n");
+	}
+	
+	// Endpunkte
+	ostringstream endlogfile;
+	endlogfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "end.out";
+	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
+	if (protneut != BF_ONLY) 
+	{
+        fprintf(ENDLOG,"jobnumber RandomSeed protneut polarisation "
+                       "tstart rstart phistart zstart NeutEnergie "
+                       "vstart alphastart gammastart decayerror "
+                       "rend phiend zend "
+                       "vend alphaend gammaend tend dt "
+                       "H kennz NSF RodFieldMult BFflipprob "
+                       "AnzahlRefl vladmax vladtotal thumbmax trajlength "
+                       "Hdiff Hmax BFeldSkal EFeldSkal tauSF dtau\n");
+	}		
+	
+	// Print track to file
+	if ((ausgabewunsch == OUTPUT_EVERYTHING)||(ausgabewunsch == OUTPUT_EVERYTHINGandSPIN))
+	{ 
+		SaveIntermediate=1; // turn on saving of intermediate values in integrator
+		kmax=KMDEF;
+		ostringstream wholetrackfile;
+		wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track001.out";
+		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
+		Zeilencount=0;
+		fprintf(OUTFILE1,"Teilchen protneut t r drdt z dzdt phi dphidt x y "
+						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
+						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
+	}
+}
+
+
 // write the current configuration of the programm to screen and to the logfile
 void PrintConfig(void)
 {
@@ -222,6 +272,7 @@ void PrintConfig(void)
 	Log("The choice of reflection is: %i  (1) specular, (2) diffuse, (3) statistically specular or diffuse \n",diffuse);
 	Log("Choice of output: %i  (1) Endpoints and track (2) only endpoints (3) Endpoints, track and spin \n (4) Endpoints and spin (5) nothing \n ", ausgabewunsch);
 }
+
 
 //======== initalizes initial values from record to used variables ==============================================
 void initialStartbed()
@@ -378,13 +429,17 @@ void Startbed(int k)
 void Log(const char* format, ...){
 	va_list args;
 	va_start(args, format);
-	if (jobnumber == 0)
-		vprintf(format, args); 
+	if (jobnumber == 0){
+		vprintf(format, args);
+		fflush(stdout);
+	} 
 	vfprintf(LOGSCR, format, args);
+	fflush(LOGSCR);
 	va_end(args);
 }
 
 
+// write finished particle to endlog
 void ausgabe(long double x2, long double *ystart, long double vend, long double H)
 {	
 	long double dt = x2 - xstart; // simulation time dt
@@ -527,8 +582,6 @@ void fillndist(int k)
 
 }
 
-
-
 // Ausgabe in ndist.out
 void outndist(int k)
 {
@@ -557,10 +610,11 @@ void outndist(int k)
 }
 
 
+// print debug info
 void OutputState(long double *y, int l){
 	ostringstream stateoutfile;
 	stateoutfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "state.out";
-	STATEOUT = fopen(stateoutfile.str().c_str(),mode_w);	
+	FILE *STATEOUT = fopen(stateoutfile.str().c_str(),mode_w);	
 	printf("\n \n Something happened! \n \n ");
 	fprintf(STATEOUT,"In this file the state of the programm will be written, when something happens for debug porposes... \n");
 	fprintf(STATEOUT,"Jobnumber: %i \n", jobnumber);
@@ -579,11 +633,13 @@ void OutputState(long double *y, int l){
 	fprintf(STATEOUT,"Diffuse reflection state (1 is specular, 2 diffuse, 3 statistical): %i \n",diffuse);
 	fprintf(STATEOUT,"timestep: %.10LG\n", (x2-x1));
 	fprintf(STATEOUT,"Reflekt while Rampdown: %i\n", rdreflekt);
+	fclose(STATEOUT);
 	kennz=88;
 	stopall =1;
 	exit(-1);
 	iMC = MonteCarloAnzahl +1;
 }
+
 
 // print cut through BField to file
 void PrintBFieldCut(){
@@ -659,6 +715,8 @@ void PrintBFieldCut(){
 	printf("Called BFeld and EFeld %u times in %fs (%fms per call)",BCutPlaneSampleCount*BCutPlaneSampleCount, start, start/BCutPlaneSampleCount/BCutPlaneSampleCount);
 }
 
+
+// calculate heating of the neutron gas by field rampup
 void PrintBField(){
 	fprintf(ENDLOG,"r phi z Br Bphi Bz 0 0 Babs\n");
 	BFeldSkal = 1.0;
@@ -697,6 +755,7 @@ void PrintBField(){
 		Log("\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * powl((Volume/VolumeB[E]),(2.0/3.0)) - E);
 	}
 }
+
 
 //-----------------------------------------------------------------------------
 // Vektor W (kein Ortsvektor, sondern B-Feld o.�hnliches) von zyl in kart koord xyz umrechnen ## Wr, Wphi, Wz: Eingabewerte ## Wx0, Wy0, Wz0 werden ver�ndert von CylKartCoord

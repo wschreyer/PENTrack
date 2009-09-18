@@ -373,10 +373,11 @@ unsigned KDTree::KDNode::facecount(){
 // kd-tree class definition
 
 // constructor
-KDTree::KDTree(){
+KDTree::KDTree(void (*ALog)(const char*, ...)){
     root = lastnode = NULL;
     lo[0] = lo[1] = lo[2] = INFINITY;
     hi[0] = hi[1] = hi[2] = -INFINITY;
+    FLog = ALog;
 }
 
 // destructor
@@ -400,7 +401,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
         }
         if (name) memcpy(name,header,80);
         f.read((char*)&filefacecount,4);
-        printf("Reading '%.80s' from '%s' containing %lu triangles ... ",header,filename,filefacecount);    // print header
+        FLog("Reading '%.80s' from '%s' containing %lu triangles ... ",header,filename,filefacecount);    // print header
         flush(cout);
 
         Triangle *tri;
@@ -413,26 +414,26 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
             alltris.push_back(tri); // add triangles to list
         }
         f.close();
-        printf("Read %d triangles\n",i);
+        FLog("Read %d triangles\n",i);
     }
     else{
-        fprintf(stderr,"Could not open '%s'!\n",filename);
+        FLog("Could not open '%s'!\n",filename);
         exit(-1);
     }
 }
 
 // build search tree
 void KDTree::Init(/*const long double PointInVolume[3]*/){
-    printf("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
+    FLog("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
 
     root = new KDNode(lo,hi,0,2,NULL);  // create root node
 
-	cout << "Building tree ... ";
+	FLog("Building tree ... ");
 	flush(cout);
     for (list<Triangle*>::iterator it = alltris.begin(); it != alltris.end(); it++)
         root->AddTriangle(*it); // add triangles to root node
     root->Split();  // split root node
-    printf("Wrote %u triangles\n",root->facecount());   // print number of triangles contained in tree
+    FLog("Wrote %u triangles\n",root->facecount());   // print number of triangles contained in tree
 
 /*    if (PointInVolume){
 		cout << "Finding neighbours...\n";
