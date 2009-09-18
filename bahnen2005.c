@@ -7,7 +7,7 @@ pnTracker
  
 
 // files for in/output + paths
-FILE *LOGSCR = NULL, *OUTFILE1 = NULL, *BFLOG = NULL, *ENDLOG = NULL, *STATEOUT = NULL, *STARTIN = NULL;
+FILE *OUTFILE1 = NULL, *BFLOG = NULL;
 string inpath, outpath;	// "in" and "out" directories
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
@@ -435,50 +435,6 @@ void derivs(long double x, long double *y, long double *dydx){
 	return;
 }
 
-void OpenFiles(int argc, char **argv){
-	// printing the path into the vars
-	ostringstream logscrfile;
-	logscrfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "log.out";
-	LOGSCR = fopen(logscrfile.str().c_str(),mode_w);
-
-	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
-	{
-		ostringstream BFoutfile1;
-		BFoutfile1 << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "BF1.out";
-		BFLOG = fopen(BFoutfile1.str().c_str(),mode_w);
-		fprintf(BFLOG,"t Babs Polar logPolar Ixnorm Iynorm Iznorm Bxnorm Bynorm Bznorm dx dy dz\n");
-	}
-	
-	// Endpunkte
-	ostringstream endlogfile;
-	endlogfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "end.out";
-	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
-	if (protneut != BF_ONLY) 
-	{
-        fprintf(ENDLOG,"jobnumber RandomSeed protneut polarisation "
-                       "tstart rstart phistart zstart NeutEnergie "
-                       "vstart alphastart gammastart decayerror "
-                       "rend phiend zend "
-                       "vend alphaend gammaend tend dt "
-                       "H kennz NSF RodFieldMult BFflipprob "
-                       "AnzahlRefl vladmax vladtotal thumbmax trajlength "
-                       "Hdiff Hmax BFeldSkal EFeldSkal tauSF dtau\n");
-	}		
-	
-	// Print track to file
-	if ((ausgabewunsch == OUTPUT_EVERYTHING)||(ausgabewunsch == OUTPUT_EVERYTHINGandSPIN))
-	{ 
-		SaveIntermediate=1; // turn on saving of intermediate values in integrator
-		kmax=KMDEF;
-		ostringstream wholetrackfile;
-		wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track001.out";
-		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
-		Zeilencount=0;
-		fprintf(OUTFILE1,"Teilchen protneut t r drdt z dzdt phi dphidt x y "
-						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
-						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
-	}
-}
 
 void IntegrateParticle(){
 	int perc=0;   // percentage of particle done counter
@@ -1042,6 +998,4 @@ void PrintIntegrationStep(long double &timetemp){
 		Log("## \n");
 		BFZeilencount=1;
 	}
-
-	fflush(LOGSCR);
 }

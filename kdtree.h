@@ -82,8 +82,9 @@ class KDTree{
         list<Triangle*> alltris; // list of all triangles in the tree
         KDNode *root;   // root node
         KDNode *lastnode;    // remember last collision-tested node to speed up search when segments are adjacent
+        void (*FLog)(const char*, ...);
     public:
-        KDTree();   // constructor
+        KDTree(void (*ALog)(const char*, ...));   // constructor
         ~KDTree();  // destructor
         float lo[3],hi[3];    // bounding box of root node
         void ReadFile(const char *filename, const unsigned ID, char name[80] = NULL);    // read STL-file

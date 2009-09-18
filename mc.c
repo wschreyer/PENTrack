@@ -119,7 +119,7 @@ void MCStartwerte(long double delx)
 	}
 
 
-	Log("\nDice starting position ... (Please be patient!)\n");
+	Log("\nDice starting position for E_neutron = %LG neV ... (Please be patient!)\n",NeutEnergie*1e9);
 	// repeat dicing for starting point until particle is valid (energy is possible at this specific point) because neutrons
 	// are filled in according to the energy spectrum above, the points in the trap that are reachable are determined by that
 	nroll = 0;
