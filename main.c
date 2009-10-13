@@ -180,7 +180,7 @@ void OpenFiles(int argc, char **argv){
 		wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track001.out";
 		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
 		Zeilencount=0;
-		fprintf(OUTFILE1,"Teilchen protneut t r drdt z dzdt phi dphidt x y "
+		fprintf(OUTFILE1,"Teilchen protneut polarisation t r drdt z dzdt phi dphidt x y "
 						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
 						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
 	}
