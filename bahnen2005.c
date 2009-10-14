@@ -361,7 +361,7 @@ void PrepareParticle()
 						Qm0 = 1.0/M;
 						h1 = 1e-8;		// guess for the first step size of runge kutta
 						dxsav = 1e-10;	// kleinster ausgabeschritt der zwischenwerte im integrator
-						BahnPointSaveTime = 1e-8;
+						BahnPointSaveTime = 5e-9;
 						reflekt = 0;
 						break;		
 		case BF_ONLY:	PrintBField();
@@ -374,7 +374,7 @@ void PrepareParticle()
 						Qm0 = -1.0/M;
 						h1 = 2e-10;		// guess for the first step size of runge kutta
 						dxsav = 2e-12;	// kleinster ausgabeschritt der zwischenwerte im integrator
-						BahnPointSaveTime = 5e-12;
+						BahnPointSaveTime = 1e-11;
 						reflekt = 0;
 						break;
 	}
