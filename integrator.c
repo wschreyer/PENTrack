@@ -410,7 +410,7 @@ void bsstep(long double *y, long double *dydx, int nv, long double *xx,
     for (;;) {
         for (k=1;k<=kmax;k++) {
             xnew= (*xx) +h;
-            if (xnew == (*xx)) {nrerror("step size underflow in bsstep"); OutputState(y, 1);} 
+            if (xnew == (*xx)) {OutputState(y, 1);  nrerror("step size underflow in bsstep"); } 
             mmid(ysav,dydx,nv,*xx,h,nseq[k],yseq,derivs);
             if (stopall == 1) return;
             xest = h/nseq[k];
