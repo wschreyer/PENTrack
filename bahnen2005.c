@@ -7,7 +7,7 @@ pnTracker
  
 
 // files for in/output + paths
-FILE *OUTFILE1 = NULL, *BFLOG = NULL;
+FILE *OUTFILE1 = NULL, *BFLOG = NULL, *SNAP = NULL;
 string inpath, outpath;	// "in" and "out" directories
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
@@ -28,6 +28,9 @@ int MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles f
 int reflekt=0, bfeldwahl, protneut, Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
 int SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
+int snapshot=0, snapshotsdone=0;  // make snapshots of the neutron at specified times
+double snapshots;
+//set<int> snapshots;
 long double Ibar= 2250.;                // B-field strength, current through rod
 int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 int diffuse; //diffuse reflection switch
@@ -85,6 +88,7 @@ long double FullFieldTime = 1000;                       // storing in full field
 long double RampDownTime = 5;                        // ramping down coils
 long double EmptyingTime = 0;                        // emptying without field
 long double StorageTime = 1500.0;                     // time when ramping down shall start, if xend > storage time, let neutron decay
+int ExpPhase = 0;  															// current experiment phase
 int ffBruteForce,ffreflekt,ffspinflipcheck;  // fullfield
 int ruBruteForce,rureflekt,ruspinflipcheck; // rampup
 int rdBruteForce,rdreflekt,rdspinflipcheck;  // rampdown
@@ -449,6 +453,7 @@ void IntegrateParticle(){
 		BFflipprob = 0.0;
 	Hmax=0.0;
 	x2=x1= 0.;     //set time to zero
+	snapshotsdone=0;
 	
 	MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer fr Teilchen festlegen
 	x2=xstart;    // set time starting value										
@@ -705,6 +710,9 @@ void IntegrateParticle(){
 			
 			PrintIntegrationStep(timetemp);
 			
+			if(!snapshotsdone)
+				Snapshooter(x2,ystart, vend, H);
+			
 		}while (((x2-xstart)<=xend) && (!stopall) && (x2 <= StorageTime)); // end integration do - loop
 		// END of loop for one partice
 		
@@ -723,11 +731,9 @@ void IntegrateParticle(){
 
 		ausgabe(x2,ystart, vend, H);// Endwerte schreiben
 
-		Log("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);
-		
+		Log("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);		
 		
 		IncrementCodes(kennz);
-
 		 
 	} // end proton neutron calc
 }
@@ -921,10 +927,10 @@ void PrintIntegrationStep(long double &timetemp){
 				//cout << "Br " << Bp[1][klauf] << endl;
 				fprintf(OUTFILE1,"%d %d %d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
 								 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
-								 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
+								 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %d \n",
 								 iMC,protneut,polarisation,xp[klauf],yp[1][klauf],yp[2][klauf],yp[3][klauf],yp[4][klauf],yp[5][klauf],yp[6][klauf],yp[1][klauf]*cosl(yp[5][klauf]),yp[1][klauf]*sinl(yp[5][klauf]),
 								 vend,H,Bp[1][klauf],Bp[2][klauf],Bp[3][klauf],Bp[4][klauf],Bp[5][klauf],Bp[6][klauf], Bp[7][klauf],Bp[8][klauf],
-								 Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac);
+								 Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac,ExpPhase);
 				//fprintf(OUTFILE1,"%LG\n",xp[klauf]);
 				fflush(OUTFILE1);
 				Zeilencount++;
@@ -953,10 +959,10 @@ void PrintIntegrationStep(long double &timetemp){
 			}
 			fprintf(OUTFILE1,"%d %d %d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
 							 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
-							 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
+							 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %d \n",
 							 iMC,protneut,polarisation, x2,ystart[1],ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),
 							 sqrtl(ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4]),H,Br,dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,
-							 Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac);
+							 Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac,ExpPhase);
 			fflush(OUTFILE1);
 			Zeilencount++;
 			timetemp = x2;
@@ -974,7 +980,7 @@ void PrintIntegrationStep(long double &timetemp){
 		fprintf(OUTFILE1,"Teilchen protneut polarisation t r drdt z dzdt phi dphidt x y "
 						 "v H Matora Br dBrdr dBrdphi dBrdz Bphi dBphidr "
 						 "dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Polar Er Ez "
-						 "timestep Bcheck logvlad logthumb\n");
+						 "timestep Bcheck logvlad logthumb ExpPhase \n");
 		Log(" ##");
 		Log(wholetrackfile.str().c_str());
 		Log("## \n");
