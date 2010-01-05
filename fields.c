@@ -117,6 +117,7 @@ void SwitchField(long double t){        //B-Feld nach Wunsch skalieren, BFeldSka
 			BruteForce = fiBruteForce; // no spin tracking
 			reflekt = fireflekt;
 			spinflipcheck = fispinflipcheck;		
+			ExpPhase=1;
 		}
 		
 		else if ((t>=FillingTime)&&(t < (CleaningTime+FillingTime)) && (CleaningTime>0))
@@ -125,6 +126,7 @@ void SwitchField(long double t){        //B-Feld nach Wunsch skalieren, BFeldSka
 			BruteForce = clBruteForce; // no spin tracking
 			reflekt = clreflekt;
 			spinflipcheck = clspinflipcheck;
+			ExpPhase=2;
 		}
 		else if ((RampUpTime>0)&&(t >= CleaningTime+FillingTime) && (t < (RampUpTime+CleaningTime+FillingTime)) && (RampUpTime > 0))
 		{   // ramping up field
@@ -134,6 +136,7 @@ void SwitchField(long double t){        //B-Feld nach Wunsch skalieren, BFeldSka
 			BruteForce = ruBruteForce; 
 			reflekt = rureflekt;
 			spinflipcheck = ruspinflipcheck;
+			ExpPhase=3;
 		}
 		else if ((FullFieldTime>0)&&(t >= (RampUpTime+CleaningTime+FillingTime)) && (t < (RampUpTime+CleaningTime+FullFieldTime+FillingTime)))
 		{  // storage time
@@ -143,6 +146,7 @@ void SwitchField(long double t){        //B-Feld nach Wunsch skalieren, BFeldSka
 				BruteForce = ffBruteForce;  // start spin tracking
 				reflekt = ffreflekt;
 				spinflipcheck = ffspinflipcheck;
+				ExpPhase=4;
 			}
 		}
 		else if ((t >= (RampUpTime+CleaningTime+FillingTime+FullFieldTime)) && (t < (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime)) && (RampDownTime != 0))
@@ -153,12 +157,14 @@ void SwitchField(long double t){        //B-Feld nach Wunsch skalieren, BFeldSka
 			BruteForce = rdBruteForce; // no spin tracking, neutrons shall stay in trap through reflection
 			reflekt = rdreflekt;
 			spinflipcheck=rdspinflipcheck;
+			ExpPhase=5;
 		}
 		else if (t >=  (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime))
 		{      // emptying of neutrons into detector
 			BFeldSkal = 0;
 			BruteForce = coBruteForce;
 			spinflipcheck= cospinflipcheck;
+			ExpPhase=6;
 		}
 		else
 			BFeldSkal = BFeldSkalGlobal;

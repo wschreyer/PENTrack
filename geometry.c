@@ -144,7 +144,7 @@ void LoadGeometry(){
 		ostringstream reflectlogfile;
 		reflectlogfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "reflect.out";
 		REFLECTLOG = fopen(reflectlogfile.str().c_str(),mode_w);
-		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vphi phidot dvabs\n"); // Header for Reflection File
+		fprintf(REFLECTLOG,"t r z phi x y diffuse vabs Eges Erefl winkeben winksenkr vr vz vphi phidot dvabs Transmprop\n"); // Header for Reflection File
 	}	
 }
 
@@ -282,8 +282,8 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	//************ handle different absorption characteristics of materials ****************
 	
 		//************** statistical absorption ***********
-		long double prob = mt_get_double(v_mt_state);	
-		if (prob < Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag))
+		long double prob = mt_get_double(v_mt_state), Trans=Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag);	
+		if (prob < Trans)
 		{
 			stopall = 1;
 			kennz = solids[i].kennz;
@@ -295,15 +295,15 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		prob = mt_get_double(v_mt_state);
 		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat.DiffProb)))
 		{
-	    	Log("\nReflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG tries=%i",
-	    			solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal,itercount);
+	    	Log("\n#%d Reflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG tries=%d Transprop=%LG",
+	    			iMC,solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal,itercount,Trans);
 			nrefl++;
 			v[0] -= 2*vnormal*normal[0]; // reflect velocity
 			v[1] -= 2*vnormal*normal[1];
 			v[2] -= 2*vnormal*normal[2];
 			if(reflektlog == 1)
-				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 1 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
-									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,(long double)0.0,(long double)0.0,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs);
+				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 1 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,(long double)0.0,(long double)0.0,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs,Trans);
 		}
 		
 		//************** diffuse reflection ************
@@ -325,12 +325,12 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 				v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
 				v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
 			}
-	       	Log("\nReflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%i",
-	       			solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount);
+	       	Log("\n#%dReflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%d Transprop=%LG",
+	       			iMC,solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount, Trans);
 	       	nrefl++;
 	       	if(reflektlog == 1)
-				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
-									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,winkeben,winksenkr,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs);
+				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,winkeben,winksenkr,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs,Trans);
 		}
 		y1[2] = v[0]; // write new velocity into y1-vector
 		y1[4] = v[2];
@@ -382,3 +382,61 @@ void OutputCodes(int iMC){
 }
 //======== end of OutputCodes ==============================================================================================
 
+
+void Snapshooter(long double x2, long double *ystart, long double vend, long double H)
+{
+	if(fabsl(x2-snapshots)<0.1)
+	{
+		
+	vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
+		long double phitemp = ((ystart[5])/conv);     // calculate end angle
+		phiend  = fmodl(phitemp, 360.);   // in degree
+		if (phiend<0)                    // from 0 to 360
+			phiend=360.0 + phiend;
+
+		if(protneut == NEUTRON)                // n
+			H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
+		else if(protneut == PROTON)           // p			
+				H= (0.5*m_p*vend*vend);           // Energie in eV for p		
+		else if(protneut == ELECTRONS)           // p,e
+			H= c_0*c_0  * M * (1/sqrtl(1-v_n*v_n/(c_0*c_0))-1);                                        // rel Energie in eV
+
+	
+	Log("\n Snapshot \n");
+	
+	long double dt = x2 - xstart; // simulation time dt
+
+	if(vend>0) gammaend= acosl(ystart[4]/vend) /conv;
+	else gammaend=0;
+	alphaend= atan2l(ystart[6]*ystart[1],ystart[2])/conv;
+	
+	// calculate spin flip lifetime tauSF and influence on lifetime measurement 
+	long double tauSF = -x2/logl(1-BFflipprob);
+	long double dtau=tau-1/(1/tau+1/tauSF) ;
+	 
+	if(tauSF < -9e99) tauSF = INFINITY; // "-INF"?
+	
+	
+	// output of end values
+	fprintf(SNAP,"%i %li %i %i "
+	               "%LG %LG %LG %LG %LG "
+	               "%LG %LG %LG "
+	               "%LG %LG %LG %LG %LG"
+	               "%LG %LG %LG %LG %LG "
+	               "%LG %i %i %LG %LG "
+	               "%li %LG %LG %LG %LG "
+	               "%LG %LG %LG %LG %LG %LG\n",
+	               jobnumber, iMC, protneut, polarisation,
+	               xstart, r_n, phi_n, z_n, NeutEnergie*1.0e9,
+	               v_n, alpha, gammaa, 
+	               ystart[1], phiend, ystart[3], ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),
+	               vend, alphaend, gammaend, x2, dt,
+	               H, kennz, NSF, RodFieldMultiplicator, BFflipprob,
+	               nrefl, trajlengthsum,
+	               (H-Hstart), Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
+	
+	fflush(SNAP);
+	snapshotsdone=1;
+	
+	}	
+}

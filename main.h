@@ -112,7 +112,7 @@ long double AbsValueCart(long double x, long double y, long double z);
 // ************************* globals ********************
 
 // global file descriptors
-extern FILE *OUTFILE1, *BFLOG;
+extern FILE *OUTFILE1, *BFLOG, *SNAP;
 
 // files for in/output + paths
 extern string inpath,outpath;
@@ -134,6 +134,8 @@ extern int MonteCarloAnzahl;   // user choice to use MC or not, number of partic
 extern int reflekt, bfeldwahl, protneut, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
 extern int SaveIntermediate;               // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 extern int polarisation, polarisationsave, ausgabewunsch, ausgabewunschsave, Feldcount; // user choice for polarisation of neutrons und Ausgabewunsch
+extern int snapshot, snapshotsdone;								// take snapshots of the particles at specified times
+extern double snapshots; 
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 extern long double Ibar;                // current through rod
 extern int diffuse; // diffuse reflection switch
@@ -221,6 +223,7 @@ extern long double FullFieldTime;                       // storing in full field
 extern long double RampDownTime;                        // ramping down coils
 extern long double EmptyingTime;                        // emptying without field
 extern long double StorageTime;                     // time when ramping down shall start, if xend > storage time, let neutron decay
+extern int ExpPhase;  															// current experiment phase
 extern int ffBruteForce,ffreflekt,ffspinflipcheck;  // fullfield
 extern int ruBruteForce,rureflekt,ruspinflipcheck; // rampup
 extern int rdBruteForce,rdreflekt,rdspinflipcheck;  // rampdown

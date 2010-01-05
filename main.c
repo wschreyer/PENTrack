@@ -78,6 +78,8 @@ void ConfigInit(void){
 	istringstream(config["global"]["EFeldSkal"])			>> EFeldSkal;
 	istringstream(config["global"]["Racetracks"])			>> Racetracks;	
 	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
+	istringstream(config["global"]["snapshot"])		>> snapshot;
+	istringstream(config["global"]["snapshots"])		>> snapshots;
 	istringstream(config["global"]["reflektlog"])			>> reflektlog;
 	istringstream(config["global"]["MonteCarloAnzahl"])		>> MonteCarloAnzahl;
 	istringstream(config["global"]["FillingTime"])			>> FillingTime;
@@ -90,6 +92,7 @@ void ConfigInit(void){
 	istringstream(config["global"]["BFTargetB"])			>> BFTargetB;
 	istringstream(config["global"]["decay"])				>> decay.on;
 	istringstream(config["global"]["tau"])					>> tau;	
+
 	
 	istringstream(config["filling"]["BruteForce"])			>> fiBruteForce;
 	istringstream(config["filling"]["reflekt"])				>> fireflekt;
@@ -182,8 +185,25 @@ void OpenFiles(int argc, char **argv){
 		Zeilencount=0;
 		fprintf(OUTFILE1,"Teilchen protneut polarisation t r drdt z dzdt phi dphidt x y "
 						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
-						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb\n");
+						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb ExpPhase\n");
 	}
+	
+	// make snapshots as specified time into snapshot.out
+	if (snapshot==1)
+	{ 
+		ostringstream snapshotfile;
+		snapshotfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "snapshot.out";
+		SNAP = fopen(snapshotfile.str().c_str(),mode_w);       // open outfile neut001.out
+		fprintf(SNAP,"jobnumber Teilchennummer protneut polarisation "
+                       "tstart rstart phistart zstart NeutEnergie "
+                       "vstart alphastart gammastart "
+                       "r phi z x y"
+                       "v alphaend gammaend tend dt "
+                       "H kennz NSF RodFieldMult BFflipprob "
+                       "AnzahlRefl trajlength "
+                       "Hdiff Hmax BFeldSkal EFeldSkal tauSF dtau\n");
+	}
+	
 }
 
 
@@ -260,7 +280,7 @@ void PrintConfig(void)
 		if (coreflekt == 1)
 			Log("Counting Time  \n Reflection is on, ");
 		else if (coreflekt == 0)
-			Log("Coutning Time  \n Reflection is off, ");
+			Log("Counting Time  \n Reflection is off, ");
 		if (coBruteForce == 1)
 			Log("Brute Force on, ");
 		else if (coBruteForce == 0)
@@ -474,7 +494,7 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	long double tauSF = -x2/logl(1-BFflipprob);
 	long double dtau=tau-1/(1/tau+1/tauSF) ;
 	 
-	if(tauSF < -9e99) tauSF = -9e99; // "-INF"?
+	if(tauSF < -9e99) tauSF = INFINITY; // "-INF"?
 	
 	// output of end values
 	fprintf(ENDLOG,"%i %li %i %i "
