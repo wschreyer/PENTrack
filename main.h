@@ -135,7 +135,7 @@ extern int reflekt, bfeldwahl, protneut, Racetracks;       //user choice for ref
 extern int SaveIntermediate;               // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 extern int polarisation, polarisationsave, ausgabewunsch, ausgabewunschsave, Feldcount; // user choice for polarisation of neutrons und Ausgabewunsch
 extern int snapshot, snapshotsdone;								// take snapshots of the particles at specified times
-extern double snapshots; 
+extern set<int> snapshots;
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 extern long double Ibar;                // current through rod
 extern int diffuse; // diffuse reflection switch

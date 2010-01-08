@@ -29,8 +29,8 @@ int reflekt=0, bfeldwahl, protneut, Racetracks=2;       //user choice for reflec
 int SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
 int snapshot=0, snapshotsdone=0;  // make snapshots of the neutron at specified times
-double snapshots;
-//set<int> snapshots;
+//vector<double> snapshots;
+set<int> snapshots;
 long double Ibar= 2250.;                // B-field strength, current through rod
 int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
 int diffuse; //diffuse reflection switch
@@ -365,7 +365,7 @@ void PrepareParticle()
 						Qm0 = 1.0/M;
 						h1 = 1e-8;		// guess for the first step size of runge kutta
 						dxsav = 1e-10;	// kleinster ausgabeschritt der zwischenwerte im integrator
-						BahnPointSaveTime = 5e-9;
+						BahnPointSaveTime = 1e-8;
 						reflekt = 0;
 						break;		
 		case BF_ONLY:	PrintBField();
@@ -378,7 +378,7 @@ void PrepareParticle()
 						Qm0 = -1.0/M;
 						h1 = 2e-10;		// guess for the first step size of runge kutta
 						dxsav = 2e-12;	// kleinster ausgabeschritt der zwischenwerte im integrator
-						BahnPointSaveTime = 1e-11;
+						BahnPointSaveTime = 5e-12;
 						reflekt = 0;
 						break;
 	}
@@ -710,8 +710,9 @@ void IntegrateParticle(){
 			
 			PrintIntegrationStep(timetemp);
 			
-			if(!snapshotsdone)
-				Snapshooter(x2,ystart, vend, H);
+			// take snapshots of neutrons at certain times
+			if(snapshot==1  && protneut==1)
+				Snapshooter(x2,ystart, H);
 			
 		}while (((x2-xstart)<=xend) && (!stopall) && (x2 <= StorageTime)); // end integration do - loop
 		// END of loop for one partice
