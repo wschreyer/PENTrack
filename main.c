@@ -45,11 +45,11 @@ void ConfigInit(void){
 		if (c == '[' && infile.ignore()){
 			if (infile.peek() == '/'){
 				section = "";
-//				cout << endl;
+			cout << endl;
 			}
 			else{
 				getline(infile, section, ']');
-//				cout << "section: " << section << endl;
+				cout << "section: " << section << endl;
 			}
 			getline(infile,rest);
 		}
@@ -57,9 +57,11 @@ void ConfigInit(void){
 			getline(infile,rest);
 		else if (section != ""){
 			infile >> key;
-			infile >> config[section][key];
-//			cout << key << ": " << config[section][key] << "; ";
-			getline(infile,rest);
+			infile>> skipws;
+			//cout << key << endl;
+			getline(infile,config[section][key]);
+			cout << key << endl;
+			cout << config[section][key] << endl;
 		}
 		else
 			getline(infile,rest);
@@ -79,7 +81,14 @@ void ConfigInit(void){
 	istringstream(config["global"]["Racetracks"])			>> Racetracks;	
 	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
 	istringstream(config["global"]["snapshot"])		>> snapshot;
-	istringstream(config["global"]["snapshots"])		>> snapshots;
+	int tmp_snapshot;
+	istringstream isnapshots(config["global"]["snapshots"]);	
+	do{
+		isnapshots >> tmp_snapshot >> skipws;
+		cout << "tmp_snapthot" << tmp_snapshot << endl;
+		snapshots.insert(tmp_snapshot);		
+		cout << "snapshots" << *(snapshots.end()--) << endl;			
+	}while(isnapshots.good());
 	istringstream(config["global"]["reflektlog"])			>> reflektlog;
 	istringstream(config["global"]["MonteCarloAnzahl"])		>> MonteCarloAnzahl;
 	istringstream(config["global"]["FillingTime"])			>> FillingTime;
@@ -197,7 +206,7 @@ void OpenFiles(int argc, char **argv){
 		fprintf(SNAP,"jobnumber Teilchennummer protneut polarisation "
                        "tstart rstart phistart zstart NeutEnergie "
                        "vstart alphastart gammastart "
-                       "r phi z x y"
+                       "r phi z x y "
                        "v alphaend gammaend tend dt "
                        "H kennz NSF RodFieldMult BFflipprob "
                        "AnzahlRefl trajlength "

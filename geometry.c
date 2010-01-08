@@ -383,12 +383,12 @@ void OutputCodes(int iMC){
 //======== end of OutputCodes ==============================================================================================
 
 
-void Snapshooter(long double x2, long double *ystart, long double vend, long double H)
+void Snapshooter(long double x2, long double *ystart, long double H)
 {
-	if(fabsl(x2-snapshots)<0.1)
+	if((snapshots.count((int) x2)>0) && ((int) x2 != snapshotsdone))
 	{
 		
-	vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
+		vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
 		long double phitemp = ((ystart[5])/conv);     // calculate end angle
 		phiend  = fmodl(phitemp, 360.);   // in degree
 		if (phiend<0)                    // from 0 to 360
@@ -402,7 +402,7 @@ void Snapshooter(long double x2, long double *ystart, long double vend, long dou
 			H= c_0*c_0  * M * (1/sqrtl(1-v_n*v_n/(c_0*c_0))-1);                                        // rel Energie in eV
 
 	
-	Log("\n Snapshot \n");
+	Log("\n Snapshot at %LG s \n", x2);
 	
 	long double dt = x2 - xstart; // simulation time dt
 
@@ -421,12 +421,12 @@ void Snapshooter(long double x2, long double *ystart, long double vend, long dou
 	fprintf(SNAP,"%i %li %i %i "
 	               "%LG %LG %LG %LG %LG "
 	               "%LG %LG %LG "
-	               "%LG %LG %LG %LG %LG"
+	               "%LG %LG %LG %LG %LG "
 	               "%LG %LG %LG %LG %LG "
 	               "%LG %i %i %LG %LG "
-	               "%li %LG %LG %LG %LG "
+	               "%li %LG  "
 	               "%LG %LG %LG %LG %LG %LG\n",
-	               jobnumber, iMC, protneut, polarisation,
+	               jobnumber, iMC, protneut, polarisation,   
 	               xstart, r_n, phi_n, z_n, NeutEnergie*1.0e9,
 	               v_n, alpha, gammaa, 
 	               ystart[1], phiend, ystart[3], ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),
@@ -436,7 +436,6 @@ void Snapshooter(long double x2, long double *ystart, long double vend, long dou
 	               (H-Hstart), Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
 	
 	fflush(SNAP);
-	snapshotsdone=1;
-	
+	snapshotsdone=(int) x2;	
 	}	
 }
