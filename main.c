@@ -45,11 +45,11 @@ void ConfigInit(void){
 		if (c == '[' && infile.ignore()){
 			if (infile.peek() == '/'){
 				section = "";
-			cout << endl;
+//				cout << endl;
 			}
 			else{
 				getline(infile, section, ']');
-				cout << "section: " << section << endl;
+//				cout << "section: " << section << endl;
 			}
 			getline(infile,rest);
 		}
@@ -57,11 +57,8 @@ void ConfigInit(void){
 			getline(infile,rest);
 		else if (section != ""){
 			infile >> key;
-			infile>> skipws;
-			//cout << key << endl;
 			getline(infile,config[section][key]);
-			cout << key << endl;
-			cout << config[section][key] << endl;
+//			cout << key << ":" << config[section][key];
 		}
 		else
 			getline(infile,rest);
@@ -84,10 +81,13 @@ void ConfigInit(void){
 	int tmp_snapshot;
 	istringstream isnapshots(config["global"]["snapshots"]);	
 	do{
-		isnapshots >> tmp_snapshot >> skipws;
-		cout << "tmp_snapthot" << tmp_snapshot << endl;
-		snapshots.insert(tmp_snapshot);		
-		cout << "snapshots" << *(snapshots.end()--) << endl;			
+		isnapshots >> tmp_snapshot;
+		if (isnapshots.good()){
+//			cout << "tmp_snapshot " << tmp_snapshot << endl;
+//			cout << "snapshot " << *
+			snapshots.insert(tmp_snapshot);
+//			.first << endl;					
+		}			
 	}while(isnapshots.good());
 	istringstream(config["global"]["reflektlog"])			>> reflektlog;
 	istringstream(config["global"]["MonteCarloAnzahl"])		>> MonteCarloAnzahl;
