@@ -155,7 +155,7 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z)
 	do{	
 		valid = false;
 		list<TCollision> c;
-		if (r_min == INFINITY){
+		if (r_min == INFINITY){ // no custom coordinate range given
 			p1[0] = p2[0] = mt_get_double(v_mt_state)*(sourcevolume.hi[0] - sourcevolume.lo[0]) + sourcevolume.lo[0]; // random point 
 			p1[1] = p2[1] = mt_get_double(v_mt_state)*(sourcevolume.hi[1] - sourcevolume.lo[1]) + sourcevolume.lo[1];
 			p1[2] = mt_get_double(v_mt_state)*(sourcevolume.hi[2] - sourcevolume.lo[2]) + sourcevolume.lo[2];
@@ -163,7 +163,7 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z)
 			valid = (sourcevolume.Collision(p1,p2,c) && c.front().normalz < 0); // random point inside source volume (surface normals pointing away from it)?
 			c.clear();
 			r = sqrt(p1[0]*p1[0] + p1[1]*p1[1]);
-			phi = atan2(p1[1],p1[0]);
+			phi = atan2(p1[1],p1[0])/conv;
 			z = p1[2];
 		}
 		else{
@@ -181,7 +181,7 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z)
 				list<TCollision>::iterator j = i;
 				for (j++; j != c.end(); j++){
 					if (i->tri == j->tri) 
-						j = c.erase(j);	// delete identical entries in collision-list
+						j = c.erase(j)--;	// delete identical entries in collision-list
 				}
 			}
 			int count = 0;
@@ -215,7 +215,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	if (!geometry.PointInBox(p1)){
 		kennz=KENNZAHL_HIT_BOUNDARIES;  
 		stopall=1;
-		Log("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG z=%LG\n",x1,y1[1],y1[3]);
+		Log("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG phi=%LG z=%LG\n",x1,y1[1],y1[5],y1[3]);
 		return 1;
 	}
 	
@@ -418,7 +418,7 @@ void Snapshooter(long double x2, long double *ystart, long double H)
 	
 	
 	// output of end values
-	fprintf(SNAP,"%i %li %i %i "
+	fprintf(SNAP,"%i %i %i %i "
 	               "%LG %LG %LG %LG %LG "
 	               "%LG %LG %LG "
 	               "%LG %LG %LG %LG %LG "
