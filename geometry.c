@@ -149,7 +149,7 @@ void LoadGeometry(){
 }
 
 // return a random point in sourcevolume
-void RandomPointInSourceVolume(long double &r, long double &phi, long double &z){
+void RandomPointInSourceVolume(long double &r, long double &phi, long double &z){	
 	long double p1[3],p2[3];
 	bool valid;
 	do{	
@@ -167,6 +167,7 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z)
 			z = p1[2];
 		}
 		else{
+			//cout << "Geht noch..." << endl;
 			r = sqrt(mt_get_double(v_mt_state) * (r_max*r_max - r_min*r_min) + r_min*r_min); // weighting because of the volume element and a r^2 probability outwards
 			phi = mt_get_double(v_mt_state)*(phi_max - phi_min) + phi_min;
 			z = mt_get_double(v_mt_state)*(z_max - z_min) + z_min;
