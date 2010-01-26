@@ -25,6 +25,8 @@ vector<int> kennz_counter[3];
 long double r_min = INFINITY, r_max = -INFINITY, 
 			phi_min = INFINITY, phi_max = -INFINITY, 
 			z_min = INFINITY, z_max = -INFINITY;
+			
+string sourcemode; // volume/surface/customvol/customsurf
 
 
 // transmission through a wall (loss of UCN) with Fermi potential  Mf (real) and PF (im) for a UCN with energy Er perpendicular to the wall (all in neV)
@@ -107,12 +109,13 @@ void LoadGeometry(){
 					c = infile.peek();
 					if (c == '#') continue; // skip comments
 					else if (!infile.good() || c == '[') break;	// next section found
-					string name;
-					infile >> name;
-					if (name == "custom")
+					infile >> sourcemode;
+					if (sourcemode == "customvol" || sourcemode == "customsurf")
 						infile >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max;
-					else if (r_min == INFINITY){
-						sourcevolume.ReadFile((inpath + '/' + name).c_str(),0);
+					else if (sourcemode == "volume" || sourcemode == "surface"){
+						string sourcefile;
+						infile >> sourcefile;
+						sourcevolume.ReadFile((inpath + '/' + sourcefile).c_str(),0);
 /*						long double r,phi,z;
 						infile >> r;
 						infile >> phi;
@@ -149,62 +152,132 @@ void LoadGeometry(){
 }
 
 // return a random point in sourcevolume
-void RandomPointInSourceVolume(long double &r, long double &phi, long double &z){	
+void RandomPointInSourceVolume(long double &r, long double &phi, long double &z, long double &alpha, long double &gamma){
 	long double p1[3],p2[3];
 	bool valid;
 	do{	
 		valid = false;
 		list<TCollision> c;
-		if (r_min == INFINITY){ // no custom coordinate range given
+		if (sourcemode == "volume"){
 			p1[0] = p2[0] = mt_get_double(v_mt_state)*(sourcevolume.hi[0] - sourcevolume.lo[0]) + sourcevolume.lo[0]; // random point 
 			p1[1] = p2[1] = mt_get_double(v_mt_state)*(sourcevolume.hi[1] - sourcevolume.lo[1]) + sourcevolume.lo[1];
 			p1[2] = mt_get_double(v_mt_state)*(sourcevolume.hi[2] - sourcevolume.lo[2]) + sourcevolume.lo[2];
 			p2[2] = sourcevolume.lo[2];
-			valid = (sourcevolume.Collision(p1,p2,c) && c.front().normalz < 0); // random point inside source volume (surface normals pointing away from it)?
+			valid = (sourcevolume.Collision(p1,p2,c) && c.front().normal[2] < 0); // random point inside source volume (surface normals pointing away from it)?
 			c.clear();
 			r = sqrt(p1[0]*p1[0] + p1[1]*p1[1]);
 			phi = atan2(p1[1],p1[0])/conv;
 			z = p1[2];
+			alpha = alphas + (mt_get_double(v_mt_state)) * (alphae - alphas); // constant angular distribution
+			gamma = acosl(cosl(gammas*conv) - mt_get_double(v_mt_state) * (cosl(gammas * conv) - cosl(gammae * conv))) / conv; // isotropic emission characteristics
 		}
-		else{
-			//cout << "Geht noch..." << endl;
+		else if (sourcemode == "surface" || sourcemode == "customsurf"){
+			if (sourcemode == "surface"){
+				// pick two random points on surface of sourcevolume bounding-box
+				short fixed = short(mt_get_double(v_mt_state)*3) % 3; // random 0,1,2
+				p1[fixed] = sourcevolume.lo[fixed];
+				p1[(fixed+1)%3] = mt_get_double(v_mt_state)*(sourcevolume.hi[(fixed+1)%3] - sourcevolume.lo[(fixed+1)%3]) + sourcevolume.lo[(fixed+1)%3];
+				p1[(fixed+2)%3] = mt_get_double(v_mt_state)*(sourcevolume.hi[(fixed+2)%3] - sourcevolume.lo[(fixed+2)%3]) + sourcevolume.lo[(fixed+2)%3];
+				fixed = short(mt_get_double(v_mt_state)*3) % 3; // random 0,1,2
+				p2[fixed] = sourcevolume.hi[fixed];
+				p2[(fixed+1)%3] = mt_get_double(v_mt_state)*(sourcevolume.hi[(fixed+1)%3] - sourcevolume.lo[(fixed+1)%3]) + sourcevolume.lo[(fixed+1)%3];
+				p2[(fixed+2)%3] = mt_get_double(v_mt_state)*(sourcevolume.hi[(fixed+2)%3] - sourcevolume.lo[(fixed+2)%3]) + sourcevolume.lo[(fixed+2)%3];
+			}
+			else if (sourcemode == "customsurf"){
+				long double lo[3] = {r_min,phi_min,z_min};
+				long double hi[3] = {r_max,phi_max,z_max};
+				// pick two random points on surface of sourcevolume
+				short fixed = (2 + short(mt_get_double(v_mt_state)*2)) % 3; // random 0,2
+				long double p[3];
+				p[fixed] = lo[fixed];
+				p[(fixed+1)%3] = mt_get_double(v_mt_state)*(hi[(fixed+1)%3] - lo[(fixed+1)%3]) + lo[(fixed+1)%3];
+				p[(fixed+2)%3] = mt_get_double(v_mt_state)*(hi[(fixed+2)%3] - lo[(fixed+2)%3]) + lo[(fixed+2)%3];
+				p1[0] = p[0]*cos(p[1]*conv);
+				p1[1] = p[0]*sin(p[1]*conv);
+				p1[2] = p[2];
+				fixed = short(mt_get_double(v_mt_state)*3) % 3; // random 0,1,2
+				p[fixed] = hi[fixed];
+				p[(fixed+1)%3] = mt_get_double(v_mt_state)*(hi[(fixed+1)%3] - lo[(fixed+1)%3]) + lo[(fixed+1)%3];
+				p[(fixed+2)%3] = mt_get_double(v_mt_state)*(hi[(fixed+2)%3] - lo[(fixed+2)%3]) + lo[(fixed+2)%3];
+				p2[0] = p[0]*cos(p[1]*conv);
+				p2[1] = p[0]*sin(p[1]*conv);
+				p2[2] = p[2];
+			}
+			
+			if (geometry.Collision(p1,p2,c)){ // random point inside source volume (surface normals pointing away from it)?
+			
+				// choose a random triangle, weighted by area
+				long double sumA = 0;
+				list<TCollision>::iterator i;
+				for (i = c.begin(); i != c.end(); i++)
+					sumA += i->A; // add up area of all triangles
+				long double randomA = mt_get_double(v_mt_state)*sumA;
+				sumA = 0;
+				for (i = c.begin(); i != c.end(); i++){
+					sumA += i->A;
+					if (randomA <= sumA){
+						p1[0] += (p2[0] - p1[0])*i->s + i->normal[0]*REFLECT_TOLERANCE; // take a tiny step from intersection in direction of triangle normal und use that as starting point
+						p1[1] += (p2[1] - p1[1])*i->s + i->normal[1]*REFLECT_TOLERANCE;
+						p1[2] += (p2[2] - p1[2])*i->s + i->normal[2]*REFLECT_TOLERANCE;		
+						break;			
+					}
+				}
+				r = sqrt(p1[0]*p1[0] + p1[1]*p1[1]);
+				phi = atan2(p1[1],p1[0])/conv;
+				z = p1[2];
+				if (InSourceVolume(r,phi,z)){	
+					long double winkeben = 0.0 + (mt_get_double(v_mt_state)) * (2 * pi); // generate random reflection angles
+					long double winksenkr = acos( cos(0.0) - mt_get_double(v_mt_state) * (cos(0.0) - cos(0.5 * pi)));
+					long double v[3];
+					v[0] = cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
+					v[1] = sin(winkeben)*cos(winksenkr);
+					v[2] = sin(winksenkr);
+					RotateVector(v,i->normal);
+					
+					alpha = acos((p1[0]*v[0] + p1[1]*v[1])/r)/conv;
+					gamma = acos(v[2])/conv;
+					valid = true;
+				}
+			}
+		}
+		else if (sourcemode == "customvol"){
 			r = sqrt(mt_get_double(v_mt_state) * (r_max*r_max - r_min*r_min) + r_min*r_min); // weighting because of the volume element and a r^2 probability outwards
 			phi = mt_get_double(v_mt_state)*(phi_max - phi_min) + phi_min;
 			z = mt_get_double(v_mt_state)*(z_max - z_min) + z_min;
 			p1[0] = p2[0] = r*cos(phi);
 			p1[1] = p2[1] = r*sin(phi);
 			p1[2] = z;
+			alpha = alphas + (mt_get_double(v_mt_state)) * (alphae - alphas); // constant angular distribution
+			gamma = acosl(cosl(gammas*conv) - mt_get_double(v_mt_state) * (cosl(gammas * conv) - cosl(gammae * conv))) / conv; // isotropic emission characteristics
 			valid = true;
+		}
+		else{
+			Log("Invalid sourcemode: %s",sourcemode.c_str());
+			exit(-1);
 		}
 		p2[2] = geometry.lo[2];
 		if (valid && geometry.Collision(p1,p2,c)){	// test if random point is inside solid
-			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
-				list<TCollision>::iterator j = i;
-				for (j++; j != c.end(); j++){
-					if (i->tri == j->tri) 
-						j = c.erase(j)--;	// delete identical entries in collision-list
-				}
-			}
 			int count = 0;
 			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
-				if (i->normalz > 0) count++; // count surfaces whose normals point to random point
+				if (i->normal[2] > 0) count++; // count surfaces whose normals point to random point
 				else count--; // count surfaces whose normals point away from random point
 			}
-			valid &= (count == 0); // count is zero, if all surfaces are closed -> point does not lie in a solid
+			valid = (count == 0); // count is zero, if all surfaces are closed -> point does not lie in a solid
 		}
 	}while(!valid);
+	
 }
 
 // check if a point is inside the source volume
 bool InSourceVolume(long double r, long double phi, long double z){
-	if (r_min == INFINITY){
+	if (sourcemode == "customvol" || sourcemode == "customsurf")
+		return (r >= r_min && r <= r_max && phi >= phi_min && phi <= phi_max && z >= z_min && z <= z_max);
+	else{
 		long double p1[3] = {r*cos(phi), r*sin(phi), z};
 		long double p2[3] = {p1[0], p1[1], sourcevolume.lo[2]};
 		list<TCollision> c;
-		return (sourcevolume.Collision(p1,p2,c) && c.front().normalz < 0);
+		return (sourcevolume.Collision(p1,p2,c) && c.front().normal[2] < 0);
 	}
-	else
-		return (r >= r_min && r <= r_max && phi >= phi_min && phi <= phi_max && z >= z_min && z <= z_max);
 }
 
 // check step y1->y2 for reflection, return -1 for failed reflection (step has to be repeated with smaller stepsize)
@@ -216,7 +289,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 	if (!geometry.PointInBox(p1)){
 		kennz=KENNZAHL_HIT_BOUNDARIES;  
 		stopall=1;
-		Log("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG phi=%LG z=%LG\n",x1,y1[1],y1[5],y1[3]);
+		Log("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG phi=%LG z=%LG\n",x1,y1[1],y1[5]/conv,y1[3]);
 		return 1;
 	}
 	
@@ -242,7 +315,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 			return 0;
 			
 		itercount++;
-		long double normal_cart[3] = {(*it).normalx,(*it).normaly,(*it).normalz};
+		long double normal_cart[3] = {(*it).normal[0],(*it).normal[1],(*it).normal[2]};
 		long double s = (*it).s;
 		unsigned i = (*it).ID;
 		
@@ -316,16 +389,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 			v[0] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
 			v[1] = vabs*sin(winkeben)*cos(winksenkr);
 			v[2] = vabs*sin(winksenkr);
-
-			long double cosalpha = normal[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
-			if (sinalpha > 1e-30){ // when normal not parallel to z-axis rotate new velocity into the coordinate system where the normal is the z-axis
-				long double a[2] = {-normal[1]/sinalpha, normal[0]/sinalpha};	// rotation axis (z cross n), a[2] = 0
-				long double vtemp[3] = {v[0],v[1],v[2]};
-				// rotate velocity vector
-				v[0] = (cosalpha + a[0]*a[0]*(1 - cosalpha))*	vtemp[0] +  a[0]*a[1]*(1 - cosalpha)*				vtemp[1] + a[1]*sinalpha*	vtemp[2];
-				v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
-				v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
-			}
+			RotateVector(v,normal);
 	       	Log("\n#%dReflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%d Transprop=%LG",
 	       			iMC,solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount, Trans);
 	       	nrefl++;
@@ -340,6 +404,20 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 		return 1;
 	}
 	return 0;
+}
+
+// rotate coordinate system so, that new z-axis lies on NORMALIZED vector n
+void RotateVector(long double v[3], long double n[3])
+{
+	long double cosalpha = n[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
+	if (sinalpha > 1e-30){ // when normal not parallel to z-axis rotate new velocity into the coordinate system where the normal is the z-axis
+		long double a[2] = {-n[1]/sinalpha, n[0]/sinalpha};	// rotation axis (z cross n), a[2] = 0
+		long double vtemp[3] = {v[0],v[1],v[2]};
+		// rotate velocity vector
+		v[0] = (cosalpha + a[0]*a[0]*(1 - cosalpha))*	vtemp[0] +  a[0]*a[1]*(1 - cosalpha)*				vtemp[1] + a[1]*sinalpha*	vtemp[2];
+		v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
+		v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
+	}
 }
 
 //======== The endcodes of trajectories are added up here regarding the particle typ =======================================
