@@ -99,7 +99,7 @@ void outndist(int k);
 
 // misc functions 
 void derivs(long double x, long double *y, long double *dydx); // calculates derivatives of state vector
-void Log(const char* format, ...); // works like printf, prints to logfile and, if jobnumber == 0, to stdout
+int Log(const char* format, ...); // works like printf, prints to logfile and, if jobnumber == 0, to stdout
 void OutputState(long double *y, int l); // print debug info
 void PrintBFieldCut();	// print cut through BField to file
 void PrintBField();	// print Bfield to file and investigate ramp heating

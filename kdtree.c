@@ -1,5 +1,5 @@
 /**************************************************************
-	This algorithm uses a kd-tree structure to search 
+	This algorithm uses a kd-tree structure to search
 	for collisions with a surface consisting of a list
 	of triangles.
 	Initially, the triangles are read from a set of STL-files
@@ -26,64 +26,34 @@
 
 // misc functions
 
-// Read vector from STL-file
-// STL format description: http://www.ennex.com/~fabbers/StL.asp
-void ReadVector(ifstream &f, float v[3]){
-    for (short i = 0; i < 3; i++){
-        f.read((char*)&v[i],4);
-    }
-}
-
-// test if two points are equal (closer than TOLERANCE)
-inline bool PointsEqual(float p1[3], float p2[3]){
-    //return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2];
-	float d1 = p1[0] - p2[0], d2 = p1[1] - p2[1], d3 = p1[2] - p2[2];
-	if (abs(d1) < TOLERANCE && abs(d2) < TOLERANCE && abs(d3) < TOLERANCE)
-    //if (d1*d1 + d2*d2 + d3*d3 < TOLERANCE*TOLERANCE)
-        return true;
-    return false;
-}
-
 //Dot-Product of two vectors
 template <typename coord1, typename coord2> inline long double DotProduct(const coord1 x[3], const coord2 y[3]){
     return x[0]*y[0] + x[1]*y[1] + x[2]*y[2];
 }
 
+inline void CrossProduct(float v1[3], float v2[3], long double v[3]){
+    for (short i = 0; i < 3; i++)
+        v[i] = v1[(i+1)%3]*v2[(i+2)%3] - v1[(i+2)%3]*v2[(i+1)%3];  // recalculate normal
+}
+
 //-------------------------------------------------------------------------------------------------------------
 // Triangle class definition
 
-// constructor
-KDTree::Triangle::Triangle(ifstream &f, const unsigned aID){
-    ID = aID;
-//    normalIO = 0;
-    f.seekg(3*4,fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
-    short i;
-    for (i = 0; i < 3; i++){
-//        neighbours[i] = NULL;
-        ReadVector(f, vertex[i]);   // read vertices
-    }
-    f.seekg(2,fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
-    for (i = 0; i < 3; i++){
-        hi[i] = max(max(vertex[0][i],vertex[1][i]),vertex[2][i]);   // calculate bounding box
-        lo[i] = min(min(vertex[0][i],vertex[1][i]),vertex[2][i]);
-        v[i] = vertex[1][i] - vertex[0][i]; // calculate edge vectors
-        w[i] = vertex[2][i] - vertex[0][i];
-    }
-    for (i = 0; i < 3; i++)
-        normal[i] = v[(i+1)%3]*w[(i+2)%3] - v[(i+2)%3]*w[(i+1)%3];  // recalculate normal
-
-    vw = DotProduct(v,w); vv = DotProduct(v,v); ww = DotProduct(w,w);   // precalculate dotproducts
-    long double parametric_factor = 1/(vw*vw - vv*ww);    // needed for parametric coordinates
-    vw *= parametric_factor;
-    vv *= parametric_factor;
-    ww *= parametric_factor;
+void KDTree::Triangle::CalcNormal(long double normal[3]){
+    float v[3] = {vertex[1][0] - vertex[0][0], vertex[1][1] - vertex[0][1], vertex[1][2] - vertex[0][2]}; // triangle edge vectors
+    float w[3] = {vertex[2][0] - vertex[0][0], vertex[2][1] - vertex[0][1], vertex[2][2] - vertex[0][2]};
+    CrossProduct(v,w,normal);
 }
-
 
 // does the segment p1->p2 intersect the triangle?
 // http://softsurfer.com/Archive/algorithm_0105/algorithm_0105.htm#Segment-Triangle
 bool KDTree::Triangle::intersect(const long double p1[3], const long double p2[3], long double &s){
     long double u[3] = {p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]};   // segment direction vector
+    float v[3] = {vertex[1][0] - vertex[0][0], vertex[1][1] - vertex[0][1], vertex[1][2] - vertex[0][2]}; // triangle edge vectors
+    float w[3] = {vertex[2][0] - vertex[0][0], vertex[2][1] - vertex[0][1], vertex[2][2] - vertex[0][2]};
+    long double normal[3];
+    CrossProduct(v,w,normal);
+
     long double un = DotProduct(u,normal);
     if (un == 0)   // direction vector parallel to triangle plane?
         return false;
@@ -94,7 +64,9 @@ bool KDTree::Triangle::intersect(const long double p1[3], const long double p2[3
     x[0] += s*u[0];
     x[1] += s*u[1];
     x[2] += s*u[2]; // vector from first vertex to intersection point
-    long double xw = DotProduct(x,w), xv = DotProduct(x,v);   // calculate parametric coordinates a,b of intersection point
+    long double vw = DotProduct(v,w), vv = DotProduct(v,v), ww = DotProduct(w,w);
+    long double parametric_factor = 1/(vw*vw - vv*ww);    // needed for parametric coordinates
+    long double xw = DotProduct(x,w)*parametric_factor, xv = DotProduct(x,v)*parametric_factor;   // calculate parametric coordinates a,b of intersection point
     long double a = vw*xw - ww*xv;
     if ((a < 0) || (a > 1))
         return false;
@@ -121,6 +93,10 @@ bool KDTree::Triangle::intersect(const long double p1[3], const long double p2[3
 
 //----------------------------------------------------------------------------------------------------------------------------------
 // kd-tree node class definition
+
+unsigned facecount;
+unsigned nodecount;
+unsigned emptynodecount;
 
 // constructor
 KDTree::KDNode::KDNode(const float boxlo[3], const float boxhi[3], const int adepth, const short asplitdir, KDNode *aparent){
@@ -173,12 +149,17 @@ template <typename coord> bool KDTree::KDNode::SegmentInBox(const coord p1[3], c
 
 // test if a triangle is contained in the box
 bool KDTree::KDNode::TriangleInBox(Triangle *tri){
-    if ((tri->lo[0] <= hi[0]) && (tri->lo[1] <= hi[1]) && (tri->lo[2] <= hi[2]) && // do the bounding boxes intersect?
-        (tri->hi[0] >= lo[0]) && (tri->hi[1] >= lo[1]) && (tri->hi[2] >= lo[2])){
+    float trilo[3], trihi[3];
+    for (short i = 0; i < 3; i++){
+        trilo[i] = min(min(tri->vertex[0][i], tri->vertex[1][i]), tri->vertex[2][i]);
+        trihi[i] = max(max(tri->vertex[0][i], tri->vertex[1][i]), tri->vertex[2][i]);
+    }
+    if ((trilo[0] <= hi[0]) && (trilo[1] <= hi[1]) && (trilo[2] <= hi[2]) && // do the bounding boxes intersect?
+        (trihi[0] >= lo[0]) && (trihi[1] >= lo[1]) && (trihi[2] >= lo[2])){
 		if (SegmentInBox(tri->vertex[0],tri->vertex[1]) || SegmentInBox(tri->vertex[1], tri->vertex[2]) || SegmentInBox(tri->vertex[2], tri->vertex[0]))
 			return true;    // one of the triangle sides cuts through the box?
 
-		// one of the six box edges cuts through the triangle?
+		// one of the 12 box edges cuts through the triangle?
 		long double s = INFINITY;
 		long double p1[3] = {lo[0],lo[1],lo[2]};	// lololo -> hilolo
 		long double p2[3] = {hi[0],lo[1],lo[2]};
@@ -264,21 +245,42 @@ void KDTree::KDNode::Split(){
         newlo[splitdir] = lo[splitdir];
         lochild = new KDNode(newlo,newhi,newdepth,newsplitdir,this);
 
-        Triangle *tri;
-        while (!tris.empty()){  // empty list and add all triangles to leaves
-            tri = tris.front();
-            tris.pop_front();
-            bool inhi = hichild->TriangleInBox(tri);
-            bool inlo = lochild->TriangleInBox(tri);
+        list<Triangle*> lotris, hitris;
+        list<Triangle*>::iterator i;
+        for (i = tris.begin(); i != tris.end(); i++){
+            bool inhi = hichild->TriangleInBox(*i);
+            bool inlo = lochild->TriangleInBox(*i);
             if (inhi)
-                hichild->AddTriangle(tri);
+                hitris.push_back(*i);
             if (inlo)
-                lochild->AddTriangle(tri);
+                lotris.push_back(*i);
             else if (!inhi && !inlo)
                 printf("Gap in tree!\n");
         }
-        hichild->Split();   // split leaves
-        lochild->Split();
+        if (hitris != lotris){
+            tris.clear();
+            for (i = hitris.begin(); i != hitris.end(); i++)
+                hichild->AddTriangle(*i);
+            for (i = lotris.begin(); i != lotris.end(); i++)
+                lochild->AddTriangle(*i);
+            hitris.clear();
+            lotris.clear();
+            hichild->Split();   // split leaves
+            lochild->Split();
+        }
+        else{
+            hitris.clear();
+            lotris.clear();
+            delete hichild;
+            hichild = NULL;
+            delete lochild;
+            lochild = NULL;
+        }
+    }
+    else{
+        facecount += tricount;
+        nodecount++;
+        if (tricount == 0) emptynodecount++;
     }
 }
 
@@ -318,16 +320,19 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
     long double s_loc;
     for (list<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
         if ((*i)->intersect(p1,p2,s_loc)){
-        	long double n = sqrt(DotProduct((*i)->normal,(*i)->normal));
+            long double normal[3];
+            (*i)->CalcNormal(normal);
+        	long double n = sqrt(DotProduct(normal,normal));
         	TCollision c;
         	c.s = s_loc;
-        	c.normalx = (*i)->normal[0]/n;	// return normalized normal vector
-        	c.normaly = (*i)->normal[1]/n;
-        	c.normalz = (*i)->normal[2]/n;    
+        	c.normal[0] = normal[0]/n;	// return normalized normal vector
+        	c.normal[1] = normal[1]/n;
+        	c.normal[2] = normal[2]/n;
+        	c.A = n;
         	c.ID = (*i)->ID;
         	c.tri = *i;
-        	colls.push_back(c); 
-        	result = true;   		
+        	colls.push_back(c);
+        	result = true;
         }
     }
     bool inhi = false, inlo = false;
@@ -360,20 +365,11 @@ bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3],
     return false;
 }
 
-// count triangles in this node and his leaves
-unsigned KDTree::KDNode::facecount(){
-    if (!hichild && !lochild) return tricount;
-    unsigned c = 0;
-    if (hichild) c += hichild->facecount();
-    if (lochild) c += lochild->facecount();
-    return c;
-}
-
 //-----------------------------------------------------------------------------------------------------------
 // kd-tree class definition
 
 // constructor
-KDTree::KDTree(void (*ALog)(const char*, ...)){
+KDTree::KDTree(int (*ALog)(const char*, ...)){
     root = lastnode = NULL;
     lo[0] = lo[1] = lo[2] = INFINITY;
     hi[0] = hi[1] = hi[2] = -INFINITY;
@@ -391,9 +387,8 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 	if (root) return; // stop if Init was called already
     ifstream f(filename, fstream::binary);
     if (f.is_open()){
-        unsigned i,j;
         char header[80];
-        unsigned long int filefacecount;
+        unsigned long int filefacecount, i;
         f.read((char*)header,80);   // read header
         for (i = 79; i >= 0; i--){
             if (header[i] == ' ') header[i] = 0;    // trim trailing whitespaces
@@ -406,10 +401,21 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 
         Triangle *tri;
         for (i = 0; i < filefacecount && !f.eof(); i++){
-            tri = new Triangle(f,ID);  // read triangles from file
-            for (j = 0; j < 3; j++){
-                lo[j] = min(lo[j],tri->lo[j]);  // save lowest and highest vertices to get the size for the root node
-                hi[j] = max(hi[j],tri->hi[j]);
+            tri = new Triangle();  // read triangles from file
+            tri->ID = ID;
+            f.seekg(3*4,fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
+            TVertex v;
+            for (short j = 0; j < 3; j++){
+                f.read((char*)&v.vertex[0],4);
+                f.read((char*)&v.vertex[1],4);
+                f.read((char*)&v.vertex[2],4);
+                tri->vertex[j] = allvertices.insert(v).first->vertex;
+            }
+            f.seekg(2,fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
+
+            for (short j = 0; j < 3; j++){
+                lo[j] = min(lo[j], min(min(tri->vertex[0][j], tri->vertex[1][j]), tri->vertex[2][j]));  // save lowest and highest vertices to get the size for the root node
+                hi[j] = max(hi[j], max(max(tri->vertex[0][j], tri->vertex[1][j]), tri->vertex[2][j]));
             }
             alltris.push_back(tri); // add triangles to list
         }
@@ -426,14 +432,26 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 void KDTree::Init(/*const long double PointInVolume[3]*/){
     FLog("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
 
-    root = new KDNode(lo,hi,0,2,NULL);  // create root node
+    short firstsplit;
+    if (hi[0] - lo[0] > hi[1] - lo[1]){
+        if (hi[0] - lo[0] > hi[2] - lo[2]) firstsplit = 0;
+        else firstsplit = 2;
+    }
+    else{
+        if (hi[1] - lo[1] > hi[2] - lo[2]) firstsplit = 1;
+        else firstsplit = 2;
+    }
+    root = new KDNode(lo,hi,0,firstsplit,NULL);  // create root node
+    facecount = 0;
+    nodecount = 1;
+    emptynodecount = 0;
 
 	FLog("Building tree ... ");
 	flush(cout);
     for (list<Triangle*>::iterator it = alltris.begin(); it != alltris.end(); it++)
         root->AddTriangle(*it); // add triangles to root node
     root->Split();  // split root node
-    FLog("Wrote %u triangles\n",root->facecount());   // print number of triangles contained in tree
+    FLog("Wrote %u triangles in %u nodes (%u empty)\n",facecount,nodecount,emptynodecount);   // print number of triangles contained in tree
 
 /*    if (PointInVolume){
 		cout << "Finding neighbours...\n";
@@ -470,10 +488,11 @@ bool KDTree::Collision(const long double p1[3], const long double p2[3], list<TC
     if (!lastnode) lastnode = root; // start search in last tested node, when last node is not known start in root node
     if (lastnode->Collision(p1,p2,lastnode,colls)){
     	colls.sort();
+    	colls.unique();
     	return true;
     }
     else return false;
-    
+
 }
 
 // test if a point is located inside a closed(!) volume (volume defined by Init)

@@ -1,5 +1,5 @@
 /**************************************************************
-	This algorithm uses a kd-tree structure to search 
+	This algorithm uses a kd-tree structure to search
 	for collisions with a surface consisting of a list
 	of triangles.
 	Initially, the triangles are read from a set of STL-files
@@ -28,30 +28,33 @@ using namespace std;
 
 // structure that is returned by KDTree::Collision
 struct TCollision{
-	long double s, normalx,normaly,normalz; // parametric coordinate of intersection point, normal of intersected surface
+	long double s, normal[3], A; // parametric coordinate of intersection point, normal and area of intersected surface
 	unsigned ID;	// ID of intersected surface
 	void *tri;	// pointer to intersected triangle
 	bool operator < (TCollision c){ return s < c.s; };	// overloaded operator, needed for sorting
+	bool operator == (TCollision c){ return tri == c.tri; };	// overloaded operator, needed for unique()
 };
 
 // root of kd-Tree
 class KDTree{
     private:
+        struct TVertex{
+            float vertex[3];
+            bool operator == (TVertex v){ return abs(vertex[0] - v.vertex[0]) < 1e-10 && abs(vertex[1] - v.vertex[1]) < 1e-10 && abs(vertex[2] - v.vertex[2]) < 1e-10; };
+        };
+
+        struct TVertexComp{
+            bool operator () (TVertex v1, TVertex v2){ return (v1.vertex[0] < v2.vertex[0]) || (v1.vertex[1] < v2.vertex[1]) || (v1.vertex[2] < v2.vertex[2]); };
+        };
 
         // Triangle class
-        class Triangle{
-            private:
-                float v[3],w[3];    // vectors from first vertex to the other two vertices
-                long double vw,ww,vv;     // dotproducts of v and w (precalculated for intersection algorithm)
-            public:
-                float vertex[3][3]; // the three vertices of the triangle (in counterclockwise order according to STL standard)
-                float lo[3],hi[3];  // bounding box defined by the three lowest and three highest coordinates
-                long double normal[3];    // normal of triangle-plane
-                unsigned ID;          // user defined surface number
+        struct Triangle{
+            const float *vertex[3]; // the three vertices of the triangle (in counterclockwise order according to STL standard)
+            unsigned ID;          // user defined surface number
 //                short normalIO;           // normal points into volume (1) / out of volume (-1) / not specified (0)
 //                Triangle* neighbours[3];    // neighbouring triangles
-                Triangle(ifstream &f, const unsigned aID);  // constructor, read vertices and normal from STL-file
-                bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
+            void CalcNormal(long double normal[3]);
+            bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
 //                void SetNormal(const short anormalIO);
         };
 
@@ -76,15 +79,15 @@ class KDTree{
                 template <typename coord> bool PointInBox(const coord p[3]) {
                 	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) && (p[1] <= hi[1]) && (p[1] >= lo[1]) && (p[2] <= hi[2]) && (p[2] >= lo[2]));
                 }; // test if point is inside box
-                unsigned facecount();   // count triangles in this node and his leaves
         };
 
+        set<TVertex, TVertexComp> allvertices;
         list<Triangle*> alltris; // list of all triangles in the tree
         KDNode *root;   // root node
         KDNode *lastnode;    // remember last collision-tested node to speed up search when segments are adjacent
-        void (*FLog)(const char*, ...);
+        int (*FLog)(const char*, ...);
     public:
-        KDTree(void (*ALog)(const char*, ...));   // constructor
+        KDTree(int (*ALog)(const char*, ...));   // constructor
         ~KDTree();  // destructor
         float lo[3],hi[3];    // bounding box of root node
         void ReadFile(const char *filename, const unsigned ID, char name[80] = NULL);    // read STL-file

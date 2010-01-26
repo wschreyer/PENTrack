@@ -127,7 +127,7 @@ void MCStartwerte(long double delx)
 	while(1)
 	{	nroll++;
 		// starting point
-		RandomPointInSourceVolume(r_n,phi_n,z_n);
+		RandomPointInSourceVolume(r_n,phi_n,z_n,alpha,gammaa);
 					
 		// check if neutron could possiblly reached this positon by its own energy
 		BFeld(r_n, phi_n * conv, z_n, 0.0);
@@ -146,9 +146,6 @@ void MCStartwerte(long double delx)
 			return;
 		}		
 	}
-
-	alpha = alphas + (mt_get_double(v_mt_state)) * (alphae - alphas); // constant angular distribution
-	gammaa = acosl(cosl(gammas*conv) - mt_get_double(v_mt_state) * (cosl(gammas * conv) - cosl(gammae * conv))) / conv; // isotropic emission characteristics
 
 	// for checking the dependence of spin flip on inner rod current
 	if((protneut == NEUTRON) && (DiceRodField == 1))
