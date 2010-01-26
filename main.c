@@ -455,16 +455,17 @@ void Startbed(int k)
 
 
 // works like printf, prints to logfile and, if jobnumber == 0, to stdout 
-void Log(const char* format, ...){
+int Log(const char* format, ...){
 	va_list args;
 	va_start(args, format);
 	if (jobnumber == 0){
 		vprintf(format, args);
 		fflush(stdout);
 	} 
-	vfprintf(LOGSCR, format, args);
+	int result = vfprintf(LOGSCR, format, args);
 	fflush(LOGSCR);
 	va_end(args);
+	return result;
 }
 
 
