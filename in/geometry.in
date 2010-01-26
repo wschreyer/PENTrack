@@ -22,11 +22,13 @@ UCNdet	0			0			0		# 100% efficiency assumed
 
 [SOURCE]
 #define custom parameter rage for inital conditions (source volume below will be ignored if this section is present!)
-#custom	r_min	r_max	phi_min	phi_max		z_min	z_max
-custom	0.125	0.495	0		360			0.005	1.145
+#custom		r_min	r_max	phi_min	phi_max		z_min	z_max
+customsurf	0.123	0.495	0		360			0.003	1.145
+customvol	0.125	0.495	0		360			0.005	1.145
 
 #set source volume here, inital conditions will be randomly picked from this volume (has to be a solid body in Solidworks)
-#source.STL
+#surface source.STL
+#volume source.STL
 
 [FIELDS]
 #field table-file
