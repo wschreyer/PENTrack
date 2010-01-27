@@ -173,7 +173,7 @@ void OpenFiles(int argc, char **argv){
 	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
 	if (protneut != BF_ONLY) 
 	{
-        fprintf(ENDLOG,"jobnumber RandomSeed protneut polarisation "
+        fprintf(ENDLOG,"jobnumber RandomSeed teilchen protneut polarisation "
                        "tstart rstart phistart zstart NeutEnergie "
                        "vstart alphastart gammastart decayerror "
                        "rend phiend zend "
@@ -507,7 +507,7 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	if(tauSF < -9e99) tauSF = INFINITY; // "-INF"?
 	
 	// output of end values
-	fprintf(ENDLOG,"%i %li %i %i "
+	fprintf(ENDLOG,"%i %li %i %i %i "
 	               "%LG %LG %LG %LG %LG "
 	               "%LG %LG %LG %LG "
 	               "%LG %LG %LG "
@@ -515,7 +515,7 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	               "%LG %i %i %LG %LG "
 	               "%li %LG %LG %LG %LG "
 	               "%LG %LG %LG %LG %LG %LG\n",
-	               jobnumber, monthinmilliseconds, protneut, polarisation,
+	               jobnumber, monthinmilliseconds, iMC, protneut, polarisation,
 	               xstart, r_n, phi_n, z_n, NeutEnergie*1.0e9,
 	               v_n, alpha, gammaa, decay.error,
 	               ystart[1], phiend, ystart[3],
