@@ -364,7 +364,7 @@ void PrepareParticle()
 		case PROTON:	M = m_p;			// [eV/c^2]
 						Qm0 = 1.0/M;
 						h1 = 1e-8;		// guess for the first step size of runge kutta
-						dxsav = 1e-10;	// kleinster ausgabeschritt der zwischenwerte im integrator
+						dxsav = 1e-9;	// kleinster ausgabeschritt der zwischenwerte im integrator
 						BahnPointSaveTime = 1e-8;
 						reflekt = 0;
 						break;		
@@ -377,8 +377,8 @@ void PrepareParticle()
 		case ELECTRONS:	M=m_e;			// [eV/c^2]
 						Qm0 = -1.0/M;
 						h1 = 2e-10;		// guess for the first step size of runge kutta
-						dxsav = 2e-12;	// kleinster ausgabeschritt der zwischenwerte im integrator
-						BahnPointSaveTime = 5e-12;
+						dxsav = 1e-12;	// kleinster ausgabeschritt der zwischenwerte im integrator
+						BahnPointSaveTime = 1e-11;
 						reflekt = 0;
 						break;
 	}
