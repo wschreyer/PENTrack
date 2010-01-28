@@ -70,7 +70,7 @@ class KDTree{
                 bool TriangleInBox(Triangle *tri); // test if triangle cuts through box
                 bool TestCollision(const long double p1[3], const long double p2[3], list<TCollision> &colls); // test all triangles for intersection in this tree and his leaves
             public:
-                KDNode(const float boxlo[3], const float boxhi[3], const int depth, const short splitdir, KDNode *aparent); // constructor
+                KDNode(const float boxlo[3], const float boxhi[3], const int depth, KDNode *aparent); // constructor
                 ~KDNode();  // destructor
                 void AddTriangle(Triangle *tri);    // add triangle to list or to leaves
                 void Split();   // split node in two leaves
