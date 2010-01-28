@@ -20,7 +20,7 @@
 
 #include "kdtree.h"
 
-#define MAX_DEPTH 19            // max. depth of tree
+#define MIN_SIZE 0.02		// when the size of a node is smaller than that, it will be splitted no more
 #define MAX_FACECOUNT 10        // when the number of faces in one node exceeds this value the node is split up in two new nodes
 #define TOLERANCE 1e-10         // points that are closer than this distance will be considered equal
 
@@ -99,13 +99,20 @@ unsigned nodecount;
 unsigned emptynodecount;
 
 // constructor
-KDTree::KDNode::KDNode(const float boxlo[3], const float boxhi[3], const int adepth, const short asplitdir, KDNode *aparent){
+KDTree::KDNode::KDNode(const float boxlo[3], const float boxhi[3], const int adepth, KDNode *aparent){
     for (int i = 0; i < 3; i++){
         lo[i] = boxlo[i];   // copy box coordinates into instance variables
         hi[i] = boxhi[i];
     }
     depth = adepth;         // set instance variables according to parameters
-    splitdir = asplitdir;
+    if (hi[0] - lo[0] > hi[1] - lo[1]){
+        if (hi[0] - lo[0] > hi[2] - lo[2]) splitdir = 0;
+        else splitdir = 2;
+    }
+    else{
+        if (hi[1] - lo[1] > hi[2] - lo[2]) splitdir = 1;
+        else splitdir = 2;
+    }
     parent = aparent;
     hichild = lochild = NULL;   // initialize the remaining variables
     tricount = 0;
@@ -231,19 +238,19 @@ void KDTree::KDNode::AddTriangle(Triangle *tri){
 
 // split node into two new leaves
 void KDTree::KDNode::Split(){
-    if ((depth < MAX_DEPTH) && (tricount > MAX_FACECOUNT)){ // only split if node not too deep and contains enough triangles
+    if ((hi[splitdir]-lo[splitdir] > MIN_SIZE) && (tricount > MAX_FACECOUNT)){ // only split if node not too deep and contains enough triangles
         float newlo[3], newhi[3];
-        int newdepth = depth + 1, newsplitdir = (splitdir+1)%3;
+        int newdepth = depth + 1;
         for (short i = 0; i < 3; i++){
             newlo[i] = lo[i];
             newhi[i] = hi[i];
         }
 
         newlo[splitdir] += (hi[splitdir] - lo[splitdir])/2 - TOLERANCE; // split this node in half in splitdirection (with small overlap)
-        hichild = new KDNode(newlo,newhi,newdepth,newsplitdir,this);    // create new leaves
+        hichild = new KDNode(newlo,newhi,newdepth,this);    // create new leaves
         newhi[splitdir] = newlo[splitdir] + 2*TOLERANCE;
         newlo[splitdir] = lo[splitdir];
-        lochild = new KDNode(newlo,newhi,newdepth,newsplitdir,this);
+        lochild = new KDNode(newlo,newhi,newdepth,this);
 
         list<Triangle*> lotris, hitris;
         list<Triangle*>::iterator i;
@@ -347,6 +354,7 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
 
 // find smallest box which contains segment and call TestCollision there
 bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls){
+    colls.clear();
     if (hichild && hichild->PointInBox(p1) && hichild->PointInBox(p2))    // if both segment points are contained in the first leave, test collision there
         return hichild->Collision(p1,p2,lastnode,colls);
     else if (lochild && lochild->PointInBox(p1) && lochild->PointInBox(p2))   // if both segment points are contained in the second leave, test collision there
@@ -432,16 +440,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 void KDTree::Init(/*const long double PointInVolume[3]*/){
     FLog("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
 
-    short firstsplit;
-    if (hi[0] - lo[0] > hi[1] - lo[1]){
-        if (hi[0] - lo[0] > hi[2] - lo[2]) firstsplit = 0;
-        else firstsplit = 2;
-    }
-    else{
-        if (hi[1] - lo[1] > hi[2] - lo[2]) firstsplit = 1;
-        else firstsplit = 2;
-    }
-    root = new KDNode(lo,hi,0,firstsplit,NULL);  // create root node
+    root = new KDNode(lo,hi,0,NULL);  // create root node
     facecount = 0;
     nodecount = 1;
     emptynodecount = 0;
