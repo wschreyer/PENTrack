@@ -133,6 +133,8 @@ long double **Bp=NULL,**Ep=NULL;                            // Arrays for interm
 int FieldOscillation = 0;        // turn field oscillation on if 1
 long double OscillationFraction = 1e-4, OscillationFrequency = 1;    // Frequency in Hz
 
+// time statistics
+float InitTime = 0, ReflectionTime = 0, IntegratorTime = 0, FieldTime = 0, DiceTime = 0;
 
 mt_state_t *v_mt_state = NULL; //mersenne twister state var
 
@@ -178,7 +180,6 @@ int main(int argc, char **argv){
 	signal (SIGUSR1, catch_alarm);
 	signal (SIGUSR2, catch_alarm);
 	signal (SIGXCPU, catch_alarm);   
-	
 	
 	time_t mytime;
 	tm *monthday;
@@ -278,7 +279,8 @@ int main(int argc, char **argv){
 	PrintConfig();
 	
 	PrepareParticle(); // setting values depending on particle type
-
+	
+	InitTime = (1. * clock())/CLOCKS_PER_SEC;
 
 	decay.counter = 0; // no neutron had decayed yet (no chance)
 
@@ -314,6 +316,8 @@ int main(int argc, char **argv){
 	Log("Integrator used (1 Bulirsch Stoer, 2 Runge Kutta): %d \n", runge);
 	// printf("We spent %.17LG seconds for BF-field interpolation\n",timer3);
 	Log("The integrator was called: %LF times with %LF internal steps on average. \n", nintcalls,ntotalsteps/nintcalls);
+	Log("Overall program run time: %fs, Init: %fs, Integrator: %fs, Fields: %fs, Reflection: %fs, Dicing: %fs\n",
+			(1. * clock())/CLOCKS_PER_SEC, InitTime, IntegratorTime, FieldTime, ReflectionTime, DiceTime);
 	Log("That's it... Have a nice day!\n");
 	
 	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
@@ -455,7 +459,11 @@ void IntegrateParticle(){
 	x2=x1= 0.;     //set time to zero
 	snapshotsdone=0;
 	
+	timeval dicestart, diceend;
+	gettimeofday(&dicestart, NULL);
 	MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer fr Teilchen festlegen
+	gettimeofday(&diceend, NULL);
+	DiceTime += diceend.tv_sec - dicestart.tv_sec + float(diceend.tv_usec - dicestart.tv_usec)/1e6;
 	x2=xstart;    // set time starting value										
 	
 	
@@ -639,14 +647,20 @@ void IntegrateParticle(){
 			short ret;
 			int itercounts = 0;			
 			do{
+				timeval intstart, intend;
+				gettimeofday(&intstart, NULL);	
 				//###################### Integrationsroutine #####################
 				if (runge==2)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,rkqs);           // runge kutta step
 				else if (runge==1)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,bsstep);        // bulirsch stoer step
 				// (ystart: input vector | nvar: number of variables | x1, x2: start and end time | eps: precision to be achieved | h1: guess for first stepsize | hmin: mininum stepsize | nok,nbad: number of good and bad steps taken | derivs: function for differential equation to be integrated, rkqs, bsstep: integrator to be used (runge kutta, bulirsch stoer) )
 				//###################### Integrationsroutine #####################
+				gettimeofday(&intend, NULL);
+				IntegratorTime += intend.tv_sec - intstart.tv_sec + float(intend.tv_usec - intstart.tv_usec)/1e6;
 				nintcalls++;
 				
 				// check if reflection is necessary
+				timeval reflectstart, reflectend;
+				gettimeofday(&reflectstart, NULL);	
 				ret = ReflectCheck(xtemp,ytemp,x2,ystart,itercounts);
 				if (ret != 0){ 	// if necessary drop last integration step
 					x1 = xtemp;
@@ -656,8 +670,11 @@ void IntegrateParticle(){
 					vladmax = vladmaxtemp;
 					thumbmax = thumbmaxtemp;
 				}
+				gettimeofday(&reflectend, NULL);
+				ReflectionTime += reflectend.tv_sec - reflectstart.tv_sec + float(reflectend.tv_usec - reflectstart.tv_usec)/1e6;
 			}while(ret == -1); // repeat as long as reflection failed
 			free_vector(ytemp,1,nvar);
+					
 			if (ret == 1) continue; // if successful start a new integration step immediately
 			
 			ntotalsteps=ntotalsteps+kount;
