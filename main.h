@@ -265,5 +265,8 @@ extern long double **Bp,**Ep;                            // Arrays for intermedi
 extern int FieldOscillation;        // turn field oscillation on if 1
 extern long double OscillationFraction, OscillationFrequency;
 
+// time statistics
+extern float InitTime, ReflectionTime, IntegratorTime, FieldTime, DiceTime;
+
 
 extern mt_state_t *v_mt_state; //mersenne twister state var

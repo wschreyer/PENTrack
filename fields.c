@@ -47,6 +47,9 @@ void FreeFields(){
 
 // fill global B field variables with values
 void BFeld (long double rloc, long double philoc, long double zloc, long double t){      //B-Feld am Ort des Teilchens berechnen
+	timeval fieldstart, fieldend;
+	gettimeofday(&fieldstart, NULL);	
+	
 	SwitchField(t); // set BFeldSkal for different experiment phases	
 	
 	Bnull();	// first, set all to zero
@@ -106,6 +109,10 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 	}
 	
 	Feldcount++;
+	
+	gettimeofday(&fieldend, NULL);
+//	FieldTime += fieldend.tv_sec - fieldstart.tv_sec + (fieldend.tv_usec - fieldstart.tv_usec)/1e6;	
+	
 	return;
 }
 
