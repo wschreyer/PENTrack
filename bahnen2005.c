@@ -280,7 +280,7 @@ int main(int argc, char **argv){
 	
 	PrepareParticle(); // setting values depending on particle type
 	
-	InitTime = (1. * clock())/CLOCKS_PER_SEC;
+	InitTime = (1.*clock())/CLOCKS_PER_SEC;
 
 	decay.counter = 0; // no neutron had decayed yet (no chance)
 
@@ -317,7 +317,7 @@ int main(int argc, char **argv){
 	// printf("We spent %.17LG seconds for BF-field interpolation\n",timer3);
 	Log("The integrator was called: %LF times with %LF internal steps on average. \n", nintcalls,ntotalsteps/nintcalls);
 	Log("Overall program run time: %fs, Init: %fs, Integrator: %fs, Fields: %fs, Reflection: %fs, Dicing: %fs\n",
-			(1. * clock())/CLOCKS_PER_SEC, InitTime, IntegratorTime, FieldTime, ReflectionTime, DiceTime);
+			(1.*clock())/CLOCKS_PER_SEC, InitTime, IntegratorTime - FieldTime, FieldTime, ReflectionTime, DiceTime);
 	Log("That's it... Have a nice day!\n");
 	
 	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
