@@ -111,7 +111,7 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 	Feldcount++;
 	
 	gettimeofday(&fieldend, NULL);
-//	FieldTime += fieldend.tv_sec - fieldstart.tv_sec + (fieldend.tv_usec - fieldstart.tv_usec)/1e6;	
+	FieldTime += fieldend.tv_sec - fieldstart.tv_sec + (fieldend.tv_usec - fieldstart.tv_usec)/1e6;	
 	
 	return;
 }
@@ -252,6 +252,9 @@ long double Banalytic(long double r,long double phi,long double z, long double t
 
 // fill global E field variables with values
 void EFeld(long double rloc, long double philoc, long double zloc){
+	timeval fieldstart, fieldend;
+	gettimeofday(&fieldstart, NULL);	
+	
 	Er = 0.0;
 	Ephi = 0.0;
 	Ez = 0.0;
@@ -283,5 +286,9 @@ void EFeld(long double rloc, long double philoc, long double zloc){
 		
     }
 	Feldcount++;	
+
+	gettimeofday(&fieldend, NULL);
+	FieldTime += fieldend.tv_sec - fieldstart.tv_sec + (fieldend.tv_usec - fieldstart.tv_usec)/1e6;	
+	
 	return;
 }
