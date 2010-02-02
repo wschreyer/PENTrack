@@ -390,7 +390,7 @@ short ReflectCheck(long double x1, long double *y1, long double &x2, long double
 			v[1] = vabs*sin(winkeben)*cos(winksenkr);
 			v[2] = vabs*sin(winksenkr);
 			RotateVector(v,normal);
-	       	Log("\n#%dReflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%d Transprop=%LG",
+	       	Log("\n#%d Reflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%d Transprop=%LG",
 	       			iMC,solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount, Trans);
 	       	nrefl++;
 	       	if(reflektlog == 1)
