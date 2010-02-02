@@ -316,8 +316,10 @@ int main(int argc, char **argv){
 	Log("Integrator used (1 Bulirsch Stoer, 2 Runge Kutta): %d \n", runge);
 	// printf("We spent %.17LG seconds for BF-field interpolation\n",timer3);
 	Log("The integrator was called: %LF times with %LF internal steps on average. \n", nintcalls,ntotalsteps/nintcalls);
-	Log("Overall program run time: %fs, Init: %fs, Integrator: %fs, Fields: %fs, Reflection: %fs, Dicing: %fs\n",
-			(1.*clock())/CLOCKS_PER_SEC, InitTime, IntegratorTime - FieldTime, FieldTime, ReflectionTime, DiceTime);
+	float SimulationTime = (1.*clock())/CLOCKS_PER_SEC - InitTime;
+	Log("Init: %.2fs, Simulation: %.2fs, Integrator: %.2fs (%.2f%%), Fields: %.2fs (%.2f%%), Reflection: %.2fs (%.2f%%), Dicing: %.4fs\n",
+			InitTime, SimulationTime, IntegratorTime - FieldTime, (IntegratorTime - FieldTime)*100/SimulationTime,
+				FieldTime, FieldTime*100/SimulationTime, ReflectionTime, ReflectionTime*100/SimulationTime, DiceTime);
 	Log("That's it... Have a nice day!\n");
 	
 	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
