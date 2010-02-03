@@ -1,16 +1,16 @@
 #!/bin/sh
 
-if `test -e end.log`; then
+if `test -e tracks.log`; then
 	FIRSTRUN=0
-	echo "I dedected an end.log ... If you don't want me to append you have 5sec to press CRTL+C"
+	echo "I dedected a tracks.log ... If you don't want me to append you have 5sec to press CRTL+C"
 	sleep 5
 else
 	F=`ls *track*.out | head -n 1`
-	head -n 1 $F >> end.log
+	head -n 1 $F >> tracks.log
 fi
 
 for file in `ls *track*.out`
 do
-	tail -n $((`cat $file | wc -l`-1)) $file >> end.log 
+	tail -n $((`cat $file | wc -l`-1)) $file >> tracks.log 
 	echo $file written
 done
