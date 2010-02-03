@@ -1,3 +1,6 @@
+# config file for PENeLOPE Tracker program
+# put comments after #
+# no comment in the same line as variable and parameter
 [global]
 # protneut: 1 => neutron, 2 => proton, 3 => Bfeld, 4 => cut through BField, 6 => electrons
 protneut 1
@@ -8,42 +11,47 @@ spinflipcheck 0
 # runge 1=> Bulirsch-Stoer, 2 => Runge Kutta
 runge 1
 # polarisation: 1 => low field seekers, 2 => high field seekers, 3 => no polarisation, 4 => dice (MC)
-polarisation 4
+polarisation 1
 # output neutron spacial distribution?
 neutdist 0
 # diffuse: 1 => specular reflection, 2 => only diffuse, 3 => statistical specular and diffuse
 diffuse 3
 # bfeldwahl: 0 => Interpolation, 1 => no field, 2 => test of interpolation against maplefield, 3 => analytic field for ramping tests 
-bfeldwahl 0
+bfeldwahl 1
 # scaling of B field with respect to input table file
 BFeldSkalGlobal 1
 # scaling of E field with respect to input table file
 EFeldSkal 1
-# racetrack fields: 0 => none, 1 => infinite wires, 2 => finite wires
+# racetrack fields: 0 => none, 1 => infinite wires, 2 => finite wires (more realistic)
 Racetracks 2
 # ausgabewunsch: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
 # 1 => only endpoints, but BFspin track, 5 => nothing
-ausgabewunsch 1
+ausgabewunsch 2
+# make snapshots at certain times during the simulation
+snapshot 1
+# times from start of simulation to take snapshots
+snapshots 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200
 # write reflections into extra file?
 reflektlog 0
 # number of particles 
-MonteCarloAnzahl 1
+MonteCarloAnzahl 10000
 
-FillingTime 0
-CleaningTime 0
-RampUpTime   0
-FullFieldTime 50
+FillingTime 100
+CleaningTime 100
+RampUpTime   100
+FullFieldTime 10
 RampDownTime 100
 #storagetime = max. simulation time
-storagetime 2000
+storagetime 200
 
 # flux density below which the spin will also be tracked, when BF is turned on
 BFTargetB 0.2
-# decay: 0 => NO neutron decay, 1 => neutrons will decay (and xend will not be regarded),
+# decay: 0 => NO neutron decay, neutrons stop after xend 1 => neutrons will decay (and xend will not be regarded),
 #								2 => neutrons will decay (and xend will not be regarded) and a proton and electron will be simulated
-decay 2
+decay 1
 
-tau 885.7	# neutron lifetime
+# neutron lifetime
+tau  885.7
 [/global]
 
 
