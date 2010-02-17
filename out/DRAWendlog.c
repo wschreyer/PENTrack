@@ -52,10 +52,8 @@ void DRAWendlog(TString filename)
 	Double_t xmin;  // dummy
 	Double_t xmax;  // dummy
 
-	TString rootfilename(filename);
-	rootfilename+ = ".root";
-	TFile *file = TFile::Open(rootfilename, "READ"); // opening the file wherein the tree is stored (read access only)
-	TTree *mytree = (TTree*) file->Get("mytree"); // creating a pointer 'mytree' pointing on the TTree "mytree"
+	TFile *file = TFile::Open(filename, "READ"); // opening the file wherein the tree is stored (read access only)
+	TTree *mytree = (TTree*) file->Get("EndTree"); // creating a pointer 'mytree' pointing on the TTree "mytree"
 	//file->cd();
 	
 	Int_t particle = 6; //++++++++ options: 0 ~ unspecified, 1 ~ neutron, 2 ~ protron, 6 ~ electron +++++++++++++++++++++
@@ -94,7 +92,7 @@ void DRAWendlog(TString filename)
 	vnamey = "zstart"; // dummy ~ y-variable
 	vnamec = "kennz";  // dummy ~ z-variable
 
-	TCanvas *c1 = new TCanvas("c1", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 20, 20, 500, 800);
+	TCanvas *c1 = new TCanvas("c1", vnamec + ":" + vnamey + ":" + vnamex + " data from " + filename, 20, 20, 500, 800);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c1->SetFillColor(0);
 	c1->SetBorderMode(0);
@@ -114,7 +112,7 @@ void DRAWendlog(TString filename)
 	                          //+++++++++++++++++ 20, grayscale ~ gray scale palette with 20 shades +++++++++++++++++++++
 	g1->Draw("PCOL"); //++++++++ options: "P" ~ markers, "COL" ~ coloured z-values, "Z" ~ colour palette ++++++++++++++++
 
-	vnamec = rootfilename + "_" + vnamec + "-" + vnamey + "-" + vnamex;
+	vnamec = filename + "_" + vnamec + "-" + vnamey + "-" + vnamex;
 	c1->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c1->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c1; // closing canvas window
@@ -125,7 +123,7 @@ void DRAWendlog(TString filename)
 	vnamex = "dt";      // dummy ~ x-variable
 	vnamey = "counts"; // dummy ~ y-axis title
 
-	TCanvas *c2 = new TCanvas("c2", vnamex + " data from " + rootfilename, 40, 40, 800, 600);
+	TCanvas *c2 = new TCanvas("c2", vnamex + " data from " + filename, 40, 40, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c2->SetFillColor(0);
 	c2->SetBorderMode(0);
@@ -143,7 +141,7 @@ void DRAWendlog(TString filename)
 	h2->SetFillColor(17);
 	h2->Draw();	
 	
-	vnamec = rootfilename + "_" + vnamex;
+	vnamec = filename + "_" + vnamex;
 	c2->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c2->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c2; // closing canvas window
@@ -155,7 +153,7 @@ void DRAWendlog(TString filename)
 	vnamey = "counts";   // dummy ~ y-axis title
 	vnamec = "kennz==6"; // dummy ~ selection criterion
 
-	TCanvas *c3 = new TCanvas("c3", vnamex + " {" + vnamec + "} data from " + rootfilename, 60, 60, 800, 600);
+	TCanvas *c3 = new TCanvas("c3", vnamex + " {" + vnamec + "} data from " + filename, 60, 60, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c3->SetFillColor(0);
 	c3->SetBorderMode(0);
@@ -173,7 +171,7 @@ void DRAWendlog(TString filename)
 	h3->SetFillColor(17);
 	h3->Draw();
 	
-	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}";
+	vnamec = filename + "_" + vnamex + "_{" + vnamec + "}";
 	c3->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c3->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c3; // closing canvas window
@@ -188,7 +186,7 @@ void DRAWendlog(TString filename)
 	xmin = 0;            // dummy ~ x-minimum
 	xmax = 0.4;          // dummy ~ x-maximum
 
-	TCanvas *c4 = new TCanvas("c4", vnamex + " {" + vnamec + "} data from " + rootfilename, 80, 80, 800, 600);
+	TCanvas *c4 = new TCanvas("c4", vnamex + " {" + vnamec + "} data from " + filename, 80, 80, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c4->SetFillColor(0);
 	c4->SetBorderMode(0);
@@ -207,7 +205,7 @@ void DRAWendlog(TString filename)
 	h4->SetFillColor(17);
 	h4->Draw();
 
-	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}";
+	vnamec = filename + "_" + vnamex + "_{" + vnamec + "}";
 	c4->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c4->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c4; // closing canvas window
@@ -222,7 +220,7 @@ void DRAWendlog(TString filename)
 	xmin = 0;            // dummy ~ x-minimum
 	xmax = 90;           // dummy ~ x-maximum
 
-	TCanvas *c5 = new TCanvas("c5", vnamex + " {" + vnamec + "} data from " + rootfilename, 100, 100, 800, 600);
+	TCanvas *c5 = new TCanvas("c5", vnamex + " {" + vnamec + "} data from " + filename, 100, 100, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c5->SetFillColor(0);
 	c5->SetBorderMode(0);
@@ -232,7 +230,7 @@ void DRAWendlog(TString filename)
 	TH1D *h5 = new TH1D("h5", vnamex + " {" + vnamec + "}", nbins, xmin, xmax * 1.0001);
 	// creating a new TH1D([histogramname], [histogramtitle], number of bins, lower edge of the first bin, excluded!
 	// upper edge of the last bin)
-	mytree->Draw(vnamex + ">>+h5", "(" + vnamec + ")&&" + pnamec); // drawing "[vnamex]" (if "[vnamec]")
+	mytree->Draw(vnamex + "*TMath::RadToDeg()>>+h5", "(" + vnamec + ")&&" + pnamec); // drawing "[vnamex]" (if "[vnamec]")
 	                                                               // and storing the result in 'h5'
 	h5->GetXaxis()->SetTitle(vnamex + " [°]");
 	h5->GetXaxis()->SetRangeUser(xmin, xmax);
@@ -241,7 +239,7 @@ void DRAWendlog(TString filename)
 	h5->SetFillColor(17);
 	h5->Draw();
 
-	vnamec = rootfilename + "_" + vnamex + "_{" + vnamec + "}";
+	vnamec = filename + "_" + vnamex + "_{" + vnamec + "}";
 	c5->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c5->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c5; // closing canvas window
@@ -252,7 +250,7 @@ void DRAWendlog(TString filename)
 	vnamex = "NeutEnergie"; // dummy ~ x-variable
 	vnamey = "counts";      // dummy ~ y-axis title
 
-	TCanvas *c6 = new TCanvas("c6", vnamex + " data from " + rootfilename, 120, 120, 800, 600);
+	TCanvas *c6 = new TCanvas("c6", vnamex + " data from " + filename, 120, 120, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c6->SetFillColor(0);
 	c6->SetBorderMode(0);
@@ -269,7 +267,7 @@ void DRAWendlog(TString filename)
 	h6->SetFillColor(17);
 	h6->Draw();
 
-	vnamec = rootfilename + "_" + vnamex;
+	vnamec = filename + "_" + vnamex;
 	c6->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c6->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c6; // closing canvas window
@@ -280,7 +278,7 @@ void DRAWendlog(TString filename)
 	vnamex = "H";      // dummy ~ x-variable
 	vnamey = "counts"; // dummy ~ y-axis title
 
-	TCanvas *c7 = new TCanvas("c7", vnamex + " data from " + rootfilename, 140, 140, 800, 600);
+	TCanvas *c7 = new TCanvas("c7", vnamex + " data from " + filename, 140, 140, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c7->SetFillColor(0);
 	c7->SetBorderMode(0);
@@ -297,7 +295,7 @@ void DRAWendlog(TString filename)
 	h7->SetFillColor(17);
 	h7->Draw();
 
-	vnamec = rootfilename + "_" + vnamex;
+	vnamec = filename + "_" + vnamex;
 	c7->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c7->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c7; // closing canvas window
@@ -309,7 +307,7 @@ void DRAWendlog(TString filename)
 	vnamey = "NeutEnergie"; // dummy ~ y-variable
 	vnamec = "kennz==6";    // dummy ~ selection criterion
 
-	TCanvas *c8 = new TCanvas("c8", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + rootfilename, 140, 140, 800, 600);
+	TCanvas *c8 = new TCanvas("c8", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + filename, 140, 140, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c8->SetFillColor(0);
 	c8->SetBorderMode(0);
@@ -334,7 +332,7 @@ void DRAWendlog(TString filename)
 	
 	g8->Draw("AP"); //++++++++ options: "A" ~ axis, "P" ~ markers, "L" ~ a simple line between the points +++++++++++++++
 
-	vnamec = rootfilename + "_" + vnamey + "-" + vnamex + "_{" + vnamec + "}";
+	vnamec = filename + "_" + vnamey + "-" + vnamex + "_{" + vnamec + "}";
 	c8->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c8->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c8; // closing canvas window
@@ -349,7 +347,7 @@ void DRAWendlog(TString filename)
 	xmin = 0;             // dummy ~ x-minimum in 'h91', 'h92', 'h93' and 'h94', y-minimum in 'h94'
 	xmax = 1;             // dummy ~ x-maximum in 'h91', 'h92', 'h93' and 'h94', y-maximum in 'h94'
 
-	TCanvas *c9 = new TCanvas("c9", vnamex + " " + vnamey + " {" + vnamec + "} data from " + rootfilename, 160, 160, 800, 600);
+	TCanvas *c9 = new TCanvas("c9", vnamex + " " + vnamey + " {" + vnamec + "} data from " + filename, 160, 160, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c9->SetFillColor(0);
 	c9->SetBorderMode(0);
@@ -436,7 +434,7 @@ void DRAWendlog(TString filename)
 	h94->Draw("LEGO1"); //++++++++ options: "LEGO1" ~ lego plot with hidden surface removal +++++++++++++++++++++++++++++
 	                    //+++++++++++++++++ "LEGO2" ~ lego plot using colours to show the cell contents +++++++++++++++++
 
-	vnamec = rootfilename + "_" + vnamex + "_" + vnamey;
+	vnamec = filename + "_" + vnamex + "_" + vnamey;
 	c9->SaveAs(vnamec + ".cxx");     // saving canvas as macro
 	c9->SaveAs(vnamec + "_0.png");   // saving canvas as PNG
 	c9_1->SaveAs(vnamec + "_1.png"); // saving pad 1 as PNG
@@ -456,7 +454,7 @@ void DRAWendlog(TString filename)
 	xmin = 0;         // dummy ~ x-minimum
 	xmax = 12;        // dummy ~ x-maximum
 
-	TCanvas *c10 = new TCanvas("c10", vnamec + " data from " + rootfilename, 180, 180, 800, 600);
+	TCanvas *c10 = new TCanvas("c10", vnamec + " data from " + filename, 180, 180, 800, 600);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c10->SetFillColor(0);
 	c10->SetBorderMode(0);
@@ -478,7 +476,7 @@ void DRAWendlog(TString filename)
 	}
 	h10->Draw();
 
-	vnamec = rootfilename + "_" + vnamec;
+	vnamec = filename + "_" + vnamec;
 	c10->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c10->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c10; // closing canvas window
@@ -493,7 +491,7 @@ void DRAWendlog(TString filename)
 	xmin = 0.1;          // dummy ~ x-minimum
 	xmax = 0.5;          // dummy ~ x-maximum
 
-	TCanvas *c11 = new TCanvas("c11", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + rootfilename, 200, 200, 500, 800);
+	TCanvas *c11 = new TCanvas("c11", vnamey + ":" + vnamex + " {" + vnamec + "} data from " + filename, 200, 200, 500, 800);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c11->SetFillColor(0);
 	c11->SetBorderMode(0);
@@ -532,7 +530,7 @@ void DRAWendlog(TString filename)
 	gStyle->SetPalette(20, grayscale);
 	h111->Draw("CONT4Z"); //++++++++ options: "CONT" ~ contour plot, "CONT4" ~ analog, "Z" ~ colour palette +++++++++++++
 
-	vnamec = rootfilename + "_" + vnamey + "-" + vnamex + "_{" + vnamec + "}";	
+	vnamec = filename + "_" + vnamey + "-" + vnamex + "_{" + vnamec + "}";	
 	c11->SaveAs(vnamec + "_0g.png"); // saving canvas as PNG ("g" ~ gray scale palette)
 
 	h112->SetStats(0);
@@ -558,7 +556,7 @@ void DRAWendlog(TString filename)
 	vnamey = "zend"; // dummy ~ y-variable
 	vnamec = "kennz";  // dummy ~ z-variable
 
-	TCanvas *c12 = new TCanvas("c12", vnamec + ":" + vnamey + ":" + vnamex + " data from " + rootfilename, 500, 20, 500, 800);
+	TCanvas *c12 = new TCanvas("c12", vnamec + ":" + vnamey + ":" + vnamex + " data from " + filename, 500, 20, 500, 800);
 	// creating a new TCanvas([canvasname], [canvastitle], x, y pixel coordinate, x, y pixel size)
 	c12->SetFillColor(0);
 	c12->SetBorderMode(0);
@@ -578,7 +576,7 @@ void DRAWendlog(TString filename)
 	                          //+++++++++++++++++ 20, grayscale ~ gray scale palette with 20 shades +++++++++++++++++++++
 	g12->Draw("PCOL"); //++++++++ options: "P" ~ markers, "COL" ~ coloured z-values, "Z" ~ colour palette ++++++++++++++++
 
-	vnamec = rootfilename + "_" + vnamec + "-" + vnamey + "-" + vnamex;
+	vnamec = filename + "_" + vnamec + "-" + vnamey + "-" + vnamex;
 	c12->SaveAs(vnamec + ".cxx");   // saving canvas as macro
 	c12->SaveAs(vnamec + "_0.png"); // saving canvas as PNG
 //	delete c12; // closing canvas window

@@ -47,71 +47,69 @@ void FreeFields(){
 
 // fill global B field variables with values
 void BFeld (long double rloc, long double philoc, long double zloc, long double t){      //B-Feld am Ort des Teilchens berechnen
-	timeval fieldstart, fieldend;
-	gettimeofday(&fieldstart, NULL);	
-	
-	SwitchField(t); // set BFeldSkal for different experiment phases	
-	
+
 	Bnull();	// first, set all to zero
-	long double Brtemp, Bztemp, dBdrtemp, dBdztemp;
-	switch (bfeldwahl)
-	{
-		
-		case 0:	if (BFeldSkal != 0){
-					list<TabField*>::iterator i = fields.begin(); 
-					while (i != fields.end()){						
-						if ((*i)->BInterpol(rloc, zloc))
-							break;
-						else if (++i == fields.end()){
-							Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-							kennz = KENNZAHL_LEFT_FIELD;
-							stopall = 1;
-						}		
-					}				
-				}
-				RacetrackField(rloc,philoc,zloc);
-				break;
-				
-		case 2:	if (BFeldSkal != 0){
-					list<TabField*>::iterator i = fields.begin(); 
-					while (i != fields.end()){						
-						if ((*i)->BInterpol(rloc, zloc))
-							break;
-						else if (++i == fields.end()){
-							Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-							kennz = KENNZAHL_LEFT_FIELD;
-							stopall = 1;
-						}		
-					}				
-				}
-				RacetrackField(rloc,philoc,zloc);
-				Brtemp = Br; Bztemp = Bz; dBdrtemp = dBdr; dBdztemp = dBdz;
-				Bwsomaple(rloc, philoc, zloc);
-				printf("BrI BrM deltaBr %17LG %17LG %17LG \n", Brtemp, Br, (Brtemp-Br)/Br);
-				printf("BzI BzM deltaBz %17LG %17LG %17LG \n", Bztemp, Bz, (Bztemp-Bz)/Bz);						
-				Br=(Brtemp-Br)/Br; Bz=(Bztemp-Bz)/Bz; dBdr=(dBdrtemp-dBdr)/dBdr; dBdz=(dBdztemp-dBdz)/dBdz;
-				break;	
-					
-		case 3: Banalytic(rloc, philoc, zloc, t);
-				break;
-				
-		case 4: BForbes(rloc, philoc, zloc, t);
-				RacetrackField(rloc,philoc,zloc);
-				break;
-	}   
 	
-	Bws = sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);			
-	if (Bws>1e-31)
-	{			
-		dBdr   = (Br*dBrdr + Bphi*dBphidr + Bz*dBzdr)  /Bws;
-		dBdz   = (Br*dBrdz + Bphi*dBphidz + Bz*dBzdz)  /Bws;
-		dBdphi = (Br*dBrdphi + Bphi*dBphidphi + Bz*dBzdphi)/Bws;
+	if (bfeldwahl != 1){
+		SwitchField(t); // set BFeldSkal for different experiment phases	
+		
+		long double Brtemp, Bztemp, dBdrtemp, dBdztemp;
+		switch (bfeldwahl)
+		{
+			
+			case 0:	if (BFeldSkal != 0){
+						list<TabField*>::iterator i = fields.begin(); 
+						while (i != fields.end()){						
+							if ((*i)->BInterpol(rloc, zloc))
+								break;
+							else if (++i == fields.end()){
+								Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+								kennz = KENNZAHL_LEFT_FIELD;
+								stopall = 1;
+							}		
+						}				
+					}
+					RacetrackField(rloc,philoc,zloc);
+					break;
+					
+			case 2:	if (BFeldSkal != 0){
+						list<TabField*>::iterator i = fields.begin(); 
+						while (i != fields.end()){						
+							if ((*i)->BInterpol(rloc, zloc))
+								break;
+							else if (++i == fields.end()){
+								Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
+								kennz = KENNZAHL_LEFT_FIELD;
+								stopall = 1;
+							}		
+						}				
+					}
+					RacetrackField(rloc,philoc,zloc);
+					Brtemp = Br; Bztemp = Bz; dBdrtemp = dBdr; dBdztemp = dBdz;
+					Bwsomaple(rloc, philoc, zloc);
+					printf("BrI BrM deltaBr %17LG %17LG %17LG \n", Brtemp, Br, (Brtemp-Br)/Br);
+					printf("BzI BzM deltaBz %17LG %17LG %17LG \n", Bztemp, Bz, (Bztemp-Bz)/Bz);						
+					Br=(Brtemp-Br)/Br; Bz=(Bztemp-Bz)/Bz; dBdr=(dBdrtemp-dBdr)/dBdr; dBdz=(dBdztemp-dBdz)/dBdz;
+					break;	
+						
+			case 3: Banalytic(rloc, philoc, zloc, t);
+					break;
+					
+			case 4: BForbes(rloc, philoc, zloc, t);
+					RacetrackField(rloc,philoc,zloc);
+					break;
+		}   
+		
+		Bws = sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);			
+		if (Bws>1e-31)
+		{			
+			dBdr   = (Br*dBrdr + Bphi*dBphidr + Bz*dBzdr)  /Bws;
+			dBdz   = (Br*dBrdz + Bphi*dBphidz + Bz*dBzdz)  /Bws;
+			dBdphi = (Br*dBrdphi + Bphi*dBphidphi + Bz*dBzdphi)/Bws;
+		}
 	}
 	
 	Feldcount++;
-	
-	gettimeofday(&fieldend, NULL);
-	FieldTime += fieldend.tv_sec - fieldstart.tv_sec + (fieldend.tv_usec - fieldstart.tv_usec)/1e6;	
 	
 	return;
 }

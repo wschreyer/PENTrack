@@ -130,7 +130,7 @@ void MCStartwerte(long double delx)
 		RandomPointInSourceVolume(r_n,phi_n,z_n,alpha,gammaa);
 					
 		// check if neutron could possiblly reached this positon by its own energy
-		BFeld(r_n, phi_n * conv, z_n, 0.0);
+		BFeld(r_n, phi_n, z_n, 0.0);
 		crit = NeutEnergie - m_n * gravconst * z_n + mu_n * Bws; // crit = initial energie - potenial energy by gravitation + potential energie by B-field // [eV]
 		//printf("Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n", NeutEnergie*1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
 		//fprintf(LOGSCR,"Energy of supposed neutron of decay:\n (E_ges)%LG - (E_grav)%LG - (E_B)%LG = (dE)%LG\n",NeutEnergie * 1e9, m_n * gravconst * z_n*1e9, (mu_nSI / ele_e) * Bws*1e9, crit*1e9);
@@ -264,11 +264,11 @@ void MCZerfallsstartwerte()
 //-------- Step 2 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
 		beta1 = 360 * (mt_get_double(v_mt_state));
-		delta1 = acosl(1 - 2 * (mt_get_double(v_mt_state))) / conv;
+		delta1 = acosl(1 - 2 * (mt_get_double(v_mt_state)));
 		// spharical coordinates
-		epx = cosl(delta1 * conv) * cosl(beta1 * conv);
-		epy = cosl(delta1 * conv) * sinl(beta1 * conv);
-		epz = sinl(delta1 * conv);
+		epx = cosl(delta1) * cosl(beta1);
+		epy = cosl(delta1) * sinl(beta1);
+		epz = sinl(delta1);
 		// 3-momentum of the proton
 		p[1] = p[4] * epx;
 		p[2] = p[4] * epy;
@@ -302,11 +302,11 @@ void MCZerfallsstartwerte()
 //-------- Step 4 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
 		beta2 = 360 * (mt_get_double(v_mt_state));
-		delta2 = acosl(1 - 2 * (mt_get_double(v_mt_state))) / conv;
+		delta2 = acosl(1 - 2 * (mt_get_double(v_mt_state)));
 		// spharical coordinates
-		epx = cosl(delta2 * conv) * cosl(beta2 * conv);
-		epy = cosl(delta2 * conv) * sinl(beta2 * conv);
-		epz = sinl(delta2 * conv);
+		epx = cosl(delta2) * cosl(beta2);
+		epy = cosl(delta2) * sinl(beta2);
+		epz = sinl(delta2);
 		// rotation in respect to the orientation of the virtual state
 		zyROTROT((180 + beta1), (180 - delta1), &epx, &epy, &epz);		
 		// 3-momentum of the electron
@@ -437,16 +437,16 @@ void MCZerfallsstartwerte()
 extern long double GetAngle(long double cos, long double sin)
 {	long double angle = 0;	
 	if((cos >= 0) && (sin >=0))				// quadrant I
-	{	angle = acosl(cos) / conv;
+	{	angle = acosl(cos);
 	}
 	else if((cos < 0) && (sin >= 0))		// quadrant II
-	{	angle = acosl(cos) / conv;
+	{	angle = acosl(cos);
 	}
 	else if((cos < 0) && (sin < 0))			// quadrant III
-	{	angle = 360 - (acosl(cos) / conv);
+	{	angle = 360 - (acosl(cos));
 	}
 	else if((cos >= 0) && (sin < 0))		// quadrant IV
-	{	angle = (-1) * (acosl(cos) / conv);		
+	{	angle = (-1) * (acosl(cos));		
 	}
 	return angle;
 }
@@ -467,10 +467,10 @@ extern void zBOOST(long double BOOSTbeta, long double* Dp0, long double* Dp3)
 //======== Rotaion around z''-axis with (+beta) and rotation around y'-axis with (+delta) ==================================
 extern void zyROTROT(long double zROTbeta, long double yROTdelta, long double* Dp1, long double* Dp2, long double* Dp3)
 {	// Note: The minus sign for the rotation angle is already implemented in the (sign of the sines in the) calculation
-	long double cb = cosl(zROTbeta * conv);
-	long double sb = sinl(zROTbeta * conv);
-	long double cd = cosl(yROTdelta * conv);
-	long double sd = sinl(yROTdelta * conv);
+	long double cb = cosl(zROTbeta);
+	long double sb = sinl(zROTbeta);
+	long double cd = cosl(yROTdelta);
+	long double sd = sinl(yROTdelta);
 	long double D0p1 = *Dp1;
 	long double D0p2 = *Dp2;
 	long double D0p3 = *Dp3;
