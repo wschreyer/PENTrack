@@ -26,6 +26,20 @@
 #include <map>
 #include <numeric>
 
+// root stuff
+//#include "TROOT.h"
+#include "TNtupleD.h"
+#include "TFile.h"
+//#include "TTree.h"
+//#include "TNetFile.h"
+//#include "TRandom.h"
+//#include "TBranch.h"
+//#include "TClonesArray.h"
+//#include "TStopwatch.h"
+//#include "TMath.h"
+#include "TF1.h"
+//#include "TF2.h"
+
 // project includes
 #include "mersenne/mt.h" // mersenne twister pseudo random number generator (rng) used for MonteCarlo alg.
 #include "mc.h" // MonteCarlo related functions
@@ -113,6 +127,8 @@ long double AbsValueCart(long double x, long double y, long double z);
 
 // global file descriptors
 extern FILE *OUTFILE1, *BFLOG, *SNAP;
+extern TFile *treefile;
+extern TNtupleD *endtree, *tracktree;
 
 // files for in/output + paths
 extern string inpath,outpath;
@@ -134,6 +150,7 @@ extern int MonteCarloAnzahl;   // user choice to use MC or not, number of partic
 extern int reflekt, bfeldwahl, protneut, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
 extern int SaveIntermediate;               // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 extern int polarisation, polarisationsave, ausgabewunsch, ausgabewunschsave, Feldcount; // user choice for polarisation of neutrons und Ausgabewunsch
+extern int WriteTree;
 extern int snapshot, snapshotsdone;								// take snapshots of the particles at specified times
 extern set<int> snapshots;
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
@@ -266,7 +283,7 @@ extern int FieldOscillation;        // turn field oscillation on if 1
 extern long double OscillationFraction, OscillationFrequency;
 
 // time statistics
-extern float InitTime, ReflectionTime, IntegratorTime, FieldTime, DiceTime;
+extern float InitTime, ReflectionTime, IntegratorTime, DiceTime;
 
 
 extern mt_state_t *v_mt_state; //mersenne twister state var
