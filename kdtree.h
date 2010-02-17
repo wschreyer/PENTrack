@@ -26,11 +26,19 @@
 
 using namespace std;
 
+// Triangle class
+struct Triangle{
+    const float *vertex[3]; // the three vertices of the triangle (in counterclockwise order according to STL standard)
+    unsigned ID;          // user defined surface number
+    void CalcNormal(long double normal[3]);
+    bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
+};
+
 // structure that is returned by KDTree::Collision
 struct TCollision{
-	long double s, normal[3], A; // parametric coordinate of intersection point, normal and area of intersected surface
+	long double s, normal[3], Area; // parametric coordinate of intersection point, normal and area of intersected surface
 	unsigned ID;	// ID of intersected surface
-	void *tri;	// pointer to intersected triangle
+	Triangle *tri;	// pointer to intersected triangle
 	bool operator < (TCollision c){ return s < c.s; };	// overloaded operator, needed for sorting
 	bool operator == (TCollision c){ return tri == c.tri; };	// overloaded operator, needed for unique()
 };
@@ -40,22 +48,8 @@ class KDTree{
     private:
         struct TVertex{
             float vertex[3];
-            bool operator == (TVertex v){ return abs(vertex[0] - v.vertex[0]) < 1e-10 && abs(vertex[1] - v.vertex[1]) < 1e-10 && abs(vertex[2] - v.vertex[2]) < 1e-10; };
-        };
-
-        struct TVertexComp{
-            bool operator () (TVertex v1, TVertex v2){ return (v1.vertex[0] < v2.vertex[0]) || (v1.vertex[1] < v2.vertex[1]) || (v1.vertex[2] < v2.vertex[2]); };
-        };
-
-        // Triangle class
-        struct Triangle{
-            const float *vertex[3]; // the three vertices of the triangle (in counterclockwise order according to STL standard)
-            unsigned ID;          // user defined surface number
-//                short normalIO;           // normal points into volume (1) / out of volume (-1) / not specified (0)
-//                Triangle* neighbours[3];    // neighbouring triangles
-            void CalcNormal(long double normal[3]);
-            bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
-//                void SetNormal(const short anormalIO);
+            inline bool operator == (const TVertex v) const { return abs(vertex[0] - v.vertex[0]) < 1e-10 && abs(vertex[1] - v.vertex[1]) < 1e-10 && abs(vertex[2] - v.vertex[2]) < 1e-10; };
+        	inline bool operator < (const TVertex v) const { return !(*this == v); };
         };
 
         // kd-Tree node class
@@ -81,8 +75,7 @@ class KDTree{
                 }; // test if point is inside box
         };
 
-        set<TVertex, TVertexComp> allvertices;
-        list<Triangle*> alltris; // list of all triangles in the tree
+        set<TVertex> allvertices;
         KDNode *root;   // root node
         KDNode *lastnode;    // remember last collision-tested node to speed up search when segments are adjacent
         int (*FLog)(const char*, ...);
@@ -90,6 +83,7 @@ class KDTree{
         KDTree(int (*ALog)(const char*, ...));   // constructor
         ~KDTree();  // destructor
         float lo[3],hi[3];    // bounding box of root node
+        list<Triangle*> alltris; // list of all triangles in the tree
         void ReadFile(const char *filename, const unsigned ID, char name[80] = NULL);    // read STL-file
         void Init(/*const long double PointInVolume[3] = NULL*/);    // create tree
         bool Collision(const long double p1[3], const long double p2[3], list<TCollision> &colls);  // test segment p1->p2 for collision with triangle

@@ -8,6 +8,8 @@ pnTracker
 
 // files for in/output + paths
 FILE *OUTFILE1 = NULL, *BFLOG = NULL, *SNAP = NULL;
+TFile *treefile;
+TNtupleD *endtree, *tracktree;
 string inpath, outpath;	// "in" and "out" directories
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
@@ -28,6 +30,7 @@ int MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles f
 int reflekt=0, bfeldwahl, protneut, Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
 int SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
+int WriteTree = 0;
 int snapshot=0, snapshotsdone=0;  // make snapshots of the neutron at specified times
 //vector<double> snapshots;
 set<int> snapshots;
@@ -134,7 +137,7 @@ int FieldOscillation = 0;        // turn field oscillation on if 1
 long double OscillationFraction = 1e-4, OscillationFrequency = 1;    // Frequency in Hz
 
 // time statistics
-float InitTime = 0, ReflectionTime = 0, IntegratorTime = 0, FieldTime = 0, DiceTime = 0;
+float InitTime = 0, ReflectionTime = 0, IntegratorTime = 0, DiceTime = 0;
 
 mt_state_t *v_mt_state = NULL; //mersenne twister state var
 
@@ -267,8 +270,6 @@ int main(int argc, char **argv){
 		Ep=dmatrix(1,2,1,kmax);
 	}
 	
-	//printconfig();
-	
 	LoadGeometry();	// read STL-files		
 	
 	PrepareFields();	// read fieldval.tab or coils.cond
@@ -311,19 +312,23 @@ int main(int argc, char **argv){
 	if (neutdist == 1) outndist(1);   // Neutronenverteilung in der Flasche ausgeben
 	OutputCodes(iMC);
 	
-	//printf("The B field time is:%.17LG\n",timer1);
-	//printf("The integration time is:%.17LG\n",timer2);
 	Log("Integrator used (1 Bulirsch Stoer, 2 Runge Kutta): %d \n", runge);
-	// printf("We spent %.17LG seconds for BF-field interpolation\n",timer3);
 	Log("The integrator was called: %LF times with %LF internal steps on average. \n", nintcalls,ntotalsteps/nintcalls);
 	float SimulationTime = (1.*clock())/CLOCKS_PER_SEC - InitTime;
-	Log("Init: %.2fs, Simulation: %.2fs, Integrator: %.2fs (%.2f%%), Fields: %.2fs (%.2f%%), Reflection: %.2fs (%.2f%%), Dicing: %.4fs\n",
-			InitTime, SimulationTime, IntegratorTime - FieldTime, (IntegratorTime - FieldTime)*100/SimulationTime,
-				FieldTime, FieldTime*100/SimulationTime, ReflectionTime, ReflectionTime*100/SimulationTime, DiceTime);
+	Log("Init: %.2fs, Simulation: %.2fs, Integrator: %.2fs (%.2f%%), Reflection: %.2fs (%.2f%%), Dicing: %.4fs\n",
+			InitTime, SimulationTime, IntegratorTime, IntegratorTime*100/SimulationTime, ReflectionTime, ReflectionTime*100/SimulationTime, DiceTime);
 	Log("That's it... Have a nice day!\n");
 	
-	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
 	FreeFields();
+	
+	if (WriteTree){
+	//	endtree->Print();
+	//	tracktree->Print();
+		treefile->Write();
+		treefile->Close();
+	}
+
+	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
 	/*if(LOGSCR != NULL)
 		fclose(LOGSCR);
 	if(ausgabewunsch == OUTPUT_EVERYTHING)
@@ -542,7 +547,7 @@ void IntegrateParticle(){
 		thumbmax=0.0;
 		vladtotal = 1.0;
 		vladmax=0.0;									
-		BFeld(r_n,phi_n*conv,z_n, 0.0);							
+		BFeld(r_n,phi_n,z_n, 0.0);							
 		long double Ekin=Energie-M*gravconst*z_n+mu_n*Bws;      // kin Energie = Anfangsen. - Pot Energie + Energie im B-Feld
 		if(Ekin>=0.0)
 		{
@@ -573,15 +578,15 @@ void IntegrateParticle(){
 		//sleep(5);										
 	}
 	
-	long double projz= cosl(conv*gammaa);  // projection of velocity on z-axis
-	long double vtemp= v_n*sinl(conv*gammaa);  // projection of velocity on x-y plane
+	long double projz= cosl(gammaa);  // projection of velocity on z-axis
+	long double vtemp= v_n*sinl(gammaa);  // projection of velocity on x-y plane
 	ystart[1]= r_n;           // fill array for ODEint integrator
-	ystart[2]= vtemp*cosl(conv*(alpha-phi_n));
+	ystart[2]= vtemp*cosl(alpha-phi_n);
 	ystart[3]= z_n;
 	ystart[4]= v_n*projz;
-	ystart[5]= conv*phi_n;
+	ystart[5]= phi_n;
 	if (r_n!=0.) 
-		ystart[6]= vtemp*sinl(conv*(alpha-phi_n))/r_n;
+		ystart[6]= vtemp*sinl(alpha-phi_n)/r_n;
 	else if (r_n==0.)
 		ystart[6]= 0.;
 	
@@ -617,7 +622,8 @@ void IntegrateParticle(){
 		Log("Teilchennummer: %i\n",iMC);
 		if(decay.on == 2)
 			Log("Teilchensorte : %i\n", protneut);
-		Log("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",r_n,phi_n,z_n,v_n,alpha,gammaa,H,xend);
+		Log("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",
+			r_n, phi_n/conv, z_n, v_n, alpha/conv, gammaa/conv, H, xend);
 
 		//-----------------------------------------------------
 		// Schleife fr ein Teilchen, bis die Zeit aus ist oder das Teilchen entkommt
@@ -737,10 +743,7 @@ void IntegrateParticle(){
 		// END of loop for one partice
 		
 		vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
-		long double phitemp = ((ystart[5])/conv);     // calculate end angle
-		phiend  = fmodl(phitemp, 360.);   // in degree
-		if (phiend<0)                    // from 0 to 360
-			phiend=360.0 + phiend;
+		phiend = fmod(ystart[5], 2*pi);
 
 		if(protneut == NEUTRON)                // n
 			H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
@@ -812,9 +815,9 @@ void BruteForceIntegration(){
 		// output start position and velocities of BruteForce
 		if(klaufstart == 1)
 		{
-			gammaend=atan2l(sqrtl(powl(yp[2][2],2)+powl(yp[1][2]*yp[6][2],2)),yp[4][2])/conv;
+			gammaend=atan2l(sqrtl(powl(yp[2][2],2)+powl(yp[1][2]*yp[6][2],2)),yp[4][2]);
 			fprintf(LOGSCR,"\n r:%.17LG phi:%.17LG z:%.17LG H:%.17LG alpha:%.17LG gamma:%.17LG \n ",
-							yp[1][2],yp[5][2]/conv,yp[3][2],(M*gravconst*yp[3][2]+0.5*M*fabsl(yp[2][2]*yp[2][2]+yp[1][2]*yp[1][2]*yp[6][2]*yp[6][2]+yp[4][2]*yp[4][2])-mu_n*Bp[13][2])*1E9, atanl(yp[6][2]*yp[1][2]/yp[2][2])/conv, gammaend);
+							yp[1][2],yp[5][2]/conv,yp[3][2],(M*gravconst*yp[3][2]+0.5*M*fabsl(yp[2][2]*yp[2][2]+yp[1][2]*yp[1][2]*yp[6][2]*yp[6][2]+yp[4][2]*yp[4][2])-mu_n*Bp[13][2])*1E9, atanl(yp[6][2]*yp[1][2]/yp[2][2])/conv, gammaend/conv);
 		}*/
 		
 													
@@ -952,6 +955,14 @@ void PrintIntegrationStep(long double &timetemp){
 								 vend,H,Bp[1][klauf],Bp[2][klauf],Bp[3][klauf],Bp[4][klauf],Bp[5][klauf],Bp[6][klauf], Bp[7][klauf],Bp[8][klauf],
 								 Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac,ExpPhase);
 				//fprintf(OUTFILE1,"%LG\n",xp[klauf]);
+				
+				if (WriteTree){
+					double outvars[] = {iMC, protneut, polarisation, xp[klauf], yp[1][klauf], yp[2][klauf], yp[3][klauf], yp[4][klauf], yp[5][klauf], yp[6][klauf], yp[1][klauf]*cosl(yp[5][klauf]), yp[1][klauf]*sinl(yp[5][klauf]),
+										vend, H, Bp[1][klauf], Bp[2][klauf], Bp[3][klauf], Bp[4][klauf], Bp[5][klauf], Bp[6][klauf],  Bp[7][klauf], Bp[8][klauf],
+										Bp[9][klauf], Bp[10][klauf], Bp[11][klauf], Bp[12][klauf], Bp[13][klauf], Ep[1][klauf], Ep[2][klauf], x2-x1, logvlad, logfrac, ExpPhase};
+					tracktree->Fill(outvars);
+				}
+				
 				fflush(OUTFILE1);
 				Zeilencount++;
 				timetemp = xp[klauf];
@@ -984,6 +995,14 @@ void PrintIntegrationStep(long double &timetemp){
 							 sqrtl(ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4]),H,Br,dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,
 							 Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac,ExpPhase);
 			fflush(OUTFILE1);
+
+			if (WriteTree){
+				double outvars[] = {iMC, protneut, polarisation,  x2, ystart[1], ystart[2], ystart[3], ystart[4], ystart[5], ystart[6], ystart[1]*cosl(ystart[5]), ystart[1]*sinl(ystart[5]),
+									sqrtl(ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4]), H, Br, dBrdr, dBrdphi, dBrdz, Bphi, dBphidr, dBphidphi, dBphidz,
+									Bz, dBzdr, dBzdphi, dBzdz, Bws, Er, Ez, x2-x1, logvlad, logfrac, ExpPhase};
+				tracktree->Fill(outvars);
+			}
+
 			Zeilencount++;
 			timetemp = x2;
 

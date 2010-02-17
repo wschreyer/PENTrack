@@ -77,6 +77,7 @@ void ConfigInit(void){
 	istringstream(config["global"]["EFeldSkal"])			>> EFeldSkal;
 	istringstream(config["global"]["Racetracks"])			>> Racetracks;	
 	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
+	istringstream(config["global"]["WriteTree"])			>> WriteTree;
 	istringstream(config["global"]["snapshot"])		>> snapshot;
 	int tmp_snapshot;
 	istringstream isnapshots(config["global"]["snapshots"]);	
@@ -171,6 +172,20 @@ void OpenFiles(int argc, char **argv){
 	ostringstream endlogfile;
 	endlogfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "end.out";
 	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
+
+	if (WriteTree){
+		endlogfile << ".root";
+		treefile = new TFile(endlogfile.str().c_str(), "RECREATE");
+		endtree = new TNtupleD("EndTree","end log", "jobnumber:RandomSeed:teilchen:protneut:polarisation:"
+													"tstart:rstart:phistart:zstart:NeutEnergie:"
+													"vstart:alphastart:gammastart:decayerror:"
+													"rend:phiend:zend:"
+													"vend:alphaend:gammaend:tend:dt:"
+													"H:kennz:NSF:RodFieldMult:BFflipprob:"
+													"AnzahlRefl:vladmax:vladtotal:thumbmax:trajlength:"
+													"Hdiff:Hmax:BFeldSkal:EFeldSkal:tauSF:dtau");
+	}
+	
 	if (protneut != BF_ONLY) 
 	{
         fprintf(ENDLOG,"jobnumber RandomSeed teilchen protneut polarisation "
@@ -191,10 +206,18 @@ void OpenFiles(int argc, char **argv){
 		ostringstream wholetrackfile;
 		wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track001.out";
 		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
+
 		Zeilencount=0;
 		fprintf(OUTFILE1,"Teilchen protneut polarisation t r drdt z dzdt phi dphidt x y "
 						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
 						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb ExpPhase\n");
+						 
+		if (WriteTree){
+			tracktree = new TNtupleD("TrackTree","track log",
+										"Teilchen:protneut:polarisation:t:r:drdt:z:dzdt:phi:dphidt:x:y:"
+										"v:H:Br:dBrdr:dBrdphi:dBrdz:Bphi:dBphidr:dBphidphi:dBphidz:"
+										"Bz:dBzdr:dBzdphi:dBzdz:Babs:Er:Ez:timestep:logvlad:logthumb:ExpPhase");
+		}
 	}
 	
 	// make snapshots as specified time into snapshot.out
@@ -356,30 +379,44 @@ void Startbed(int k)
 			case  4:	ncont = sscanf(cline, "%LG %LG ", &nini.EnergieS, &nini.EnergieE);
 						break;
 			case  5:	ncont = sscanf(cline, "%LG %LG ", &nini.alphas, &nini.alphae);
+						nini.alphas *= conv;
+						nini.alphae *= conv;
 						break;
 			case  6:	ncont = sscanf(cline, "%LG %LG ", &nini.gammas, &nini.gammae);
+						nini.gammas *= conv;
+						nini.gammae *= conv;
 						break;
 			case 7:		ncont = sscanf(cline, "%LG %LG ", &nini.delx, &nini.xend);
 						break;
 			case 9:		ncont = sscanf(cline, "%LG %LG ", &pini.EnergieS, &pini.EnergieE);
 						break;
 			case 10:	ncont = sscanf(cline, "%LG %LG ", &pini.alphas, &pini.alphae);
+						pini.alphas *= conv;
+						pini.alphae *= conv;
 						break;
 			case 11:	ncont = sscanf(cline, "%LG %LG ", &pini.gammas, &pini.gammae);
+						pini.gammas *= conv;
+						pini.gammae *= conv;
 						break;
 			case 12:	ncont = sscanf(cline, "%LG %LG ", &pini.delx, &pini.xend);
 						break;
 			case 14:	ncont = sscanf(cline, "%LG %LG ", &eini.EnergieS, &eini.EnergieE);
 						break;
 			case 15:	ncont = sscanf(cline, "%LG %LG ", &eini.alphas, &eini.alphae);
+						eini.alphas *= conv;
+						eini.alphae *= conv;
 						break;
 			case 16:	ncont = sscanf(cline, "%LG %LG ", &eini.gammas, &eini.gammae);
+						eini.gammas *= conv;
+						eini.gammae *= conv;
 						break;
 			case 17:	ncont = sscanf(cline, "%LG %LG ", &eini.delx, &eini.xend);
 						break;
 			case 19:	ncont = sscanf(cline, "%LG %LG %LG ", &BCutPlanePoint[0], &BCutPlanePoint[1], &BCutPlanePoint[2]);
 						break;
 			case 20:	ncont = sscanf(cline, "%LG %LG ", &BCutPlaneNormalAlpha, &BCutPlaneNormalGamma);
+						BCutPlaneNormalAlpha *= conv;
+						BCutPlaneNormalGamma *= conv;
 						break;
 			case 21:	ncont = sscanf(cline, "%LG %u ", &BCutPlaneSampleDist, &BCutPlaneSampleCount);
 						break;
@@ -441,8 +478,8 @@ void Startbed(int k)
 	       "  E field scaling factor: %.17LG\n",
 	       EnergieS, EnergieE,
 	       xend,
-	       alphas, alphae,
-	       gammas,  gammae,
+	       alphas/conv, alphae/conv,
+	       gammas/conv,  gammae/conv,
 	       FillingTime,
 	       CleaningTime,
 	       RampUpTime,
@@ -474,9 +511,9 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 {	
 	long double dt = x2 - xstart; // simulation time dt
 
-	if(vend>0) gammaend= acosl(ystart[4]/vend) /conv;
+	if(vend>0) gammaend= acosl(ystart[4]/vend);
 	else gammaend=0;
-	alphaend= atan2l(ystart[6]*ystart[1],ystart[2])/conv;
+	alphaend= atan2l(ystart[6]*ystart[1],ystart[2]);
 
 	if(dt>=xend) 
 	{                                                           //Zeit abgelaufen
@@ -523,6 +560,19 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	               H, kennz, NSF, RodFieldMultiplicator, BFflipprob,
 	               nrefl, vladmax, vladtotal, thumbmax, trajlengthsum,
 	               (H-Hstart), Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
+	               
+	if (WriteTree){
+		double outvars[] = {jobnumber, monthinmilliseconds, iMC, protneut, polarisation,
+							xstart, r_n, phi_n, z_n, NeutEnergie*1.0e9,
+							v_n, alpha, gammaa, decay.error,
+							ystart[1], phiend, ystart[3],
+							vend, alphaend, gammaend, x2, dt,
+							H, kennz, NSF, RodFieldMultiplicator, BFflipprob,
+							nrefl, vladmax, vladtotal, thumbmax, trajlengthsum,
+							(H-Hstart), Hmax, BFeldSkal, EFeldSkal, tauSF, dtau};
+			
+		endtree->Fill(outvars);
+	}
 
 	fflush(ENDLOG);
     return;
