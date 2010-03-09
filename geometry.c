@@ -1,5 +1,9 @@
 #include "main.h"
 #include "kdtree.h"
+#include <complex>
+
+#define REFLECT_TOLERANCE 1e-10 // if the integration point is farther from the reflection point, the integration will be repeated
+
 
 int reflektlog = 0;
 FILE *REFLECTLOG = NULL;
@@ -7,18 +11,6 @@ FILE *REFLECTLOG = NULL;
 KDTree geometry(Log), sourcevolume(Log);
 list<Triangle*> sourcetris;
 long double sourcearea;
-
-struct material{
-	string name;
-	long double FermiReal, FermiImag, DiffProb;
-};
-
-struct solid{
-	string name;
-	material mat;
-	unsigned kennz;
-	set<int> ignoretimes;
-};
 
 vector<solid> solids;	// dynamic array to associate solids with material/kennzahl/name
 
@@ -31,13 +23,19 @@ long double r_min = INFINITY, r_max = -INFINITY,
 string sourcemode; // volume/surface/customvol/customsurf
 
 
-// transmission through a wall (loss of UCN) with Fermi potential  Mf (real) and PF (im) for a UCN with energy Er perpendicular to the wall (all in neV)
+// transmission through a wall with Fermi potential  Mf (real) and PF (im) for a UCN with energy Er perpendicular to the wall (all in neV)
 long double Transmission(long double Er, long double Mf, long double Pf){
-return 0.2e1 * sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf + Mf * Mf + Pf * Pf) + Er - Mf) / (Er + sqrtl(Er) * sqrtl(0.2e1) * sqrtl(sqrtl(Er * Er - 0.2e1 * Er * Mf + Mf * Mf + Pf * Pf) + Er - Mf) + sqrtl(Er * Er - 0.2e1 * Er * Mf + Mf * Mf + Pf * Pf));
+	complex<long double> V(Mf,Pf), sEV = sqrt(Er - V);
+	long double sE = sqrt(Er);
+	return 1 - norm((sE - sEV)/(sE + sEV));
 }
 
+// absorption of neutron (energy E) flying distance l (in m) through Fermi potential Mf + i*Pf (all in neV)
+long double Absorption(long double E, long double Mf, long double Pf, long double l){
+	complex<long double> V(Mf,Pf);
+	return exp(-imag(sqrt(2*m_n*1e-9*(Er - V)))/658.2121968e-9 * l);
+}
 
-#define REFLECT_TOLERANCE 1e-6 // if the integration point is farther from the reflection point, the integration will be repeated
 
 // load STL-files and create kd-trees
 void LoadGeometry(){
@@ -73,7 +71,7 @@ void LoadGeometry(){
 					else if (!infile.good() || c == '[') break;	// next section found
 					solid model;
 					infile >> model.kennz;
-					if (kennz_counter[0].size() < model.kennz){
+					if (kennz_counter[0].size() <= model.kennz){
 						kennz_counter[0].resize(model.kennz+1,0);
 						kennz_counter[1].resize(model.kennz+1,0);
 						kennz_counter[2].resize(model.kennz+1,0);
@@ -141,16 +139,18 @@ void LoadGeometry(){
 		else getline(infile,line);
 	}
 	
-	sourcearea = 0; // add all triangles with at least one vertex in the source volume to sourcetris list
-	for (list<Triangle*>::iterator i = geometry.alltris.begin(); i != geometry.alltris.end(); i++){
-		if (InSourceVolume((*i)->vertex[0]) || InSourceVolume((*i)->vertex[1]) || InSourceVolume((*i)->vertex[2])){
-			sourcetris.push_back(*i);
-			long double n[3];
-			(*i)->CalcNormal(n);
-			sourcearea += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+	if (sourcemode == "customsurf" || sourcemode == "surface"){
+		sourcearea = 0; // add all triangles with at least one vertex in the source volume to sourcetris list
+		for (list<Triangle*>::iterator i = geometry.alltris.begin(); i != geometry.alltris.end(); i++){
+			if (InSourceVolume((*i)->vertex[0]) || InSourceVolume((*i)->vertex[1]) || InSourceVolume((*i)->vertex[2])){
+				sourcetris.push_back(*i);
+				long double n[3];
+				(*i)->CalcNormal(n);
+				sourcearea += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+			}
 		}
+		Log("Source Area: %LG m²\n",sourcearea);
 	}
-	Log("Source Area: %LG m²\n",sourcearea);
 	
 	if(reflektlog == 1){
 		ostringstream reflectlogfile;
@@ -164,10 +164,10 @@ void LoadGeometry(){
 void RandomPointInSourceVolume(long double &r, long double &phi, long double &z, long double &alpha, long double &gamma){
 	long double p1[3];
 	bool valid;
-	do{	
+	do{	// repeat until valid is set true
 		valid = false;
 		list<TCollision> c;
-		if (sourcemode == "volume"){
+		if (sourcemode == "volume"){ // random point inside a STL-volume
 			p1[0] = mt_get_double(v_mt_state)*(sourcevolume.hi[0] - sourcevolume.lo[0]) + sourcevolume.lo[0]; // random point 
 			p1[1] = mt_get_double(v_mt_state)*(sourcevolume.hi[1] - sourcevolume.lo[1]) + sourcevolume.lo[1];
 			p1[2] = mt_get_double(v_mt_state)*(sourcevolume.hi[2] - sourcevolume.lo[2]) + sourcevolume.lo[2];
@@ -180,7 +180,7 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z,
 				valid = true;
 			}
 		}
-		else if (sourcemode == "surface" || sourcemode == "customsurf"){
+		else if (sourcemode == "surface" || sourcemode == "customsurf"){ // random point on a surface inside custom or STL volume
 			long double RandA = mt_get_double(v_mt_state)*sourcearea;
 			long double n[3], CurrA, SumA = 0;
 			list<Triangle*>::iterator i;
@@ -211,7 +211,7 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z,
 				valid = true;
 			}
 		}
-		else if (sourcemode == "customvol"){
+		else if (sourcemode == "customvol"){ // random point inside a volume defined by a custom parameter range
 			r = sqrt(mt_get_double(v_mt_state) * (r_max*r_max - r_min*r_min) + r_min*r_min); // weighting because of the volume element and a r^2 probability outwards
 			phi = mt_get_double(v_mt_state)*(phi_max - phi_min) + phi_min;
 			z = mt_get_double(v_mt_state)*(z_max - z_min) + z_min;
@@ -246,25 +246,27 @@ bool InSourceVolume(const float p[3]){
 	if (sourcemode == "customvol" || sourcemode == "customsurf"){
 		long double r = sqrt(p[0]*p[0] + p[1]*p[1]);
 		long double phi = atan2(p[1],p[0]); 
-		return (r >= r_min && r <= r_max && phi >= phi_min && phi <= phi_max && p[2] >= z_min && p[2] <= z_max);
+		return (r >= r_min && r <= r_max && 
+				phi >= phi_min && phi <= phi_max && 
+				p[2] >= z_min && p[2] <= z_max); // check if point is in custom paramter range
 	}
-	else{
+	else{ // shoot a ray to the bottom of the sourcevol bounding box and check for intersection with the sourcevol surface
 		long double p1[3] = {p[1], p[2], p[3]};
-		long double p2[3] = {p[0], p[1], sourcevolume.lo[2]};
+		long double p2[3] = {p[0], p[1], sourcevolume.lo[2]}; 
 		list<TCollision> c;
 		if (sourcevolume.Collision(p1,p2,c)){
 			int count = 0;
 			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
-				if (i->normal[2] > 0) count++;
-				else count--;
+				if (i->normal[2] > 0) count++;  // surface normal pointing towards point?
+				else count--;					// or away from point?
 			}
-			return (count == 0);
+			return (count == -1); // when there's exactly one more normal pointing away from than to it, the point is inside the sourcevol
 		}
 		else return false;
 	}
 }
 	
-
+// same as above for cyl. coordinates
 bool InSourceVolume(long double r, long double phi, long double z){
 	if (sourcemode == "customvol" || sourcemode == "customsurf")
 		return (r >= r_min && r <= r_max && phi >= phi_min && phi <= phi_max && z >= z_min && z <= z_max);
@@ -278,136 +280,151 @@ bool InSourceVolume(long double r, long double phi, long double z){
 				if (i->normal[2] > 0) count++;
 				else count--;
 			}
-			return (count == 0);
+			return (count == -1);
 		}
 		else return false;
 	}
 }
 
-// check step y1->y2 for reflection, return -1 for failed reflection (step has to be repeated with smaller stepsize)
-//											0 for no reflection
-//											1 for reflection successful
-short ReflectCheck(long double x1, long double *y1, long double &x2, long double *y2, int &itercount){
+
+// delete ignored collision from colls list
+void DeleteIgnored(long double x1, long double h, list<TCollision> &colls){
+	list<TCollision>::iterator it;
+	for (it = colls.begin(); it != colls.end(); it++){
+		if (!solids[(*it).ID].ignoretimes.empty()){
+			long double x = x1 + (*it).s*h;
+			set<int> itimes = solids[(*it).ID].ignoretimes;
+			if ((x < FillingTime && itimes.count(1) > 0) ||
+				(x >= FillingTime && x < FillingTime + CleaningTime && itimes.count(2) > 0) ||
+				(x >= FillingTime + CleaningTime && x < FillingTime + CleaningTime + RampUpTime && itimes.count(3) > 0) ||
+				(x >= FillingTime + CleaningTime + RampUpTime && x < FillingTime + CleaningTime + RampUpTime + FullFieldTime && itimes.count(4) > 0) ||
+				(x >= FillingTime + CleaningTime + RampUpTime + FullFieldTime && x < FillingTime + CleaningTime + RampUpTime + FullFieldTime + RampDownTime && itimes.count(5) > 0) ||
+				(x >= FillingTime + CleaningTime + RampUpTime + FullFieldTime + RampDownTime && itimes.count(6) > 0))
+				it = --colls.erase(it);
+		}
+	}
+}
+
+// check if p1 closer to collision than REFLECT_TOLERANCE (return true), else reduce h accordingly and return false
+bool CloseEnough(long double p1[3], long double p2[3], long double *y1, long double *y2, long double &h, TCollision &coll){
+	long double u[3] = {p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]};
+	long double distnormal = abs(u[0]*coll.normal[0] + u[1]*coll.normal[1] + u[2]*coll.normal[2]);
+	long double s = coll.s;
+	if (s*distnormal < REFLECT_TOLERANCE) return true;
+	long double v[3];
+	CylKartCoord(y1[2] + s*(y2[2] - y1[2]), y1[1]*y1[6] + s*(y2[1]*y2[6] - y1[1]*y1[6]), y1[4] + s*(y2[4] - y1[4]),
+					y1[5] + s*(y2[5] - y1[5]), &v[0],&v[1],&v[2]);
+	long double vnormal = abs(v[0]*coll.normal[0] + v[1]*coll.normal[1] + v[2]*coll.normal[2]);
+	h = h*coll.s - REFLECT_TOLERANCE/1e3/vnormal;
+	return false;
+}
+
+// check step y1->y2 for reflection, return true when step has to be repeated (with smaller stepsize or reflected velocity)
+//									 return false for no reflection
+bool ReflectCheck(long double x1, long double &h, long double *y1, long double *y2, int &itercount){
 	long double p1[3] = {y1[1]*cos(y1[5]), y1[1]*sin(y1[5]), y1[3]}; // cart. coords
 	
 	if (!geometry.PointInBox(p1)){
 		kennz=KENNZAHL_HIT_BOUNDARIES;  
 		stopall=1;
 		Log("\nParticle has hit outer boundaries: Stopping it! t=%LG r=%LG phi=%LG z=%LG\n",x1,y1[1],y1[5]/conv,y1[3]);
-		return 1;
+		return false;
 	}
 	
 	long double p2[3] = {y2[1]*cos(y2[5]), y2[1]*sin(y2[5]), y2[3]};
+	long double normal[3];
 	list<TCollision> colls;
 	if (geometry.Collision(p1,p2,colls)){ // search in the kdtree for reflection
-		list<TCollision>::iterator it;
-		for (it = colls.begin(); it != colls.end(); it++){
-			if (!solids[(*it).ID].ignoretimes.empty()){
-				long double x = x1 + (*it).s*(x2-x1);
-				set<int> itimes = solids[(*it).ID].ignoretimes;
-				if ((x < FillingTime && itimes.count(1) > 0) ||
-					(x >= FillingTime && x < FillingTime + CleaningTime && itimes.count(2) > 0) ||
-					(x >= FillingTime + CleaningTime && x < FillingTime + CleaningTime + RampUpTime && itimes.count(3) > 0) ||
-					(x >= FillingTime + CleaningTime + RampUpTime && x < FillingTime + CleaningTime + RampUpTime + FullFieldTime && itimes.count(4) > 0) ||
-					(x >= FillingTime + CleaningTime + RampUpTime + FullFieldTime && x < FillingTime + CleaningTime + RampUpTime + FullFieldTime + RampDownTime && itimes.count(5) > 0) ||
-					(x >= FillingTime + CleaningTime + RampUpTime + FullFieldTime + RampDownTime && itimes.count(6) > 0))
-					continue;
-			}
-			break;
-		}
-		if (it == colls.end())
-			return 0;
+		DeleteIgnored(x1,h,colls);
+		if (colls.empty())
+			return false;
 			
-		itercount++;
-		long double normal_cart[3] = {(*it).normal[0],(*it).normal[1],(*it).normal[2]};
-		long double s = (*it).s;
-		unsigned i = (*it).ID;
-		
-		if (!reflekt){ // skip exact reflection point iteration when !reflekt
-			stopall = 1;
-			kennz = solids[i].kennz;
-			long double r = sqrt( pow(p1[0] + s*(p2[0] - p1[0]),2) + pow(p1[1] + s*(p2[1] - p1[1]),2) );
-			long double z = p1[2] + s*(p2[2] - p1[2]); 
-			Log("\nParticle hit %s (no reflection) at r=%LG z=%LG\n",solids[i].name.c_str(),r,z);
-			return 1;
-		}			
-		
-		long double u[3] = {p2[0]-p1[0],p2[1]-p1[1],p2[2]-p1[2]};
-		long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]); // distance p1-p2
-		long double distnormal = abs(u[0]*normal_cart[0] + u[1]*normal_cart[1] + u[2]*normal_cart[2]); // distance p1-p2 normal to surface
-		if (s*distnormal > REFLECT_TOLERANCE){ // if p1 too far from surface
-			long double stepback = dist/distnormal*1e-10*pow(10.0,itercount); // increase little step by a factor 10 on every iteration to avoid very long search
-			if (stepback < s){
-				s -= stepback; // decrease s by a small amount to avoid double reflection
-				x2 = x1 + s*(x2-x1); // write smaller integration time into x2
-				return -1; // return fail to repeat integration step
+		if (!CloseEnough(p1,p2,y1,y2,h,colls.front()))// if p1 too far from surface
+			return true; // repeat integration step
+		else{
+			if (colls.size() > 1){
+				if (CloseEnough(p1,p2,y1,y2,h,*++colls.begin())){
+					cerr << "Solids closer than REFLECT_TOLERANCE!!\n";
+					exit(-1);
+				}
+				else
+					return true;
 			}
-			else{
-				Log("\nReflectCheck did not converge after %i iterations! Overriding tolerance check! (tolerance=%LG)\n",itercount,s*distnormal);
-			}
+			Log("\n#%d Particle hit %s (material %s) at t=%LG r=%LG z=%LG tries=%i: ",
+				iMC,solids[colls.front().ID].name.c_str(),solids[colls.front().ID].mat.name.c_str(),x1,y1[1],y1[3],itercount);
+			long double *normal_cart = colls.front().normal;
+			normal[0] = normal_cart[0]*cos(y1[5]) + normal_cart[1]*sin(y1[5]); // transform normal into local cyl. coord.
+			normal[1] = -normal_cart[0]*sin(y1[5]) + normal_cart[1]*cos(y1[5]); 
+			normal[2] = normal_cart[2];
 		}
-		
-		long double v[3] = {y1[2], y1[1]*y1[6], y1[4]}; // reflection velocity in local cylindrical coord.
-		long double vabs = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-		long double normal[3] = {normal_cart[0]*cos(y1[5]) + normal_cart[1]*sin(y1[5]), // transform normal into local cyl. coord.
-								-normal_cart[0]*sin(y1[5]) + normal_cart[1]*cos(y1[5]), 
-								normal_cart[2]};
-		long double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity normal to reflection plane
-		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-		material mat = solids[i].mat; // get material-index
-		
-		
-	//************ handle different absorption characteristics of materials ****************
-	
-		//************** statistical absorption ***********
-		long double prob = mt_get_double(v_mt_state), Trans=Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag);	
-		if (prob < Trans)
-		{
-			stopall = 1;
-			kennz = solids[i].kennz;
-			Log("\nStatistical absorption at %s (material=%s r=%LG z=%LG tol=%LG tries=%i)!\n",solids[i].name.c_str(),mat.name.c_str(),y1[1],y1[3],s*distnormal,itercount);
-			return 1;
-		}		
-		
-		//*************** specular reflexion ************
-		prob = mt_get_double(v_mt_state);
-		if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat.DiffProb)))
-		{
-	    	Log("\n#%d Reflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG tol=%LG tries=%d Transprop=%LG",
-	    			iMC,solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],s*distnormal,itercount,Trans);
-			nrefl++;
-			v[0] -= 2*vnormal*normal[0]; // reflect velocity
-			v[1] -= 2*vnormal*normal[1];
-			v[2] -= 2*vnormal*normal[2];
-			if(reflektlog == 1)
-				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 1 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
-									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,(long double)0.0,(long double)0.0,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs,Trans);
-		}
-		
-		//************** diffuse reflection ************
-		else if ((diffuse == 2) || ((diffuse == 3)&&(prob < mat.DiffProb)))
-		{
-			long double winkeben = 0.0 + (mt_get_double(v_mt_state)) * (2 * pi); // generate random reflection angles
-			long double winksenkr = acos( cos(0.0) - mt_get_double(v_mt_state) * (cos(0.0) - cos(0.5 * pi)));
-			if (vnormal > 0) winksenkr += pi; // if normal points out of volume rotate by 180 degrees
-			v[0] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
-			v[1] = vabs*sin(winkeben)*cos(winksenkr);
-			v[2] = vabs*sin(winksenkr);
-			RotateVector(v,normal);
-	       	Log("\n#%d Reflection at %s pol %d t=%LG Erefl=%LG neV r=%LG z=%LG w_e=%LG w_s=%LG tol=%LG tries=%d Transprop=%LG",
-	       			iMC,solids[i].name.c_str(),polarisation,x1,Enormal*1e9,y1[1],y1[3],winkeben/conv,winksenkr/conv,s*distnormal,itercount, Trans);
-	       	nrefl++;
-	       	if(reflektlog == 1)
-				fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
-									x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,winkeben,winksenkr,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs,Trans);
-		}
-		y1[2] = v[0]; // write new velocity into y1-vector
-		y1[4] = v[2];
-		y1[6] = v[1]/y1[1];
-		
-		return 1;
 	}
-	return 0;
+	else
+		return false;
+
+	unsigned ID = colls.front().ID;
+	material mat = solids[ID].mat; // get material
+	
+	//************ absorption of electrons/protons ***********
+	if (!reflekt){
+		stopall = 1;
+		kennz = solids[ID].kennz;
+		Log("Absorption!");
+		return false;
+	}			
+
+	
+//************ handle different absorption characteristics of materials ****************
+
+	long double v[3] = {y1[2], y1[1]*y1[6], y1[4]}; // reflection velocity in local cylindrical coord.
+	long double vabs = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+	long double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity normal to reflection plane
+	long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
+	
+	//************** statistical absorption ***********
+	long double prob = mt_get_double(v_mt_state), Trans=Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag);	
+	if (prob < Trans)
+	{
+		stopall = 1;
+		kennz = solids[ID].kennz;
+		Log("Statistical absorption! pol %d Erefl=%LG neV Transprob=%LG\n",polarisation,Enormal*1e9,Trans);
+		return false;
+	}		
+	
+	//*************** specular reflexion ************
+	prob = mt_get_double(v_mt_state);
+	if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat.DiffProb)))
+	{
+    	Log("Specular reflection! pol %d Erefl=%LG neV Transprop=%LG",polarisation,Enormal*1e9,Trans);
+		nrefl++;
+		v[0] -= 2*vnormal*normal[0]; // reflect velocity
+		v[1] -= 2*vnormal*normal[1];
+		v[2] -= 2*vnormal*normal[2];
+		if(reflektlog == 1)
+			fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 1 %LG %.20LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+								x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,(long double)0.0,(long double)0.0,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs,Trans);
+	}
+	
+	//************** diffuse reflection ************
+	else if ((diffuse == 2) || ((diffuse == 3)&&(prob < mat.DiffProb)))
+	{
+		long double winkeben = 0.0 + (mt_get_double(v_mt_state)) * (2 * pi); // generate random reflection angles
+		long double winksenkr = acos( cos(0.0) - mt_get_double(v_mt_state) * (cos(0.0) - cos(0.5 * pi)));
+		if (vnormal > 0) winksenkr += pi; // if normal points out of volume rotate by 180 degrees
+		v[0] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
+		v[1] = vabs*sin(winkeben)*cos(winksenkr);
+		v[2] = vabs*sin(winksenkr);
+		RotateVector(v,normal);
+       	Log("Diffuse reflection! pol %d Erefl=%LG neV w_e=%LG w_s=%LG Transprop=%LG",polarisation,Enormal*1e9,winkeben/conv,winksenkr/conv,Trans);
+       	nrefl++;
+       	if(reflektlog == 1)
+			fprintf(REFLECTLOG,"%LG %LG %LG %LG %LG %LG 2 %LG %.20LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+								x1,y1[1],y1[3],y1[5],p1[0],p1[1],vabs,H,Enormal*1e9,winkeben,winksenkr,y1[2],y1[4],y1[1]*y1[6],y1[6],sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])-vabs,Trans);
+	}
+	y1[2] = v[0]; // write new velocity into y1-vector
+	y1[4] = v[2];
+	y1[6] = v[1]/y1[1];
+	
+	return true;
 }
 
 // rotate coordinate system so, that new z-axis lies on NORMALIZED vector n

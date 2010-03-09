@@ -46,9 +46,14 @@ struct TCollision{
 // root of kd-Tree
 class KDTree{
     private:
+    	// triangle vertex class, each vertex is only stored once in a set to save memory
         struct TVertex{
             float vertex[3];
-            inline bool operator == (const TVertex v) const { return abs(vertex[0] - v.vertex[0]) < 1e-10 && abs(vertex[1] - v.vertex[1]) < 1e-10 && abs(vertex[2] - v.vertex[2]) < 1e-10; };
+            inline bool operator == (const TVertex v) const { 
+            	return abs(vertex[0] - v.vertex[0]) < 1e-10 && 
+            			abs(vertex[1] - v.vertex[1]) < 1e-10 && 
+            			abs(vertex[2] - v.vertex[2]) < 1e-10; 
+            };
         	inline bool operator < (const TVertex v) const { return !(*this == v); };
         };
 
@@ -66,27 +71,25 @@ class KDTree{
             public:
                 KDNode(const float boxlo[3], const float boxhi[3], const int depth, KDNode *aparent); // constructor
                 ~KDNode();  // destructor
-                void AddTriangle(Triangle *tri);    // add triangle to list or to leaves
+                void AddTriangle(Triangle *tri);    // add triangle to node
                 void Split();   // split node in two leaves
-//                void FindNeighbour(Triangle* tri, const short vertexnumber); // find neighbours of a triangle
                 bool Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls);  // find the smallest box which contains the segment p1->p2 and call TestCollision there
                 template <typename coord> bool PointInBox(const coord p[3]) {
                 	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) && (p[1] <= hi[1]) && (p[1] >= lo[1]) && (p[2] <= hi[2]) && (p[2] >= lo[2]));
                 }; // test if point is inside box
         };
 
-        set<TVertex> allvertices;
+        set<TVertex> allvertices;	// list of triangle vertices
         KDNode *root;   // root node
         KDNode *lastnode;    // remember last collision-tested node to speed up search when segments are adjacent
-        int (*FLog)(const char*, ...);
+        int (*FLog)(const char*, ...);	// function to print log messages (e.g. printf), given by constructor parameter
     public:
-        KDTree(int (*ALog)(const char*, ...));   // constructor
+        KDTree(int (*ALog)(const char*, ...));   // constructor, parameter: see FLog above
         ~KDTree();  // destructor
         float lo[3],hi[3];    // bounding box of root node
         list<Triangle*> alltris; // list of all triangles in the tree
         void ReadFile(const char *filename, const unsigned ID, char name[80] = NULL);    // read STL-file
-        void Init(/*const long double PointInVolume[3] = NULL*/);    // create tree
+        void Init();    // create KD-tree
         bool Collision(const long double p1[3], const long double p2[3], list<TCollision> &colls);  // test segment p1->p2 for collision with triangle
         bool PointInBox(const long double p[3]){ return (root && root->PointInBox(p)); };  // test if point is inside root node
-//        bool PointInVolume(const long double p[3]);
 };

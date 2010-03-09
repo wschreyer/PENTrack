@@ -58,15 +58,17 @@ bool Triangle::intersect(const long double p1[3], const long double p2[3], long 
     if (un == 0)   // direction vector parallel to triangle plane?
         return false;
     long double x[3] = {p1[0] - vertex[0][0], p1[1] - vertex[0][1], p1[2] - vertex[0][2]};   // vector from first vertex to first segment point
-    s = -DotProduct(x,normal) / un;  // parametric coordinate of intersection point (i = p1 + new_s*u)
+    s = -DotProduct(x,normal) / un;  // parametric coordinate of intersection point (i = p1 + s*u)
     if ((s <= 0) || (s > 1)) // intersection point lies outside of the segment
         return false;
     x[0] += s*u[0];
     x[1] += s*u[1];
     x[2] += s*u[2]; // vector from first vertex to intersection point
+    
+    // calculate barycentric coordinates a,b of intersection point
     long double vw = DotProduct(v,w), vv = DotProduct(v,v), ww = DotProduct(w,w);
-    long double parametric_factor = 1/(vw*vw - vv*ww);    // needed for parametric coordinates
-    long double xw = DotProduct(x,w)*parametric_factor, xv = DotProduct(x,v)*parametric_factor;   // calculate parametric coordinates a,b of intersection point
+    long double parametric_factor = 1/(vw*vw - vv*ww);
+    long double xw = DotProduct(x,w)*parametric_factor, xv = DotProduct(x,v)*parametric_factor;
     long double a = vw*xw - ww*xv;
     if ((a < 0) || (a > 1))
         return false;
@@ -323,11 +325,8 @@ bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3],
     }
     else if (parent) // else if parent exists, test collision there
         return parent->Collision(p1,p2,lastnode,colls);
-    else if (SegmentInBox(p1,p2)){
+    else if (SegmentInBox(p1,p2)) // else if a part of the segment is inside the (root) box
         return TestCollision(p1,p2,colls);
-    }
-    else
-        printf("Segment outside of box!");
     return false;
 }
 

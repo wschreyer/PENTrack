@@ -143,12 +143,6 @@ void ConfigInit(void){
 		if (neutdist == 1) prepndist(1);
 	}
 	
-	if((BruteForce==1)||(ausgabewunsch==1)||(neutdist==1))
-	{
-		SaveIntermediate=1;
-		kmax=KMDEF;
-	}
-	
 	ausgabewunschsave=ausgabewunsch;
 	return;
 }
@@ -201,8 +195,6 @@ void OpenFiles(int argc, char **argv){
 	// Print track to file
 	if ((ausgabewunsch == OUTPUT_EVERYTHING)||(ausgabewunsch == OUTPUT_EVERYTHINGandSPIN))
 	{ 
-		SaveIntermediate=1; // turn on saving of intermediate values in integrator
-		kmax=KMDEF;
 		ostringstream wholetrackfile;
 		wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track001.out";
 		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
