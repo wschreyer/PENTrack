@@ -28,7 +28,6 @@ long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus f
 // misc configurations
 int MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
 int reflekt=0, bfeldwahl, protneut, Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
-int SaveIntermediate=0;                // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
 int WriteTree = 0;
 int snapshot=0, snapshotsdone=0;  // make snapshots of the neutron at specified times
@@ -57,7 +56,7 @@ long double  x1, x2;                         // start and endtime handed over to
 int iMC;                             //  counter for MonteCarloSim
 long double trajlengthsum;			// trajectory length
 long double Hstart, Hend,Hmax;     //maximum energy
-long double gammarel, NeutEnergie;	//relativistic gamma factor, Neutron energy
+long double NeutEnergie;	//relativistic gamma factor, Neutron energy
 
 struct decayinfo decay; //containing all data from neutron decay for the emerging proton and electron
 
@@ -72,7 +71,7 @@ long double delx;                            // initial timestep for the integra
 long double delx_n=0.0;
 int stopall=0, Feldcount=0;                            //  if stopall=1: stop particle
 
-struct initial nini, pini, eini; 	// one 'initial' for each particle type
+initial nini, pini, eini; 	// one 'initial' for each particle type
 
 // final values of particle
 int kennz;                                  // ending code
@@ -125,10 +124,10 @@ long double BFflipprob = 0.0, BFsurvprob=1.0;                // spinflip probabi
 //for the output of intermediate steps
 //#define KMDEF 1000
 int BFNrIntermediate=BFKMDEF;    // number of steps for intermediate output in the case of 
-int kmax=0, BFkmax = BFKMDEF;                                         // number of steps for intermediate output
+int BFkmax = BFKMDEF;                                         // number of steps for intermediate output
 long double nintcalls=0, ntotalsteps=0;     // counters to determine average steps per integrator call
 int kount, hfs, NSF = 0;                                            // counter for intermediate output steps, highfieldseeker: +1 yes, -1 lowfieldseeker, number of spin flips
-long double *xp=NULL,**yp=NULL, *BFxp=NULL, **BFyp=NULL, dxsav=0, BFdxsav=0;          // Arrays for intermediate output
+long double *xp=NULL,**yp=NULL, *BFxp=NULL, **BFyp=NULL, BFdxsav=0;          // Arrays for intermediate output
 long double **Bp=NULL,**Ep=NULL;                            // Arrays for intermediate output
 // END output of intermediate steps 
 
@@ -208,7 +207,6 @@ int main(int argc, char **argv){
 	// setting some default values
 	nvar=6;           // number of variables
 	eps=1.0e-13;      // desired relative precision for tracking of n and p 10^-13
-	dxsav=1e-5;  //Kleinster ausgegebener zeitschritt Neutronen
 	hmin= 0;       // minimum stepsize for runge kutta
 	
 	// globals init end
@@ -262,13 +260,10 @@ int main(int argc, char **argv){
 	}
 	
 	// allocate vector intermediate values when desired by the user
-	if((ausgabewunsch==1)||(ausgabewunsch==3)||BruteForce||ruBruteForce||ffBruteForce||rdBruteForce||neutdist)
-	{
-		xp=dvector(1,kmax);
-		yp=dmatrix(1,6,1,kmax);         
-		Bp=dmatrix(1,13,1,kmax);
-		Ep=dmatrix(1,2,1,kmax);
-	}
+	xp=dvector(1,kmax);
+	yp=dmatrix(1,6,1,kmax);         
+	Bp=dmatrix(1,13,1,kmax);
+	Ep=dmatrix(1,2,1,kmax);
 	
 	LoadGeometry();	// read STL-files		
 	
@@ -315,6 +310,7 @@ int main(int argc, char **argv){
 	Log("Integrator used (1 Bulirsch Stoer, 2 Runge Kutta): %d \n", runge);
 	Log("The integrator was called: %LF times with %LF internal steps on average. \n", nintcalls,ntotalsteps/nintcalls);
 	float SimulationTime = (1.*clock())/CLOCKS_PER_SEC - InitTime;
+	IntegratorTime -= ReflectionTime;
 	Log("Init: %.2fs, Simulation: %.2fs, Integrator: %.2fs (%.2f%%), Reflection: %.2fs (%.2f%%), Dicing: %.4fs\n",
 			InitTime, SimulationTime, IntegratorTime, IntegratorTime*100/SimulationTime, ReflectionTime, ReflectionTime*100/SimulationTime, DiceTime);
 	Log("That's it... Have a nice day!\n");
@@ -353,7 +349,6 @@ void PrepareParticle()
 	switch(protneut)
 	{	case NEUTRON:	M = m_n;			// [eV/c^2]
 						h1 = 5e-5;			// guess for the first step size of runge kutta
-						dxsav = 1e-5;		// kleinster ausgegebener zeitschritt Neutronen
 						if(polarisationsave == POLARISATION_GOOD) // in ev/T
 						{	hfs = -1;
 							mu_n = hfs * mu_nSI / ele_e; // => mu_n is negative
@@ -375,7 +370,6 @@ void PrepareParticle()
 		case PROTON:	M = m_p;			// [eV/c^2]
 						Qm0 = 1.0/M;
 						h1 = 1e-8;		// guess for the first step size of runge kutta
-						dxsav = 1e-9;	// kleinster ausgabeschritt der zwischenwerte im integrator
 						BahnPointSaveTime = 1e-8;
 						reflekt = 0;
 						break;		
@@ -388,7 +382,6 @@ void PrepareParticle()
 		case ELECTRONS:	M=m_e;			// [eV/c^2]
 						Qm0 = -1.0/M;
 						h1 = 2e-10;		// guess for the first step size of runge kutta
-						dxsav = 1e-12;	// kleinster ausgabeschritt der zwischenwerte im integrator
 						BahnPointSaveTime = 1e-11;
 						reflekt = 0;
 						break;
@@ -396,7 +389,6 @@ void PrepareParticle()
 }
 //======== end of PrepareParticle =====================================================================================
 
-//int derivsaufrufe=0;
 void derivs(long double x, long double *y, long double *dydx){
 	// call the B-field
 	BFeld(y[1],y[5],y[3], x);
@@ -572,7 +564,7 @@ void IntegrateParticle(){
 	}
 	else if(protneut == ELECTRONS)
 	{
-		gammarel = Energie/m_e/c_0/c_0 + 1;
+		long double gammarel = Energie/m_e/c_0/c_0 + 1;
 		v_n = c_0 * sqrtl(1-(1/(gammarel*gammarel)));     // relatistic velocity from E_kin in eV
 		//cout << "Energie: " << Energie << " m_e: " << m_e << " v_n: " << v_n << endl;
 		//sleep(5);										
@@ -649,42 +641,44 @@ void IntegrateParticle(){
 			if(ystart[5]<(-2.0*pi))
 				ystart[5]=ystart[5]+2*pi;
 			
-			long double xtemp = x1, *ytemp = dvector(1,nvar), trajlengthtemp = trajlengthsum;
-			long double vladtotaltemp = vladtotal, vladmaxtemp = vladmax, thumbmaxtemp = thumbmax;
-			for (int i = 1; i <= nvar; i++) ytemp[i] = ystart[i];
-			short ret;
-			int itercounts = 0;			
-			do{
-				timeval intstart, intend;
-				gettimeofday(&intstart, NULL);	
-				//###################### Integrationsroutine #####################
-				if (runge==2)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,rkqs);           // runge kutta step
-				else if (runge==1)  (*odeint) (ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,derivs,bsstep);        // bulirsch stoer step
-				// (ystart: input vector | nvar: number of variables | x1, x2: start and end time | eps: precision to be achieved | h1: guess for first stepsize | hmin: mininum stepsize | nok,nbad: number of good and bad steps taken | derivs: function for differential equation to be integrated, rkqs, bsstep: integrator to be used (runge kutta, bulirsch stoer) )
-				//###################### Integrationsroutine #####################
-				gettimeofday(&intend, NULL);
-				IntegratorTime += intend.tv_sec - intstart.tv_sec + float(intend.tv_usec - intstart.tv_usec)/1e6;
-				nintcalls++;
-				
-				// check if reflection is necessary
-				timeval reflectstart, reflectend;
-				gettimeofday(&reflectstart, NULL);	
-				ret = ReflectCheck(xtemp,ytemp,x2,ystart,itercounts);
-				if (ret != 0){ 	// if necessary drop last integration step
-					x1 = xtemp;
-					for (int j = 1; j <= nvar; j++) ystart[j] = ytemp[j];
-					trajlengthsum = trajlengthtemp;
-					vladtotal = vladtotaltemp;
-					vladmax = vladmaxtemp;
-					thumbmax = thumbmaxtemp;
+			timeval intstart, intend;
+			gettimeofday(&intstart, NULL);	
+			//###################### Integrationsroutine #####################
+			if (runge==2)  odeint(ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,&derivs,&rkqs);           // runge kutta step
+			else if (runge==1)  odeint(ystart,nvar,x1,x2,eps,h1,hmin,&nok,&nbad,&derivs,&bsstep);        // bulirsch stoer step
+			// (ystart: input vector | nvar: number of variables | x1, x2: start and end time | eps: precision to be achieved | h1: guess for first stepsize | hmin: mininum stepsize | nok,nbad: number of good and bad steps taken | derivs: function for differential equation to be integrated, rkqs, bsstep: integrator to be used (runge kutta, bulirsch stoer) )
+			//###################### Integrationsroutine #####################
+			gettimeofday(&intend, NULL);
+			IntegratorTime += intend.tv_sec - intstart.tv_sec + float(intend.tv_usec - intstart.tv_usec)/1e6;
+			nintcalls++;
+		
+			// spin flip properties according to Vladimirsky and thumbrule
+			for (int i = 1; i < kount; i++){
+				if (spinflipcheck == 2){   
+					// y[6]: phidot
+					vlad = vladimirsky(yp[1][i], Bp[1][i], Bp[5][i], Bp[9][i], 
+									   Bp[2][i], Bp[3][i], Bp[4][i], Bp[6][i], Bp[7][i], Bp[8][i], Bp[10][i], Bp[11][i], Bp[12][i],
+									   yp[2][i], yp[6][i], yp[4][i]);
+					frac = thumbrule(Bp[1][i], Bp[5][i], Bp[9][i], 
+									 Bp[2][i], Bp[3][i], Bp[4][i], Bp[6][i], Bp[7][i], Bp[8][i], Bp[10][i], Bp[11][i], Bp[12][i],
+									 yp[2][i], yp[6][i], yp[4][i]);
+					if (vlad > 1e-99){
+						vladtotal = vladtotal * (1-vlad);
+						if (vladtotal < 0.9999)
+							Log(" VladShit (%LG) at t= %.17LG\n",vladtotal,xp[i]);
+					}
+					if ((vlad > vladmax)&&(vlad > 1e-99))
+						vladmax=log10l(vlad);
+					if ((frac > thumbmax)&&(frac > 1e-99))
+						thumbmax=log10l(frac);
 				}
-				gettimeofday(&reflectend, NULL);
-				ReflectionTime += reflectend.tv_sec - reflectstart.tv_sec + float(reflectend.tv_usec - reflectstart.tv_usec)/1e6;
-			}while(ret == -1); // repeat as long as reflection failed
-			free_vector(ytemp,1,nvar);
-					
-			if (ret == 1) continue; // if successful start a new integration step immediately
-			
+
+				// Trajectory length calculation
+				trajlengthsum += sqrtl(pow(yp[1][i] - yp[1][i+1],2) + 
+									   pow(yp[3][i] - yp[3][i+1],2) +
+									   pow(yp[5][i]*yp[1][i] - yp[5][i+1]*yp[1][i+1],2));
+			}
+								
 			ntotalsteps=ntotalsteps+kount;
 			
 			
@@ -923,8 +917,8 @@ void BruteForceIntegration(){
 //Ausgabe der Zwischenwerte aus odeint
 void PrintIntegrationStep(long double &timetemp){
 	long double logvlad = 0.0, logfrac = 0.0;
-	if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)>=BahnPointSaveTime)){
-		for (int klauf=2;klauf<=kount;klauf++){
+	if ((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)){
+		for (int klauf=1;klauf<kount;klauf++){
 			if ((xp[klauf]-timetemp)>=BahnPointSaveTime)
 			{
 				
@@ -969,45 +963,6 @@ void PrintIntegrationStep(long double &timetemp){
 			}
 		}
 	}
-	else if (((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)) && ((x2-x1)<BahnPointSaveTime)){
-		if((x2-timetemp)>=BahnPointSaveTime){
-			printf(":");
-			fflush(stdout);
-			// Ausgabewerte berechnen
-			BFeld(ystart[1],ystart[5],ystart[3], x2);
-			vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
-			if(protneut == NEUTRON) 
-				H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;    // mu_n negative for low-field seekers
-			else if(protneut == PROTON)           // p			
-				H= (0.5*m_p*vend*vend);           // Energie in eV for p		
-			else if(protneut == ELECTRONS)  
-				H= c_0*c_0  * M * (1/sqrtl(1-vend*vend/(c_0*c_0))-1);                                        // rel Energie in eV
-			if (spinflipcheck == 2){
-				if (vlad>1e-99) 
-					logvlad=log10l(vlad);
-				if (frac>1e-99) 
-					logfrac=log10l(frac);
-			}
-			fprintf(OUTFILE1,"%d %d %d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
-							 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
-							 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %d \n",
-							 iMC,protneut,polarisation, x2,ystart[1],ystart[2],ystart[3],ystart[4],ystart[5],ystart[6],ystart[1]*cosl(ystart[5]),ystart[1]*sinl(ystart[5]),
-							 sqrtl(ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4]),H,Br,dBrdr,dBrdphi,dBrdz,Bphi,dBphidr,dBphidphi,dBphidz,
-							 Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,x2-x1,logvlad,logfrac,ExpPhase);
-			fflush(OUTFILE1);
-
-			if (WriteTree){
-				double outvars[] = {iMC, protneut, polarisation,  x2, ystart[1], ystart[2], ystart[3], ystart[4], ystart[5], ystart[6], ystart[1]*cosl(ystart[5]), ystart[1]*sinl(ystart[5]),
-									sqrtl(ystart[2]*ystart[2]+ystart[6]*ystart[6]*ystart[1]*ystart[1]+ystart[4]*ystart[4]), H, Br, dBrdr, dBrdphi, dBrdz, Bphi, dBphidr, dBphidphi, dBphidz,
-									Bz, dBzdr, dBzdphi, dBzdz, Bws, Er, Ez, x2-x1, logvlad, logfrac, ExpPhase};
-				tracktree->Fill(outvars);
-			}
-
-			Zeilencount++;
-			timetemp = x2;
-
-		}
-	}//Ende Ausgabe
 
 	if (Zeilencount>40000)
 	{

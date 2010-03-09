@@ -148,7 +148,6 @@ extern long double lengthconv, Bconv, Econv;    // Einheiten aus field Tabelle (
 //misc configuration
 extern int MonteCarloAnzahl;   // user choice to use MC or not, number of particles for MC simulation
 extern int reflekt, bfeldwahl, protneut, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
-extern int SaveIntermediate;               // 1: reflections shall be logged, save intermediate steps of Runge Kutta?
 extern int polarisation, polarisationsave, ausgabewunsch, ausgabewunschsave, Feldcount; // user choice for polarisation of neutrons und Ausgabewunsch
 extern int WriteTree;
 extern int snapshot, snapshotsdone;								// take snapshots of the particles at specified times
@@ -178,7 +177,7 @@ extern long double  x1, x2; // start and endtime handed over to integrator
 extern long int nrefl; // reflection counter
 extern long double trajlengthsum;
 extern long double Hstart, Hend, Hmax;     //maximum energy
-extern long double gammarel, NeutEnergie; // relativistic gamma factor, neutron energy
+extern long double NeutEnergie; // relativistic gamma factor, neutron energy
 
 struct decayinfo				// containing all data from neutron decay for the emerging proton and electron
 {	unsigned short int on;		// (!=0) if neutron decay is allowed // "do the neutrons decay?"
@@ -275,7 +274,7 @@ extern long double BFflipprob, BFsurvprob;                         // spinflip p
 extern int kmax, BFkmax;                                         // number of steps for intermediate output
 extern long double nintcalls, ntotalsteps;					// counters to determine average steps per integrator call
 extern int kount, hfs, NSF;                               // counter for intermediate output steps, highfieldseeker, numberofspinflips
-extern long double *xp,**yp, *BFxp, **BFyp, dxsav, BFdxsav;          // Arrays for intermediate output
+extern long double *xp,**yp, *BFxp, **BFyp, BFdxsav;          // Arrays for intermediate output
 extern long double **Bp,**Ep;                            // Arrays for intermediate output
 
 // incorporate B-fieldoszillations into the code
@@ -284,6 +283,7 @@ extern long double OscillationFraction, OscillationFrequency;
 
 // time statistics
 extern float InitTime, ReflectionTime, IntegratorTime, DiceTime;
+extern int derivcalls;
 
 
 extern mt_state_t *v_mt_state; //mersenne twister state var
