@@ -50,9 +50,9 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 
 	Bnull();	// first, set all to zero
 	
-	if (bfeldwahl != 1){
-		SwitchField(t); // set BFeldSkal for different experiment phases	
+	SwitchField(t); // set BFeldSkal for different experiment phases	
 		
+	if (bfeldwahl != 1){
 		long double Brtemp, Bztemp, dBdrtemp, dBdztemp;
 		switch (bfeldwahl)
 		{
@@ -62,11 +62,11 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 						while (i != fields.end()){						
 							if ((*i)->BInterpol(rloc, zloc))
 								break;
-							else if (++i == fields.end()){
+/*							else if (++i == fields.end()){
 								Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
 								kennz = KENNZAHL_LEFT_FIELD;
 								stopall = 1;
-							}		
+							}		*/
 						}				
 					}
 					RacetrackField(rloc,philoc,zloc);
@@ -77,11 +77,11 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 						while (i != fields.end()){						
 							if ((*i)->BInterpol(rloc, zloc))
 								break;
-							else if (++i == fields.end()){
+/*							else if (++i == fields.end()){
 								Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
 								kennz = KENNZAHL_LEFT_FIELD;
 								stopall = 1;
-							}		
+							}	*/	
 						}				
 					}
 					RacetrackField(rloc,philoc,zloc);
@@ -265,11 +265,11 @@ void EFeld(long double rloc, long double philoc, long double zloc){
 		while (i != fields.end()){						
 			if ((*i)->EInterpol(rloc, zloc))
 				break;
-			else if (++i == fields.end()){
+/*			else if (++i == fields.end()){
 				Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
 				kennz = KENNZAHL_LEFT_FIELD;
 				stopall = 1;
-			}		
+			}	*/	
 		}				
 		/*switch (Efeldwahl){
 			case 0: EInterpol(rloc, philoc, zloc); break;
