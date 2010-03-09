@@ -495,7 +495,7 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 			h=x2-x;                                          //If stepsize can overshoot, decrease.
 
 		//(*rkqs)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta
-		 (*integrator)(y,dydx,nvar,&x,h,1e-15,yscal,&hdid,&hnext,derivs);        // runge kutta or bulirsch stoer step
+		 (*integrator)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta or bulirsch stoer step
 		
 		timeval reflectstart, reflectend;
 		gettimeofday(&reflectstart, NULL);	
