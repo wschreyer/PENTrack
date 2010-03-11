@@ -21,12 +21,18 @@ UCNdet	0			0			0		# 100% efficiency assumed
 12			UCNdet.STL				UCNdet
 
 [SOURCE]
-#define custom parameter rage for inital conditions (source volume below will be ignored if this section is present!)
-#custom		r_min	r_max	phi_min	phi_max		z_min	z_max
-customsurf	0.123	0.495	0		360			0.003	1.145
+############ sourcemodes ###############
+# volume: source volume is given by a STL file, particles are created in the space completely surrounded by the STL-surface
+# customvol: particle starting values are diced in the given parameter range (r,phi,z)
+# surface: starting values are on triangles which have at least one vertex in the given STL-volume
+# customsurf: starting values are on triangles which have at least one vertex in the given parameter range (r,phi,z)
+########################################
+
+#customxxx	r_min	r_max	phi_min	phi_max		z_min	z_max
+#customsurf	0.123	0.495	0		360			0.003	1.145
 customvol	0.125	0.495	0		360			0.005	1.145
 
-#set source volume here, inital conditions will be randomly picked from this volume (has to be a solid body in Solidworks)
+#inital conditions will be randomly picked from this volume (has to be a solid body in Solidworks)
 #surface source.STL
 #volume source.STL
 
