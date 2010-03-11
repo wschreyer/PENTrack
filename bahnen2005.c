@@ -672,11 +672,6 @@ void IntegrateParticle(){
 					if ((frac > thumbmax)&&(frac > 1e-99))
 						thumbmax=log10l(frac);
 				}
-
-				// Trajectory length calculation
-				trajlengthsum += sqrtl(pow(yp[1][i] - yp[1][i+1],2) + 
-									   pow(yp[3][i] - yp[3][i+1],2) +
-									   pow(yp[5][i]*yp[1][i] - yp[5][i+1]*yp[1][i+1],2));
 			}
 								
 			ntotalsteps=ntotalsteps+kount;

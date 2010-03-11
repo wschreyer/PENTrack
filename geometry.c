@@ -13,6 +13,8 @@ list<Triangle*> sourcetris;
 long double sourcearea;
 
 vector<solid> solids;	// dynamic array to associate solids with material/kennzahl/name
+solid defaultsolid = {"Restgas",{"Restgas",0,0,0},0};
+solid *currentsolid = &defaultsolid;
 
 vector<int> kennz_counter[3];
 
@@ -30,10 +32,10 @@ long double Transmission(long double Er, long double Mf, long double Pf){
 	return 1 - norm((sE - sEV)/(sE + sEV));
 }
 
-// absorption of neutron (energy E) flying distance l (in m) through Fermi potential Mf + i*Pf (all in neV)
+// absorption probability of neutron flying distance l (in m) through Fermi potential Mf + i*Pf (all in neV)
 long double Absorption(long double E, long double Mf, long double Pf, long double l){
 	complex<long double> V(Mf,Pf);
-	return exp(-imag(sqrt(2*m_n*1e-9*(Er - V)))/658.2121968e-9 * l);
+	return 1 - exp( 2*imag(sqrt(2*m_n*1e-9*(E - V))) / (hquer/ele_e) * l ); // absorption length 2*Im(sqrt(2m(E-V))/hquer)
 }
 
 
@@ -237,7 +239,7 @@ void RandomPointInSourceVolume(long double &r, long double &phi, long double &z,
 			valid = (count == 0); // count is zero, if all surfaces are closed -> point does not lie in a solid
 		}
 	}while(!valid);
-	
+	currentsolid = &defaultsolid;
 }
 
 
@@ -362,7 +364,7 @@ bool ReflectCheck(long double x1, long double &h, long double *y1, long double *
 		return false;
 
 	unsigned ID = colls.front().ID;
-	material mat = solids[ID].mat; // get material
+	material *mat = &solids[ID].mat; // get material
 	
 	//************ absorption of electrons/protons ***********
 	if (!reflekt){
@@ -381,18 +383,23 @@ bool ReflectCheck(long double x1, long double &h, long double *y1, long double *
 	long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	
 	//************** statistical absorption ***********
-	long double prob = mt_get_double(v_mt_state), Trans=Transmission(Enormal*1e9,mat.FermiReal,mat.FermiImag);	
+	long double prob = mt_get_double(v_mt_state);
+	long double Trans=Transmission(Enormal*1e9,mat->FermiReal,mat->FermiImag);	
 	if (prob < Trans)
 	{
-		stopall = 1;
-		kennz = solids[ID].kennz;
-		Log("Statistical absorption! pol %d Erefl=%LG neV Transprob=%LG\n",polarisation,Enormal*1e9,Trans);
+/*		stopall = 1;
+		kennz = solids[ID].kennz;*/
+		Log("Transmission! pol %d Erefl=%LG neV Transprob=%LG\n",polarisation,Enormal*1e9,Trans);
+		if (vnormal > 0)
+			currentsolid = &defaultsolid;
+		else
+			currentsolid = &solids[ID];
 		return false;
 	}		
 	
 	//*************** specular reflexion ************
 	prob = mt_get_double(v_mt_state);
-	if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat.DiffProb)))
+	if ((diffuse == 1) || ((diffuse==3)&&(prob >= mat->DiffProb)))
 	{
     	Log("Specular reflection! pol %d Erefl=%LG neV Transprop=%LG",polarisation,Enormal*1e9,Trans);
 		nrefl++;
@@ -405,7 +412,7 @@ bool ReflectCheck(long double x1, long double &h, long double *y1, long double *
 	}
 	
 	//************** diffuse reflection ************
-	else if ((diffuse == 2) || ((diffuse == 3)&&(prob < mat.DiffProb)))
+	else if ((diffuse == 2) || ((diffuse == 3)&&(prob < mat->DiffProb)))
 	{
 		long double winkeben = 0.0 + (mt_get_double(v_mt_state)) * (2 * pi); // generate random reflection angles
 		long double winksenkr = acos( cos(0.0) - mt_get_double(v_mt_state) * (cos(0.0) - cos(0.5 * pi)));
@@ -425,6 +432,19 @@ bool ReflectCheck(long double x1, long double &h, long double *y1, long double *
 	y1[6] = v[1]/y1[1];
 	
 	return true;
+}
+
+
+void AbsorbCheck(long double *y1, long double *y2){
+	if (protneut == NEUTRON){
+		long double E = (m_n*gravconst*y1[3] + 0.5*m_n*(y1[2]*y1[2] + y1[4]*y1[4] + y1[1]*y1[6]*y1[1]*y1[6]) - mu_n*Bws)*1e9;
+		long double l = sqrt(pow(y2[1] - y1[1],2) + pow(y2[3] - y1[3],2) + pow(y2[5]*y2[1] - y1[5]*y1[1],2));
+		if (mt_get_double(v_mt_state) < Absorption(E, currentsolid->mat.FermiReal, currentsolid->mat.FermiImag, l)){
+			stopall = 1;
+			kennz = currentsolid->kennz;
+			Log("Absorption in %s (material %s)! Depth: %LG m\n",currentsolid->name.c_str(), currentsolid->mat.name.c_str(), mt_get_double(v_mt_state)*l);
+		}
+	}
 }
 
 // rotate coordinate system so, that new z-axis lies on NORMALIZED vector n
