@@ -6,7 +6,7 @@ Ti		-50.76		0.024983971	0.16
 Cu		169.98		0.023134523	0.16
 CsI		29.51		0.03		0.5		# CsI rough, more diffuse reflection
 DLC		256			0.00182		0.16  
-UCNdet	0			0			0		# 100% efficiency assumed
+UCNdet	0.1			1			0		# high efficiency assumed
 
 [GEOMETRY]
 #models the program will load, particle absorbed at the surface will be flagged with the kennzahl of the surface

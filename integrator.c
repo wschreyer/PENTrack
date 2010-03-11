@@ -508,11 +508,17 @@ void odeint (long double *ystart,int nvar, long double x1, long double x2, long 
 			gettimeofday(&reflectend, NULL);
 			ReflectionTime += reflectend.tv_sec - reflectstart.tv_sec + float(reflectend.tv_usec - reflectstart.tv_usec)/1e6;
 			continue;
-		}	
+		}
 		itercount = 0;		
 		gettimeofday(&reflectend, NULL);
 		ReflectionTime += reflectend.tv_sec - reflectstart.tv_sec + float(reflectend.tv_usec - reflectstart.tv_usec)/1e6;
 		
+		// Trajectory length calculation
+		long double trajlength = sqrtl(pow(yprev[1] - y[1],2) + pow(yprev[3] - y[3],2) + pow(yprev[5]*yprev[1] - y[5]*y[1],2)); 
+		trajlengthsum += trajlength;
+		
+		AbsorbCheck(yprev,y);
+
 		if (hdid == h) 
 			++(*nok); 
 		else 
