@@ -367,7 +367,7 @@ bool ReflectCheck(long double x1, long double &h, long double *y1, long double *
 	material *mat = &solids[ID].mat; // get material
 	
 	//************ absorption of electrons/protons ***********
-	if (!reflekt){
+	if (!reflekt||protneut!=1){
 		stopall = 1;
 		kennz = solids[ID].kennz;
 		Log("Absorption!");
