@@ -263,7 +263,7 @@ void MCZerfallsstartwerte()
 
 //-------- Step 2 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
-		beta1 = 360 * (mt_get_double(v_mt_state));
+		beta1 = 2*pi * (mt_get_double(v_mt_state));
 		delta1 = acosl(1 - 2 * (mt_get_double(v_mt_state)));
 		// spharical coordinates
 		epx = cosl(delta1) * cosl(beta1);
@@ -301,14 +301,14 @@ void MCZerfallsstartwerte()
 
 //-------- Step 4 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
-		beta2 = 360 * (mt_get_double(v_mt_state));
+		beta2 = 2*pi * (mt_get_double(v_mt_state));
 		delta2 = acosl(1 - 2 * (mt_get_double(v_mt_state)));
 		// spharical coordinates
 		epx = cosl(delta2) * cosl(beta2);
 		epy = cosl(delta2) * sinl(beta2);
 		epz = sinl(delta2);
 		// rotation in respect to the orientation of the virtual state
-		zyROTROT((180 + beta1), (180 - delta1), &epx, &epy, &epz);		
+		zyROTROT((pi + beta1), (pi - delta1), &epx, &epy, &epz);		
 		// 3-momentum of the electron
 		e[1] = e[4] * epx;
 		e[2] = e[4] * epy;
@@ -443,7 +443,7 @@ extern long double GetAngle(long double cos, long double sin)
 	{	angle = acosl(cos);
 	}
 	else if((cos < 0) && (sin < 0))			// quadrant III
-	{	angle = 360 - (acosl(cos));
+	{	angle = 2*pi - (acosl(cos));
 	}
 	else if((cos >= 0) && (sin < 0))		// quadrant IV
 	{	angle = (-1) * (acosl(cos));		
