@@ -530,11 +530,9 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 		kennz = KENNZAHL_NOT_FINISH;
 
 	// calculate spin flip lifetime tauSF and influence on lifetime measurement 
-	long double tauSF = -x2/logl(1-BFflipprob);
+	long double tauSF = (BFflipprob != 0) ? (-x2/logl(1-BFflipprob)) : 9e99;
 	long double dtau=tau-1/(1/tau+1/tauSF) ;
 	 
-	if(tauSF < -9e99) tauSF = INFINITY; // "-INF"?
-	
 	// output of end values
 	fprintf(ENDLOG,"%i %li %i %i %i "
 	               "%LG %LG %LG %LG %LG "
