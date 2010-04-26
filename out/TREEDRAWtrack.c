@@ -37,7 +37,7 @@ void TREEDRAWtrack(TString filename)
 {	gROOT->Reset(); // reset ROOT
 
 	TFile *file = TFile::Open(filename, "READ"); // opening the file wherein the tree is stored (read access only)
-	TTree *mytree = (TTree*) file->Get("TrackTree"); // creating a pointer 'mytree' pointing on the TTree "mytree"
+	TTree *mytree = (TTree*) file->Get("mytree"); // creating a pointer 'mytree' pointing on the TTree "mytree"
 	
 	//======== Drawing and saving z versus r, z versus x and x-y-z  =====================================================
 	std::cout << "Drawing ..." << std::endl;
