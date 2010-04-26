@@ -53,10 +53,10 @@ void DRAWendlog(TString filename)
 	Double_t xmax;  // dummy
 
 	TFile *file = TFile::Open(filename, "READ"); // opening the file wherein the tree is stored (read access only)
-	TTree *mytree = (TTree*) file->Get("EndTree"); // creating a pointer 'mytree' pointing on the TTree "mytree"
+	TTree *mytree = (TTree*) file->Get("mytree"); // creating a pointer 'mytree' pointing on the TTree "mytree"
 	//file->cd();
 	
-	Int_t particle = 6; //++++++++ options: 0 ~ unspecified, 1 ~ neutron, 2 ~ protron, 6 ~ electron +++++++++++++++++++++
+	Int_t particle = 0; //++++++++ options: 0 ~ unspecified, 1 ~ neutron, 2 ~ protron, 6 ~ electron +++++++++++++++++++++
 	//-------- Generating particle type selection criterion 'pnamec' ----------------------------------------------------
 	TString pnamec = ""; // particle type selection criterion
 	{	if(particle == 0) // choose predominant particle type or 1 (~ neutron)
