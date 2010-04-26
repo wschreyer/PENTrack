@@ -26,18 +26,16 @@
 #include <iostream>
 #include <fstream>
 
-void TREEendlog(Int_t jobnumber)
+void TREEendlog(TString filename)
 {	gROOT->Reset(); // reset ROOT
-	TString filename;
 	
-	filename.Form("%08dend.out.root", jobnumber);
-	cout << "Creating tree " << filename << endl;
-	TFile* file=TFile::Open(filename.Data(), "RECREATE"); // recreating a new file wherein the tree will be saved.
+	TString treename = filename + ".root";
+	cout << "Creating tree " << treename << endl;
+	TFile* file=TFile::Open(treename.Data(), "RECREATE"); // recreating a new file wherein the tree will be saved.
 	//++++++++ options: "CREATE" ~ create and open a new file if it does not already exist ++++++++++++++++++++++++++++++
 	//+++++++++++++++++ "RECREATE" ~ create and overwrite if existing +++++++++++++++++++++++++++++++++++++++++++++++++++
 	ifstream edfile; // new stream 'edfile' to the data file
 
-	filename.Form("%08dend.out", jobnumber);
 	edfile.open(filename, ios_base::in); // read and write access to the data file	
 	if (edfile.good()){
 		cout << "Reading data from " << filename << endl;
@@ -45,12 +43,12 @@ void TREEendlog(Int_t jobnumber)
 		bdescriptor.ReadLine(edfile); // read branch descriptor from file
 		bdescriptor.ReplaceAll(" ",":"); // format branch descriptor for root ("x y z" -> "x:y:z")
 
-		TNtupleD* tree=new TNtupleD("EndTree", "end log", bdescriptor.Data()); // creating a new TTree([treename],[treetitle])	
+		TNtupleD* tree=new TNtupleD("mytree", "mytree", bdescriptor.Data()); // creating a new TTree([treename],[treetitle])	
 		Int_t n = tree->GetNvar();
 		while (1){
-			for (int i = 0; i < n; i++) edfile >> tree->GetArgs()[i];
+			for (int i = 0; i < n; i++) edfile >> tree->GetArgs()[i]; // read values into Arg-array of tree
 			if (!edfile.good()) break;
-			tree->Fill(tree->GetArgs());
+			tree->Fill(tree->GetArgs()); // fill Args into tree
 		}
 		
 		edfile.close(); // closing the stream 'edfile'
@@ -58,48 +56,4 @@ void TREEendlog(Int_t jobnumber)
 		tree->Print(); // output of the tree overview
 		delete tree;
 	}
-	
-	
-	filename.Form("%08dtrack001.out",jobnumber);
-	edfile.open(filename, ios_base::in); // read and write access to the data file	
-	if (edfile.good()){
-		cout << "Reading data from " << filename << endl;
-		TString bdescriptor; // branch descriptor 'bdescriptor' as a empty string
-		bdescriptor.ReadLine(edfile); // read branch descriptor from file
-		bdescriptor.ReplaceAll(" ",":"); // format branch descriptor for root ("x y z" -> "x:y:z")
-
-		TNtupleD* tree=new TNtupleD("TrackTree", "track log", bdescriptor.Data()); // creating a new TTree([treename],[treetitle])	
-		Int_t n = tree->GetNvar();
-		while (edfile.good()){
-			for (int i = 0; i < n; i++) edfile >> tree->GetArgs()[i];
-			if (!edfile.good()) break;
-			tree->Fill(tree->GetArgs());
-		}		
-		edfile.close(); // closing the stream 'edfile'
-		
-		int f = 1;
-		while (1){
-			f++;
-			filename.Form("%08dtrack%03d.out",jobnumber,f);
-			edfile.open(filename, ios_base::in); // read and write access to the data file	
-			if (edfile.good()){
-				cout << "Reading data from " << filename << endl;
-				bdescriptor.ReadLine(edfile);
-				while (edfile.good()){
-					for (int i = 0; i < n; i++) edfile >> tree->GetArgs()[i];
-					if (!edfile.good()) break;
-					tree->Fill(tree->GetArgs());
-				}				
-				edfile.close(); // closing the stream 'edfile'
-			}
-			else break;
-		}
-		file->Write();
-		tree->Print(); // output of the tree overview
-		delete tree;
-	}
-	
-	
-	
-	file->Close(); // closing the file	
 }
