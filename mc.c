@@ -212,23 +212,20 @@ void MCZerfallsstartwerte()
  * Procedure:
  * (1) Dicing the energy of the decay proton according to the characteristic spectrum in the rest frame of the neutron and
  *     calculating the proton momentum via the energy momentum relation. 
- * (2) Dicing the orientation of the decay proton according to the phase space and the neutron frame (and retriving the
- *     orientation of the virtual state).
- * (3) Analog 1a for electron.
- * (4) Analog 1b for electron (and neutrino) in respect to the orientation of the virtual state.
- * (5) Calculating the neutrino energy and momentum via center of mass energy.
- * (6) Lorentz boosting all 4-momentums in the moving neutron frame.
- * (7) Rotating all 3-momentums in respect to the orientaion of the neutrons 3-momentum.
+ * (2) Dicing isotrope orientation of the decay proton
+ * (3) Calculating 4-momentum of R- via 4-momentum conservation
+ * (4) Getting fixed electron energy from two body decay of R-
+ * (5) Dicing isotrope electron orientation in the rest frame of R-
+ * (6) Lorentz boosting electron 4-momentum into moving frame of R-
+ * (7) Calculating neutrino 4-momentum via 4-momentum conservation
+ * (8) Boosting all 4-momentums into moving neutron frame
  * 
  * Cross-check:
- * (8) Cross-check via centre of mass energy and determination of the decay error. The 'decay.error' shows the square root
- *     of the normed difference of the centre of mass energy, the sign indicates if energy has been (-) lost or (+) gained.   
+ * (9) Check if neutrino 4-momentum has the correct invariant mass (4-momentum square)
  * 
  */
- 	long double p[5], e[5], nue[5]; // 4-momentums [0..3] and norm [4]
- 	long double beta1, beta2, delta1, delta2;
- 	long double epx, epy, epz, pxy;
- 	long double s, sign, ds; // center of mass energy, sign, difference in s
+ 	long double p[4], e[4]; // 4-momentums
+ 	long double pabs, beta1, beta2, delta1, delta2; // 3-momentums (abs+directions)
  	
 	if(protneut == PROTON)
 	{
@@ -250,7 +247,6 @@ void MCZerfallsstartwerte()
 			//cout << "Proton energy dist: E = " << Energie << " decay rate: " << Wahrschl << " diced value = " << WktTMP << endl;
 		}while(WktTMP > Wahrschl);
 		
-		decay.PEnergie = Energie; // [eV]
 /*
  * E   = E_kin + m*c^2
  * p^2 = (E/c)^2 - (m*c)^2
@@ -259,22 +255,25 @@ void MCZerfallsstartwerte()
  		// energy of proton
 		p[0] = Energie / c_0 + m_p * c_0;
 		// momentum norm of proton
-		p[4] = sqrtl(powl(p[0], 2) - powl(m_p * c_0, 2));
+		pabs = sqrt(p[0]*p[0] - m_p*m_p*c_0*c_0);
 
 //-------- Step 2 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
 		beta1 = 2*pi * (mt_get_double(v_mt_state));
 		delta1 = acosl(1 - 2 * (mt_get_double(v_mt_state)));
-		// spharical coordinates
-		epx = cosl(delta1) * cosl(beta1);
-		epy = cosl(delta1) * sinl(beta1);
-		epz = sinl(delta1);
 		// 3-momentum of the proton
-		p[1] = p[4] * epx;
-		p[2] = p[4] * epy;
-		p[3] = p[4] * epz;
+		p[1] = pabs * sin(delta1) * cos(beta1);
+		p[2] = pabs * sin(delta1) * sin(beta1);
+		p[3] = pabs * cos(delta1);
 		
 //-------- Step 3 ----------------------------------------------------------------------------------------------------------
+		// calculate intermediate virtual state via 4-momentum conservation
+ 		long double virt[4] = {m_n*c_0 - p[0], -p[1], -p[2], -p[3]}; // 4-momentum of intermediate virtual state (n - p)
+ 		long double m2_virt = virt[0]*virt[0] - virt[1]*virt[1] - virt[2]*virt[2] - virt[3]*virt[3]; // squared mass of virtual state 		
+		
+
+//-------- Step 4 ----------------------------------------------------------------------------------------------------------
+/*
 		// energy distribution of electrons (0 < 'Energie' < 782 keV)			
 		// from "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
 		long double Elvert;
@@ -289,130 +288,54 @@ void MCZerfallsstartwerte()
 		}while(WktTMP > Elvert);
 		
 		decay.EEnergie = Energie;
-/*
- * E   = E_kin + m*c^2
- * p^2 = (E/c)^2 - (m*c)^2
- *
- */
- 		// energy of electron
-		e[0] = Energie / c_0 + m_e * c_0;
-		// momentum norm of electron
-		e[4] = sqrtl(powl(e[0], 2) - powl(m_e * c_0, 2));
+*/
 
-//-------- Step 4 ----------------------------------------------------------------------------------------------------------
-		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
-		beta2 = 2*pi * (mt_get_double(v_mt_state));
-		delta2 = acosl(1 - 2 * (mt_get_double(v_mt_state)));
-		// spharical coordinates
-		epx = cosl(delta2) * cosl(beta2);
-		epy = cosl(delta2) * sinl(beta2);
-		epz = sinl(delta2);
-		// rotation in respect to the orientation of the virtual state
-		zyROTROT((pi + beta1), (pi - delta1), &epx, &epy, &epz);		
-		// 3-momentum of the electron
-		e[1] = e[4] * epx;
-		e[2] = e[4] * epy;
-		e[3] = e[4] * epz;
+ 		// energy of electron from two-body-decay of virtual state
+		e[0] = (m2_virt + m_e*m_e*c_0*c_0 - m_nue*m_nue*c_0*c_0)/2/sqrt(m2_virt);
+		pabs = sqrt(e[0]*e[0] - m_e*m_e*c_0*c_0);
 
 //-------- Step 5 ----------------------------------------------------------------------------------------------------------
-		// momentum norm of neutrino
-/*
- * s = (m_n*c^2)^2 = (SUM_i (E_i, p_ix..z*c))^2   ,   i = {p, e, nue}
- * 
- * C = E*E_nue - P*p_nue 
- * 
- */
-		long double M2 = powl(m_n, 2) - powl(m_p, 2) - powl(m_e, 2) - powl(m_nue, 2);
-		long double EP = 2 * p[0] * e[0] - 2 * (p[1] * e[1] + p[2] * e[2] + p[3] * e[3]);
-		long double C = M2 * powl(c_0, 2) - EP; 
-		long double E = 2 * (p[0] + e[0]);
-		long double P = 2 * ((p[1] * epx + p[2] * epy + p[3] * epz) + e[4]);
-		nue[4] = (C * P + E * sqrtl(powl(C, 2) + (powl(P, 2) - powl(E, 2)) * powl(m_nue * c_0, 2))) / (powl(E, 2) - powl(P, 2));
-		// 4-momentum of neutrino
-		nue[0] = sqrtl(powl(nue[4], 2) + powl(m_nue * c_0, 2));
-		nue[1] = nue[4] * epx;
-		nue[2] = nue[4] * epy;
-		nue[3] = nue[4] * epz;
+		// isotropic emission characteristics (in the rest frame of the virtual state)
+		beta2 = 2*pi * (mt_get_double(v_mt_state));
+		delta2 = acosl(1 - 2 * (mt_get_double(v_mt_state)));
+		// 3-momentum of the electron
+		e[1] = pabs * sin(delta2) * cos(beta2);
+		e[2] = pabs * sin(delta2) * sin(beta2);
+		e[3] = pabs * cos(delta2);
 
 //-------- Step 6 ----------------------------------------------------------------------------------------------------------
-		// Lorentz boost in z''-direction with neutron velocity
+		// boost e into moving frame of virtual state
+		long double beta[3] = {virt[1]/virt[0], virt[2]/virt[0], virt[3]/virt[0]};
+		BOOST(beta,e);
 		
-		// for proton
-		zBOOST(decay.Nv / c_0, &p[0], &p[3]);
-		p[4] = sqrtl(powl(p[1], 2) + powl(p[2], 2) + powl(p[3], 2));
-		
-		// for electron
-		zBOOST(decay.Nv / c_0, &e[0], &e[3]);
-		e[4] = sqrtl(powl(e[1], 2) + powl(e[2], 2) + powl(e[3], 2));
-		
-		// for neutrino
-		zBOOST(decay.Nv / c_0, &nue[0], &nue[3]);
-		nue[4] = sqrtl(powl(nue[1], 2) + powl(nue[2], 2) + powl(nue[3], 2));
-
 //-------- Step 7 ----------------------------------------------------------------------------------------------------------
-		// rotation around z''-axis with (alpha_n) and rotation around y'-axis with (gamma_n)  
-		
-		// for proton
-		epx = p[1] / p[4];
-		epy = p[2] / p[4];
-		epz = p[3] / p[4];
-		zyROTROT(decay.Nalpha, decay.Ngamma, &epx, &epy, &epz);
-		// determination of the protons starting angles !!
-		pxy = sqrt(powl(epx, 2) + powl(epy, 2)); 
-		decay.Pgamma = GetAngle(pxy, epz);
-		decay.Palpha = GetAngle(epx / pxy, epy / pxy);
-		// 3-momentum of proton
-		p[1] = p[4] * epx;
-		p[2] = p[4] * epy;
-		p[3] = p[4] * epz;
-		
-		// for electron
-		epx = e[1] / e[4];
-		epy = e[2] / e[4];
-		epz = e[3] / e[4];
-		zyROTROT(decay.Nalpha, decay.Ngamma, &epx, &epy, &epz);
-		// determination of the protons starting angles !!
-		pxy = sqrt(powl(epx, 2) + powl(epy, 2)); 
-		decay.Egamma = GetAngle(pxy, epz);
-		decay.Ealpha = GetAngle(epx / pxy, epy / pxy);
-		// 3-momentum of electron
-		e[1] = e[4] * epx;
-		e[2] = e[4] * epy;
-		e[3] = e[4] * epz;
-		
-		// for neutrino
-		epx = nue[1] / nue[4];
-		epy = nue[2] / nue[4];
-		epz = nue[3] / nue[4];
-		zyROTROT(decay.Nalpha, decay.Ngamma, &epx, &epy, &epz);
-		// 3-momentum of neutrino
-		nue[1] = nue[4] * epx;
-		nue[2] = nue[4] * epy;
-		nue[3] = nue[4] * epz;
+		// get 4-momentum of neutrino via 4-momentum conservation
+		long double nue[4] = {virt[0] - e[0], virt[1] - e[1], virt[2] - e[2], virt[3] - e[3]};
 
 //-------- Step 8 ----------------------------------------------------------------------------------------------------------
-		// cross-check via s
-/*
- * s = (m_n*c^2)^2 = (SUM_i (E_i, p_ix..z*c))^2   ,   i = {p, e, nue}
- * 
- */
-		s = 0;
-		sign = 1;
-		for(int i = 0; i < 4; i++)
-		{	s = s + sign * powl((p[i] + e[i] + nue[i]) * c_0, 2);
-			sign = -1;
-		}
-		ds = s - powl(m_n * powl(c_0, 2),2);
-		if(ds != 0)
-		{	sign = ds / fabs(ds);
-			decay.error = sign * sqrtl(fabs(ds));
-		}
-		else
-		{	decay.error = 0;
-		}				
+		// boost p,e,nu into moving frame of neutron
+		beta[0] = decay.Nv/c_0*sin(decay.Ngamma)*cos(decay.Nalpha + decay.Nphi);
+		beta[1] = decay.Nv/c_0*sin(decay.Ngamma)*sin(decay.Nalpha + decay.Nphi);
+		beta[2] = decay.Nv/c_0*cos(decay.Ngamma);
+		BOOST(beta,e);
+		BOOST(beta,p);
+		BOOST(beta,nue);
 		
+		decay.PEnergie = p[0]*c_0 - m_p*c_0*c_0;
+		decay.Pgamma = acos(p[3]/sqrt(p[1]*p[1] + p[2]*p[2] + p[3]*p[3]));
+		decay.Palpha = fmod(atan2(p[2],p[1]) - decay.Nphi,2*pi);
+		
+		decay.EEnergie = e[0]*c_0 - m_e*c_0*c_0;
+		decay.Egamma = acos(e[3]/sqrt(e[1]*e[1] + e[2]*e[2] + e[3]*e[3]));
+		decay.Ealpha = fmod(atan2(e[2],e[1]) - decay.Nphi,2*pi);
+		
+
+//-------- Step 9 ----------------------------------------------------------------------------------------------------------
+		// use neutrino mass for check
+		decay.error = m_nue*c_0*c_0 - sqrt(nue[0]*nue[0] - nue[1]*nue[1] - nue[2]*nue[2] - nue[3]*nue[3])*c_0;
 		Log("\n   +++ decay error : %LG eV +++\n", decay.error);
-		
+
+
 //-------- Finished --------------------------------------------------------------------------------------------------------
 		
 		Energie = decay.PEnergie;
@@ -433,51 +356,17 @@ void MCZerfallsstartwerte()
 }
 //======== end of MCZerfallsstartwerte =====================================================================================
 
-//======== Getting the angle out of the cosine and sine ====================================================================
-extern long double GetAngle(long double cos, long double sin)
-{	long double angle = 0;	
-	if((cos >= 0) && (sin >=0))				// quadrant I
-	{	angle = acosl(cos);
-	}
-	else if((cos < 0) && (sin >= 0))		// quadrant II
-	{	angle = acosl(cos);
-	}
-	else if((cos < 0) && (sin < 0))			// quadrant III
-	{	angle = 2*pi - (acosl(cos));
-	}
-	else if((cos >= 0) && (sin < 0))		// quadrant IV
-	{	angle = (-1) * (acosl(cos));		
-	}
-	return angle;
-}
-//======== end of GetAngle =================================================================================================
+//======== Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta ======================================================
+void BOOST(long double beta[3], long double p[4]){
+   //Boost this Lorentz vector (copy&paste from ROOT)
+   long double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
+   long double gamma = 1.0 / sqrt(1.0 - b2);
+   long double bp = beta[0]*p[1] + beta[1]*p[2] + beta[2]*p[3];
+   long double gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
 
-//======== Lorentz boost in z''-direction with a given beta ================================================================ 
-extern void zBOOST(long double BOOSTbeta, long double* Dp0, long double* Dp3)
-{	long double BOOSTgamma = powl(1 - powl(BOOSTbeta, 2), -0.5);
-	long double D2p0 = *Dp0;
-	long double D2p3 = *Dp3;
-	
-	*Dp0 = BOOSTgamma * D2p0 - BOOSTbeta * BOOSTgamma * D2p3;
-	*Dp3 = BOOSTgamma * D2p3 - BOOSTbeta * BOOSTgamma * D2p0;
-	return;
-}
-//======== end of zBOOST ===================================================================================================
+   p[1] = (p[1] + gamma2*bp*beta[0] + gamma*beta[0]*p[0]);
+   p[2] = (p[2] + gamma2*bp*beta[1] + gamma*beta[1]*p[0]);
+   p[3] = (p[3] + gamma2*bp*beta[2] + gamma*beta[2]*p[0]);
+   p[0] = (gamma*(p[0] + bp));}
+//======== end of BOOST ====================================================================================================
 
-//======== Rotaion around z''-axis with (+beta) and rotation around y'-axis with (+delta) ==================================
-extern void zyROTROT(long double zROTbeta, long double yROTdelta, long double* Dp1, long double* Dp2, long double* Dp3)
-{	// Note: The minus sign for the rotation angle is already implemented in the (sign of the sines in the) calculation
-	long double cb = cosl(zROTbeta);
-	long double sb = sinl(zROTbeta);
-	long double cd = cosl(yROTdelta);
-	long double sd = sinl(yROTdelta);
-	long double D0p1 = *Dp1;
-	long double D0p2 = *Dp2;
-	long double D0p3 = *Dp3;
-	
-	*Dp1 = 	      cd * cb * D0p1 - cd * sb * D0p2 + sd * D0p3;
-	*Dp2 =             sb * D0p1 +      cb * D0p2;
-	*Dp3 = (-1) * sd * cb * D0p1 + sd * sb * D0p2 + cd * D0p3;
-	return;
-}
-//======== end of zyROTROT =================================================================================================

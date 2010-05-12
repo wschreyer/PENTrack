@@ -6,7 +6,7 @@
 0		180				gamma [degree] (relative to z'-axis) <0..180>
 1e-3	300				delx | xend
 ======== proton.in ======================
-0		800				E [eV]
+0		751				E [eV]
 0		360				alpha [degree] (in x-y-plane relative to r-vector) <0..360>
 0		180				gamma [degree] (betwenn z'-axis) <0..180>
 1e-09	1e-2			delx | xend
