@@ -27,8 +27,6 @@ Racetracks 2
 # ausgabewunsch: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
 # 1 => only endpoints, but BFspin track, 5 => nothing
 ausgabewunsch 2
-# write end and tracks into root tree
-WriteTree 1
 # make snapshots at certain times during the simulation
 snapshot 1
 # times from start of simulation to take snapshots
@@ -54,6 +52,10 @@ decay 1
 
 # neutron lifetime
 tau  885.7
+
+# decay offset: time before decay timer should start
+decayoffset 0
+
 [/global]
 
 
