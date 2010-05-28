@@ -1,3 +1,19 @@
+
+// root stuff
+//#include "TROOT.h"
+//#include "TNtupleD.h"
+//#include "TFile.h"
+//#include "TTree.h"
+//#include "TNetFile.h"
+//#include "TRandom.h"
+//#include "TBranch.h"
+//#include "TClonesArray.h"
+//#include "TStopwatch.h"
+//#include "TMath.h"
+#include "TF1.h"
+//#include "TF2.h"
+
+
 extern int ReadMagnets(void);
 
 extern long double BForbes(long double r, long double phi, long double z, long double t);

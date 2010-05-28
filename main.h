@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <cstddef>
 #include <csignal>
+#include <cstdarg>
 
 // Unix includes
 #include <sys/time.h>
@@ -25,20 +26,6 @@
 #include <set>
 #include <map>
 #include <numeric>
-
-// root stuff
-//#include "TROOT.h"
-#include "TNtupleD.h"
-#include "TFile.h"
-//#include "TTree.h"
-//#include "TNetFile.h"
-//#include "TRandom.h"
-//#include "TBranch.h"
-//#include "TClonesArray.h"
-//#include "TStopwatch.h"
-//#include "TMath.h"
-#include "TF1.h"
-//#include "TF2.h"
 
 // project includes
 #include "mersenne/mt.h" // mersenne twister pseudo random number generator (rng) used for MonteCarlo alg.
@@ -127,8 +114,6 @@ long double AbsValueCart(long double x, long double y, long double z);
 
 // global file descriptors
 extern FILE *OUTFILE1, *BFLOG, *SNAP;
-extern TFile *treefile;
-extern TNtupleD *endtree, *tracktree;
 
 // files for in/output + paths
 extern string inpath,outpath;
@@ -225,7 +210,7 @@ extern struct initial nini, pini, eini;						// one 'initial' for each particle 
 
 // final values of particle
 extern int kennz;                                  // ending code
-extern long double vend, gammaend, alphaend, phiend, xend;    //endvalues for particle
+extern long double vend, gammaend, alphaend, phiend, xend, decayoffset;    //endvalues for particle
 
 //integrator params
 extern long double  eps, h1;  // desired accuracy in ODEINT: normal, for polarisation and phase, trial time step

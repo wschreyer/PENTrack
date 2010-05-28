@@ -77,7 +77,6 @@ void ConfigInit(void){
 	istringstream(config["global"]["EFeldSkal"])			>> EFeldSkal;
 	istringstream(config["global"]["Racetracks"])			>> Racetracks;	
 	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
-	istringstream(config["global"]["WriteTree"])			>> WriteTree;
 	istringstream(config["global"]["snapshot"])		>> snapshot;
 	int tmp_snapshot;
 	istringstream isnapshots(config["global"]["snapshots"]);	
@@ -102,6 +101,7 @@ void ConfigInit(void){
 	istringstream(config["global"]["BFTargetB"])			>> BFTargetB;
 	istringstream(config["global"]["decay"])				>> decay.on;
 	istringstream(config["global"]["tau"])					>> tau;	
+	istringstream(config["global"]["decayoffset"])		>> decayoffset;	
 
 	
 	istringstream(config["filling"]["BruteForce"])			>> fiBruteForce;
@@ -166,19 +166,6 @@ void OpenFiles(int argc, char **argv){
 	ostringstream endlogfile;
 	endlogfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "end.out";
 	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
-
-	if (WriteTree){
-		endlogfile << ".root";
-		treefile = new TFile(endlogfile.str().c_str(), "RECREATE");
-		endtree = new TNtupleD("EndTree","end log", "jobnumber:RandomSeed:teilchen:protneut:polarisation:"
-													"tstart:rstart:phistart:zstart:NeutEnergie:"
-													"vstart:alphastart:gammastart:decayerror:"
-													"rend:phiend:zend:"
-													"vend:alphaend:gammaend:tend:dt:"
-													"H:kennz:NSF:RodFieldMult:BFflipprob:"
-													"AnzahlRefl:vladmax:vladtotal:thumbmax:trajlength:"
-													"Hdiff:Hmax:BFeldSkal:EFeldSkal:tauSF:dtau");
-	}
 	
 	if (protneut != BF_ONLY) 
 	{
@@ -189,7 +176,7 @@ void OpenFiles(int argc, char **argv){
                        "vend alphaend gammaend tend dt "
                        "H kennz NSF RodFieldMult BFflipprob "
                        "AnzahlRefl vladmax vladtotal thumbmax trajlength "
-                       "Hdiff Hmax BFeldSkal EFeldSkal tauSF dtau\n");
+                       "Hstart Hmax BFeldSkal EFeldSkal tauSF dtau\n");
 	}		
 	
 	// Print track to file
@@ -204,12 +191,6 @@ void OpenFiles(int argc, char **argv){
 						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
 						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb ExpPhase\n");
 						 
-		if (WriteTree){
-			tracktree = new TNtupleD("TrackTree","track log",
-										"Teilchen:protneut:polarisation:t:r:drdt:z:dzdt:phi:dphidt:x:y:"
-										"v:H:Br:dBrdr:dBrdphi:dBrdz:Bphi:dBphidr:dBphidphi:dBphidz:"
-										"Bz:dBzdr:dBzdphi:dBzdz:Babs:Er:Ez:timestep:logvlad:logthumb:ExpPhase");
-		}
 	}
 	
 	// make snapshots as specified time into snapshot.out
@@ -225,7 +206,7 @@ void OpenFiles(int argc, char **argv){
                        "v alphaend gammaend tend dt "
                        "H kennz NSF RodFieldMult BFflipprob "
                        "AnzahlRefl trajlength "
-                       "Hdiff Hmax BFeldSkal EFeldSkal tauSF dtau\n");
+                       "Hstart Hmax BFeldSkal EFeldSkal tauSF dtau\n");
 	}
 	
 }
@@ -549,21 +530,8 @@ void ausgabe(long double x2, long double *ystart, long double vend, long double 
 	               vend, alphaend, gammaend, x2, dt,
 	               H, kennz, NSF, RodFieldMultiplicator, BFflipprob,
 	               nrefl, vladmax, vladtotal, thumbmax, trajlengthsum,
-	               (H-Hstart), Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
+	               Hstart, Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
 	               
-	if (WriteTree){
-		double outvars[] = {jobnumber, monthinmilliseconds, iMC, protneut, polarisation,
-							xstart, r_n, phi_n, z_n, NeutEnergie*1.0e9,
-							v_n, alpha, gammaa, decay.error,
-							ystart[1], phiend, ystart[3],
-							vend, alphaend, gammaend, x2, dt,
-							H, kennz, NSF, RodFieldMultiplicator, BFflipprob,
-							nrefl, vladmax, vladtotal, thumbmax, trajlengthsum,
-							(H-Hstart), Hmax, BFeldSkal, EFeldSkal, tauSF, dtau};
-			
-		endtree->Fill(outvars);
-	}
-
 	fflush(ENDLOG);
     return;
 }
@@ -694,8 +662,8 @@ void OutputState(long double *y, int l){
 	fprintf(STATEOUT,"Endtime: %.10LG s\n", xend);
 	fprintf(STATEOUT,"Particle ID: %i \n", kennz);
 	fprintf(STATEOUT,"Current energy: %.10LG neV\n", H);
-	fprintf(STATEOUT,"Spacial coordinates (y[i]): r: %.10LG, phi: %.10LG, z:%.10LG \n", y[1], y[5], y[3]);	
-	fprintf(STATEOUT,"Spacial coordinates (ystart[i]): r: %.10LG, phi: %.10LG, z:%.10LG \n", ystart[1], ystart[5], ystart[3]);	
+	fprintf(STATEOUT,"Spatial coordinates (y[i]): r: %.10LG, phi: %.10LG, z:%.10LG \n", y[1], y[5], y[3]);	
+	fprintf(STATEOUT,"Spatial coordinates (ystart[i]): r: %.10LG, phi: %.10LG, z:%.10LG \n", ystart[1], ystart[5], ystart[3]);	
 	fprintf(STATEOUT,"Velocities: rdot: %.10LG, phidot: %.10LG, zdot: %.10LG, vabs: %.10LG \n", y[2], y[6], y[4], sqrtl(fabsl(y[2]*y[2]+y[1]*y[1]*y[6]*y[6]+y[4]*y[4])));
 	fprintf(STATEOUT,"Magnetic Field: Br: %.10LG, Bphi: %.10LG, Bz: %.10LG, Babs: %.10LG \n", Br,Bphi,Bz,Bws);
 	fprintf(STATEOUT,"Magnetic Field Derivatives: \n  %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG \n", dBrdr,dBrdphi,dBrdz,dBphidr,dBphidphi,dBphidz,dBzdr,dBzdphi,dBzdz);

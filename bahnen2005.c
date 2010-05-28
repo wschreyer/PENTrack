@@ -8,8 +8,6 @@ pnTracker
 
 // files for in/output + paths
 FILE *OUTFILE1 = NULL, *BFLOG = NULL, *SNAP = NULL;
-TFile *treefile;
-TNtupleD *endtree, *tracktree;
 string inpath, outpath;	// "in" and "out" directories
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
@@ -29,7 +27,6 @@ long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus f
 int MonteCarloAnzahl=1;   // user choice to use MC or not, number of particles for MC simulation
 int reflekt=0, bfeldwahl, protneut, Racetracks=2;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
 int polarisation=0, polarisationsave=0, ausgabewunsch=5, ausgabewunschsave; // user choice for polarisation of neutrons und Ausgabewunsch
-int WriteTree = 0;
 int snapshot=0, snapshotsdone=0;  // make snapshots of the neutron at specified times
 //vector<double> snapshots;
 set<int> snapshots;
@@ -75,7 +72,7 @@ initial nini, pini, eini; 	// one 'initial' for each particle type
 
 // final values of particle
 int kennz;                                  // ending code
-long double vend, gammaend, alphaend, phiend, xend;    //endvalues for particle
+long double vend, gammaend, alphaend, phiend, xend, decayoffset=0;    //endvalues for particle, offset before decay should start
 long int kennz0[3]={0},kennz1[3]={0},kennz2[3]={0},kennz3[3]={0},kennz4[3]={0},kennz5[3]={0},kennz6[3]={0},kennz7[3]={0},kennz8[3]={0},kennz9[3]={0},kennz10[3]={0},kennz11[3]={0},kennz12[3]={0},kennz99[3]={0},nrefl; // Counter for the particle codes
 
 // integrator params
@@ -317,13 +314,6 @@ int main(int argc, char **argv){
 	
 	FreeFields();
 	
-	if (WriteTree){
-	//	endtree->Print();
-	//	tracktree->Print();
-		treefile->Write();
-		treefile->Close();
-	}
-
 	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
 	/*if(LOGSCR != NULL)
 		fclose(LOGSCR);
@@ -457,7 +447,7 @@ void IntegrateParticle(){
 	Hmax=0.0;
 	x2=x1= 0.;     //set time to zero
 	snapshotsdone=0;
-	
+
 	timeval dicestart, diceend;
 	gettimeofday(&dicestart, NULL);
 	MCStartwerte(delx);   // MonteCarlo Startwert und Lebensdauer fr Teilchen festlegen
@@ -704,7 +694,7 @@ void IntegrateParticle(){
 		
 			if (H>Hmax) Hmax=H;
 
-			if ((neutdist == 1)&&(protneut == NEUTRON))
+			if ((neutdist == 1)&&(protneut == NEUTRON) /*&&(ExpPhase==4)*/ )
 				fillndist(1);
 
 			
@@ -944,13 +934,6 @@ void PrintIntegrationStep(long double &timetemp){
 								 vend,H,Bp[1][klauf],Bp[2][klauf],Bp[3][klauf],Bp[4][klauf],Bp[5][klauf],Bp[6][klauf], Bp[7][klauf],Bp[8][klauf],
 								 Bp[9][klauf],Bp[10][klauf],Bp[11][klauf],Bp[12][klauf],Bp[13][klauf],Ep[1][klauf],Ep[2][klauf],x2-x1,logvlad,logfrac,ExpPhase);
 				//fprintf(OUTFILE1,"%LG\n",xp[klauf]);
-				
-				if (WriteTree){
-					double outvars[] = {iMC, protneut, polarisation, xp[klauf], yp[1][klauf], yp[2][klauf], yp[3][klauf], yp[4][klauf], yp[5][klauf], yp[6][klauf], yp[1][klauf]*cosl(yp[5][klauf]), yp[1][klauf]*sinl(yp[5][klauf]),
-										vend, H, Bp[1][klauf], Bp[2][klauf], Bp[3][klauf], Bp[4][klauf], Bp[5][klauf], Bp[6][klauf],  Bp[7][klauf], Bp[8][klauf],
-										Bp[9][klauf], Bp[10][klauf], Bp[11][klauf], Bp[12][klauf], Bp[13][klauf], Ep[1][klauf], Ep[2][klauf], x2-x1, logvlad, logfrac, ExpPhase};
-					tracktree->Fill(outvars);
-				}
 				
 				fflush(OUTFILE1);
 				Zeilencount++;
