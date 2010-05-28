@@ -552,7 +552,7 @@ void Snapshooter(long double x2, long double *ystart, long double H)
 	               vend, alphaend, gammaend, x2, dt,
 	               H, kennz, NSF, RodFieldMultiplicator, BFflipprob,
 	               nrefl, trajlengthsum,
-	               (H-Hstart), Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
+	               Hstart, Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
 	
 	fflush(SNAP);
 	snapshotsdone=(int) x2;	

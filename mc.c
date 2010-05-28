@@ -161,7 +161,8 @@ void MCStartwerte(long double delx)
 
 	// set time span till decay
 	if((decay.on) && (protneut == NEUTRON))
-	{	xend = - tau * log(mt_get_double(v_mt_state)); // time span till neutron decay
+	{	
+		xend = decayoffset - tau * log(mt_get_double(v_mt_state)); // time span till neutron decay
 		//if(decay.on == 2) xend = 0.1; // ONLY FOR TESTING !! DELETE THIS LINE !!
 	}
 	
