@@ -768,7 +768,7 @@ void PrintBField(){
 	for (long double r = rmin; r <= rmax; r += dr){
 		for (long double z = zmin; z <= zmax; z += dz){
 			BFeld(r, 0, z, 500.0);
-			fprintf(ENDLOG,"%LG %G %LG %LG %LG %LG %G %G %LG \n",r/lengthconv,0.0,z/lengthconv,Br/Bconv,Bphi/Bconv,Bz/Bconv,0.0,0.0,Bws/Bconv);
+			fprintf(ENDLOG,"%LG %G %LG %LG %LG %LG %G %G %LG \n",r,0.0,z,Br,Bphi,Bz,0.0,0.0,Bws);
 			cout << "r= " << r << " z= " << z << " Br= " << Br << " T, Bz= " << Bz << " T"  << endl;
 			
 			// Ramp Heating Analysis

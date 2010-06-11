@@ -11,6 +11,7 @@
 #define MAXSTP 1.0e10
 #define TINY 1.0e-30
 
+long double gamma_n = 1.83247185e8;            
 
 void BFpolint(long double xa[],long double ya[],int n,long double x, long double *y,long double *dy){
 	int i,m,ns=1;

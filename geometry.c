@@ -39,107 +39,89 @@ long double Absorption(long double E, long double Mf, long double Pf, long doubl
 }
 
 
-// load STL-files and create kd-trees
-void LoadGeometry(){
-	cout << endl;
-	ifstream infile((inpath+"/geometry.in").c_str());
-	string line;
-	vector<material> materials;	// dynamic array to store material properties
+// load sections from geometry.in (used in LoadGeometry)
+void LoadMaterialsSection(ifstream &infile, vector<material> &materials){
 	char c;
-	while (infile.good()){
+	string line;
+	do{	// parse material list
 		infile >> ws; // ignore whitespaces
 		c = infile.peek();
-		if ((infile.peek() == '[') && getline(infile,line).good()){	// parse geometry.in for section header
-			if (line.compare(0,11,"[MATERIALS]") == 0){
-				do{	// parse material list
-					infile >> ws; // ignore whitespaces
-					c = infile.peek();
-					if (c == '#') continue; // skip comments
-					else if (!infile.good() || c == '[') break;	// next section found
-					material mat;
-					infile >> mat.name >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb;
-					materials.push_back(mat);
-				}while(infile.good() && getline(infile,line).good());
-			}
-			else if (line.compare(0,10,"[GEOMETRY]") == 0){
-				string STLfile;
-				string matname;
-				char name[80];
-				int ignoretime;
-				do{	// parse STLfile list
-					infile >> ws; // ignore whitespaces
-					c = infile.peek();
-					if (c == '#') continue;	// skip comments
-					else if (!infile.good() || c == '[') break;	// next section found
-					solid model;
-					infile >> model.kennz;
-					if (kennz_counter[0].size() <= model.kennz){
-						kennz_counter[0].resize(model.kennz+1,0);
-						kennz_counter[1].resize(model.kennz+1,0);
-						kennz_counter[2].resize(model.kennz+1,0);
-					}
-					infile >> STLfile;
-					infile >> matname;
-					STLfile = inpath + '/' + STLfile;
-					for (unsigned i = 0; i < materials.size(); i++){
-						if (matname == materials[i].name){
-							model.mat = materials[i];
-							geometry.ReadFile(STLfile.c_str(),solids.size(),name);
-							model.name = name;
-							break;
-						}
-						else if (i+1 == materials.size()){
-							Log("Material %s used for %s but not defined in geometry.in!",matname.c_str(),name);
-							exit(-1);
-						}
-					}
-					while ((c = infile.peek()) == '\t' || c == ' ')
-						infile.ignore();
-					while (infile && c != '#' && c != '\n'){
-						infile >> ignoretime;
-						model.ignoretimes.insert(ignoretime);
-						while ((c = infile.peek()) == '\t' || c == ' ')
-							infile.ignore();
-					}
-					solids.push_back(model);
-				}while(infile.good() && getline(infile,line).good());
-				geometry.Init();
-			}
-			else if (line.compare(0,8,"[SOURCE]") == 0){
-				do{	// parse source line
-					infile >> ws; // ignore whitespaces
-					c = infile.peek();
-					if (c == '#') continue; // skip comments
-					else if (!infile.good() || c == '[') break;	// next section found
-					infile >> sourcemode;
-					if (sourcemode == "customvol" || sourcemode == "customsurf"){
-						infile >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max;
-						phi_min *= conv;
-						phi_max *= conv;
-					}
-					else if (sourcemode == "volume" || sourcemode == "surface"){
-						string sourcefile;
-						infile >> sourcefile;
-						sourcevolume.ReadFile((inpath + '/' + sourcefile).c_str(),0);
-						sourcevolume.Init();
-					}
-				}while(infile.good() && getline(infile,line).good());
-			}
-			else if (line.compare(0,8,"[FIELDS]") == 0){
-				do{	// parse STLfile list
-					infile >> ws; // ignore whitespaces
-					c = infile.peek();
-					if (c == '#') continue;	// skip comments
-					else if (!infile.good() || c == '[') break;	// next section found
-					string ft;
-					infile >> ft;
-					fieldvaltab.push_back(ft);
-				}while(infile.good() && getline(infile,line).good());
-			}
-			else getline(infile,line);
+		if (c == '#') continue; // skip comments
+		else if (!infile.good() || c == '[') break;	// next section found
+		material mat;
+		infile >> mat.name >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb;
+		materials.push_back(mat);
+	}while(infile.good() && getline(infile,line).good());	
+}
+
+void LoadGeometrySection(ifstream &infile, vector<material> &materials){
+	char c;
+	string line;
+	string STLfile;
+	string matname;
+	char name[80];
+	int ignoretime;
+	do{	// parse STLfile list
+		infile >> ws; // ignore whitespaces
+		c = infile.peek();
+		if (c == '#') continue;	// skip comments
+		else if (!infile.good() || c == '[') break;	// next section found
+		solid model;
+		infile >> model.kennz;
+		if (kennz_counter[0].size() <= model.kennz){
+			kennz_counter[0].resize(model.kennz+1,0);
+			kennz_counter[1].resize(model.kennz+1,0);
+			kennz_counter[2].resize(model.kennz+1,0);
 		}
-		else getline(infile,line);
-	}
+		infile >> STLfile;
+		infile >> matname;
+		STLfile = inpath + '/' + STLfile;
+		for (unsigned i = 0; i < materials.size(); i++){
+			if (matname == materials[i].name){
+				model.mat = materials[i];
+				geometry.ReadFile(STLfile.c_str(),solids.size(),name);
+				model.name = name;
+				break;
+			}
+			else if (i+1 == materials.size()){
+				Log("Material %s used for %s but not defined in geometry.in!",matname.c_str(),name);
+				exit(-1);
+			}
+		}
+		while ((c = infile.peek()) == '\t' || c == ' ')
+			infile.ignore();
+		while (infile && c != '#' && c != '\n'){
+			infile >> ignoretime;
+			model.ignoretimes.insert(ignoretime);
+			while ((c = infile.peek()) == '\t' || c == ' ')
+				infile.ignore();
+		}
+		solids.push_back(model);
+	}while(infile.good() && getline(infile,line).good());
+	geometry.Init();
+}
+
+void LoadSourceSection(ifstream &infile){
+	char c;
+	string line;
+	do{	// parse source line
+		infile >> ws; // ignore whitespaces
+		c = infile.peek();
+		if (c == '#') continue; // skip comments
+		else if (!infile.good() || c == '[') break;	// next section found
+		infile >> sourcemode;
+		if (sourcemode == "customvol" || sourcemode == "customsurf"){
+			infile >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max;
+			phi_min *= conv;
+			phi_max *= conv;
+		}
+		else if (sourcemode == "volume" || sourcemode == "surface"){
+			string sourcefile;
+			infile >> sourcefile;
+			sourcevolume.ReadFile((inpath + '/' + sourcefile).c_str(),0);
+			sourcevolume.Init();
+		}
+	}while(infile.good() && getline(infile,line).good());
 	
 	if (sourcemode == "customsurf" || sourcemode == "surface"){
 		sourcearea = 0; // add all triangles with at least one vertex in the source volume to sourcetris list
@@ -152,6 +134,50 @@ void LoadGeometry(){
 			}
 		}
 		Log("Source Area: %LG m²\n",sourcearea);
+	}	
+}
+
+void LoadFieldsSection(ifstream &infile){
+	char c;
+	string line;
+	do{	// parse STLfile list
+		infile >> ws; // ignore whitespaces
+		c = infile.peek();
+		if (c == '#') continue;	// skip comments
+		else if (!infile.good() || c == '[') break;	// next section found
+		string ft;
+		infile >> ft;
+		fieldvaltab.push_back(ft);
+	}while(infile.good() && getline(infile,line).good());
+}
+
+
+// load STL-files and create kd-trees
+void LoadGeometry(){
+	cout << endl;
+	ifstream infile((inpath+"/geometry.in").c_str());
+	string line;
+	vector<material> materials;	// dynamic array to store material properties
+	char c;
+	while (infile.good()){
+		infile >> ws; // ignore whitespaces
+		c = infile.peek();
+		if ((infile.peek() == '[') && getline(infile,line).good()){	// parse geometry.in for section header
+			if (line.compare(0,11,"[MATERIALS]") == 0){
+				LoadMaterialsSection(infile, materials);
+			}
+			else if (line.compare(0,10,"[GEOMETRY]") == 0){
+				LoadGeometrySection(infile, materials);
+			}
+			else if (line.compare(0,8,"[SOURCE]") == 0){
+				LoadSourceSection(infile);
+			}
+			else if (line.compare(0,8,"[FIELDS]") == 0){
+				LoadFieldsSection(infile);
+			}
+			else getline(infile,line);
+		}
+		else getline(infile,line);
 	}
 	
 	if(reflektlog == 1){
