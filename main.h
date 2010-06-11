@@ -126,15 +126,12 @@ extern long double m_n, pi;  //neutron mass (eV/c^2), neutron magnetic moment (i
 extern long double m_p;        //proton mass (eV/c^2), tempmass
 extern long double m_e, c_0; //electron mass, lightspeed
 extern long double hquer, mu_nSI;          // Neutron magn Mom (in J/T)
-extern long double gamma_n;
 extern long double tau;              // magn. moment of neutron/mass,  neutron lifetime
-extern long double lengthconv, Bconv, Econv;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 												
 
 //misc configuration
 extern int MonteCarloAnzahl;   // user choice to use MC or not, number of particles for MC simulation
 extern int reflekt, bfeldwahl, protneut, Racetracks;       //user choice for reflecting walls, B-field, prot oder neutrons, experiment mode
 extern int polarisation, polarisationsave, ausgabewunsch, ausgabewunschsave, Feldcount; // user choice for polarisation of neutrons und Ausgabewunsch
-extern int WriteTree;
 extern int snapshot, snapshotsdone;								// take snapshots of the particles at specified times
 extern set<int> snapshots;
 extern int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
