@@ -58,7 +58,7 @@ struct decayinfo decay; //containing all data from neutron decay for the emergin
 // inital values of particle
 long double EnergieS, EnergieE, Energie;    //initial energy range
 long double r_n, phi_n, z_n, v_n;                //initial particle coordinates
-long double alpha, gammaa, hmin;                  //initial angle to x-Achse, zo z-Achse, Schrittweite
+long double alpha, gammaa;    //initial angle to x-Achse, zo z-Achse
 long double alphas, gammas;   //initial values from
 long double alphae, gammae;   //initial values to
 long double delx;                            // initial timestep for the integrator
@@ -74,8 +74,10 @@ long double vend, gammaend, alphaend, phiend, xend, decayoffset=0;    //endvalue
 long int kennz0[3]={0},kennz1[3]={0},kennz2[3]={0},kennz3[3]={0},kennz4[3]={0},kennz5[3]={0},kennz6[3]={0},kennz7[3]={0},kennz8[3]={0},kennz9[3]={0},kennz10[3]={0},kennz11[3]={0},kennz12[3]={0},kennz99[3]={0},nrefl; // Counter for the particle codes
 
 // integrator params
-long double  eps, h1;  // desired accuracy in ODEINT: normal, for polarisation and phase, trial time step
-int nvar, nok, nbad;                            // in ODEINT: number of variables in Derivs, good und bad steps
+const int nvar = 6; // number of variables in derivs
+const long double eps = 1.0e-13, hmin = 0;      // desired relative precision for tracking of n and p 10^-13, minimum step size
+long double h1;  // trial time step
+int nok, nbad;                            // in ODEINT: good und bad steps
 
 //set the duration of the experiment
 long double FillingTime = 0;										// filling time, entrance open
@@ -199,11 +201,6 @@ int main(int argc, char **argv){
 
 	mt_set (v_mt_state, monthinmilliseconds);
 	
-	// setting some default values
-	nvar=6;           // number of variables
-	eps=1.0e-13;      // desired relative precision for tracking of n and p 10^-13
-	hmin= 0;       // minimum stepsize for runge kutta
-	
 	// globals init end
 	
 	if(argc>3) // if user supplied 3 args (outputfilestamp, inpath, outpath)
@@ -254,7 +251,7 @@ int main(int argc, char **argv){
 		BFyp=dmatrix(1,3,0,BFNrIntermediate);		
 	}
 	
-	// allocate vector intermediate values when desired by the user
+	// allocate vector intermediate values
 	xp=dvector(1,kmax);
 	yp=dmatrix(1,6,1,kmax);         
 	Bp=dmatrix(1,13,1,kmax);
@@ -294,9 +291,7 @@ int main(int argc, char **argv){
 			initialStartbed(); // initalizes initial values from record to used variables
 			PrepareParticle(); // setting values depending on particle type
 		}
-		else
-		{	iMC++; // !!
-		}
+		else iMC++; // !!
 	} while(iMC <= MonteCarloAnzahl);
 	
 	if (neutdist == 1) outndist(1);   // Neutronenverteilung in der Flasche ausgeben
