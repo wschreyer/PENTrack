@@ -120,12 +120,12 @@ extern string inpath,outpath;
 extern char mode_r[2],mode_rw[3],mode_w[2];
 
 // physical constants
-extern long double ele_e, Qm0;      //elementary charge in SI, charge/proton mass
-extern long double gravconst, conv, mu0;      //g, Pi/180, permeability,
-extern long double m_n, pi;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
-extern long double m_p;        //proton mass (eV/c^2), tempmass
-extern long double m_e, c_0; //electron mass, lightspeed
-extern long double hquer, mu_nSI;          // Neutron magn Mom (in J/T)
+extern const long double ele_e;      //elementary charge in SI
+extern const long double gravconst, conv, mu0;      //g, Pi/180, permeability,
+extern const long double m_n, pi;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
+extern const long double m_p;        //proton mass (eV/c^2), tempmass
+extern const long double m_e, c_0; //electron mass, lightspeed
+extern const long double hquer, mu_nSI;          // Neutron magn Mom (in J/T)
 extern long double tau;              // magn. moment of neutron/mass,  neutron lifetime
 
 //misc configuration
@@ -151,7 +151,7 @@ extern int BCutPlaneSampleCount;
 extern long double Emin_n;	// minimum energy a neutron must have to exist in the magnetic field
 
 // particles
-extern long double M, H, mu_n, mumB; // mass, energy, magnetic moment, magnetic moment per mass
+extern long double M, H, mu_n, mumB, Qm0; // mass, energy, magnetic moment, magnetic moment per mass, charge/mass
 extern long double ystart[7], xstart; // vector for integrator {unused,r,dr/dt,t,dz/dt,phi,dphi/dt}, start time for integrator
 extern int iMC;  //  counter for MonteCarloSim
 extern bool noparticle; // true if there was NO particle simulated
