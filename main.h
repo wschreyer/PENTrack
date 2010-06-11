@@ -188,7 +188,7 @@ extern struct decayinfo decay;	// containing all data from neutron decay for the
 // initial values of particle
 extern long double EnergieS, EnergieE, Energie;    //initial energy range
 extern long double r_n, phi_n, z_n, v_n;                //initial particle coordinates
-extern long double alpha, gammaa, hmin;                  //initial angle to x-Achse, zo z-Achse, Schrittweite
+extern long double alpha, gammaa;                  //initial angle to x-Achse, zo z-Achse
 extern long double alphas, gammas;   //initial values from
 extern long double alphae, gammae;   //initial values to
 extern long double dalpha, dgamma;   //initial values step
@@ -210,8 +210,8 @@ extern int kennz;                                  // ending code
 extern long double vend, gammaend, alphaend, phiend, xend, decayoffset;    //endvalues for particle
 
 //integrator params
-extern long double  eps, h1;  // desired accuracy in ODEINT: normal, for polarisation and phase, trial time step
-extern int nvar, nok, nbad;                            // in ODEINT: number of variables in Derivs, good und bad steps
+extern long double  h1;  // trial time step
+extern int nok, nbad;                            // in ODEINT: good und bad steps
 
 //set the duration of the experiment
 extern long double FillingTime;										//Filling in UCN
