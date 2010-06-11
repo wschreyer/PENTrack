@@ -3,6 +3,7 @@
 
 #include "main.h"
 
+long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 
 
 // constructor
 TabField::TabField(const char *tabfile){	

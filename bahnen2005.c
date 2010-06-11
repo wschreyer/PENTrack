@@ -18,9 +18,7 @@ long double m_n=1.674927211E-27/1.602176487E-19, pi=3.141592655359;  //neutron m
 long double m_p=1.672621637E-27/1.602176487E-19;        //proton mass (eV/c^2), tempmass
 long double m_e = 9.10938215e-31/1.602176487E-19, c_0 = 299792458; //electron mass (eV/c^2), lightspeed
 long double hquer=1.05457266e-34, mu_nSI=0.96623641e-26;          // Neutron magn Mom (in J/T)
-long double gamma_n = 1.83247185e8;            
 long double tau=885.7;              // magn. moment of neutron/mass,  neutron lifetime [s]
-long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 
 												// cm => m,  Gauss => Tesla,   V/cm => V/m    Bconv temporr von 1e-4 auf 1 gesetzt
 
 // misc configurations
@@ -684,7 +682,13 @@ void IntegrateParticle(){
 				}
 			}
 			
+			if (BruteForce)
+			{
+				BruteForceIntegration();
+			}
+			
 			vend = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
+			phiend = fmod(ystart[5], 2*pi);
 			if(protneut == NEUTRON)                // n
 				H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
 			else if(protneut == PROTON)           // p			
@@ -696,21 +700,6 @@ void IntegrateParticle(){
 
 			if ((neutdist == 1)&&(protneut == NEUTRON) /*&&(ExpPhase==4)*/ )
 				fillndist(1);
-
-			
-			if ((!BruteForce) && (protneut != PROTON) && (protneut != ELECTRONS))
-				BahnPointSaveTime = 1e-3;
-			else if (BruteForce)
-				BahnPointSaveTime = 1e-4;
-			
-			if(spinflipcheck==3)
-				BahnPointSaveTime = 1e-4;
-			
-
-			if (BruteForce)
-			{
-				BruteForceIntegration();
-			}
 			
 			PrintIntegrationStep(timetemp);
 			
@@ -721,16 +710,6 @@ void IntegrateParticle(){
 		}while (((x2-xstart)<=xend) && (!stopall) && (x2 <= StorageTime)); // end integration do - loop
 		// END of loop for one partice
 		
-		vend    = sqrtl(fabsl(ystart[2]*ystart[2]+ystart[1]*ystart[1]*ystart[6]*ystart[6]+ystart[4]*ystart[4]));
-		phiend = fmod(ystart[5], 2*pi);
-
-		if(protneut == NEUTRON)                // n
-			H = (M*gravconst*ystart[3]+0.5*M*vend*vend-mu_n*Bws)*1E9 ;       // Energie in neV
-		else if(protneut == PROTON)           // p			
-				H= (0.5*m_p*vend*vend);           // Energie in eV for p		
-		else if(protneut == ELECTRONS)           // p,e
-			H= c_0*c_0  * M * (1/sqrtl(1-v_n*v_n/(c_0*c_0))-1);                                        // rel Energie in eV
-
 		ausgabe(x2,ystart, vend, H);// Endwerte schreiben
 
 		Log("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG\n",(BFflipprob),ystart[1],ystart[3],H,kennz,x2);		
@@ -901,6 +880,14 @@ void BruteForceIntegration(){
 
 //Ausgabe der Zwischenwerte aus odeint
 void PrintIntegrationStep(long double &timetemp){
+	if ((!BruteForce) && (protneut != PROTON) && (protneut != ELECTRONS))
+		BahnPointSaveTime = 1e-3;
+	else if (BruteForce)
+		BahnPointSaveTime = 1e-4;
+	
+	if(spinflipcheck==3)
+		BahnPointSaveTime = 1e-4;			
+
 	long double logvlad = 0.0, logfrac = 0.0;
 	if ((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)){
 		for (int klauf=1;klauf<kount;klauf++){
