@@ -12,12 +12,12 @@ string inpath, outpath;	// "in" and "out" directories
 char mode_r[2] = "r",mode_rw[3] = "rw",mode_w[2] = "w"; // modes for fopen()
 
 // physical constants
-long double ele_e=1.602176487E-19, Qm0=1.602176487E-19/1.672621637E-27;      //elementary charge in SI, charge/proton mass 																					
-long double gravconst=9.80665, conv=0.01745329251, mu0= 1.25663706144e-6;      //g [m/s^2], Pi/180, permeability,
-long double m_n=1.674927211E-27/1.602176487E-19, pi=3.141592655359;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
-long double m_p=1.672621637E-27/1.602176487E-19;        //proton mass (eV/c^2), tempmass
-long double m_e = 9.10938215e-31/1.602176487E-19, c_0 = 299792458; //electron mass (eV/c^2), lightspeed
-long double hquer=1.05457266e-34, mu_nSI=0.96623641e-26;          // Neutron magn Mom (in J/T)
+const long double ele_e=1.602176487E-19;      //elementary charge in SI 																					
+const long double gravconst=9.80665, conv=0.01745329251, mu0= 1.25663706144e-6;      //g [m/s^2], Pi/180, permeability,
+const long double m_n=1.674927211E-27/1.602176487E-19, pi=3.141592655359;  //neutron mass (eV/c^2), neutron magnetic moment (in eV/T), Pi
+const long double m_p=1.672621637E-27/1.602176487E-19;        //proton mass (eV/c^2), tempmass
+const long double m_e = 9.10938215e-31/1.602176487E-19, c_0 = 299792458; //electron mass (eV/c^2), lightspeed
+const long double hquer=1.05457266e-34, mu_nSI=0.96623641e-26;          // Neutron magn Mom (in J/T)
 long double tau=885.7;              // magn. moment of neutron/mass,  neutron lifetime [s]
 												// cm => m,  Gauss => Tesla,   V/cm => V/m    Bconv temporr von 1e-4 auf 1 gesetzt
 
@@ -45,7 +45,7 @@ int BCutPlaneSampleCount;
 long double Emin_n = 1e30;  // minimum energy of neutrons in the B-field
 
 // particles
-long double M, H, mu_n, mumB;                               // mass, total energy, magnetic moment, moment per mass
+long double M, H, mu_n, mumB, Qm0; // mass, total energy, magnetic moment, moment per mass, charge/mass
 long double ystart[7], xstart = 0;       //initial and intermediate values of y[7], start time
 long double  x1, x2;                         // start and endtime handed over to integrator
 int iMC;                             //  counter for MonteCarloSim
@@ -331,6 +331,7 @@ void PrepareParticle()
 {	
 	switch(protneut)
 	{	case NEUTRON:	M = m_n;			// [eV/c^2]
+						Qm0 = 0;
 						h1 = 5e-5;			// guess for the first step size of runge kutta
 						if(polarisationsave == POLARISATION_GOOD) // in ev/T
 						{	hfs = -1;
