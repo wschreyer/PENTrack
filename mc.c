@@ -151,8 +151,9 @@ void MCStartwerte(long double delx)
 	if((protneut == NEUTRON) && (DiceRodField == 1))
 		RodFieldMultiplicator = (mt_get_double(v_mt_state));
 
+	xstart = 0;
 	// random start time from 0 to 2e-5 for protons
-	if(protneut == (PROTON || ELECTRONS))
+	if((protneut == PROTON) || (protneut == ELECTRONS))
 		xstart = (mt_get_double(v_mt_state))*2e-5;
 
 	// random start time during filling period

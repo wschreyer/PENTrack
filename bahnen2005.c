@@ -71,7 +71,7 @@ initial nini, pini, eini; 	// one 'initial' for each particle type
 // final values of particle
 int kennz;                                  // ending code
 long double vend, gammaend, alphaend, phiend, xend, decayoffset=0;    //endvalues for particle, offset before decay should start
-long int kennz0[3]={0},kennz1[3]={0},kennz2[3]={0},kennz3[3]={0},kennz4[3]={0},kennz5[3]={0},kennz6[3]={0},kennz7[3]={0},kennz8[3]={0},kennz9[3]={0},kennz10[3]={0},kennz11[3]={0},kennz12[3]={0},kennz99[3]={0},nrefl; // Counter for the particle codes
+long int nrefl; // reflection counter
 
 // integrator params
 const int nvar = 6; // number of variables in derivs
