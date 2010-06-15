@@ -58,8 +58,7 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 		{
 			
 			case 0:	if (BFeldSkal != 0){
-						list<TabField*>::iterator i = fields.begin(); 
-						while (i != fields.end()){						
+						for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){
 							if ((*i)->BInterpol(rloc, zloc))
 								break;
 /*							else if (++i == fields.end()){
@@ -73,8 +72,7 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 					break;
 					
 			case 2:	if (BFeldSkal != 0){
-						list<TabField*>::iterator i = fields.begin(); 
-						while (i != fields.end()){						
+						for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){ 
 							if ((*i)->BInterpol(rloc, zloc))
 								break;
 /*							else if (++i == fields.end()){
@@ -261,8 +259,7 @@ void EFeld(long double rloc, long double philoc, long double zloc){
 	dEzdz=0.0;
 
 	if (EFeldSkal != 0 && (bfeldwahl == 0 || bfeldwahl == 2)){
-		list<TabField*>::iterator i = fields.begin(); 
-		while (i != fields.end()){						
+		for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){ 
 			if ((*i)->EInterpol(rloc, zloc))
 				break;
 /*			else if (++i == fields.end()){
