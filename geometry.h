@@ -3,6 +3,9 @@
 
 #include <string>
 #include <set>
+#include <vector>
+
+#include "particle.h"
 
 using namespace std;
 
@@ -19,20 +22,16 @@ struct solid{
 };
 
 
-extern void LoadGeometry();
-extern void RandomPointInSourceVolume(long double &r, long double &phi, long double &z, long double &alpha, long double &gamma);
-extern bool InSourceVolume(const float p[3]);
-extern bool InSourceVolume(long double r, long double phi, long double z);
-extern bool ReflectCheck(long double x1, long double &h, long double *y1, long double *y2, int &itercount); 
-extern void AbsorbCheck(long double *y1, long double *y2);
-extern void IncrementCodes(int kennz);
-extern void OutputCodes(int iMC);
-extern void Snapshooter(long double x2, long double *ystart, long double H);
+void LoadGeometry(const char *geometryin);
+void RandomPointInSourceVolume(long double &r, long double &phi, long double &z, long double &alpha, long double &gamma);
+bool ReflectCheck(TParticle *particle, long double x1, long double &h, long double *y1, long double *y2, int &itercount); 
+void AbsorbCheck(TParticle *particle, long double *y1, long double *y2, long double H);
 
 
 extern int reflektlog;
-
-void RotateVector(long double v[3], long double n[3]); // rotate coordinate system so, that new z-axis lies on NORMALIZED vector n
-
+extern int reflekt, diffuse;
+extern vector<int> kennz_counter[3];
+extern vector<solid> solids;	// dynamic array to associate solids with material/kennzahl/name
+extern long double Emin_n;
 
 #endif /*GEOMETRY_H_*/

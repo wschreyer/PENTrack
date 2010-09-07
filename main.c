@@ -1,18 +1,225 @@
-#include "main.h"
-//#include "lines.h"
+
+/*********************************************
+pnTracker
+
+**********************************************/
+#include <iostream>
+#include <cmath>
+#include <csignal>
+#include <map>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <numeric>
+#include <sys/time.h>
+
+#include "particle.h"
+#include "globals.h"
+#include "fields.h"
+#include "geometry.h"
+#include "mc.h" 
+#include "integrator.h"
+#include "bruteforce.h"
+#include "adiabacity.h"
+#include "ndist.h"
+#include "nrutil.h"
+#include "racetrack.h"
+
+using namespace std;
+
+#define TINY 1.0e-30
+
+void ConfigInit(); // read config.in
+void IntegrateParticle(TParticle *particle); // integrate particle trajectory
+void SetEndValues(TParticle *particle, long double x, long double *y, long double H);
+void derivs(long double x, long double *y, long double *dydx); // calculates derivatives of state vector
+void SetExpPhase(long double t);
+void SpinFlipCheck(TParticle *particle, long double x, long double *y);
+void OpenFiles(int snapshot); // open out-files and write file headers
+void PrintConfig(); // print info on config
+void PrintParticle(FILE *file, TParticle *particle);
+void OutputCodes(vector<int> kennz_counter[3]);
+void PrintIntegrationStep(TParticle *particle, long double x, long double h, long double *y, long double H); // print step to track-file
+
+
+FILE *SNAP = NULL, *ENDLOG = NULL;
+long Zeilencount;
+int Filecount=0;                                   // counts the output files, counter for last line written in outs, random generator temp value
+FILE *OUTFILE1 = NULL;
+
+
+// integrator params
+const int nvar = 6; // number of variables in derivs
+const long double eps = 1.0e-13, hmin = 0;      // desired relative precision for tracking of n and p 10^-13, minimum step size
+
+int MonteCarloAnzahl=1;   // number of particles for MC simulation
+int protneut;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
+int runge;                            // Runge-Kutta or Bulirsch-Stoer?  set to Runge right now!!!
+unsigned short int flipspin=1;  // MonteCarlo for splinflip
+
+//parameters for different experiment phases
+int ffBruteForce,ffreflekt,ffspinflipcheck;	// fullfield
+int ruBruteForce,rureflekt,ruspinflipcheck;	// rampup
+int rdBruteForce,rdreflekt,rdspinflipcheck;	// rampdown
+int fiBruteForce,fireflekt,fispinflipcheck;	// filling
+int coBruteForce,coreflekt,cospinflipcheck;	// counting UCN
+int clBruteForce,clreflekt,clspinflipcheck;	// cleaning time
+
+unsigned short int BruteForce = 0;
+int neutdist=0;
+int spinflipcheck = 0;                          // user choice to check adiabacity
+int snapshot=0;  // make snapshots of the neutron at specified times
+set<int> snapshots;
+vector<int> kennz_counter[3];
+float InitTime = 0, ReflectionTime = 0, IntegratorTime = 0, DiceTime = 0; // time statistics
+
 /*
-b = 0  kein bereich alle zeilen werden ignoriert bis auf [ startende
-b = 1  globale settings
-b = 2  ramp up
-b = 3  full field
-b = 4  ramp down
-*/
+ * handler:		catch_alarm(int sig)
+ * 				terminates a program if a specific signal occurs
+ * type:		void
+ * var sig:		signalnumber which called the handler; to get the right number
+ * 				for corresponding signals have a look <man signal.h>.
+ * 				e.g: <SIGFPE> is connected to number 8
+ * return: 		noreturn
+ */
+void catch_alarm (int sig){
+	Log("Program was terminated, because Signal %i occured", sig);
+	exit(1);
+}
 
-long double *ndistr = NULL, *ndistz = NULL, **ndistW = NULL;    // matrix for probability of finding particle
-int v=300,w=1200;                                       // dimension of matrix above, user choice for ndist
 
-FILE *LOGSCR = NULL, *ENDLOG = NULL;
+// uebergabe: jobnumber inpath outpath                 paths without last slash
+int main(int argc, char **argv){
+	//Initialize signal-analizing
+	signal (SIGUSR1, catch_alarm);
+	signal (SIGUSR2, catch_alarm);
+	signal (SIGXCPU, catch_alarm);   
+	
+	if(argc>3) // if user supplied 3 args (outputfilestamp, inpath, outpath)
+	{
+		outpath = argv[3]; // set the output path pointer
+		inpath = argv[2]; // same with input path pointer
+		jobnumber = atoi(argv[1]); // stamp for output filenames
+	}
+	else if(argc>2) // if user supplied 2 args (outputfilestamp, inpath)
+	{
+		inpath = argv[2]; // input path pointer set
+		jobnumber = atoi(argv[1]); 
+		outpath = "./out"; // setting outpath to default
+	}
+	else if(argc==2) // if user supplied 1 arg (outputfilestamp)
+	{
+		jobnumber=atoi(argv[1]);
+		outpath = "./out";
+		inpath = "./in";
+	}
+	else // no args supplied
+	{
+		jobnumber=0;
+		outpath = "./out";
+		inpath = "./in";
+	}
+	
+	// initial step ... reading userinput, inputfiles etc ...
+	ConfigInit();
+	OpenFiles(snapshot);	// Open .in and .out files and write headers
+		
+	Log(
+	" ################################################################\n"
+	" ###                 Welcome to PNTracker,                    ###\n"
+	" ###     the tracking program for neutrons and protons        ###\n"
+	" ################################################################\n");
 
+	//printf("\nMonteCarlo: %i\n MonteCarloAnzahl %i \n", MonteCarlo, MonteCarloAnzahl);
+
+	LoadGeometry((inpath + "/geometry.in").c_str());	// read STL-files		
+	
+	LoadMCGenerator((inpath + "/all3inone.in").c_str());	// set random seed and load inital value limits
+	
+	PrintConfig();
+	
+	InitTime = (1.*clock())/CLOCKS_PER_SEC;
+
+	switch(protneut)
+	{	
+		case BF_ONLY:	PrintBField((outpath+"/BF.out").c_str()); // estimate ramp heating
+						exit(0);
+						break;		
+		case BF_CUT:	PrintBFieldCut((outpath+"/BFCut.out").c_str()); // print cut through B field
+						exit(0);
+						break;		
+	}
+
+	int ntotalsteps = 0;     // counters to determine average steps per integrator call
+	TParticle *particle;
+	for (int iMC = 1; iMC <= MonteCarloAnzahl; iMC++)
+	{      
+		switch(protneut)
+		{	
+			case NEUTRON:	particle = new TParticle(NEUTRON, iMC);
+							break;		
+			case PROTON:	particle = new TParticle(PROTON, iMC);
+							break;		
+			case ELECTRON:	particle = new TParticle(ELECTRON, iMC);	
+							break;
+		}
+
+		timeval dicestart, diceend;
+		gettimeofday(&dicestart, NULL);
+		MCStartwerte(particle); // dice initial values and write them into particle
+		gettimeofday(&diceend, NULL);
+		DiceTime += diceend.tv_sec - dicestart.tv_sec + float(diceend.tv_usec - dicestart.tv_usec)/1e6;
+
+		IntegrateParticle(particle); // integrate particle trajectory
+		ntotalsteps += particle->nok + particle->nbad;
+		
+		if(particle->kennz == KENNZAHL_DECAYED && decay == 2)
+		{	
+			TParticle p(PROTON, iMC);
+			TParticle e(ELECTRON, iMC);
+			MCZerfallsstartwerte(particle, &p, &e); // dice decay products
+			IntegrateParticle(&p); // integrate decay products
+			IntegrateParticle(&e);
+			ntotalsteps += p.nok + p.nbad + e.nok + e.nbad;
+		}
+		delete particle;
+	}
+
+	ostringstream path;
+	path << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "ndist.out";	
+	if (neutdist == 1) outndist(path.str().c_str());   // Neutronenverteilung in der Flasche ausgeben
+
+	OutputCodes(kennz_counter); // print particle kennzahlen
+	
+	Log("Integrator used (1 Bulirsch Stoer, 2 Runge Kutta): %d \n", runge);
+	Log("The integrator made %d steps. \n", ntotalsteps);
+	float SimulationTime = (1.*clock())/CLOCKS_PER_SEC - InitTime;
+	IntegratorTime -= ReflectionTime;
+	Log("Init: %.2fs, Simulation: %.2fs, Integrator: %.2fs (%.2f%%), Reflection: %.2fs (%.2f%%), Dicing: %.4fs\n",
+			InitTime, SimulationTime, IntegratorTime, IntegratorTime*100/SimulationTime, ReflectionTime, ReflectionTime*100/SimulationTime, DiceTime);
+	Log("That's it... Have a nice day!\n");
+	
+	FreeFields();
+	
+	// cleanup ... lassen wir bleiben macht linux fuer uns *hoff*	
+	/*if(LOGSCR != NULL)
+		fclose(LOGSCR);
+	if(ausgabewunsch == OUTPUT_EVERYTHING)
+		fclose(OUTFILE1);
+	if(REFLECTLOG != NULL)
+		fclose(REFLECTLOG);
+	if(ENDLOG != NULL)
+		fclose(ENDLOG);
+	if(BFLOG != NULL)
+		fclose(BFLOG);
+	if(TESTLOG != NULL)
+		fclose(TESTLOG);
+	if(BFLOG != NULL)
+		fclose(BFLOG);*/
+		
+	return 0;
+}
 
 // read config.in
 void ConfigInit(void){
@@ -27,14 +234,7 @@ void ConfigInit(void){
 	diffuse = 3;
 	bfeldwahl = 0;
 	ausgabewunsch = 2;
-	ausgabewunschsave = 2;
 	MonteCarloAnzahl = 1;
-	M = m_n;
-	mu_n = mu_nSI / ele_e * -1;
-	mumB = mu_n/M;
-	decay.on = 0;
-	decay.ed = 0;
-	decay.error = 0;
 	/*end default values*/
 	
 	ifstream infile((inpath+"/config.in").c_str());
@@ -75,20 +275,18 @@ void ConfigInit(void){
 	istringstream(config["global"]["bfeldwahl"])			>> bfeldwahl;
 	istringstream(config["global"]["BFeldSkalGlobal"])		>> BFeldSkalGlobal;
 	istringstream(config["global"]["EFeldSkal"])			>> EFeldSkal;
-	istringstream(config["global"]["Racetracks"])			>> Racetracks;	
+	istringstream(config["global"]["Racetracks"])			>> Racetracks;
+	istringstream(config["global"]["Ibar"])					>> Ibar;	
 	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
-	istringstream(config["global"]["snapshot"])		>> snapshot;
+	
+	istringstream(config["global"]["snapshot"])				>> snapshot;
 	int tmp_snapshot;
 	istringstream isnapshots(config["global"]["snapshots"]);	
 	do{
 		isnapshots >> tmp_snapshot;
-		if (isnapshots.good()){
-//			cout << "tmp_snapshot " << tmp_snapshot << endl;
-//			cout << "snapshot " << *
-			snapshots.insert(tmp_snapshot);
-//			.first << endl;					
-		}			
+		if (isnapshots.good()) snapshots.insert(tmp_snapshot);
 	}while(isnapshots.good());
+	
 	istringstream(config["global"]["reflektlog"])			>> reflektlog;
 	istringstream(config["global"]["MonteCarloAnzahl"])		>> MonteCarloAnzahl;
 	istringstream(config["global"]["FillingTime"])			>> FillingTime;
@@ -99,9 +297,11 @@ void ConfigInit(void){
 	istringstream(config["global"]["EmptyingTime"])			>> EmptyingTime;
 	istringstream(config["global"]["storagetime"])			>> StorageTime;
 	istringstream(config["global"]["BFTargetB"])			>> BFTargetB;
-	istringstream(config["global"]["decay"])				>> decay.on;
+	istringstream(config["global"]["decay"])				>> decay;
 	istringstream(config["global"]["tau"])					>> tau;	
-	istringstream(config["global"]["decayoffset"])		>> decayoffset;	
+	istringstream(config["global"]["decayoffset"])			>> decayoffset;	
+	istringstream(config["global"]["BCutPlane"])			>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2] 
+															>> BCutPlaneNormalAlpha >> BCutPlaneNormalGamma >> BCutPlaneSampleDist >> BCutPlaneSampleCount;
 
 	
 	istringstream(config["filling"]["BruteForce"])			>> fiBruteForce;
@@ -129,83 +329,293 @@ void ConfigInit(void){
 	istringstream(config["counting"]["spinflipcheck"])		>> cospinflipcheck;
 
 
-	if((decay.on == 2) && ((protneut == PROTON) || (protneut == ELECTRONS))) protneut = NEUTRON;
-	
-	if(decay.on)
-	{	decay.ed = 0;
-		decay.error = 0;
-	}
-	
-	polarisationsave = polarisation; // save polarisation choise
-	
 	if(protneut == NEUTRON)
 	{
-		if (neutdist == 1) prepndist(1);
+		if (neutdist == 1) prepndist();
 	}
 	
-	ausgabewunschsave=ausgabewunsch;
 	return;
+}
+
+// calculates derivatives, passed to integration stepper
+void derivs(long double x, long double *y, long double *dydx, void *params){
+	((TParticle*)params)->derivs(x,y,dydx);
+	return;
+}
+
+// integrate particle trajectory
+void IntegrateParticle(TParticle *particle){	
+	Log("Feldcount = %i\n\n",Feldcount);
+
+	int snapshotsdone=0;
+	Feldcount=0;
+	
+	long double y[nvar+1];
+	particle->Fillystart(y);
+
+	Log("Teilchennummer: %i\n",particle->particlenumber);
+	if(decay == 2)
+		Log("Teilchensorte : %i\n", particle->protneut);
+	Log("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG\n",
+		particle->rstart, particle->phistart/conv, particle->zstart, particle->vstart, particle->alphastart/conv,
+		particle->gammastart/conv, particle->Hstart, particle->xend);
+
+	timeval intstart, intend;
+	gettimeofday(&intstart, NULL);	
+	//###################### Integrationsroutine #####################
+	int i;
+	long double x = 0, hnext = 0, hdid = 0, h = particle->h1; // current time, hnext: suggestion for next time step, hdid: actual timestep done by stepper 
+	long double yscal[nvar+1], dydx[nvar+1]; // yscal needed for error estimation, dydx holds derivatives of y
+	int perc=0;   // percentage of particle done counter
+	long double timetemp = 0; // temporre Variable, Zeit wann letzter Schritt in outs geschrieben wurde
+	long double xprev, yprev[nvar+1], H = particle->Hstart; // save last position to check for reflection, calculate trajectory length etc., energy at current position
+	int itercount = 0; // iteration counter for reflection check
+
+	x=particle->xstart;
+	SetExpPhase(x); // set experiment phase parameters (rampup, fullfield, etc)
+	
+	while (particle->kennz == KENNZAHL_UNKNOWN){ // while nothing happened to particle 
+		derivs(x,y,dydx,particle);
+		for (i=1;i<=nvar;i++){
+			yscal[i]=fabsl(y[i])+fabsl(dydx[i]*h)+TINY; //Scaling used to monitor accuracy.
+		}
+		
+		// spin flip properties according to Vladimirsky and thumbrule
+		if ((spinflipcheck == 2) && (particle->protneut == NEUTRON)){
+			SpinFlipCheck(particle, x, y);
+		}
+
+		xprev = x; // save current point before step
+		for (i=1;i<=nvar;i++) {
+			yprev[i] = y[i];
+		}
+	
+		if (particle->xstart + particle->xend < x + h) 
+			h = particle->xstart + particle->xend - x;	//If stepsize can overshoot, decrease.
+		if (h > particle->hmax) h = particle->hmax;
+		if((Bws<BFTargetB) && BruteForce && h > 1e-5)
+			h = 1e-5;		
+		else if( (Bws<(BFTargetB+0.1) ) && BruteForce && h > 1e-4)
+			h = 1e-4;
+			
+		try{
+			if (runge == 1) bsstep(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,particle,derivs);        // runge kutta or bulirsch stoer step
+			else if (runge == 2) rkqs(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,particle,derivs);        // runge kutta or bulirsch stoer step
+		}
+		catch(...){ // catch exception thrown by numerical recipes routines
+			particle->kennz = KENNZAHL_NRERROR;
+		}
+		
+		timeval reflectstart, reflectend;
+		gettimeofday(&reflectstart, NULL);	
+		if (ReflectCheck(particle, xprev, hdid, yprev, y, itercount)){ // check if particle should be reflected
+			// if ReflectCheck returns true, reset last step and repeat with smaller timestep
+			for (i = 1; i <= nvar; i++) y[i] = yprev[i];
+			x = xprev;
+			h = hdid;
+			itercount++;
+			gettimeofday(&reflectend, NULL);
+			ReflectionTime += reflectend.tv_sec - reflectstart.tv_sec + float(reflectend.tv_usec - reflectstart.tv_usec)/1e6;
+			continue;
+		}
+		itercount = 0;		
+		gettimeofday(&reflectend, NULL);
+		ReflectionTime += reflectend.tv_sec - reflectstart.tv_sec + float(reflectend.tv_usec - reflectstart.tv_usec)/1e6;
+		
+		SetExpPhase(x);
+		
+		// Trajectory length calculation
+//		long double trajlength = sqrtl(pow(yprev[1] - y[1],2) + pow(yprev[3] - y[3],2) + pow(yprev[5]*yprev[1] - y[5]*y[1],2));
+//		particle->trajlength += trajlength;
+		particle->trajlength += sqrt(pow(yprev[1]*cos(yprev[5]) - y[1]*cos(y[5]),2) + 
+									pow(yprev[1]*sin(yprev[5]) - y[1]*sin(y[5]),2) + 
+									pow(yprev[3] - y[3],2));
+		
+		H = particle->Energy(x,y);
+		if (H > particle->Hmax) particle->Hmax = H;
+	
+		AbsorbCheck(particle,yprev,y,H); // check if particle is absorbed in current medium
+	
+		if (hdid == h) 
+			++particle->nok; 
+		else 
+			++particle->nbad;
+	
+		percent(x, particle->xstart, particle->xend, perc); // print percent of calculation
+	
+		long double BahnPointSaveTime = particle->BahnPointSaveTime;
+		if ((!BruteForce) && (particle->protneut == NEUTRON))
+			BahnPointSaveTime = 1e-3;
+		else if (BruteForce)
+			BahnPointSaveTime = 1e-4;		
+		if(spinflipcheck==3)
+			BahnPointSaveTime = 1e-4;	
+		if ((x-timetemp) >= BahnPointSaveTime)
+		{
+			PrintIntegrationStep(particle, x, hdid, y, H); // print integration step in track file
+			timetemp = x;
+		}
+
+		// take snapshots of neutrons at certain times
+		if(snapshot==1  && particle->protneut==1 && snapshots.count((int) x) > 0 && (int) x != snapshotsdone)
+		{
+			Log("\n Snapshot at %LG s \n", x);
+			SetEndValues(particle, x, y, H);
+			PrintParticle(SNAP, particle);
+			snapshotsdone=(int) x;	
+		}	
+
+		if (BruteForce)
+		{
+			long double BFsurvprob = BruteForceIntegration(x,y,Br,Bphi,Bz,Bws); // integrate spinflip pobability
+			particle->BFsurvprob *= BFsurvprob;
+			// flip the spin with the probability 1-BFpol
+			if (flipspin && UniformDist(0,1) < 1-BFsurvprob) 
+			{
+				particle->polarisation *= -1;
+				particle->NSF++; 
+				printf("\n The spin has flipped! Number of flips: %i\n",particle->NSF);			
+			}
+		}
+		
+		if ((neutdist == 1)&&(particle->protneut == NEUTRON) /*&&(ExpPhase==4)*/ )
+			fillndist(xprev, yprev, x, y); // write spatial neutron distribution
+		
+		if (x >= particle->xstart + particle->xend && decay != 0 && particle->protneut == NEUTRON)
+			particle->kennz = KENNZAHL_DECAYED;
+		else if (x >= particle->xstart + particle->xend || x > StorageTime)
+			particle->kennz = KENNZAHL_NOT_FINISH;
+			
+	
+		if (fabsl(hnext) <= hmin) 
+			nrerror("Step size too small in ODEINT");
+		h=hnext;	
+
+	}
+	SetEndValues(particle, x, y, H);
+	PrintParticle(ENDLOG, particle);// Endwerte schreiben
+	Log("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG l: %LG\n",
+		(1 - particle->BFsurvprob),y[1],y[3],H,particle->kennz,x, particle->trajlength);		
+	//###################### Integrationsroutine #####################
+	gettimeofday(&intend, NULL);
+	IntegratorTime += intend.tv_sec - intstart.tv_sec + float(intend.tv_usec - intstart.tv_usec)/1e6;
+			
+	kennz_counter[particle->protneut % 3][particle->kennz]++; // increase kennz-counter
+}
+
+// spin flip properties according to Vladimirsky and thumbrule
+void SpinFlipCheck(TParticle *particle, long double x, long double *y){
+	// y[6]: phidot
+	particle->vlad = vladimirsky(y[1], Br, Bphi, Bz, 
+					   dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, Bws,
+					   y[2], y[6], y[4]);
+	particle->frac = thumbrule(Br, Bphi, Bz, 
+					   dBrdr, dBrdphi, dBrdz, dBphidr, dBphidphi, dBphidz, dBzdr, dBzdphi, dBzdz, Bws,
+					   y[2], y[6], y[4]);
+	if (particle->vlad > 1e-99){
+		particle->vladtotal *= 1-particle->vlad;
+		if (particle->vladtotal < 0.9999)
+			Log(" VladShit (%LG) at t= %.17LG\n",particle->vladtotal,x);
+	}
+	if ((particle->vlad > particle->vladmax)&&(particle->vlad > 1e-99))
+		particle->vladmax = log10(particle->vlad);
+	if ((particle->frac > particle->thumbmax)&&(particle->frac > 1e-99))
+		particle->thumbmax = log10(particle->frac);	
+}
+
+// write values into end*-variables of particle
+void SetEndValues(TParticle *particle, long double x, long double *y, long double H){
+	particle->dt = x - particle->xstart;
+	particle->rend = y[1];
+	particle->phiend = fmod(y[5],2*pi);
+	particle->zend = y[3];
+	particle->Hend = H;
+	particle->vend = sqrt(y[2]*y[2] + y[4]*y[4] + y[6]*y[1]*y[6]*y[1]);
+	if(particle->vend > 0) particle->gammaend = acos(y[4]/particle->vend);
+	else particle->gammaend = 0;
+	particle->alphaend = atan2(y[6]*y[1],y[2]);	
+}
+
+// set experiment paramters (rampup, fullfield, etc)
+void SetExpPhase(long double t){
+	if ((t < FillingTime)&&(FillingTime>0))
+	{      // filling in neutrons
+		BruteForce = fiBruteForce; // no spin tracking
+		reflekt = fireflekt;
+		spinflipcheck = fispinflipcheck;		
+		ExpPhase=1;
+	}
+	
+	else if ((t>=FillingTime)&&(t < (CleaningTime+FillingTime)) && (CleaningTime>0))
+	{      // spectrum cleaning
+		BruteForce = clBruteForce; // no spin tracking
+		reflekt = clreflekt;
+		spinflipcheck = clspinflipcheck;
+		ExpPhase=2;
+	}
+	else if ((RampUpTime>0)&&(t >= CleaningTime+FillingTime) && (t < (RampUpTime+CleaningTime+FillingTime)) && (RampUpTime > 0))
+	{   // ramping up field
+		BruteForce = ruBruteForce; 
+		reflekt = rureflekt;
+		spinflipcheck = ruspinflipcheck;
+		ExpPhase=3;
+	}
+	else if ((FullFieldTime>0)&&(t >= (RampUpTime+CleaningTime+FillingTime)) && (t < (RampUpTime+CleaningTime+FullFieldTime+FillingTime)))
+	{  // storage time
+		BruteForce = ffBruteForce;  // start spin tracking
+		reflekt = ffreflekt;
+		spinflipcheck = ffspinflipcheck;
+		ExpPhase=4;
+	}
+	else if ((t >= (RampUpTime+CleaningTime+FillingTime+FullFieldTime)) && (t < (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime)) && (RampDownTime != 0))
+	{   // ramping down field
+		BruteForce = rdBruteForce; // no spin tracking, neutrons shall stay in trap through reflection
+		reflekt = rdreflekt;
+		spinflipcheck=rdspinflipcheck;
+		ExpPhase=5;
+	}
+	else if (t >=  (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime))
+	{      // emptying of neutrons into detector
+		BruteForce = coBruteForce;
+		spinflipcheck= cospinflipcheck;
+		ExpPhase=6;
+	}
 }
 
 
 // create out-files and write file headers
-void OpenFiles(int argc, char **argv){
+void OpenFiles(int snapshot){
 	ostringstream logscrfile;
 	logscrfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "log.out";
-	LOGSCR = fopen(logscrfile.str().c_str(),mode_w);
+	LOGSCR = fopen(logscrfile.str().c_str(),"w");
 
-	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
-	{
-		ostringstream BFoutfile1;
-		BFoutfile1 << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "BF1.out";
-		BFLOG = fopen(BFoutfile1.str().c_str(),mode_w);
-		fprintf(BFLOG,"t Babs Polar logPolar Ixnorm Iynorm Iznorm Bxnorm Bynorm Bznorm dx dy dz\n");
-	}
-	
 	// Endpunkte
 	ostringstream endlogfile;
 	endlogfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "end.out";
-	ENDLOG = fopen(endlogfile.str().c_str(),mode_w);
+	ENDLOG = fopen(endlogfile.str().c_str(), "w");
 	
-	if (protneut != BF_ONLY) 
-	{
-        fprintf(ENDLOG,"jobnumber RandomSeed teilchen protneut polarisation "
-                       "tstart rstart phistart zstart NeutEnergie "
-                       "vstart alphastart gammastart decayerror "
-                       "rend phiend zend "
-                       "vend alphaend gammaend tend dt "
-                       "H kennz NSF RodFieldMult BFflipprob "
-                       "AnzahlRefl vladmax vladtotal thumbmax trajlength "
-                       "Hstart Hmax BFeldSkal EFeldSkal tauSF dtau\n");
-	}		
-	
-	// Print track to file
-	if ((ausgabewunsch == OUTPUT_EVERYTHING)||(ausgabewunsch == OUTPUT_EVERYTHINGandSPIN))
-	{ 
-		ostringstream wholetrackfile;
-		wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track001.out";
-		OUTFILE1 = fopen(wholetrackfile.str().c_str(),mode_w);       // open outfile neut001.out
-
-		Zeilencount=0;
-		fprintf(OUTFILE1,"Teilchen protneut polarisation t r drdt z dzdt phi dphidt x y "
-						 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr dBphidphi dBphidz "
-						 "Bz dBzdr dBzdphi dBzdz Babs Er Ez timestep logvlad logthumb ExpPhase\n");
-						 
-	}
+    fprintf(ENDLOG,"jobnumber RandomSeed teilchen protneut polarisation "
+                   "tstart rstart phistart zstart NeutEnergie "
+                   "vstart alphastart gammastart decayerror "
+                   "rend phiend zend "
+                   "vend alphaend gammaend tend dt "
+                   "H kennz NSF RodFieldMult BFflipprob "
+                   "AnzahlRefl vladmax vladtotal thumbmax trajlength "
+                   "Hstart Hmax BFeldSkal EFeldSkal tauSF dtau\n");
 	
 	// make snapshots as specified time into snapshot.out
 	if (snapshot==1)
 	{ 
 		ostringstream snapshotfile;
 		snapshotfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "snapshot.out";
-		SNAP = fopen(snapshotfile.str().c_str(),mode_w);       // open outfile neut001.out
-		fprintf(SNAP,"jobnumber Teilchennummer protneut polarisation "
+		SNAP = fopen(snapshotfile.str().c_str(),"w");       // open outfile neut001.out
+        fprintf(SNAP,"jobnumber RandomSeed teilchen protneut polarisation "
                        "tstart rstart phistart zstart NeutEnergie "
-                       "vstart alphastart gammastart "
-                       "r phi z x y "
-                       "v alphaend gammaend tend dt "
+                       "vstart alphastart gammastart decayerror "
+                       "rend phiend zend "
+                       "vend alphaend gammaend tend dt "
                        "H kennz NSF RodFieldMult BFflipprob "
-                       "AnzahlRefl trajlength "
+                       "AnzahlRefl vladmax vladtotal thumbmax trajlength "
                        "Hstart Hmax BFeldSkal EFeldSkal tauSF dtau\n");
 	}
 	
@@ -299,526 +709,153 @@ void PrintConfig(void)
 }
 
 
-//======== initalizes initial values from record to used variables ==============================================
-void initialStartbed()
-{	initial particleini;
-	long double edm; // energie dimension multiplikator
-	switch(protneut)
-	{	case NEUTRON:	particleini = nini;
-						edm = 1e-9; 
-						break;	
-		case PROTON:	particleini = pini;
-						edm = 1;
-						break;
-		case ELECTRONS:	particleini = eini;
-						edm = 1e+3;
-						break;
-	}
-	EnergieS = particleini.EnergieS * edm; // [eV]
-	EnergieE = particleini.EnergieE * edm; // [eV]
-	alphas = particleini.alphas;
-	alphae = particleini.alphae;
-	gammas = particleini.gammas;
-	gammae = particleini.gammae;
-	delx = particleini.delx;
-	xend = particleini.xend;
-	//return;
-}
-//======== end of innitialStartbed ==============================================================================
-
-//======== read in of the initial values (out of all3inone.in) and the dimensions (out of dimensions.in) ========
-void Startbed(int k)
-{	int i = 0, ncont;
-    char cline[200];    
-	string path;
-
-	// setting path for all3inone.in
-	path = inpath + "/all3inone.in";
-
-	// creating 'inistream' to all3inone.in
-	FILE *inistream = fopen(path.c_str(), mode_r);
-	if(inistream == NULL)
-	{	cout << "Can't open " << path << "\n";
-		exit(-1);
-	}
-	
-	// looping  over the lines of all3inone.in and reading them in
-	for(i = 1; i < 31; i++)
-	{	fgets(cline, 200, inistream);
-		ncont = 42;
-		switch (i)
-		{	case  2:	ncont = sscanf(cline, "%LG %LG %LG ", &DiceRodField, &RodFieldMultiplicator, &Ibar);
-						break;
-			case  4:	ncont = sscanf(cline, "%LG %LG ", &nini.EnergieS, &nini.EnergieE);
-						break;
-			case  5:	ncont = sscanf(cline, "%LG %LG ", &nini.alphas, &nini.alphae);
-						nini.alphas *= conv;
-						nini.alphae *= conv;
-						break;
-			case  6:	ncont = sscanf(cline, "%LG %LG ", &nini.gammas, &nini.gammae);
-						nini.gammas *= conv;
-						nini.gammae *= conv;
-						break;
-			case 7:		ncont = sscanf(cline, "%LG %LG ", &nini.delx, &nini.xend);
-						break;
-			case 9:		ncont = sscanf(cline, "%LG %LG ", &pini.EnergieS, &pini.EnergieE);
-						break;
-			case 10:	ncont = sscanf(cline, "%LG %LG ", &pini.alphas, &pini.alphae);
-						pini.alphas *= conv;
-						pini.alphae *= conv;
-						break;
-			case 11:	ncont = sscanf(cline, "%LG %LG ", &pini.gammas, &pini.gammae);
-						pini.gammas *= conv;
-						pini.gammae *= conv;
-						break;
-			case 12:	ncont = sscanf(cline, "%LG %LG ", &pini.delx, &pini.xend);
-						break;
-			case 14:	ncont = sscanf(cline, "%LG %LG ", &eini.EnergieS, &eini.EnergieE);
-						break;
-			case 15:	ncont = sscanf(cline, "%LG %LG ", &eini.alphas, &eini.alphae);
-						eini.alphas *= conv;
-						eini.alphae *= conv;
-						break;
-			case 16:	ncont = sscanf(cline, "%LG %LG ", &eini.gammas, &eini.gammae);
-						eini.gammas *= conv;
-						eini.gammae *= conv;
-						break;
-			case 17:	ncont = sscanf(cline, "%LG %LG ", &eini.delx, &eini.xend);
-						break;
-			case 19:	ncont = sscanf(cline, "%LG %LG %LG ", &BCutPlanePoint[0], &BCutPlanePoint[1], &BCutPlanePoint[2]);
-						break;
-			case 20:	ncont = sscanf(cline, "%LG %LG ", &BCutPlaneNormalAlpha, &BCutPlaneNormalGamma);
-						BCutPlaneNormalAlpha *= conv;
-						BCutPlaneNormalGamma *= conv;
-						break;
-			case 21:	ncont = sscanf(cline, "%LG %u ", &BCutPlaneSampleDist, &BCutPlaneSampleCount);
-						break;
+//Ausgabe der Zwischenwerte aus odeint
+void PrintIntegrationStep(TParticle *particle, long double x, long double h, long double *y, long double H){
+	if ((ausgabewunsch==OUTPUT_EVERYTHING)||(ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)){
+		if (Zeilencount>40000){
+			fclose(OUTFILE1);
+			OUTFILE1 = NULL;
 		}
-		if(ncont < 1) Log("an error occourd while reading the %i. item in line %i of all3inone.in", ncont, i);
-    }
-    
-    // closing 'inistream' to all3inone.in
- 	fclose(inistream);
-	
-	// initalizes initial values from record to used variables
-	initialStartbed();
-
-	// minimal necessary energy (Emin_n) > maximum input energy (nini.EnergieE)?? EXIT !!
-	if(Emin_n*1e9 > nini.EnergieE)
-	{	Log("\n\n\nERROR: Emin_n (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
-		             "       Check the energy range of the neutrons and / or the B-field configuration!\n\n"
-		             "EXIT!!\n", (Emin_n*1e9), nini.EnergieE);
-		exit(-1);
-	}
-	
-	// check if lower neutron energy boundary is possible, if not set to possible value
-	if((FillingTime == 0) && (CleaningTime == 0) && (RampUpTime == 0) && ((FullFieldTime != 0) || (RampDownTime != 0)))
-	{	nini.EnergieS = max(Emin_n*1e9, nini.EnergieS); // higher energy of the neutron
-		if(protneut == NEUTRON) EnergieS = nini.EnergieS; // reinitializes initial value
-	}
-
-	// starting value (S) > final value (E)?? EXIT!!
-	for(int i = 1; i < 4; i++)
-	{	struct initial particleini;
-		switch(i)
-		{	case 1:	particleini = nini;
-					break;	
-			case 2:	particleini = pini;
-					break;
-			case 3:	particleini = eini;
-					break;
+			
+		if (!OUTFILE1){
+			Filecount++;
+			ostringstream wholetrackfile;
+			wholetrackfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "track" << setw(3) << Filecount << setw(0) << ".out";
+			OUTFILE1=fopen(wholetrackfile.str().c_str(),"w");
+			fprintf(OUTFILE1,"Teilchen protneut polarisation t r drdt z dzdt phi dphidt x y "
+							 "v H Br dBrdr dBrdphi dBrdz Bphi dBphidr "
+							 "dBphidphi dBphidz Bz dBzdr dBzdphi dBzdz Babs Er Ez "
+							 "timestep logvlad logthumb ExpPhase \n");
+			Log(" ##");
+			Log(wholetrackfile.str().c_str());
+			Log("## \n");
+			Zeilencount=1;
 		}
-		if((particleini.EnergieS > particleini.EnergieE) || (particleini.alphas > particleini.alphae) || (particleini.gammas > particleini.gammae))
-		{	Log("\n\n\nERROR: Two or more initial values are inconsistent.\n"
-			             "       Check ALL starting and final values in all3inone.in!\n\n"
-			             "EXIT!!\n");
-			exit(-1);
-		}
-	}
-
-	// writing parameters to screen
-	Log("\nStart parameters:\n"
-	       "  Energy (min, max): %.17LG neV/eV/keV, %.17LG neV/eV/keV\n"
-	       "  Maximum runtime: %.17LG s\n"
-	       "  Alpha (min, max): %.17LG degree, %.17LG degree\n"
-	       "  Gamma (min, max): %.17LG degree, %.17LG degree\n"
-	       "  Filling time: %LG s\n"
-	       "  Cleaning time: %.17LG s\n"
-	       "  Ramp up time: %.17LG s\n"
-	       "  Full field time: %.17LG s\n"
-	       "  RampDownTime: %.17LG s\n"
-	       "  B field scaling factor: %.17LG\n"
-	       "  E field scaling factor: %.17LG\n",
-	       EnergieS, EnergieE,
-	       xend,
-	       alphas/conv, alphae/conv,
-	       gammas/conv,  gammae/conv,
-	       FillingTime,
-	       CleaningTime,
-	       RampUpTime,
-	       FullFieldTime,
-	       RampDownTime,
-	       BFeldSkalGlobal,
-	       EFeldSkal);
-}
-//======== end of Startbed ======================================================================================
-
-
-// works like printf, prints to logfile and, if jobnumber == 0, to stdout 
-int Log(const char* format, ...){
-	va_list args;
-	va_start(args, format);
-	if (jobnumber == 0){
-		vprintf(format, args);
+	
+			
+		printf("-");
 		fflush(stdout);
-	} 
-	int result = vfprintf(LOGSCR, format, args);
-	fflush(LOGSCR);
-	va_end(args);
-	return result;
+		
+		long double v = sqrt(y[2]*y[2] + y[4]*y[4] + y[6]*y[1]*y[6]*y[1]);
+		
+		long double logvlad = 0.0, logfrac = 0.0;
+		if (particle->vlad > 1e-99) 
+			logvlad=log10(particle->vlad);
+		if (particle->frac > 1e-99) 
+			logfrac=log10(particle->frac);
+		
+		int pol;
+		if (particle->polarisation == -1) pol = 1;
+		else if (particle->polarisation == 0) pol = 3;
+		else if (particle->polarisation == 1) pol = 2;
+		
+		//cout << "Br " << Bp[1][klauf] << endl;
+		fprintf(OUTFILE1,"%d %d %d %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+						 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+						 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %d \n",
+						 particle->particlenumber,particle->protneut,pol,x,y[1],y[2],y[3],y[4],y[5],y[6],y[1]*cos(y[5]),y[1]*sin(y[5]),
+						 v,H,Br,dBrdr,dBrdphi,dBrdz,Bphi,dBphidr, dBphidphi,dBphidz,
+						 Bz,dBzdr,dBzdphi,dBzdz,Bws,Er,Ez,h,logvlad,logfrac,ExpPhase);
+		//fprintf(OUTFILE1,"%LG\n",xp[klauf]);
+		
+		fflush(OUTFILE1);
+		Zeilencount++;
+	}
+
 }
 
-
-// write finished particle to endlog
-void ausgabe(long double x2, long double *ystart, long double vend, long double H)
-{	
-	long double dt = x2 - xstart; // simulation time dt
-
-	if(vend>0) gammaend= acosl(ystart[4]/vend);
-	else gammaend=0;
-	alphaend= atan2l(ystart[6]*ystart[1],ystart[2]);
-
-	if(dt>=xend) 
-	{                                                           //Zeit abgelaufen
-		if (decay.on && (protneut == NEUTRON))
-		{	kennz = KENNZAHL_DECAYED; // neutron decayed
-			decay.ed = 1;
-			decay.Npolarisation = polarisation;
-			decay.Nr = ystart[1];
-			decay.Nphi = phiend;
-			decay.Nz = ystart[3];
-			decay.Nv = vend;
-			decay.Nalpha = alphaend;
-			decay.Ngamma = gammaend;
-			decay.Nx = x2;
-			decay.NH = H; // [neV]
-		}
-		else
-		{	kennz = KENNZAHL_NOT_FINISH; // particle survived until xend
-		}			
-	}
-	else if (x2 >= StorageTime)
-		kennz = KENNZAHL_NOT_FINISH;
-
+// print particle start- and end-values into file
+void PrintParticle(FILE *file, TParticle *particle){
 	// calculate spin flip lifetime tauSF and influence on lifetime measurement 
-	long double tauSF = (BFflipprob != 0) ? (-x2/logl(1-BFflipprob)) : 9e99;
+	long double tauSF = (1 - particle->BFsurvprob != 0) ? (-(particle->dt)/log(particle->BFsurvprob)) : 9e99;
 	long double dtau=tau-1/(1/tau+1/tauSF) ;
 	 
-	// output of end values
-	fprintf(ENDLOG,"%i %li %i %i %i "
+	int pol;
+	if (particle->polarisation == -1) pol = 1;
+	else if (particle->polarisation == 0) pol = 3;
+	else if (particle->polarisation == 1) pol = 2;
+
+	fprintf(file ,"%i %li %i %i %i "
 	               "%LG %LG %LG %LG %LG "
 	               "%LG %LG %LG %LG "
 	               "%LG %LG %LG "
 	               "%LG %LG %LG %LG %LG "
-	               "%LG %i %i %LG %LG "
-	               "%li %LG %LG %LG %LG "
+	               "%LG %i %i %f %LG "
+	               "%i %LG %LG %LG %LG "
 	               "%LG %LG %LG %LG %LG %LG\n",
-	               jobnumber, monthinmilliseconds, iMC, protneut, polarisation,
-	               xstart, r_n, phi_n, z_n, NeutEnergie*1.0e9,
-	               v_n, alpha, gammaa, decay.error,
-	               ystart[1], phiend, ystart[3],
-	               vend, alphaend, gammaend, x2, dt,
-	               H, kennz, NSF, RodFieldMultiplicator, BFflipprob,
-	               nrefl, vladmax, vladtotal, thumbmax, trajlengthsum,
-	               Hstart, Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
+	               jobnumber, monthinmilliseconds, particle->particlenumber, particle->protneut, pol,
+	               particle->xstart, particle->rstart, particle->phistart, particle->zstart, particle->NeutEnergie*1.0e9,
+	               particle->vstart, particle->alphastart, particle->gammastart, particle->decayerror,
+	               particle->rend, particle->phiend, particle->zend,
+	               particle->vend, particle->alphaend, particle->gammaend, particle->xstart + particle->xend, particle->dt,
+	               particle->Hend, particle->kennz, particle->NSF, 1.0, 1 - particle->BFsurvprob,
+	               particle->nrefl, particle->vladmax, particle->vladtotal, particle->thumbmax, particle->trajlength,
+	               particle->Hstart, particle->Hmax, BFeldSkal, EFeldSkal, tauSF, dtau);
 	               
-	fflush(ENDLOG);
-    return;
+	fflush(file);
 }
 
 
-// Diese Funktionen werten die in yp[][] gespeichterten Werte aus und berechnen daraus die
-// Neutronenverteilung in der r-z-Ebene. Dies wird �ber die Auswertung der Aufenthalts-
-// wahrscheinlichkeit des Neutrons in Quadraten erreicht.
-// Wie bei der Interpolation gibt es einen Vektor f�r die r-Werte der Ecken der Quadrate,
-// eine f�r die z-Werte und eine Matrix in der die Verteilung abgespeichert wird
-
-// Vorbereitung der r und z-Vektoren
-void prepndist(int k)
-{
-long double dooo, increment;
-//v=300;       //  2mm steps in r-direction 0-60cm
-//w=1200;      //  z: -0.5 bis1.7
-increment = 0.6 / v;  // Schrittweite des Gitters (0.002m)
-
-ndistr=dvector(0,v);       // r-Werte
-ndistz=dvector(0,w);       // z-Werte
-ndistW=dmatrix(0,v,0,w);   // Verteilung
-
-        // r-Vektor bef�llen, er enth�lt die Ecken der Auswertungsquadrate
-        dooo=0.0;
-        for(int i=0;i<=v;i++)
-        {
-				ndistr[i] = dooo;
-			  dooo = dooo + increment;
-        }
-
-        // z-Vektor bef�llen, er enth�lt die Ecken der Auswertungsquadrate
-        dooo=-0.5;
-        for(int i=0;i<=w;i++)
-        {
-				ndistz[i] = dooo;
-				dooo = dooo + increment;
-        }
-
-        // Matrix der Verteilung auf 0 setzen
-        for(int i=0;i<=v;i++)
-        {
-                for(int j=0;j<=w;j++)
-                {
-                ndistW[i][j]=0.0;
-                }
-        }
-
- }
-
-// Bef�llung der Verteilungsmatrix
-void fillndist(int k)
-{
-	
-	int ir1, iz1, ir2, iz2;
-
-	hunt(ndistr, v, yp[1][1], &ir1);     // Index des ersten Punktes suchen
-	hunt(ndistz, w, yp[3][1], &iz1);
-	//ir1 = (yp[1][1] - conv_rA) / (conv_rB);
-	//iz1 = (yp[3][1] - conv_zA) / (conv_zB);
-	if((ir1>v)||(iz1>w)) printf("Ndist Error %d %d \n",ir1,iz1);
-	
-	ir2=ir1; iz2=iz1;
-
-	for(int klauf=2;klauf<=kount;klauf++)
-	{
-		ir1=ir2; iz1=iz2;
-		hunt(ndistr, v, yp[1][klauf], &ir2);   // Index des n�chsten Punktes suchen
-		hunt(ndistz, w, yp[3][klauf], &iz2);
-		//ir2 = (yp[1][klauf] - conv_rA) / (conv_rB);
-		//iz2 = (yp[3][klauf] - conv_zA) / (conv_zB);
-//		printf("%i,%i,",ir2,iz2);
-		if((ir1>v)||(iz2>w)) printf("Ndist Error %d %d \n",ir2,iz2);
-		
-		if ((ir2==ir1) && (iz2==iz1))                     // sind die Pkte im gleichen Quadrat?
-		{
-			ndistW[ir1][iz1]=ndistW[ir1][iz1] + xp[klauf]-xp[klauf-1];            // Zeit zum Quadrat dazuaddieren
-		}
-		else
-		{
-	
-			ndistW[ir1][iz1]=ndistW[ir1][iz1] + (xp[klauf]-xp[klauf-1])/2;        // H�lfte der Zeit zum ersten Quadrat
-			ndistW[ir2][iz2]=ndistW[ir2][iz2] + (xp[klauf]-xp[klauf-1])/2;        // H�lfte der Zeit zum anderen
-		}
+//======== Output of the endcodes ==========================================================================================
+void OutputCodes(vector<int> kennz_counter[3]){
+	int ncount = accumulate(kennz_counter[1].begin(),kennz_counter[1].end(),0);
+	int pcount = accumulate(kennz_counter[2].begin(),kennz_counter[2].end(),0);
+	int ecount = accumulate(kennz_counter[0].begin(),kennz_counter[0].end(),0);
+	Log("\nThe calculations of %li particle(s) yielded:\n"
+	       "endcode:  of %4i neutron(s) ; of %4i proton(s) ; of %4i electron(s)\n"
+	       "   0 %12i %20i %19i 		(were not categorized)\n"
+	       "   1 %12i %20i %19i 		(did not finish)\n"
+	       "   2 %12i %20i %19i 		(hit outer boundaries)\n"
+	       "   3 %12i %20i %19i 		(produced a numerical error (most likely step size underflow))\n"
+	       "   4 %12i %20i %19i 		(decayed)\n"
+	       "   5 %12i %20i %19i 		(found no initial position)\n",
+	       ncount + pcount + ecount,
+	       ncount, pcount, ecount,
+	       kennz_counter[1][0], kennz_counter[2][0], kennz_counter[0][0],
+	       kennz_counter[1][1], kennz_counter[2][1], kennz_counter[0][1],
+	       kennz_counter[1][2], kennz_counter[2][2], kennz_counter[0][2],
+	       kennz_counter[1][3], kennz_counter[2][3], kennz_counter[0][3],
+	       kennz_counter[1][4], kennz_counter[2][4], kennz_counter[0][4],
+	       kennz_counter[1][5], kennz_counter[2][5], kennz_counter[0][5]);
+	for (unsigned i = 6; i < kennz_counter[0].size(); i++){
+		string solidnames;
+		for (vector<solid>::iterator it = solids.begin(); it != solids.end(); it++)
+			if (it->kennz == i)
+				solidnames += '/' + it->name;
+		Log("  %2i %12i %20i %19i		(were statistically absorbed by %s)\n",
+				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i],solidnames.c_str()+1);
 	}
-
 }
-
-// Ausgabe in ndist.out
-void outndist(int k)
-{
-	//printf("\nOutputting the particle spacial distribution... \n");
-		
-	ostringstream path;
-	path << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "ndist.out";
-	FILE *NDIST=fopen(path.str().c_str(),mode_w);
-	int Treffer = 0;
-	
-	//FILE *NDIST=fopen("ndist.out",mode_w);
-	
-	fprintf(NDIST,"Rindex Zindex Rmtlpkt Zmtlpkt Whk Treffer\n");
-	long double increment = ndistr[1] - ndistr[0];
-	int i,j;
-	for(i=0;i<=v;i++){
-		for(j=0;j<=w;j++){
-			if (ndistW[i][j] != 0) Treffer =1;
-			if (ndistW[i][j] == 0) Treffer =0;	
-			fprintf(NDIST,"%i %i %.5LG %.5LG %.17LG %i\n",i,j,(ndistr[i]+(increment/2.0)),(ndistz[j]+(increment/2.0)), ndistW[i][j], Treffer);
-		}
-	}
-	fclose(NDIST);
-	//printf("\nDone outputting the particle spacial distribution! \n");
-	
-}
+//======== end of OutputCodes ==============================================================================================
 
 
+/*
 // print debug info
-void OutputState(long double *y, int l){
+void OutputState(TParticle *particle, long double x, long double h, long double *y){
 	ostringstream stateoutfile;
 	stateoutfile << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "state.out";
-	FILE *STATEOUT = fopen(stateoutfile.str().c_str(),mode_w);	
+	FILE *STATEOUT = fopen(stateoutfile.str().c_str(),"w");	
 	printf("\n \n Something happened! \n \n ");
 	fprintf(STATEOUT,"In this file the state of the programm will be written, when something happens for debug porposes... \n");
 	fprintf(STATEOUT,"Jobnumber: %i \n", jobnumber);
-	fprintf(STATEOUT,"Particle number: %i \n", iMC);
-	fprintf(STATEOUT,"Starting energy: %.10LG neV\n", NeutEnergie*1e9);
-	fprintf(STATEOUT,"Time: %.10LG s\n", x2);
-	fprintf(STATEOUT,"Endtime: %.10LG s\n", xend);
-	fprintf(STATEOUT,"Particle ID: %i \n", kennz);
-	fprintf(STATEOUT,"Current energy: %.10LG neV\n", H);
+	fprintf(STATEOUT,"Particle number: %i \n", particle->particlenumber);
+	fprintf(STATEOUT,"Starting energy: %.10LG neV\n", particle->NeutEnergie*1e9);
+	fprintf(STATEOUT,"Time: %.10LG s\n", x);
+	fprintf(STATEOUT,"Endtime: %.10LG s\n", particle->xend);
+	fprintf(STATEOUT,"Particle ID: %i \n", particle->kennz);
+	fprintf(STATEOUT,"Current energy: %.10LG neV\n", particle->Energy(x,y));
 	fprintf(STATEOUT,"Spatial coordinates (y[i]): r: %.10LG, phi: %.10LG, z:%.10LG \n", y[1], y[5], y[3]);	
-	fprintf(STATEOUT,"Spatial coordinates (ystart[i]): r: %.10LG, phi: %.10LG, z:%.10LG \n", ystart[1], ystart[5], ystart[3]);	
+	fprintf(STATEOUT,"Spatial coordinates (ystart[i]): r: %.10LG, phi: %.10LG, z:%.10LG \n", particle->rstart, particle->phistart, particle->zstart);	
 	fprintf(STATEOUT,"Velocities: rdot: %.10LG, phidot: %.10LG, zdot: %.10LG, vabs: %.10LG \n", y[2], y[6], y[4], sqrtl(fabsl(y[2]*y[2]+y[1]*y[1]*y[6]*y[6]+y[4]*y[4])));
 	fprintf(STATEOUT,"Magnetic Field: Br: %.10LG, Bphi: %.10LG, Bz: %.10LG, Babs: %.10LG \n", Br,Bphi,Bz,Bws);
 	fprintf(STATEOUT,"Magnetic Field Derivatives: \n  %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG \n", dBrdr,dBrdphi,dBrdz,dBphidr,dBphidphi,dBphidz,dBzdr,dBzdphi,dBzdz);
 	fprintf(STATEOUT,"Reflection state (1 is on): %i \n",reflekt);
 	fprintf(STATEOUT,"Diffuse reflection state (1 is specular, 2 diffuse, 3 statistical): %i \n",diffuse);
-	fprintf(STATEOUT,"timestep: %.10LG\n", (x2-x1));
+	fprintf(STATEOUT,"timestep: %.10LG\n", h);
 	fprintf(STATEOUT,"Reflekt while Rampdown: %i\n", rdreflekt);
 	fclose(STATEOUT);
-	kennz=88;
-	stopall =1;
-	exit(-1);
-	iMC = MonteCarloAnzahl +1;
+	particle->kennz = 88;
+//	exit(-1);
 }
+*/
 
-
-// print cut through BField to file
-void PrintBFieldCut(){
-	// transform plane parameters to cartesian coords
-	long double P[3] = {BCutPlanePoint[0]*cosl(BCutPlanePoint[1]), BCutPlanePoint[0]*sinl(BCutPlanePoint[1]), BCutPlanePoint[2]};
-	long double n[3] = {cosl(BCutPlanePoint[1]+BCutPlaneNormalAlpha)*sinl(BCutPlaneNormalGamma), 
-						sinl(BCutPlanePoint[1]+BCutPlaneNormalAlpha)*sinl(BCutPlaneNormalGamma), 
-						cosl(BCutPlaneNormalGamma)};
-
-	// project x/y/z-axes on plane for direction vectors u,v
-	long double u[3], v[3];
-	if (n[0] < 0.9){		// n not parallel to x-axis
-		u[0] = 1-n[0]*n[0];
-		u[1] = -n[0]*n[1];
-		u[2] = -n[0]*n[2];
-	}
-	else{					// if n parallel to x-axis use z-axis for u
-		u[0] = -n[2]*n[0];
-		u[1] = -n[2]*n[1];
-		u[2] = 1-n[2]*n[1];
-	}
-	if (n[1] < 0.9){		// n not parallel to y-axis
-		v[0] = -n[1]*n[0];
-		v[1] = 1-n[1]*n[1];
-		v[2] = -n[1]*n[2];
-	}
-	else{					// if n parallel to y-axis use z-axis for v
-		v[0] = -n[2]*n[0];
-		v[1] = -n[2]*n[1];
-		v[2] = 1-n[2]*n[1];
-	}
-	
-	int i,j,k;
-	// normalize u,v
-	long double uabs = sqrtl(u[0]*u[0]+u[1]*u[1]+u[2]*u[2]);
-	long double vabs = sqrtl(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
-	for (i = 0; i < 3; i++){
-		u[i] /= uabs;
-		v[i] /= vabs;
-	}
-	
-	// print BField to file
-	string path = outpath + "/BFCut.out";
-	FILE *cutfile = fopen(path.c_str(), mode_w);
-	if (!cutfile){
-		Log("Could not open %s!",path.c_str());
-		exit(-1);
-	}
-	fprintf(cutfile, "r phi z x y Br Bphi Bz Bx By dBrdr dBrdphi dBrdz dBphidr dBphidphi dBphidz dBzdr dBzdphi dBzdz Babs dBdr dBdphi dBdz Er Ephi Ez Ex Ey dErdr dErdz dEphidr dEphidz dEzdr dEzdz\n");
-	
-	long double Pp[3],r,phi,Bx,By,Ex,Ey;
-	float start = clock();
-	for (i = -BCutPlaneSampleCount/2; i <= BCutPlaneSampleCount/2; i++) {
-		for (j = -BCutPlaneSampleCount/2; j <= BCutPlaneSampleCount/2; j++){
-			for (k = 0; k < 3; k++)
-				Pp[k] = P[k] + i*BCutPlaneSampleDist*u[k] + j*BCutPlaneSampleDist*v[k];
-			r = sqrtl(Pp[0]*Pp[0]+Pp[1]*Pp[1]);
-			phi = atan2(Pp[1],Pp[0]);
-			BFeld(r, phi, Pp[2], 0);
-			Bx = Br*cosl(phi) - Bphi*sinl(phi);
-			By = Br*sinl(phi) + Bphi*cosl(phi);
-			fprintf(cutfile, "%LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG ",
-							  r,phi,Pp[2],Pp[0],Pp[1],Br,Bphi,Bz,Bx,By,dBrdr,dBrdphi,dBrdz,dBphidr,dBphidphi,dBphidz,dBzdr,dBzdphi,dBzdz,Bws,dBdr,dBdphi,dBdz);
-			EFeld(r,phi,Pp[2]);
-			Ex = Er*cos(phi) - Ephi*sin(phi);
-			Ey = Er*sin(phi) + Ephi*cos(phi);
-			fprintf(cutfile, "%LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
-							  Er,Ephi,Ez,Ex,Ey,dErdr,dErdz,dEphidr,dEphidz,dEzdr,dEzdz);
-		}
-	}
-	start = (clock() - start)/CLOCKS_PER_SEC;
-	fclose(cutfile);
-	printf("Called BFeld and EFeld %u times in %fs (%fms per call)",BCutPlaneSampleCount*BCutPlaneSampleCount, start, start/BCutPlaneSampleCount/BCutPlaneSampleCount);
-}
-
-
-// calculate heating of the neutron gas by field rampup
-void PrintBField(){
-	fprintf(ENDLOG,"r phi z Br Bphi Bz 0 0 Babs\n");
-	BFeldSkal = 1.0;
-	int E;
-	long double rmin = 0.12, rmax = 0.5, zmin = 0, zmax = 1.2;
-	long double dr = 0.1, dz = 0.1;
-	long double VolumeB[(int)(nini.EnergieE) + 1];
-	for (E = 0; E <= nini.EnergieE; E++) VolumeB[E] = 0;
-	
-	long double EnTest;
-	for (long double r = rmin; r <= rmax; r += dr){
-		for (long double z = zmin; z <= zmax; z += dz){
-			BFeld(r, 0, z, 500.0);
-			fprintf(ENDLOG,"%LG %G %LG %LG %LG %LG %G %G %LG \n",r,0.0,z,Br,Bphi,Bz,0.0,0.0,Bws);
-			cout << "r= " << r << " z= " << z << " Br= " << Br << " T, Bz= " << Bz << " T"  << endl;
-			
-			// Ramp Heating Analysis
-			for (E = 0; E <= nini.EnergieE; E++){
-				EnTest = E*1.0e-9 - m_n*gravconst*z + mu_n * Bws;
-				if (EnTest >= 0){
-					// add the volume segment to the volume that is accessible to a neutron with energy Energie
-					VolumeB[E] = VolumeB[E] + pi * dz * ((r+0.5*dr)*(r+0.5*dr) - (r-0.5*dr)*(r-0.5*dr));
-				}
-			}
-		}
-	}
-
-	// for investigating ramp heating of neutrons, volume accessible to neutrons with and
-	// without B-field is calculated and the heating approximated by thermodynamical means
-	Log("\nEnergie [neV], Volumen ohne B-Feld, mit B-Feld, 'Erwaermung'");
-	long double Volume;
-	for (E = 0; E <= nini.EnergieE; E++) 
-	{
-		Volume = ((E * 1.0e-9 / (m_n * gravconst))) * pi * (rmax*rmax-rmin*rmin);
-		// isentropische zustandsnderung, kappa=5/3
-		Log("\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * powl((Volume/VolumeB[E]),(2.0/3.0)) - E);
-	}
-}
-
-
-//-----------------------------------------------------------------------------
-// Vektor W (kein Ortsvektor, sondern B-Feld o.�hnliches) von zyl in kart koord xyz umrechnen ## Wr, Wphi, Wz: Eingabewerte ## Wx0, Wy0, Wz0 werden ver�ndert von CylKartCoord
-// phi ist dabei die winkelkoordinate des aktuellen ortsvektors
-void CylKartCoord(long double Wr, long double Wphi, long double Wz, long double phi, long double *Wx0, long double *Wy0, long double *Wz0){
-	(*Wx0) = cosl(phi) * Wr - sinl(phi) * Wphi;
-	(*Wy0) = sinl(phi) * Wr + cosl(phi) * Wphi;
-	(*Wz0) = Wz;
-	return;
-}
-
-
-//-----------------------------------------------------------------------------
-// Vektor W (kein Ortsvektor, sondern B-Feld o.�hnliches) von kart in zyl koord xyz umrechnen ## Wx, Wy, Wz: Eingabewerte ## Wr0, Wphi0, Wz0 werden ver�ndert von KartCylCoord
-// phi ist dabei die winkelkoordinate des aktuellen ortsvektors
-void KartCylCoord(long double Wx, long double Wy, long double Wz, long double phi, long double *Wr0, long double *Wphi0, long double *Wz0){
-	(*Wr0) = cosl(phi) * Wx + sinl(phi) * Wy;
-	(*Wphi0) = (-1) * sinl(phi) * Wx + cosl(phi) * Wy;
-	(*Wz0) = Wz;
-	return;
-}
-
-
-// return absolute value of a 3 vector in cartesian coordinates
-long double AbsValueCart(long double x, long double y, long double z)
-{
-	return sqrt(x*x + y*y + z*z);
-}

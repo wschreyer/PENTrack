@@ -1,15 +1,15 @@
 #include <malloc.h>
 #include <stdio.h>
 #include "nrutil.h"
-#include "main.h"
 
 void nrerror(char *error_text){	
 	//void exit(int c);
 
-	Log("Numerical Recipes run-time error...\n");
-	Log("%s\n",error_text);
-	Log("...now exiting to system...\n");
-	exit(-1);
+	printf("Numerical Recipes run-time error...\n");
+	printf("%s\n",error_text);
+//	printf("...now exiting to system...\n");
+//	exit(-1);
+	throw error_text; // throw exception
 }
 
 

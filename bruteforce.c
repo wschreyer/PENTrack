@@ -1,8 +1,25 @@
 //---------------------------------------------------------------------------
 // user supplied equations for BruteForce integration of Bloch Equation
 
-#include "main.h"
-//#include "vars.h"
+#include <cmath>
+#include <sstream>
+#include <vector>
+#include <iomanip>
+
+#include "bruteforce.h"
+#include "nrutil.h"
+#include "globals.h"
+
+using namespace std;
+
+void BFpolint(long double xa[],long double ya[],int n,long double x, long double *y,long double *dy);
+void BFratint(long double xa[],long double ya[],int n, long double x,long double *y,long double *dy);
+void BFinterpol(long double x,long double *Bx,long double *By,long double *Bz);
+void BFderivs(long double x, long double *y, long double *dydx);
+void BFrkck(long double y[], long double dydx[], int n, long double x, long double h, long double yout[],long double yerr[], void (*BFderivs)(long double, long double [], long double []));
+void BFrkqs(long double y[], long double dydx[], int n, long double *x, long double htry, long double eps,long double yscal[], long double *hdid, long double *hnext, void (*BFderivs)(long double, long double [], long double []));
+void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, long double eps, long double h1,long double hmin, int *nok, int *nbad,void (*BFderivs)(long double, long double [], long double []),void (*BFrkqs)(long double [], long double [], int, long double *, long double, long double, long double [],long double *, long double *, void (*)(long double, long double [], long double [])));
+void PrintBFStep(long double x, long double *y);
 
 #define SAFETY 0.9
 #define PGROW -0.2
@@ -11,7 +28,70 @@
 #define MAXSTP 1.0e10
 #define TINY 1.0e-30
 
-long double gamma_n = 1.83247185e8;            
+FILE *BFLOG = NULL; 
+const long double gamma_n = 1.83247185e8;            
+const long double BFdxsav=5e-7;  // timestep for intermediate output
+vector<long double> BFtime, BFFieldx, BFFieldy, BFFieldz;   // time, Bx, By, Bz, r, z array
+long double BFBminmem=10.0;
+long BFZeilencount;
+int BFFilecount = 0;                  // to control output filename of BF
+long double BFTargetB=0.1;     // Babs < BFTargetB => integrate,
+
+int nok,nbad;
+
+long double BruteForceIntegration(long double x, long double *y, long double Br, long double Bphi, long double Bz, long double Bws){
+	if(Bws<BFBminmem)    // accumulate the smallest value Babs for which BF integration is done
+		BFBminmem=Bws;
+	
+	if (Bws<BFTargetB)
+	{   // check if this value is worth for Bloch integration 
+		BFtime.push_back(x);
+		// transform cylindrical into kartesian lokal coordinates
+		BFFieldx.push_back(cos(y[5])*Br - sin(y[5])*Bphi);
+		BFFieldy.push_back(sin(y[5])*Br + cos(y[5])*Bphi);
+		BFFieldz.push_back(Bz);
+	}
+	
+	// Perform integration
+	if (Bws >= BFTargetB && BFtime.size() >= 10)
+	{        
+		int offset = BFtime.size()-1;        
+		long double BFBws = sqrtl(powl(BFFieldx[1],2)+powl(BFFieldy[1],2)+powl(BFFieldz[1],2));
+		long double I_n[4] = {0, (BFFieldx[1]/BFBws)*0.5, (BFFieldy[1]/BFBws)*0.5, (BFFieldz[1]/BFBws)*0.5};
+		
+		printf(" BF starttime %.6LG, offset %i, avg. stepsize %LG, Bmin %LG, |I| before %LG ",
+				BFtime[1], offset, (BFtime[offset]-BFtime[1])/offset, BFBminmem,
+				sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)));
+		fflush(stdout);
+		
+		//    (eingangsvektor,nvar,xbeg,xend,rel.accur,begstepsize,hmin,&nok,&nbad,derivs,bsstep)
+		(*BFodeintrk)(I_n,3,BFtime[1],BFtime.back(),1e-13,1e-9,0,&nok,&nbad,BFderivs,BFrkqs);
+
+		// output of polarisation after BF int completed
+		// calculate polarisation at end of step BFpol = (I_n*B/|B|) in [-1/2,1/2]
+		long double BFpol = (I_n[1]*BFFieldx[offset] + I_n[2]*BFFieldy[offset] + I_n[3]*BFFieldz[offset])
+								/sqrtl(powl(BFFieldx[offset],2) + powl(BFFieldy[offset],2) + powl(BFFieldz[offset],2));
+
+		printf(" BF endtime %LG, BFflipprop %LG, BFpol %LG, intsteps taken %d, Bmin %LG, |I| after %LG\n",
+				BFtime.back(), 1-BFpol+0.5, BFpol, nok+nbad, BFBminmem, sqrtl(powl(I_n[1],2)+powl(I_n[2],2)+powl(I_n[3],2)));
+
+		//fprintf(TESTLOG,"%.17LG %.17LG %.17LG\n",BFtime[offset],BFlogpol,(1-BFflipprob));
+
+		BFBminmem=10;
+		BFtime.clear();                       // after BF step start with new array
+		BFFieldx.clear();
+		BFFieldy.clear();
+		BFFieldz.clear();
+		
+		return BFpol + 0.5;
+		
+	}	
+	
+	return 1;	
+// END brute force integration
+
+}
+
 
 void BFpolint(long double xa[],long double ya[],int n,long double x, long double *y,long double *dy){
 	int i,m,ns=1;
@@ -91,12 +171,13 @@ void BFratint(long double xa[],long double ya[],int n, long double x,long double
 void BFinterpol(long double x,long double *Bx,long double *By,long double *Bz){
 	int ordnung = 5;              // ordnung means that polynomial or rational function is of order (ordnung-1) 
 	long double dy;
-	hunt(BFtime, offset, x, &BFindex);       // x lies between BFindex and (BFindex+1)
+	int BFindex, offset=BFtime.size() - 1;
+	hunt(&BFtime[0], offset, x, &BFindex);       // x lies between BFindex and (BFindex+1)
 
 	if (BFindex < 1)
         BFindex = 1;            // start interpolation on index 1
-	if (BFindex > (offset-ordnung+1))
-        BFindex = (offset-ordnung+1);   //do not interpolate out of boundary of array values	
+	if (BFindex > offset-ordnung+1)
+        BFindex = offset-ordnung+1;   //do not interpolate out of boundary of array values	
 	
 	/*
 	for(int hp=0;hp<=3000;hp++)
@@ -104,9 +185,9 @@ void BFinterpol(long double x,long double *Bx,long double *By,long double *Bz){
 		fprintf(LOGSCR,"%d t %LG Bx %LG By %LG Bz %LG \n",hp,BFtime[hp],BFField[2][hp],BFField[1][hp],BFField[3][hp]);
 	}*/
 	
-	BFpolint(&BFtime[BFindex-1],&BFField[1][BFindex-1],ordnung,x, Bx,&dy);   // interpolation of Bx on BFtime[Bfindex to BFindex+ordnung-1]
-	BFpolint(&BFtime[BFindex-1],&BFField[2][BFindex-1],ordnung,x, By,&dy);
-	BFpolint(&BFtime[BFindex-1],&BFField[3][BFindex-1],ordnung,x, Bz,&dy);
+	BFpolint(&BFtime[BFindex-1],&BFFieldx[BFindex-1],ordnung,x, Bx,&dy);   // interpolation of Bx on BFtime[Bfindex to BFindex+ordnung-1]
+	BFpolint(&BFtime[BFindex-1],&BFFieldy[BFindex-1],ordnung,x, By,&dy);
+	BFpolint(&BFtime[BFindex-1],&BFFieldz[BFindex-1],ordnung,x, Bz,&dy);
 	
 	//*Bx=10787.1388395727981340375148505 * x * x * x-379485.201099151545103425695947 * x * x + 4425265.48802544343656564311135 * x - 17089608.2309508308489746319934;
 	//*By=16511.3272584589837067791527764 * x * x * x-594543.289553430286823139813885 * x * x + 7118405.94609221980769652287442 * x - 28331085.0061183671391854839742;
@@ -258,6 +339,45 @@ void BFrkqs(long double y[], long double dydx[], int n, long double *x, long dou
 	free_dvector(yerr,1,n);
 }
 
+void PrintBFStep(long double x, long double *y){
+	if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
+	{
+		if (BFZeilencount>50000){
+			fclose(BFLOG);
+			BFLOG = NULL;
+		}
+
+		if (!BFLOG){
+			BFFilecount++;
+			ostringstream BFoutfile1;
+			BFoutfile1 << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "BF" << setw(3) << BFFilecount << setw(0) << ".out";
+			if(!(BFLOG = fopen(BFoutfile1.str().c_str(),"w"))) 
+			{
+				perror("fopen");
+				exit(1);
+			}
+			fprintf(BFLOG,"t Babs Polar logPolar Ix Iy Iz Bx By Bz\n");
+			Log(" ##");
+			Log(BFoutfile1.str().c_str());
+			Log("## \n");
+			BFZeilencount=1;
+		}
+
+		long double Bx, By, Bz;
+		BFinterpol(x, &Bx, &By, &Bz);
+		long double BFBws =  sqrtl(Bx*Bx + By*By + Bz*Bz);
+		long double BFpol = (y[1]*Bx + y[2]*By + y[3]*Bz)/BFBws;
+		long double BFlogpol;
+		if (BFpol<0.5) 
+			BFlogpol = log10l(0.5-BFpol);
+		else if (BFpol==0.5) 
+			BFlogpol = 0.0;
+		fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG \n",
+						x,BFBws,BFpol,BFlogpol,2*y[1],2*y[2],2*y[3],Bx/BFBws,By/BFBws,Bz/BFBws, y[1]*2-Bx/BFBws,y[2]*2-By/BFBws,y[3]*2-Bz/BFBws);
+		
+		BFZeilencount++;
+	}
+}
 
 /*
 Rung�Kutta driver with adaptive stepsize control. Integrate
@@ -269,6 +389,7 @@ routine for calculating the rigt�hand side derivative, while rkqs isthenameoft
 void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, long double eps, long double h1,long double hmin, int *nok, int *nbad,void (*BFderivs)(long double, long double [], long double []),void (*integrator)(long double [], long double [], int, long double *, long double, long double, long double [],long double *, long double *, void (*)(long double, long double [], long double [])))
 {
 	int nstp,i;
+	int perc=0;
 	long double xsav = 0,x = 0,hnext = 0,hdid = 0,h = 0;
 	long double *yscal,*y,*dydx;
 //	long double tmptime;
@@ -278,29 +399,18 @@ void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, 
 	x=x1;
 	h=(x2 > x1) ? fabsl(h1) : -fabsl(h1);
 	//h=SIGN(h1,x2-x1);
-	*nok = (*nbad) = BFkount = 0;
+	*nok = (*nbad) = 0;
 	for (i=1;i<=nvar;i++) 
 		y[i]=ystart[i]; 
-	if (BFkmax > 0) 
-		xsav=x-BFdxsav*2.0;                                             //Assures storag of first step.
+	xsav=x-BFdxsav*2.0;                                             //Assures storag of first step.
 	for (nstp=1;nstp<=MAXSTP;nstp++) {                                          //Take at most MAXSTP steps.
 		(*BFderivs)(x,y,dydx); 
 		for (i=1;i<=nvar;i++)//Scaling used to monitor accuracy.
 			yscal[i]=fabsl(y[i])+fabsl(dydx[i]*h)+TINY;
-		if ((BFkmax > 0) && (BFkount < BFkmax-1) && (fabsl(x-xsav) > fabsl(BFdxsav))) {
-			BFxp[++BFkount]=x;                                                              //Store intermediate results.
-			for (i=1;i<=nvar;i++) 
-				BFyp[i][BFkount]=y[i];
-				//cout << "|";
-			//RP
-			//tmptime = clock();
-			BFinterpol(BFxp[BFkount], &BFypFields[1][BFkount], &BFypFields[2][BFkount], &BFypFields[3][BFkount]);
-			//timer3 += (long double)(((long double)clock() - (long double)tmptime)  / CLOCKS_PER_SEC);
-			//RP End
+		if (fabsl(x-xsav) > fabsl(BFdxsav)) {
+			PrintBFStep(x,y);
 			xsav=x;
 		}
-		if (BFkount==BFkmax)
-			cout << "Too many points in intermediate array...!" << endl;
 		if ((x+h-x2)*(x+h-x1) > 0.0) 
 			h=x2-x;                                        //If stepsize can overshoot, decrease.
 		(*integrator)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,BFderivs);                    // Successful Runge Kutte step
@@ -308,19 +418,13 @@ void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, 
 			++(*nok); 
 		else 
 			++(*nbad);
+
+		percent(x, x1, x2-x1, perc);
+
 		if ((x - x2)*(x2-x1) >= 0.0) {                                                //Are we done?
 			for (i=1;i<=nvar;i++) 
 				ystart[i]=y[i];
-			if (BFkmax) {
-				BFxp[++BFkount]=x;                                                              //Save final step.
-				for (i=1;i<=nvar;i++) 
-					BFyp[i][BFkount]=y[i];
-				//RP
-				//tmptime = clock();
-				BFinterpol(BFxp[BFkount], &BFypFields[1][BFkount], &BFypFields[2][BFkount], &BFypFields[3][BFkount]);
-				//timer3 += (long double)(((long double)clock() - (long double)tmptime)  / CLOCKS_PER_SEC);
-				//RP End
-			}
+			PrintBFStep(x,y);
 			free_dvector(dydx,1,nvar);
 			free_dvector(y,1,nvar);
 			free_dvector(yscal,1,nvar);
@@ -330,61 +434,5 @@ void BFodeintrk(long double ystart[], int nvar, long double x1, long double x2, 
 		h=hnext;
 	}
 	nrerror("Too many steps in routine odeint");
-}
-
-
-// Routine um in einer 1D Array xx den Index zu finden, so dass der Wert x in
-// der Array zwischen den Indizes n und n+1 liegt  (jlo ist ein first guess des indexes und der r�ckgabewert)
-//Given an array
-// xx[1..n], and given a value x,returns a value jlo such that x is between
-//xx[jlo] and xx[jlo+1]. xx[1..n] must be monotonic, either increasing or decreasing.
-// jlo=0 or jlo=n is returned to indicate that x is out of range. jlo on input is taken as the
-//initialguess for jlo on output.
- void hunt(long double xx[], int n, long double x, int *jlo){
-	int jm,jhi,inc,ascnd;
-
-	ascnd=(xx[n] > xx[1]);
-	if (*jlo <= 0 || *jlo > n) {
-		*jlo=0;
-		jhi=n+1;
-	} else {
-		inc=1;
-		if (x >= xx[*jlo] == ascnd) {
-			if (*jlo == n) return;
-			jhi=(*jlo)+1;
-			while (x >= xx[jhi] == ascnd) {
-				*jlo=jhi;
-				inc += inc;
-				jhi=(*jlo)+inc;
-				if (jhi > n) {
-					jhi=n+1;
-					break;
-				}
-			}
-		} else {
-			if (*jlo == 1) {
-				*jlo=0;
-				return;
-			}
-			jhi=(*jlo);
-			*jlo -= 1;
-			while (x < xx[*jlo] == ascnd) {
-				jhi=(*jlo);
-				inc += inc;
-				*jlo=jhi-inc;
-				if (*jlo < 1) {
-					*jlo=0;
-					break;
-				}
-			}
-		}
-	}
-	while (jhi-(*jlo) != 1) {
-		jm=(jhi+(*jlo)) >> 1;
-		if (x > xx[jm] == ascnd)
-			*jlo=jm;
-		else
-			jhi=jm;
-	}
 }
 

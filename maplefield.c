@@ -1,3 +1,7 @@
+#include <cmath>
+#include "globals.h"
+#include "maplefield.h"
+
 /*****************************************
      Bwso erstellt nicht mehr folgende Matrix ar
                [1]       [2]         [3]
@@ -6,8 +10,6 @@
       [3]      dBr/dphi  dBphi/dphi  dBz/dphi
       [4]      dBr/dz    dBphi/dz    dBz/dz
 ***********************************************/
-
-#include "main.h"
 
 long double mapleBrp(long double r,long double z)
 {
@@ -89,19 +91,17 @@ long double mapleBzdz(long double r,long double z)
 
 
 
-void Bwsomaple(long double r,long double phi,long double z)
+void Bwsomaple(long double r,long double phi,long double z, long double Ibar, long double Bi[3], long double dBidrj[3][3])
 {
-	Br= BFeldSkal * mapleBrp(r,z);
-	Bz= BFeldSkal * mapleBzp(r,z);
-	dBrdr= BFeldSkal * mapleBrdr(r,z);
-	dBrdz= BFeldSkal * mapleBrdz(r,z);
-	dBzdr= BFeldSkal * mapleBzdr(r,z);
-	dBzdz= BFeldSkal * mapleBzdz(r,z);
+	Bi[0] += mapleBrp(r,z);
+	Bi[2] += mapleBzp(r,z);
+	dBidrj[0][0] += mapleBrdr(r,z);
+	dBidrj[0][2] += mapleBrdz(r,z);
+	dBidrj[2][0] += mapleBzdr(r,z);
+	dBidrj[2][2] += mapleBzdz(r,z);
 
-  	Bphi= Ibar*mu0/(2*pi*r);
-  	dBphidr= -Bphi/r;
-  	dBphidz=0.0;
-  	dBdphi= 0.0;
+  	Bi[1] += Ibar*mu0/(2*pi*r);
+  	dBidrj[1][0] += -Bi[1]/r;
 
   	return;
 }

@@ -1,21 +1,49 @@
-#include "main.h"
+#include <list>
+#include <string>
+#include <cmath>
+
+using namespace std;
+
+#include "globals.h"
+#include "fields.h"
+#include "racetrack.h"
+#include "2dinterpolfeld.h"
+//#include "BForbes.h"
+#include "maplefield.h"
+
+void SwitchField(long double t);
+void Banalytic(long double r,long double phi,long double z, long double t, long double Bi[3], long double dBidrj[3][3]);
+
+
+int bfeldwahl = 0, Feldcount = 0;
+long double BFeldSkalGlobal = 1.0, BFeldSkal = 1.0, EFeldSkal = 1.0;
+
+// incorporate B-fieldoszillations into the code
+int FieldOscillation = 0;        // turn field oscillation on if 1
+long double OscillationFraction = 1e-4, OscillationFrequency = 1;    // Frequency in Hz
 
 list<TabField*> fields;
+long double dBrdr, dBrdz, dBrdphi=0.0, dBphidr, dBphidz, dBphidphi=0.0, dBzdr, dBzdz, dBzdphi=0.0;
+long double Bws,dBdr,dBdz,dBdphi,Br,Bz,Bphi; //B-field: derivations in r, z, phi, Komponenten r, z, Phi
+long double Ez,Er, Ephi, dErdr, dErdz, dEzdr, dEzdz, dEphidr, dEphidz;    // electric field
+
+long double BCutPlanePoint[3], BCutPlaneNormalAlpha, BCutPlaneNormalGamma, BCutPlaneSampleDist;	// plane for B field cut
+int BCutPlaneSampleCount;
 
 
 // read table files or conductor file
-void PrepareFields(){
+void PrepareFields(list<string> &fieldvaltab){
 	if ((bfeldwahl == 0 || bfeldwahl == 2) && (BFeldSkalGlobal != 0 || EFeldSkal != 0))
 	{
 		TabField *tf;
 		for (list<string>::iterator i = fieldvaltab.begin(); i != fieldvaltab.end(); i++){
-			tf = new TabField((inpath + '/' + *i).c_str());
+			tf = new TabField(i->c_str());
 			fields.push_back(tf);
 		}
 	}
 	else if(bfeldwahl==4)
 	{
-		ReadMagnets();
+//		ReadMagnets((inpath+"/coils.cond").c_str());
 	
 		printf("\n \n Test of integration\n");
 		//	long double TestInt;
@@ -24,7 +52,7 @@ void PrepareFields(){
 		{
 		
 			BFeld(0.3,0,0.1, 500.0);
-			cout << "T" << endl;
+			printf("T\n");
 		}
 		printf("Br = %.17LG \n",Br);
 		printf("dBrdr = %.17LG \n",dBrdr);
@@ -33,8 +61,6 @@ void PrepareFields(){
 		printf("dBzdr = %.17LG \n",dBzdr);
 		printf("dBzdz = %.17LG \n",dBzdz);	
 	}	
-	if (Emin_n >= 1e20) Emin_n = 0; // if Emin_n was not set, set it to zero
-	
 }
 
 
@@ -47,8 +73,8 @@ void FreeFields(){
 
 // fill global B field variables with values
 void BFeld (long double rloc, long double philoc, long double zloc, long double t){      //B-Feld am Ort des Teilchens berechnen
-
-	Bnull();	// first, set all to zero
+	long double Bi[3] = {0.0, 0.0, 0.0};
+	long double dBidrj[3][3] = { {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} };
 	
 	SwitchField(t); // set BFeldSkal for different experiment phases	
 		
@@ -59,53 +85,73 @@ void BFeld (long double rloc, long double philoc, long double zloc, long double 
 			
 			case 0:	if (BFeldSkal != 0){
 						for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){
-							if ((*i)->BInterpol(rloc, zloc))
+							if ((*i)->BInterpol(rloc, zloc, Bi, dBidrj))
 								break;
-/*							else if (++i == fields.end()){
-								Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-								kennz = KENNZAHL_LEFT_FIELD;
-								stopall = 1;
-							}		*/
-						}				
+						}
+						for (int i = 0; i < 3; i++){
+							Bi[i] *= BFeldSkal;
+							for (int j = 0; j < 3; j++){
+								dBidrj[i][j] *= BFeldSkal;
+							}
+						}												
 					}
-					RacetrackField(rloc,philoc,zloc);
+					RacetrackField(rloc,philoc,zloc,Bi,dBidrj);
 					break;
 					
 			case 2:	if (BFeldSkal != 0){
 						for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){ 
-							if ((*i)->BInterpol(rloc, zloc))
+							if ((*i)->BInterpol(rloc, zloc, Bi, dBidrj))
 								break;
-/*							else if (++i == fields.end()){
-								Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
-								kennz = KENNZAHL_LEFT_FIELD;
-								stopall = 1;
-							}	*/	
 						}				
+						for (int i = 0; i < 3; i++){
+							Bi[i] *= BFeldSkal;
+							for (int j = 0; j < 3; j++){
+								dBidrj[i][j] *= BFeldSkal;
+							}
+						}												
 					}
-					RacetrackField(rloc,philoc,zloc);
+					RacetrackField(rloc,philoc,zloc, Bi, dBidrj);
 					Brtemp = Br; Bztemp = Bz; dBdrtemp = dBdr; dBdztemp = dBdz;
-					Bwsomaple(rloc, philoc, zloc);
+					Bwsomaple(rloc, philoc, zloc, Ibar, Bi, dBidrj);
 					printf("BrI BrM deltaBr %17LG %17LG %17LG \n", Brtemp, Br, (Brtemp-Br)/Br);
 					printf("BzI BzM deltaBz %17LG %17LG %17LG \n", Bztemp, Bz, (Bztemp-Bz)/Bz);						
 					Br=(Brtemp-Br)/Br; Bz=(Bztemp-Bz)/Bz; dBdr=(dBdrtemp-dBdr)/dBdr; dBdz=(dBdztemp-dBdz)/dBdz;
 					break;	
 						
-			case 3: Banalytic(rloc, philoc, zloc, t);
+			case 3: Banalytic(rloc, philoc, zloc, t, Bi, dBidrj);
 					break;
 					
-			case 4: BForbes(rloc, philoc, zloc, t);
-					RacetrackField(rloc,philoc,zloc);
+			case 4: //BForbes(rloc, philoc, zloc, t, Bi, dBidrj);
+					RacetrackField(rloc,philoc,zloc, Bi, dBidrj);
 					break;
 		}   
-		
-		Bws = sqrtl(Br*Br+Bz*Bz+Bphi*Bphi);			
-		if (Bws>1e-31)
-		{			
-			dBdr   = (Br*dBrdr + Bphi*dBphidr + Bz*dBzdr)  /Bws;
-			dBdz   = (Br*dBrdz + Bphi*dBphidz + Bz*dBzdz)  /Bws;
-			dBdphi = (Br*dBrdphi + Bphi*dBphidphi + Bz*dBzdphi)/Bws;
-		}
 	}
+	
+	Br = Bi[0];
+	Bphi = Bi[1];
+	Bz = Bi[2];
+	dBrdr = dBidrj[0][0];
+	dBrdphi = dBidrj[0][1];
+	dBrdz = dBidrj[0][2];
+	dBphidr = dBidrj[1][0];
+	dBphidphi = dBidrj[1][1];
+	dBphidz = dBidrj[1][2];
+	dBzdr = dBidrj[2][0];
+	dBzdphi = dBidrj[2][1];
+	dBzdz = dBidrj[2][2];
+	Bws = sqrt(Br*Br+Bz*Bz+Bphi*Bphi);			
+	if (Bws>1e-31)
+	{			
+		dBdr   = (Br*dBrdr + Bphi*dBphidr + Bz*dBzdr)  /Bws;
+		dBdz   = (Br*dBrdz + Bphi*dBphidz + Bz*dBzdz)  /Bws;
+		dBdphi = (Br*dBrdphi + Bphi*dBphidphi + Bz*dBzdphi)/Bws;
+	}
+	else
+	{
+		dBdr = 0;
+		dBdz = 0;
+		dBdphi = 0;
+	}	
 	
 	Feldcount++;
 	
@@ -117,57 +163,31 @@ void SwitchField(long double t){        //B-Feld nach Wunsch skalieren, BFeldSka
 		if ((t < FillingTime)&&(FillingTime>0))
 		{      // filling in neutrons
 			BFeldSkal = 0;
-			BruteForce = fiBruteForce; // no spin tracking
-			reflekt = fireflekt;
-			spinflipcheck = fispinflipcheck;		
-			ExpPhase=1;
 		}
 		
 		else if ((t>=FillingTime)&&(t < (CleaningTime+FillingTime)) && (CleaningTime>0))
 		{      // spectrum cleaning
 			BFeldSkal = 0;
-			BruteForce = clBruteForce; // no spin tracking
-			reflekt = clreflekt;
-			spinflipcheck = clspinflipcheck;
-			ExpPhase=2;
 		}
 		else if ((RampUpTime>0)&&(t >= CleaningTime+FillingTime) && (t < (RampUpTime+CleaningTime+FillingTime)) && (RampUpTime > 0))
 		{   // ramping up field
 			//linear: BFeldSkal = (t-CleaningTime+1e-15)/RampUpTime; // ramp field
 			//now smoothly with a cosine 
 			BFeldSkal=(0.5-0.5*cosl(pi*(t-CleaningTime-FillingTime)/RampUpTime)) * BFeldSkalGlobal ;
-			BruteForce = ruBruteForce; 
-			reflekt = rureflekt;
-			spinflipcheck = ruspinflipcheck;
-			ExpPhase=3;
 		}
 		else if ((FullFieldTime>0)&&(t >= (RampUpTime+CleaningTime+FillingTime)) && (t < (RampUpTime+CleaningTime+FullFieldTime+FillingTime)))
 		{  // storage time
 			BFeldSkal = BFeldSkalGlobal;
-			if(protneut == NEUTRON)
-			{
-				BruteForce = ffBruteForce;  // start spin tracking
-				reflekt = ffreflekt;
-				spinflipcheck = ffspinflipcheck;
-				ExpPhase=4;
-			}
 		}
 		else if ((t >= (RampUpTime+CleaningTime+FillingTime+FullFieldTime)) && (t < (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime)) && (RampDownTime != 0))
 		{   // ramping down field
 			//linear: BFeldSkal = 1- (t-(RampUpTime+CleaningTime+FullFieldTime)) / RampDownTime + 1e-15;  // ramp down field
 			//now smoothly with a cosine 
 			BFeldSkal=(0.5+0.5*cosl(pi*(t-(RampUpTime+CleaningTime+FillingTime+FullFieldTime)) / RampDownTime)) * BFeldSkalGlobal;
-			BruteForce = rdBruteForce; // no spin tracking, neutrons shall stay in trap through reflection
-			reflekt = rdreflekt;
-			spinflipcheck=rdspinflipcheck;
-			ExpPhase=5;
 		}
 		else if (t >=  (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime))
 		{      // emptying of neutrons into detector
 			BFeldSkal = 0;
-			BruteForce = coBruteForce;
-			spinflipcheck= cospinflipcheck;
-			ExpPhase=6;
 		}
 		else
 			BFeldSkal = BFeldSkalGlobal;
@@ -179,32 +199,8 @@ void SwitchField(long double t){        //B-Feld nach Wunsch skalieren, BFeldSka
 	return;
 }
 
-
-// produce zero field
-long double Bnull(){
-	Br = 0.0;
-	Bphi = 0.0;
-	Bz = 0.0;
-	dBrdr=0.0;
-	dBrdphi=0.0;
-	dBrdz=0.0;
-	dBphidr=0.0;
-	dBphidphi=0.0;
-	dBphidz=0.0;
-	dBzdr=0.0;
-	dBzdphi=0.0;
-	dBzdz=0.0;
-
-	Bws = 0.0;
-	dBdr=0;
-	dBdphi=0;
-	dBdz=0;
-	
-	return 0;
-}
-
 // produce linearly rising B-field in z-direction and linearly changing in time
-long double Banalytic(long double r,long double phi,long double z, long double t){
+void Banalytic(long double r,long double phi,long double z, long double t, long double Bi[3], long double dBidrj[3][3]){
 	long double dBx = 5;
 	long double x0 = 1.1;
 	long double alpha = 0.5;
@@ -215,68 +211,173 @@ long double Banalytic(long double r,long double phi,long double z, long double t
 	long double offset = -0.0;
 	z = z+offset;
 	
-	BFeldSkal = 1;
-	
-	Br = (-dBx*(x0*z-0.5*z*z)+6)*(alpha+beta*t);
-	Bphi = 0;
-	Bz = 0;
-	dBrdr=0.0;
-    dBrdphi=0.0;
-    dBrdz=-dBx*(alpha+beta*t)*(x0-z);
-	dBphidr=0.0;
-    dBphidphi=0.0;
-	dBphidz=0.0;
-    dBzdr=0.0;
-    dBzdphi=0.0;
-    dBzdz=0.0;
-        	
-	Br *= BFeldSkal;
-	dBrdr *= BFeldSkal;
-	dBrdz *= BFeldSkal;
-	Bphi *= RodFieldMultiplicator * BFeldSkal;
-	dBphidr *= RodFieldMultiplicator * BFeldSkal;
-	dBphidz *= RodFieldMultiplicator * BFeldSkal;
-	dBphidphi = 0.0;
-	Bz *= BFeldSkal;
-	dBzdr *= BFeldSkal;
-	dBzdz *= BFeldSkal;
-	
-	return 0;
+	Bi[0] += (-dBx*(x0*z-0.5*z*z)+6)*(alpha+beta*t);
+    dBidrj[0][2] += -dBx*(alpha+beta*t)*(x0-z);
 }
 
 
 
 // fill global E field variables with values
 void EFeld(long double rloc, long double philoc, long double zloc){
-	Er = 0.0;
-	Ephi = 0.0;
-	Ez = 0.0;
-	dErdr=0.0;
-	dErdz=0.0;
-	dEphidr=0.0;
-	dEphidz=0.0;
-	dEzdr=0.0;
-	dEzdz=0.0;
+	long double Ei[3] = {0.0, 0.0, 0.0};
+	long double dEidrj[3][3] = { {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0} };
 
 	if (EFeldSkal != 0 && (bfeldwahl == 0 || bfeldwahl == 2)){
 		for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){ 
-			if ((*i)->EInterpol(rloc, zloc))
+			if ((*i)->EInterpol(rloc, zloc, Ei, dEidrj))
 				break;
 /*			else if (++i == fields.end()){
 				Log("\nThe particle has left fieldval boundaries: r=%LG, z=%LG! Stopping particle...\n", rloc, zloc);
 				kennz = KENNZAHL_LEFT_FIELD;
 				stopall = 1;
 			}	*/	
+			for (int i = 0; i < 3; i++){
+				Ei[i] *= EFeldSkal;
+				for (int j = 0; j < 3; j++){
+					dEidrj[i][j] *= EFeldSkal;
+				}
+			}												
 		}				
-		/*switch (Efeldwahl){
-			case 0: EInterpol(rloc, philoc, zloc); break;
-			case 2: ETrichter(rloc,philoc,zloc); break;
-			case 3: EKegelpot(rloc,philoc,zloc); break;
-            case 4: Sack(rloc,philoc,zloc); break;
-            case 5: Flaechdet(rloc,philoc,zloc);
-        }     */
 		
     }
+	Er = Ei[0];
+	Ephi = Ei[1];
+	Ez = Ei[2];
+	dErdr = dEidrj[0][0];
+//	dErdphi = dEidrj[0][1];
+	dErdz = dEidrj[0][2];
+	dEphidr = dEidrj[1][0];
+//	dEphidphi = dEidrj[1][1];
+	dEphidz = dEidrj[1][2];
+	dEzdr = dEidrj[2][0];
+//	dEzdphi = dEidrj[2][1];
+	dEzdz = dEidrj[2][2];
+
 	Feldcount++;	
 	return;
 }
+
+
+// print cut through BField to file
+void PrintBFieldCut(const char *outfile){
+	// transform plane parameters to cartesian coords
+	long double P[3] = {BCutPlanePoint[0]*cosl(BCutPlanePoint[1]), BCutPlanePoint[0]*sinl(BCutPlanePoint[1]), BCutPlanePoint[2]};
+	long double n[3] = {cosl(BCutPlanePoint[1]+BCutPlaneNormalAlpha)*sinl(BCutPlaneNormalGamma), 
+						sinl(BCutPlanePoint[1]+BCutPlaneNormalAlpha)*sinl(BCutPlaneNormalGamma), 
+						cosl(BCutPlaneNormalGamma)};
+
+	// project x/y/z-axes on plane for direction vectors u,v
+	long double u[3], v[3];
+	if (n[0] < 0.9){		// n not parallel to x-axis
+		u[0] = 1-n[0]*n[0];
+		u[1] = -n[0]*n[1];
+		u[2] = -n[0]*n[2];
+	}
+	else{					// if n parallel to x-axis use z-axis for u
+		u[0] = -n[2]*n[0];
+		u[1] = -n[2]*n[1];
+		u[2] = 1-n[2]*n[1];
+	}
+	if (n[1] < 0.9){		// n not parallel to y-axis
+		v[0] = -n[1]*n[0];
+		v[1] = 1-n[1]*n[1];
+		v[2] = -n[1]*n[2];
+	}
+	else{					// if n parallel to y-axis use z-axis for v
+		v[0] = -n[2]*n[0];
+		v[1] = -n[2]*n[1];
+		v[2] = 1-n[2]*n[1];
+	}
+	
+	int i,j,k;
+	// normalize u,v
+	long double uabs = sqrtl(u[0]*u[0]+u[1]*u[1]+u[2]*u[2]);
+	long double vabs = sqrtl(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+	for (i = 0; i < 3; i++){
+		u[i] /= uabs;
+		v[i] /= vabs;
+	}
+	
+	// print BField to file
+	FILE *cutfile = fopen(outfile, "w");
+	if (!cutfile){
+		Log("Could not open %s!",outfile);
+		exit(-1);
+	}
+	fprintf(cutfile, "r phi z x y Br Bphi Bz Bx By dBrdr dBrdphi dBrdz dBphidr dBphidphi dBphidz dBzdr dBzdphi dBzdz Babs dBdr dBdphi dBdz Er Ephi Ez Ex Ey dErdr dErdz dEphidr dEphidz dEzdr dEzdz\n");
+	
+	long double Pp[3],r,phi,Bx,By,Ex,Ey;
+	float start = clock();
+	for (i = -BCutPlaneSampleCount/2; i <= BCutPlaneSampleCount/2; i++) {
+		for (j = -BCutPlaneSampleCount/2; j <= BCutPlaneSampleCount/2; j++){
+			for (k = 0; k < 3; k++)
+				Pp[k] = P[k] + i*BCutPlaneSampleDist*u[k] + j*BCutPlaneSampleDist*v[k];
+			r = sqrtl(Pp[0]*Pp[0]+Pp[1]*Pp[1]);
+			phi = atan2(Pp[1],Pp[0]);
+			BFeld(r, phi, Pp[2], 0);
+			Bx = Br*cosl(phi) - Bphi*sinl(phi);
+			By = Br*sinl(phi) + Bphi*cosl(phi);
+			fprintf(cutfile, "%LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG ",
+							  r,phi,Pp[2],Pp[0],Pp[1],Br,Bphi,Bz,Bx,By,dBrdr,dBrdphi,dBrdz,dBphidr,dBphidphi,dBphidz,dBzdr,dBzdphi,dBzdz,Bws,dBdr,dBdphi,dBdz);
+			EFeld(r,phi,Pp[2]);
+			Ex = Er*cos(phi) - Ephi*sin(phi);
+			Ey = Er*sin(phi) + Ephi*cos(phi);
+			fprintf(cutfile, "%LG %LG %LG %LG %LG %LG %LG %LG %LG %LG %LG\n",
+							  Er,Ephi,Ez,Ex,Ey,dErdr,dErdz,dEphidr,dEphidz,dEzdr,dEzdz);
+		}
+	}
+	start = (clock() - start)/CLOCKS_PER_SEC;
+	fclose(cutfile);
+	printf("Called BFeld and EFeld %u times in %fs (%fms per call)",BCutPlaneSampleCount*BCutPlaneSampleCount, start, start/BCutPlaneSampleCount/BCutPlaneSampleCount);
+}
+
+
+// calculate heating of the neutron gas by field rampup
+void PrintBField(const char *outfile){
+	// print BField to file
+	FILE *bfile = fopen(outfile, "w");
+	if (!bfile){
+		Log("Could not open %s!",outfile);
+		exit(-1);
+	}
+
+	fprintf(bfile,"r phi z Br Bphi Bz 0 0 Babs\n");
+	BFeldSkal = 1.0;
+	long double rmin = 0.12, rmax = 0.5, zmin = 0, zmax = 1.2;
+	int E;
+	const int Emax = 108;
+	long double dr = 0.1, dz = 0.1;
+	long double VolumeB[Emax];
+	for (E = 0; E <= Emax; E++) VolumeB[E] = 0;
+	
+	long double EnTest;
+	for (long double r = rmin; r <= rmax; r += dr){
+		for (long double z = zmin; z <= zmax; z += dz){
+			BFeld(r, 0, z, 500.0);
+			fprintf(bfile,"%LG %G %LG %LG %LG %LG %G %G %LG \n",r,0.0,z,Br,Bphi,Bz,0.0,0.0,Bws);
+			printf("r=%LG, z=%LG, Br=%LG T, Bz=%LG T\n",r,z,Br, Bz);
+			
+			// Ramp Heating Analysis
+			for (E = 0; E <= Emax; E++){
+				EnTest = E*1.0e-9 - m_n*gravconst*z - mu_nSI/ele_e * Bws;
+				if (EnTest >= 0){
+					// add the volume segment to the volume that is accessible to a neutron with energy Energie
+					VolumeB[E] = VolumeB[E] + pi * dz * ((r+0.5*dr)*(r+0.5*dr) - (r-0.5*dr)*(r-0.5*dr));
+				}
+			}
+		}
+	}
+
+	// for investigating ramp heating of neutrons, volume accessible to neutrons with and
+	// without B-field is calculated and the heating approximated by thermodynamical means
+	Log("\nEnergie [neV], Volumen ohne B-Feld, mit B-Feld, 'Erwaermung'");
+	long double Volume;
+	for (E = 0; E <= Emax; E++) 
+	{
+		Volume = ((E * 1.0e-9 / (m_n * gravconst))) * pi * (rmax*rmax-rmin*rmin);
+		// isentropische zustandsnderung, kappa=5/3
+		Log("\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * powl((Volume/VolumeB[E]),(2.0/3.0)) - E);
+	}
+}
+
+
