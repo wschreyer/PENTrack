@@ -53,8 +53,8 @@
 
 //#include <config.h>
 #include <stdlib.h>
+#include "mt.h"
 #include "gsl_rng.h"
-#include "../main.h"
 
 #define kN 624   /* Period parameters */
 #define kM 397
