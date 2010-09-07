@@ -1,21 +1,15 @@
-======== common =========================
-0		1		2250	DiceRodField | RodFieldMultiplicator | Ibar
 ======== neutron.in =====================
 0		108				E [neV]
 0		360				alpha [degree] (in x-y-plane relative to r-vector) <0..360>
 0		180				gamma [degree] (relative to z'-axis) <0..180>
-1e-3	300				delx | xend
+1		300				hmax | xend
 ======== proton.in ======================
 0		751				E [eV]
 0		360				alpha [degree] (in x-y-plane relative to r-vector) <0..360>
 0		180				gamma [degree] (betwenn z'-axis) <0..180>
-1e-09	1e-2			delx | xend
+1		1e-2			hmax | xend
 ======== electron.in ====================
 0		782				E [keV]
 0		360				alpha [degree] (in x-y-plane relative to r-vector) <0..360>
 0		180				gamma [degree] (relative to z'-axis) <0..180>
-2e-12	1e-6			delx | xend
-======== cut through B-field =============
-0		0		0		point on cut plane (r phi z)
-0		0				normal direction of cut plane (alpha gamma)
-0.01	75				distance of points on plane, number of points in each direction
+1		1e-6			hmax | xend

@@ -1,4 +1,10 @@
-#include "main.h"
+#include <iostream>
+#include <cmath>
+#include "BForbes.h"
+#include "globals.h"
+#include "nrutil.h"
+
+using namespace std;
 
 TF1 *ForbesBrInt1;
 TF1 *ForbesBzInt1;
@@ -21,7 +27,7 @@ int CoilNr=0;   // number of coils read in
 
 
 // read the conductor data from a .cond file written by Vectorfield Opera
-int ReadMagnets(void)
+int ReadMagnets(const char *path)
 {
 	long double CoilAngle1=-1, CoilAngle2=-1, CoilAngle3=-1;
 	long double dummy, CoilZOffset, Symmetry;
@@ -31,8 +37,7 @@ int ReadMagnets(void)
 	FILE *cfg = NULL;
 	
 	char line[1024];
-	string path(inpath + "/coils.cond");
-	cfg = fopen(path.c_str(),mode_r);
+	cfg = fopen(path, "r");
 	if(cfg == NULL){  
 		Log("File coils.cond could not be opened!!!");
 		return 1;
@@ -73,12 +78,12 @@ int ReadMagnets(void)
 			fgets(line,1024,cfg); // 5th line of coil definition: cross section points 3 and 4 
 			sscanf(line,"%25Lf %25Lf %25Lf %25Lf", &CoilPoint3R, &CoilPoint3Z, &CoilPoint4R, &CoilPoint4Z);
 			if (CoilPoint3Z!=CoilPoint1Z)
-				aF[CoilNr]=fabsl((CoilPoint3Z-CoilPoint1Z)/2.0);
-			else aF[CoilNr]=fabsl((CoilPoint2Z-CoilPoint1Z)/2.0);
+				aF[CoilNr]=fabs((CoilPoint3Z-CoilPoint1Z)/2.0);
+			else aF[CoilNr]=fabs((CoilPoint2Z-CoilPoint1Z)/2.0);
 				
 			if (CoilPoint2R!=CoilPoint1R)
-				bF[CoilNr]=fabsl((CoilPoint2R-CoilPoint1R)/2.0);
-			else bF[CoilNr]=fabsl((CoilPoint3R-CoilPoint1R)/2.0);
+				bF[CoilNr]=fabs((CoilPoint2R-CoilPoint1R)/2.0);
+			else bF[CoilNr]=fabs((CoilPoint3R-CoilPoint1R)/2.0);
 				
 			if (CoilPoint1R<CoilPoint2R)
 				R_0[CoilNr]= CoilPoint1R+(CoilPoint2R-CoilPoint1R)/2.0;
@@ -114,7 +119,7 @@ int ReadMagnets(void)
 
 // parameter array for Coils:
 //[R_0(radius of center),a (height),b (radial dimension),r (point to calculate field),z (point to calculate),sign1 (sign1 in integregral of Br),sign2 (sign2 in integregral of Br),J_0 (current density),mu0 (clear))]
-long double BForbes(long double r, long double phi, long double z, long double t)
+long double BForbes(long double r, long double phi, long double z, long double t, long double Bi[3], long double dBidrj[3][3])
 {
 	if (r==0)
 			r=1e-8;   // solve singularity
@@ -143,33 +148,21 @@ long double BForbes(long double r, long double phi, long double z, long double t
 	int i;
 	for (i=0;i<CoilNr;i++){
 	//for (i=7;i<8;i++){
-		OneCoilRoot(r, phi, z, aF[i], bF[i], R_0[i], J_0[i], zoffset[i]);	
+		OneCoilRoot(r, phi, z, aF[i], bF[i], R_0[i], J_0[i], zoffset[i], Bi, dBidrj);	
 	//OneCoil(r, phi, z, aF[i], bF[i], R_0[i], J_0[i], zoffset[i]);		
 	}	
 	
 	//OneCoilRoot(r, phi, z, aF[7], bF[7], R_0[7], J_0[7], zoffset[7]);	
 	//OneCoilRoot(r, phi, z, aF[25], bF[25], R_0[25], J_0[25], zoffset[25]);
 	
-	
-	
-	
-	Br *= BFeldSkal;
-	dBrdr *= BFeldSkal;
-	dBrdphi = 0.0;
-	dBrdz *= BFeldSkal;
-	//Bphi = RodFieldMultiplicator * BFeldSkal * Bphi;
-	Bphi=0.0;
-	//dBphidr = RodFieldMultiplicator * BFeldSkal * dBphidr;
-	dBphidr = 0.0;
-	dBphidphi = 0.0;
-	//dBphidz = RodFieldMultiplicator * BFeldSkal * dBphidz;
-	dBphidz = 0.0;
-	Bz *= BFeldSkal;
-	dBzdr *= BFeldSkal;
-	dBzdphi = 0.0;
-	dBzdz *= BFeldSkal;
-		
-	return Br;
+	Bi[1] = 0.0;
+	dBidrj[0][1] = 0.0;
+	dBidrj[1][0] = 0.0;
+	dBidrj[1][1] = 0.0;
+	dBidrj[1][2] = 0.0;
+	dBidrj[2][1] = 0.0;
+			
+	return Bi[0];
 	
 }
 
@@ -323,7 +316,8 @@ Double_t BzFoInt4Root(Double_t *beta, Double_t *par)
 }
 
 
-long double OneCoilRoot(long double r, long double phi, long double z, long double a, long double b, long double R_0, long double J_0, long double zoffset)
+long double OneCoilRoot(long double r, long double phi, long double z, long double a, long double b, long double R_0, long double J_0, long double zoffset,
+						long double Bi[3], long double dBidrj[3][3])
 {
 	
 	ForbesBrR->SetParameters(R_0,a,b,r,z-zoffset,1,1,J_0,mu0);
@@ -332,20 +326,17 @@ long double OneCoilRoot(long double r, long double phi, long double z, long doub
 	{
 	cout << endl << "Parameter " << i << " = " << ForbesBrR->GetParameter(i) << endl;
 	}*/
-	Br = Br + ForbesBrR->Eval(r,0,0,0);
+	Bi[0] += ForbesBrR->Eval(r,0,0,0);
 	ForbesBzR->SetParameters(R_0,a,b,r,z-zoffset,1,1,J_0,mu0);
 	ForbesBzZ->SetParameters(R_0,a,b,r,z-zoffset,1,1,J_0,mu0);
-	Bz = Bz + ForbesBzR->Eval(r,0,0,0);	
+	Bi[2] += ForbesBzR->Eval(r,0,0,0);	
 	
-	if((BFeldSkal!=0)&&(protneut!=BF_ONLY)) {
-	dBrdr = dBrdr + ForbesBrR->Derivative(r);
-	dBrdz = dBrdz + ForbesBrZ->Derivative(z-zoffset);
-	dBzdr = dBzdr + ForbesBzR->Derivative(r);
-	dBzdz = dBzdz + ForbesBzZ->Derivative(z-zoffset);
+	dBidrj[0][0] += ForbesBrR->Derivative(r);
+	dBidrj[0][2] += ForbesBrZ->Derivative(z-zoffset);
+	dBidrj[2][0] += ForbesBzR->Derivative(r);
+	dBidrj[2][2] += ForbesBzZ->Derivative(z-zoffset);
 	
-	}
-	
-	return Br;
+	return Bi[0];
 
 }
 
@@ -429,9 +420,8 @@ long double OneCoilBrR(long double rT)
 	sign1 = -1;  sign2 =-1;  
 	long double t6 = qromb(BrFoInt,0,pi);	
 	
-	Br = -mu0 * J_0Fo / 0.3141592654e1 * (t3 - t4 - t5 + t6) / 0.2e1;	
+	return -mu0 * J_0Fo / 0.3141592654e1 * (t3 - t4 - t5 + t6) / 0.2e1;	
 	
-	return Br;
 }
 
 long double OneCoilBzR(long double rT)
@@ -444,9 +434,7 @@ long double OneCoilBzR(long double rT)
 	long double t7 = qromb(BzFoInt3,0,pi);
 	long double t8 = qromb(BzFoInt4,0,pi);
 	
-	Bz = mu0 * J_0Fo / 0.3141592654e1 / rFo * (t5 - t6 - t7 + t8) / 0.2e1;
-	
-	return Bz;
+	return mu0 * J_0Fo / 0.3141592654e1 / rFo * (t5 - t6 - t7 + t8) / 0.2e1;
 	
 }
 
@@ -462,9 +450,8 @@ long double OneCoilBrZ(long double zT)
 	long double t5 = qromb(BrFoInt,0,pi);	
 	sign1 = -1;  sign2 =-1;  
 	long double t6 = qromb(BrFoInt,0,pi);	
-	Br = -mu0 * J_0Fo / 0.3141592654e1 * (t3 - t4 - t5 + t6) / 0.2e1;	
+	return -mu0 * J_0Fo / 0.3141592654e1 * (t3 - t4 - t5 + t6) / 0.2e1;	
 	
-	return Br;
 }
 
 long double OneCoilBzZ(long double zT)
@@ -477,29 +464,25 @@ long double OneCoilBzZ(long double zT)
 	long double t7 = qromb(BzFoInt3,0,pi);
 	long double t8 = qromb(BzFoInt4,0,pi);
 	
-	Bz = mu0 * J_0Fo / 0.3141592654e1 / rFo * (t5 - t6 - t7 + t8) / 0.2e1;
-	
-	return Bz;
-	
+	return mu0 * J_0Fo / 0.3141592654e1 / rFo * (t5 - t6 - t7 + t8) / 0.2e1;
 }
 
-long double OneCoil(long double r, long double phi, long double z, long double a, long double b, long double R_0, long double J_0, long double zoffset)
+long double OneCoil(long double r, long double phi, long double z, long double a, long double b, long double R_0, long double J_0, long double zoffset,
+					long double Bi[3], long double dBidrj[3][3])
 {
 	rFo = r, phiFo = phi, zFo = z-zoffset, aFo = a; bFo = b; R_0Fo = R_0; J_0Fo = J_0, zoffsetFo = zoffset;
 	//				^ compensate coil position in z
 		long double err;
 	
-	Br = Br + OneCoilBrR(rFo);
-	Bz = Bz + OneCoilBzR(rFo);
+	Bi[0] += OneCoilBrR(rFo);
+	Bi[2] += OneCoilBzR(rFo);
 	
 	
-	if((BFeldSkal!=0)&&(protneut!=BF_ONLY)) {
-		dBrdr = dBrdr + dfridr(OneCoilBrR, rFo, 0.01, &err);
-		dBrdz = dBrdz + dfridr(OneCoilBrZ, zFo, 0.01, &err);
-		dBzdr = dBzdr + dfridr(OneCoilBzR, rFo, 0.01, &err);
-		dBzdz = dBzdz + dfridr(OneCoilBzZ, zFo, 0.01, &err);
-	}
-	return Bz;
+	dBidrj[0][0] += dfridr(OneCoilBrR, rFo, 0.01, &err);
+	dBidrj[0][2] += dfridr(OneCoilBrZ, zFo, 0.01, &err);
+	dBidrj[2][0] += dfridr(OneCoilBzR, rFo, 0.01, &err);
+	dBidrj[2][2] += dfridr(OneCoilBzZ, zFo, 0.01, &err);
+	return Bi[2];
 
 }
 
