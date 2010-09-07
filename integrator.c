@@ -1,18 +1,23 @@
-#include "main.h"
-//#include "vars.h"
+#include <cmath>
+#include <cstdio>
 
-#define MAXSTP 1.0e10
+#include "integrator.h"
+#include "nrutil.h"
+
+void rkck(long double y[], long double dydx[], int n, long double x, long double h, long double yout[], long double yerr[], void *params, void (*derivs)(long double, long double [], long double [], void*));	
+void mmid(long double *y, long double *dydx, int nvar, long double xs, long double htot, int nstep, long double *yout, void *params, void (*derivs)(long double,long double*,long double*,void*));
+void rzextr(int iest,long double xest, long double *yest,long double *yz, long double *dy, int nv);
+void pzextr(int iest, long double xest, long double *yest, long double *yz, long double *dy, int nv);
+
 #define TINY 1.0e-30
-
-
 #define SAFETY 0.9
 #define PGROW -0.2
 #define PSHRNK -0.25
 #define ERRCON 1.89e-4
 //The value ERRCON equals (5/SAFETY) raised to the power (1/PGROW), see use below.
 void rkqs(long double y[], long double dydx[], int n, long double *x, long double htry, long double eps,
-long double yscal[], long double *hdid, long double *hnext,
-void (*derivs)(long double, long double [], long double []))
+long double yscal[], long double *hdid, long double *hnext, void *params,
+void (*derivs)(long double, long double [], long double [], void*))
 
 /*
 Fifth�order Rung�Kutta step with
@@ -30,13 +35,13 @@ rig ht�hand side derivatives.     */
 	
 	//cout << "RK";
 
-int i;
-long double errmax, h,htemp,xnew,*yerr,*ytemp;
-yerr=dvector(1,n);
-ytemp=dvector(1,n);
-h=htry;                                                           //Set stepsize to the initial trial value.
-for (;;) {
-        rkck(y,dydx,n,*x,h,ytemp,yerr,derivs);                            //Take a step .
+	int i;
+	long double errmax, h,htemp,xnew,*yerr,*ytemp;
+	yerr=dvector(1,n);
+	ytemp=dvector(1,n);
+	h=htry;                                                           //Set stepsize to the initial trial value.
+	for (;;) {
+        rkck(y,dydx,n,*x,h,ytemp,yerr,params,derivs);                            //Take a step .
         errmax=0.0;                                                     //Evaluate accuracy.
         for (i=1;i<=n-2;i++) errmax=fmaxl(errmax,fabsl(yerr[i]/yscal[i]));
         errmax /= eps;                                                 //Scale relative to required tolerance.
@@ -49,21 +54,25 @@ for (;;) {
                { h = 1.5 *h;
                printf("!");
                break; }     // avoid stepsize underflow
-        if (xnew == *x)
-                {nrerror("stepsize underflow in rkqs");}
+        if (xnew == *x){
+        	char msg[256];
+        	sprintf(msg,"step size underflow in rkqs (t: %LG, r: %LG, phi:%LG, z: %LG, vr: %LG, vphi: %LG, vz: %LG, h: %LG)",
+        					*x, y[1], y[5], y[3], y[2], y[6], y[4], h);
+			nrerror(msg); 
         }
-if (errmax > ERRCON) *hnext=SAFETY*h*powl(errmax,PGROW);
-else *hnext=5.0*h;                                             //No more than a factor of 5 increase.
-*x += (*hdid=h);
+	}
+	if (errmax > ERRCON) *hnext=SAFETY*h*powl(errmax,PGROW);
+	else *hnext=5.0*h;                                             //No more than a factor of 5 increase.
+	*x += (*hdid=h);
 
-for (i=1;i<=n;i++) y[i]=ytemp[i];
-free_vector(ytemp,1,n);
-free_vector(yerr,1,n);
+	for (i=1;i<=n;i++) y[i]=ytemp[i];
+	free_vector(ytemp,1,n);
+	free_vector(yerr,1,n);
 }
 
 //The routine rkqs calls the routine rkck to take a Cash�Karp Runge�Kutta step:
 void rkck(long double y[], long double dydx[], int n, long double x, long double h, long double yout[],
-long double yerr[], void (*derivs)(long double, long double [], long double []))
+long double yerr[], void *params, void (*derivs)(long double, long double [], long double [], void*))
 /*
 Given values for n variables y[1..n] and their derivatives dydx[1..n] known at x,use
 the fifth�order Cash�Karp Rung�Kutta method to advance the solution over an interval h
@@ -93,19 +102,19 @@ ak6=dvector(1,n);
 ytemp=dvector(1,n);
 for (i=1;i<=n;i++)                                          //First step.
         ytemp[i]=y[i]+b21*h*dydx[i];
-(*derivs)(x+a2*h,ytemp,ak2);                                //Second step.
+(*derivs)(x+a2*h,ytemp,ak2,params);                                //Second step.
 for (i=1;i<=n;i++)
         ytemp[i]=y[i]+h*(b31*dydx[i]+b32*ak2[i]);
-(*derivs)(x+a3*h,ytemp,ak3);                                //Third step.
+(*derivs)(x+a3*h,ytemp,ak3,params);                                //Third step.
 for (i=1;i<=n;i++)
         ytemp[i]=y[i]+h*(b41*dydx[i]+b42*ak2[i]+b43*ak3[i]);
-(*derivs)(x+a4*h,ytemp,ak4);                                //Fourth step.
+(*derivs)(x+a4*h,ytemp,ak4,params);                                //Fourth step.
 for (i=1;i<=n;i++)
         ytemp[i]=y[i]+h*(b51*dydx[i]+b52*ak2[i]+b53*ak3[i]+b54*ak4[i]);
-(*derivs)(x+a5*h,ytemp,ak5);                                //Fifth step.
+(*derivs)(x+a5*h,ytemp,ak5,params);                                //Fifth step.
 for (i=1;i<=n;i++)
         ytemp[i]=y[i]+h*(b61*dydx[i]+b62*ak2[i]+b63*ak3[i]+b64*ak4[i]+b65*ak5[i]);
-(*derivs)(x+a6*h,ytemp,ak6);                                //Sixth step.
+(*derivs)(x+a6*h,ytemp,ak6,params);                                //Sixth step.
 for (i=1;i<=n;i++)                                          //Accumulate increments with proper weights.
         yout[i]=y[i]+h*(c1*dydx[i]+c3*ak3[i]+c4*ak4[i]+c6*ak6[i]);
 for (i=1;i<=n;i++) 
@@ -159,8 +168,8 @@ the calling program.   */
 // Modified Midpoint Method
 
 void mmid(long double *y, long double *dydx, int nvar, long double xs,
-    long double htot, int nstep, long double *yout,
-    void (*derivs)(long double,long double*,long double*))
+    long double htot, int nstep, long double *yout, void *params,
+    void (*derivs)(long double,long double*,long double*,void*))
 
 {
 	int n,i;
@@ -175,8 +184,7 @@ void mmid(long double *y, long double *dydx, int nvar, long double xs,
 		yn[i]=y[i]+h*dydx[i];
 	}
 	x=xs+h;
-	(*derivs)(x,yn,yout);
-        if (stopall == 1) return;
+	(*derivs)(x,yn,yout,params);
 	h2=2.0*h;
 	for (n=2;n<=nstep;n++) {
 		for (i=1;i<=nvar;i++) {
@@ -185,8 +193,7 @@ void mmid(long double *y, long double *dydx, int nvar, long double xs,
 			yn[i]=swap;
 		}
 		x += h;
-		(*derivs)(x,yn,yout);
-                if (stopall == 1) return;
+		(*derivs)(x,yn,yout,params);
 	}
 	for (i=1;i<=nvar;i++)
 		yout[i]=0.5*(ym[i]+yn[i]+h*yout[i]);
@@ -300,10 +307,10 @@ long double **d=0,*x=0;	/* defining declaration */
 
 void bsstep(long double *y, long double *dydx, int nv, long double *xx,
     long double htry, long double eps, long double *yscal, long double *hdid,
-    long double *hnext, void (*derivs)(long double, long double*, long double*))
+    long double *hnext, void *params, void (*derivs)(long double, long double*, long double*, void*))
 {
-    void mmid(long double*,long double*,int,long double,long double,int,long double*,
-         void (*derivs) (long double, long double*, long double*));
+    void mmid(long double*,long double*,int,long double,long double,int,long double*,void*,
+         void (*derivs) (long double, long double*, long double*,void*));
     void rzextr(int,long double,long double*,long double*,long double*,int);
     int i = 0,iq = 0,k = 0,kk = 0,km = 0;
     static int first= 1,kmax,kopt;
@@ -348,9 +355,13 @@ void bsstep(long double *y, long double *dydx, int nv, long double *xx,
     for (;;) {
         for (k=1;k<=kmax;k++) {
             xnew= (*xx) +h;
-            if (xnew == (*xx)) {OutputState(y, 1);  nrerror("step size underflow in bsstep"); } 
-            mmid(ysav,dydx,nv,*xx,h,nseq[k],yseq,derivs);
-            if (stopall == 1) return;
+            if (xnew == (*xx)) {
+            	char msg[256];
+            	sprintf(msg,"step size underflow in bsstep (t: %LG, r: %LG, phi: %LG, z: %LG, vr: %LG, vphi: %LG, vz: %LG, h: %LG, k: %i)",
+            					*xx, y[1], y[5], y[3], y[2], y[6], y[4], h, k);
+				nrerror(msg); 
+            } 
+            mmid(ysav,dydx,nv,*xx,h,nseq[k],yseq,params,derivs);
             xest = h/nseq[k];
             xest=xest*xest;
             pzextr(k,xest,yseq,y,yerr,nv);
@@ -423,148 +434,3 @@ void bsstep(long double *y, long double *dydx, int nv, long double *xx,
 #undef NUSE
 #undef SHRINK
 #undef GROW
-
-
-//--------------------------------------------------------------------------
-// Integration "Driver" for Integration with adaptive stepsize control
-
-//int kmax=0,kount=0;  /* defining declaration */
-//long double *xp=0,**yp=0,dxsav=0;  /* defining declaration */
-//-----------------------------------------------------------------------------
-//int kmax=0,kount=0;  /* defining declaration */
-//long double *xp=0,**yp=0,dxsav=0;  /* defining declaration */
-//-----------------------------------------------------------------------------
-int kmax=KMDEF;
-
-void odeint (long double *ystart,int nvar, long double x1, long double x2, long double eps,long double h1, long double hmin, int *nok, int *nbad,void (*derivs)(long double, long double*, long double*),void (*integrator)(long double *,long double *, int, long double*, long double,long double, long double*, long double*,long double*, void (*derivs)(long double,long double*,long double*))){
-	int nstp,i;
-	long double x = 0,hnext = 0,hdid = 0,h = 0;
-	long double *yscal = NULL,*y = NULL,*dydx = NULL;
-
-	yscal=dvector(1,nvar);
-	y=dvector(1,nvar);
-	dydx=dvector(1,nvar);
-	
-	//++++++++++++++++++++++++++++++++++++
-	long double yprev[nvar+1];
-	int itercount = 0;
-	//------------------------------------
-	
-	x=x1;
-	h=(x2 > x1) ? fabsl(h1) : -fabsl(h1);
-	*nok = (*nbad) = kount = 0;
-	
-	for (i=1;i<=nvar;i++) 
-		y[i]=ystart[i];
-	
-	for (nstp=1;nstp<=MAXSTP;nstp++){                          //Step loop: Take at most MAXSTP steps. 
-		(*derivs)(x,y,dydx);
-		for (i=1;i<=nvar;i++){
-			yscal[i]=fabsl(y[i])+fabsl(dydx[i]*h)+TINY;          //Scaling used to monitor accuracy.
-		}
-		if (kmax > 0 && kount < kmax-1){
-			xp[++kount]=x;                     //Store intermediate results.
-			for (i=1;i<=nvar;i++) {
-				yp[i][kount]=y[i];	
-				//++++++++++++++++++
-				yprev[i] = y[i];
-				//------------------
-			}
-				
-			// Vektoren und B-Feld zwischenspeichern ++++++++++++++++++++++++
-			BFeld(yp[1][kount],yp[5][kount],yp[3][kount],xp[kount]);
-			Bp[1][kount]=Br;
-			Bp[2][kount]=dBrdr;
-			Bp[3][kount]=dBrdphi;
-			Bp[4][kount]=dBrdz;
-			Bp[5][kount]=Bphi;
-			Bp[6][kount]=dBphidr;
-			Bp[7][kount]=dBphidphi;
-			Bp[8][kount]=dBphidz;
-			Bp[9][kount]=Bz;
-			Bp[10][kount]=dBzdr;
-			Bp[11][kount]=dBzdphi;
-			Bp[12][kount]=dBzdz;
-			Bp[13][kount]=Bws;
-			Ep[1][kount] = Er;
-			Ep[2][kount] = Ez;
-			// ENDE Vektoren und B-Feld zwischenspeichern ----------------------
-		}
-	
-		if ((x+h-x2)*(x+h-x1) > 0.0) 
-			h=x2-x;                                          //If stepsize can overshoot, decrease.
-
-		//(*rkqs)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta
-		 (*integrator)(y,dydx,nvar,&x,h,eps,yscal,&hdid,&hnext,derivs);        // runge kutta or bulirsch stoer step
-		
-		timeval reflectstart, reflectend;
-		gettimeofday(&reflectstart, NULL);	
-		if (ReflectCheck(xp[kount], hdid, yprev, y, itercount)){
-			for (i = 1; i <= nvar; i++) y[i] = yprev[i];
-			x = xp[kount];
-			h = hdid;
-			kount--;
-			itercount++;
-			gettimeofday(&reflectend, NULL);
-			ReflectionTime += reflectend.tv_sec - reflectstart.tv_sec + float(reflectend.tv_usec - reflectstart.tv_usec)/1e6;
-			continue;
-		}
-		itercount = 0;		
-		gettimeofday(&reflectend, NULL);
-		ReflectionTime += reflectend.tv_sec - reflectstart.tv_sec + float(reflectend.tv_usec - reflectstart.tv_usec)/1e6;
-		
-		// Trajectory length calculation
-		long double trajlength = sqrtl(pow(yprev[1] - y[1],2) + pow(yprev[3] - y[3],2) + pow(yprev[5]*yprev[1] - y[5]*y[1],2)); 
-		trajlengthsum += trajlength;
-		
-		AbsorbCheck(yprev,y);
-
-		if (hdid == h) 
-			++(*nok); 
-		else 
-			++(*nbad);
-	
-		if ((x-x2)*(x2-x1) >= 0.0 || stopall){	//Are we done?
-			for (i=1;i<=nvar;i++)   // save final step in ystart
-				ystart[i]=y[i];
-			if (kmax){  // war kmax, ist nun deaktiviert
-				xp[++kount]=x;                                             //Save final step.
-				for (i=1;i<=nvar;i++) 
-					yp[i][kount]=y[i];		
-								
-				// Vektoren und B-Feld zwischenspeichern ++++++++++++++++++++++++
-				BFeld(yp[1][kount],yp[5][kount],yp[3][kount],xp[kount]);
-				Bp[1][kount]=Br;
-				Bp[2][kount]=dBrdr;
-				Bp[3][kount]=dBrdphi;
-				Bp[4][kount]=dBrdz;
-				Bp[5][kount]=Bphi;
-				Bp[6][kount]=dBphidr;
-				Bp[7][kount]=dBphidphi;
-				Bp[8][kount]=dBphidz;
-				Bp[9][kount]=Bz;
-				Bp[10][kount]=dBzdr;
-				Bp[11][kount]=dBzdphi;
-				Bp[12][kount]=dBzdz;
-				Bp[13][kount]=Bws;
-				Ep[1][kount] = Er;
-				Ep[2][kount] = Ez;
-				// ENDE Vektoren und B-Feld zwischenspeichern -------------------
-			}
-			
-			free_vector(dydx,1,nvar);
-			free_vector(y,1,nvar);
-			free_vector(yscal,1,nvar);
-			return;
-		}
-		
-		if (fabsl(hnext) <= hmin) 
-			nrerror("Step size too small in ODEINT");
-		h=hnext;	
-
-	}
-	//nrerror("Too many steps in routine ODEINT");
-}
-#undef MAXSTP
-#undef TINY
-

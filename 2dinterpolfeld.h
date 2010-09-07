@@ -12,11 +12,7 @@ class TabField{
 	public:
 		TabField(const char *tabfile);
 		~TabField();
-		bool BInterpol(long double r, long double z);
-		bool EInterpol(long double r, long double z);
+		bool BInterpol(long double r, long double z, long double Bi[3], long double dBidrj[3][3]);
+		bool EInterpol(long double r, long double z, long double Ei[3], long double dEidrj[3][3]);
 };
-
-
-void bcucof(long double y[], long double y1[], long double y2[], long double y12[], long double d1, long double d2,long double **c);
-void bcuint_new(int indr, int indz,long double ****c, long double d1, long double d2, long double x1l, long double x1u, long double x2l, long double x2u, long double x1, long double x2, long double *ansy, long double *ansy1, long double *ansy2);
 
