@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <cmath>
 
 #include "adiabacity.h"
@@ -60,17 +61,17 @@ long double rabimin(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,d
 }
 
 // Wahrscheinlichkeit f�r einen Spinflip nach Vladimirsky (Soviet Physics JETP, Volume 12, Number 4, April 1961)
-long double vladimirsky(long double r, long double Br,long double Bphi, long double Bz,long double dBrdr, long double dBrdphi, long double dBrdz, long double dBphidr, long double dBphidphi, long double dBphidz, long double dBzdr, long double dBzdphi, long double dBzdz, long double Bws, long double vr_n, long double phidot, long double vz_n){
-	long double vabs, dBdt_par, dBdt_perp, dBdt_r, dBdt_phi, dBdt_z, dBdt_square, W;
+long double vladimirsky(long double Bx,long double By, long double Bz,long double dBxdx, long double dBxdy, long double dBxdz, long double dBydx, long double dBydy, long double dBydz, long double dBzdx, long double dBzdy, long double dBzdz, long double Bws, long double vx, long double vy, long double vz){
+	long double vabs, dBdt_par, dBdt_perp, dBdt_x, dBdt_y, dBdt_z, dBdt_square, W;
 
-    dBdt_r =   dBrdr  *vr_n + (dBrdphi-Bphi)*phidot + dBrdz  *vz_n;
-    dBdt_phi = dBphidr*vr_n + (dBphidphi+Br)*phidot + dBphidz*vz_n;
-	dBdt_z =   dBzdr  *vr_n + (dBzdphi)     *phidot + dBzdz  *vz_n;
-	dBdt_square = dBdt_r*dBdt_r+dBdt_phi*dBdt_phi+dBdt_z*dBdt_z;
+    dBdt_x = dBxdx*vx + dBxdy*vy + dBxdz*vz;
+    dBdt_y = dBydx*vx + dBydy*vy + dBydz*vz;
+	dBdt_z = dBzdx*vx + dBzdy*vy + dBzdz*vz;
+	dBdt_square = dBdt_x*dBdt_x+dBdt_y*dBdt_y+dBdt_z*dBdt_z;
 
-	vabs = sqrt(vr_n*vr_n + phidot*phidot*r*r + vz_n*vz_n);
+	vabs = sqrt(vx*vx + vy*vy + vz*vz);
 	// component of dBdt parallel to B
-	dBdt_par = (1.0/vabs) * (dBdt_r*vr_n + dBdt_phi*r*phidot + dBdt_z*vz_n);
+	dBdt_par = (1.0/vabs) * (dBdt_x*vx + dBdt_y*vy + dBdt_z*vz);
 	// component of dBdt perpendicular to B
 	dBdt_perp = sqrtl(dBdt_square-dBdt_par*dBdt_par);
 
@@ -78,21 +79,21 @@ long double vladimirsky(long double r, long double Br,long double Bphi, long dou
 	W = exp(-pi*mu_nSI*Bws*Bws/(hquer*dBdt_perp));
 	
 	if (W>1){
-		printf("Schei�e!!!\n");
+		printf("Scheisse!!!\n");
 	}
 
     return W;
 }
 
-long double thumbrule(long double Br,long double Bphi, long double Bz,long double dBrdr, long double dBrdphi, long double dBrdz, long double dBphidr, long double dBphidphi, long double dBphidz, long double dBzdr, long double dBzdphi, long double dBzdz, long double Bws, long double vr_n, long double phidot, long double vz_n){
+long double thumbrule(long double Bx, long double By, long double Bz,long double dBxdx, long double dBxdy, long double dBxdz, long double dBydx, long double dBydy, long double dBydz, long double dBzdx, long double dBzdy, long double dBzdz, long double Bws, long double vx, long double vy, long double vz){
 
-	long double dBdt, dBdt_r, dBdt_phi, dBdt_z;
+	long double dBdt, dBdt_x, dBdt_y, dBdt_z;
 
-    dBdt_r =   dBrdr  *vr_n + (dBrdphi-Bphi)*phidot + dBrdz  *vz_n;
-    dBdt_phi = dBphidr*vr_n + (dBphidphi+Br)*phidot + dBphidz*vz_n;
-    dBdt_z =   dBzdr  *vr_n + (dBzdphi)     *phidot + dBzdz  *vz_n;
+    dBdt_x = dBxdx*vx + dBxdy*vy + dBxdz*vz;
+    dBdt_y = dBydx*vx + dBydy*vy + dBydz*vz;
+    dBdt_z = dBzdx*vx + dBzdy*vy + dBzdz*vz;
 
-    dBdt = sqrt(dBdt_r*dBdt_r+dBdt_phi*dBdt_phi+dBdt_z*dBdt_z);
+    dBdt = sqrt(dBdt_x*dBdt_x+dBdt_y*dBdt_y+dBdt_z*dBdt_z);
 
 	// Adiabacity mit Daumenformel
 

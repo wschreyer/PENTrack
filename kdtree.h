@@ -17,12 +17,9 @@
 	the normal n and the surfacetype of the intersected surface.
 *****************************************************************/
 
-
-#include <iostream>
-#include <fstream>
+#include <cmath>
 #include <list>
 #include <set>
-#include <cmath>
 
 using namespace std;
 
@@ -30,17 +27,17 @@ using namespace std;
 struct Triangle{
     const float *vertex[3]; // the three vertices of the triangle (in counterclockwise order according to STL standard)
     unsigned ID;          // user defined surface number
-    void CalcNormal(long double normal[3]);
+    void CalcNormal(long double normal[3]); // calculate normal vector on triangle (length = triangle area)
     bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
 };
 
 // structure that is returned by KDTree::Collision
 struct TCollision{
-	long double s, normal[3], Area; // parametric coordinate of intersection point, normal and area of intersected surface
+	long double s, normal[3]; // parametric coordinate of intersection point, normal and area of intersected surface
 	unsigned ID;	// ID of intersected surface
 	Triangle *tri;	// pointer to intersected triangle
 	bool operator < (TCollision c){ return s < c.s; };	// overloaded operator, needed for sorting
-	bool operator == (TCollision c){ return tri == c.tri; };	// overloaded operator, needed for unique()
+	bool operator == (TCollision c){ return c.tri == tri; };	// overloaded operator, needed for unique()
 };
 
 // root of kd-Tree
@@ -50,9 +47,9 @@ class KDTree{
         struct TVertex{
             float vertex[3];
             inline bool operator == (const TVertex v) const { 
-            	return abs(vertex[0] - v.vertex[0]) < 1e-10 && 
-            			abs(vertex[1] - v.vertex[1]) < 1e-10 && 
-            			abs(vertex[2] - v.vertex[2]) < 1e-10; 
+            	return  abs(vertex[0] - v.vertex[0]) <= 0 && 
+            			abs(vertex[1] - v.vertex[1]) <= 0 && 
+            			abs(vertex[2] - v.vertex[2]) <= 0; 
             };
         	inline bool operator < (const TVertex v) const { return !(*this == v); };
         };
@@ -76,18 +73,17 @@ class KDTree{
                 bool Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls);  // find the smallest box which contains the segment p1->p2 and call TestCollision there
                 template <typename coord> bool PointInBox(const coord p[3]) {
                 	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) && (p[1] <= hi[1]) && (p[1] >= lo[1]) && (p[2] <= hi[2]) && (p[2] >= lo[2]));
-                }; // test if point is inside box
+                } // test if point is inside box
         };
 
         set<TVertex> allvertices;	// list of triangle vertices
         KDNode *root;   // root node
         KDNode *lastnode;    // remember last collision-tested node to speed up search when segments are adjacent
-        int (*FLog)(const char*, ...);	// function to print log messages (e.g. printf), given by constructor parameter
     public:
-        KDTree(int (*ALog)(const char*, ...));   // constructor, parameter: see FLog above
+        KDTree();   // constructor, parameter: see FLog above
         ~KDTree();  // destructor
         float lo[3],hi[3];    // bounding box of root node
-        list<Triangle*> alltris; // list of all triangles in the tree
+        list<Triangle> alltris; // list of all triangles in the tree
         void ReadFile(const char *filename, const unsigned ID, char name[80] = NULL);    // read STL-file
         void Init();    // create KD-tree
         bool Collision(const long double p1[3], const long double p2[3], list<TCollision> &colls);  // test segment p1->p2 for collision with triangle
