@@ -8,10 +8,18 @@
 #define KENNZAHL_DECAYED 4
 #define KENNZAHL_INITIAL_NOT_FOUND 5
 
+#define FILLING_PHASE 1
+#define CLEANING_PHASE 2
+#define RAMPUP_PHASE 3
+#define FULLFIELD_PHASE 4
+#define RAMPDOWN_PHASE 5
+#define COUNTING_PHASE 6
+
 #define NEUTRON 1
 #define PROTON 2
 #define BF_ONLY 3
 #define BF_CUT 4
+#define INTERACTIVE 5
 #define ELECTRON 6
 
 #define POLARISATION_GOOD 1
@@ -24,19 +32,21 @@
 #define OUTPUT_EVERYTHINGandSPIN 3
 #define OUTPUT_ENDPOINTSandSPIN 4
 
-
+#include <cstdarg>
+#include <cstring>
 #include <string>
 
 using namespace std;
 
-int Log(const char* format, ...); // works like printf, prints to logfile and, if jobnumber == 0, to stdout
-void percent(long double x, long double x1, long double len, int &perc);
-void hunt(long double xx[], int n, long double x, int *jlo);
+void percent(long double x, long double x1, long double len, int &perc); // print percent of (x-x1)/len
+int ExpPhase(long double t); // get current experiment stage
+// rotate coordinate system so, that new z-axis lies on NORMALIZED vector n
+void RotateVector(long double v[3], long double n[3]);
+void BOOST(long double beta[3], long double p[4]); // Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta
 
-extern FILE *LOGSCR;
 
 // physical constants
-const long double pi = 3.14159265359;
+const long double pi = 3.1415926535897932384626;
 const long double ele_e = 1.602176487E-19;      //elementary charge in SI
 const long double gravconst = 9.80665;	// g
 const long double conv = pi/180.;
@@ -47,7 +57,6 @@ const long double m_e = 9.10938215e-31/ele_e;	//electron mass
 const long double c_0 = 299792458;	// lightspeed
 const long double hquer = 1.05457266e-34;	// planck constant (Js)
 const long double mu_nSI = 0.96623641e-26;	// Neutron magn Mom (in J/T)
-extern long double tau;	// neutron lifetime
 
 //set the duration of the experiment
 extern long double FillingTime;										//Filling in UCN
@@ -57,7 +66,6 @@ extern long double FullFieldTime;                       // storing in full field
 extern long double RampDownTime;                        // ramping down coils
 extern long double EmptyingTime;                        // emptying without field
 extern long double StorageTime;                     // time when ramping down shall start, if xend > storage time, let neutron decay
-extern int ExpPhase;  															// current experiment phase
 
 extern int jobnumber;
 extern string inpath, outpath; 

@@ -1,15 +1,15 @@
 ======== neutron.in =====================
-0		108				E [neV]
+0		70				E [neV]
 0		360				alpha [degree] (in x-y-plane relative to r-vector) <0..360>
 0		180				gamma [degree] (relative to z'-axis) <0..180>
-1		300				hmax | xend
+9e99	300				max. trajectory length [m], xend
 ======== proton.in ======================
 0		751				E [eV]
 0		360				alpha [degree] (in x-y-plane relative to r-vector) <0..360>
 0		180				gamma [degree] (betwenn z'-axis) <0..180>
-1		1e-2			hmax | xend
+9e99	3e-3			max. trajectory length [m], xend
 ======== electron.in ====================
 0		782				E [keV]
 0		360				alpha [degree] (in x-y-plane relative to r-vector) <0..360>
 0		180				gamma [degree] (relative to z'-axis) <0..180>
-1		1e-6			hmax | xend
+9e99	1e-5			max. trajectory length [m], xend
