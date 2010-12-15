@@ -1,11 +1,14 @@
 #include <cstdio>
+#include <cmath>
+
+#include "nr/nr3.h"
 
 #include "ndist.h"
-#include "nrutil.h"
-#include "globals.h"
 
-long double *ndistr = NULL, *ndistz = NULL, **ndistW = NULL;    // matrix for probability of finding particle
-int v=300,w=1200;                                       // dimension of matrix above, user choice for ndist
+int neutdist = 0;
+MatDoub ndist;	// matrix for probability of finding particle
+int n_r = 310, n_z = 1000;	// number of bins
+long double size = 0.002, rmin = 0, zmin = -0.8;	// size of bins, position of first bin
 
 // Diese Funktionen werten die in yp[][] gespeichterten Werte aus und berechnen daraus die
 // Neutronenverteilung in der r-z-Ebene. Dies wird �ber die Auswertung der Aufenthalts-
@@ -16,68 +19,60 @@ int v=300,w=1200;                                       // dimension of matrix a
 // Vorbereitung der r und z-Vektoren
 void prepndist()
 {
-	long double dooo, increment;
-	//v=300;       //  2mm steps in r-direction 0-60cm
-	//w=1200;      //  z: -0.5 bis1.7
-	increment = 0.6 / v;  // Schrittweite des Gitters (0.002m)
-	
-	ndistr=dvector(0,v);       // r-Werte
-	ndistz=dvector(0,w);       // z-Werte
-	ndistW=dmatrix(0,v,0,w);   // Verteilung
-
-    // r-Vektor bef�llen, er enth�lt die Ecken der Auswertungsquadrate
-    dooo=0.0;
-    for(int i=0;i<=v;i++)
-    {
-		ndistr[i] = dooo;
-		dooo = dooo + increment;
-    }
-
-    // z-Vektor bef�llen, er enth�lt die Ecken der Auswertungsquadrate
-    dooo=-0.5;
-    for(int i=0;i<=w;i++)
-    {
-		ndistz[i] = dooo;
-		dooo = dooo + increment;
-    }
-
-    // Matrix der Verteilung auf 0 setzen
-    for(int i=0;i<=v;i++)
-    {
-        for(int j=0;j<=w;j++)
-        {
-        ndistW[i][j]=0.0;
-        }
-    }
+	ndist.assign(n_r,n_z,0);
 }
 
 // Bef�llung der Verteilungsmatrix
-void fillndist(long double x1, long double *y1, long double x2, long double *y2)
+void fillndist(long double x1, VecDoub_I &y1, long double x2, VecDoub_I &y2)
 {	
-	int ir1, iz1, ir2, iz2;
-
-	hunt(ndistr, v, y1[1], &ir1);     // Index des ersten Punktes suchen
-	hunt(ndistz, w, y2[3], &iz1);
-	//ir1 = (yp[1][1] - conv_rA) / (conv_rB);
-	//iz1 = (yp[3][1] - conv_zA) / (conv_zB);
-	if((ir1>v)||(iz1>w)) printf("Ndist Error %d %d \n",ir1,iz1);
-
-	hunt(ndistr, v, y2[1], &ir2);   // Index des n�chsten Punktes suchen
-	hunt(ndistz, w, y2[3], &iz2);
-	//ir2 = (yp[1][klauf] - conv_rA) / (conv_rB);
-	//iz2 = (yp[3][klauf] - conv_zA) / (conv_zB);
-	if((ir1>v)||(iz2>w)) printf("Ndist Error %d %d \n",ir2,iz2);
-	
-	if ((ir2==ir1) && (iz2==iz1))                     // sind die Pkte im gleichen Quadrat?
-	{
-		ndistW[ir1][iz1]=ndistW[ir1][iz1] + x2-x1;            // Zeit zum Quadrat dazuaddieren
+	long double r1 = sqrt(y1[0]*y1[0] + y1[1]*y1[1]);
+	long double z1 = y1[2];
+	long double r2 = sqrt(y2[0]*y2[0] + y2[1]*y2[1]);
+	long double z2 = y2[2];
+	int ir1 = int((r1 - rmin)/size);
+	int iz1 = int((y1[2] - zmin)/size);
+	int ir2 = int((r2 - rmin)/size);
+	int iz2 = int((y2[2] - zmin)/size);
+	while (ir1 != ir2 || iz1 != iz2){
+		if((ir1>=n_r)||(iz1>=n_z)||(ir1>=n_r)||(iz2>=n_z)) printf("Ndist Error %d %d %d %d \n",ir1,iz1,ir2,iz2);
+		long double s_left = (ir1*size + rmin - r1)/(r2 - r1);
+		long double s_right = ((ir1+1)*size + rmin - r1)/(r2 - r1);
+		long double s_bottom = (iz1*size + zmin - z1)/(z2 - z1);
+		long double s_top = ((iz1+1)*size + zmin - z1)/(z2 - z1);
+		long double s;
+		int newir = ir1, newiz = iz1;
+		if (s_left > 0){
+			if (s_bottom > 0){
+				if (s_left > s_bottom) newiz = iz1-1;
+				else newir = ir1-1;
+				s = min(s_left, s_bottom);
+			}
+			else{
+				if (s_left > s_top) newiz = iz1+1;
+				else newir = ir1-1;
+				s = min(s_left, s_top);
+			}
+		}
+		else{
+			if (s_bottom > 0){
+				if (s_right > s_bottom) newiz = iz1-1;
+				else newir = ir1+1;
+				s = min(s_right, s_bottom);
+			}
+			else{
+				if (s_right > s_top) newiz = iz1+1;
+				else newir = ir1+1;
+				s = min(s_right, s_top);
+			}
+		}
+		ndist[ir1][iz1] += s*(x2-x1);
+		ir1 = newir;
+		iz1 = newiz;
+		r1 += (r2 - r1)*s;
+		z1 += (z2 - z1)*s;
+		x1 += (x2 - x1)*s;
 	}
-	else
-	{
-		ndistW[ir1][iz1]=ndistW[ir1][iz1] + (x2-x1)/2;        // H�lfte der Zeit zum ersten Quadrat
-		ndistW[ir2][iz2]=ndistW[ir2][iz2] + (x2-x1)/2;        // H�lfte der Zeit zum anderen
-	}
-	
+	ndist[ir2][iz2] += x2-x1;
 }
 
 // Ausgabe in ndist.out
@@ -91,17 +86,14 @@ void outndist(const char *ndistfile)
 	//FILE *NDIST=fopen("ndist.out",mode_w);
 	
 	fprintf(NDIST,"Rindex Zindex Rmtlpkt Zmtlpkt Whk Treffer\n");
-	long double increment = ndistr[1] - ndistr[0];
-	int i,j;
-	for(i=0;i<=v;i++){
-		for(j=0;j<=w;j++){
-			if (ndistW[i][j] != 0) Treffer =1;
-			if (ndistW[i][j] == 0) Treffer =0;	
-			fprintf(NDIST,"%i %i %.5LG %.5LG %.17LG %i\n",i,j,(ndistr[i]+(increment/2.0)),(ndistz[j]+(increment/2.0)), ndistW[i][j], Treffer);
+	for(int i=0; i<n_r; i++){
+		for(int j=0; j<n_z; j++){
+			if (ndist[i][j] != 0) Treffer =1;
+			if (ndist[i][j] == 0) Treffer =0;	
+			fprintf(NDIST,"%i %i %.5LG %.5LG %.17LG %i\n",i,j, i*size + rmin + size/2, j*size + zmin + size/2, ndist[i][j], Treffer);
 		}
 	}
 	fclose(NDIST);
-	//printf("\nDone outputting the particle spacial distribution! \n");
-	
+	ndist.resize(0,0);
 }
 

@@ -18,11 +18,15 @@
 *****************************************************************/
 
 
+#include <cstring>
+#include <fstream>
+#include <algorithm>
+
 #include "kdtree.h"
 
 #define MIN_SIZE 0.02		// when the size of a node is smaller than that, it will be splitted no more
 #define MAX_FACECOUNT 10        // when the number of faces in one node exceeds this value the node is split up in two new nodes
-#define TOLERANCE 1e-10         // points that are closer than this distance will be considered equal
+#define TOLERANCE 0         // kd-nodes will overlap this far
 
 // misc functions
 
@@ -43,6 +47,9 @@ void Triangle::CalcNormal(long double normal[3]){
     float v[3] = {vertex[1][0] - vertex[0][0], vertex[1][1] - vertex[0][1], vertex[1][2] - vertex[0][2]}; // triangle edge vectors
     float w[3] = {vertex[2][0] - vertex[0][0], vertex[2][1] - vertex[0][1], vertex[2][2] - vertex[0][2]};
     CrossProduct(v,w,normal);
+    normal[0] *= 0.5;
+    normal[1] *= 0.5;
+    normal[2] *= 0.5; // length = triangle area
 }
 
 // does the segment p1->p2 intersect the triangle?
@@ -109,8 +116,6 @@ KDTree::KDNode::KDNode(const float boxlo[3], const float boxhi[3], const int ade
 
 // destructor
 KDTree::KDNode::~KDNode(){
-    if (!tris.empty())   // empty triangle list
-        tris.clear();
     if (hichild) delete hichild;    // free leaves
     if (lochild) delete lochild;
 }
@@ -295,7 +300,6 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
         	c.normal[0] = normal[0]/n;	// return normalized normal vector
         	c.normal[1] = normal[1]/n;
         	c.normal[2] = normal[2]/n;
-        	c.Area = n;
         	c.ID = (*i)->ID;
         	c.tri = *i;
         	colls.push_back(c);
@@ -334,16 +338,14 @@ bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3],
 // kd-tree class definition
 
 // constructor
-KDTree::KDTree(int (*ALog)(const char*, ...)){
+KDTree::KDTree(){
     root = lastnode = NULL;
     lo[0] = lo[1] = lo[2] = INFINITY;
     hi[0] = hi[1] = hi[2] = -INFINITY;
-    FLog = ALog;
 }
 
 // destructor
 KDTree::~KDTree(){
-    alltris.clear(); // empty triangle list
     if (root) delete root;  // delete tree
 }
 
@@ -361,54 +363,54 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
         }
         if (name) memcpy(name,header,80);
         f.read((char*)&filefacecount,4);
-        FLog("Reading '%.80s' from '%s' containing %lu triangles ... ",header,filename,filefacecount);    // print header
-        flush(cout);
+        printf("Reading '%.80s' from '%s' containing %lu triangles ... ",header,filename,filefacecount);    // print header
+		fflush(stdout);
 
-        Triangle *tri;
         for (i = 0; i < filefacecount && !f.eof(); i++){
-            tri = new Triangle();  // read triangles from file
-            tri->ID = ID;
+            Triangle tri;
+            tri.ID = ID;
             f.seekg(3*4,fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
             TVertex v;
             for (short j = 0; j < 3; j++){
                 f.read((char*)&v.vertex[0],4);
                 f.read((char*)&v.vertex[1],4);
                 f.read((char*)&v.vertex[2],4);
-                tri->vertex[j] = allvertices.insert(v).first->vertex;
+                tri.vertex[j] = allvertices.insert(v).first->vertex; // insert vertex into vertex list and save pointer to inserted vertex into triangle
             }
             f.seekg(2,fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
 
             for (short j = 0; j < 3; j++){
-                lo[j] = min(lo[j], min(min(tri->vertex[0][j], tri->vertex[1][j]), tri->vertex[2][j]));  // save lowest and highest vertices to get the size for the root node
-                hi[j] = max(hi[j], max(max(tri->vertex[0][j], tri->vertex[1][j]), tri->vertex[2][j]));
+                lo[j] = min(lo[j], min(min(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));  // save lowest and highest vertices to get the size for the root node
+                hi[j] = max(hi[j], max(max(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));
             }
             
             alltris.push_back(tri); // add triangle to list
         }
         f.close();
-        FLog("Read %d triangles\n",i);
+        printf("Read %lu triangles\n",i);
     }
     else{
-        FLog("Could not open '%s'!\n",filename);
+        printf("Could not open '%s'!\n",filename);
         exit(-1);
     }
 }
 
 // build search tree
 void KDTree::Init(){
-    FLog("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
+    printf("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
 
     root = new KDNode(lo,hi,0,NULL);  // create root node
     facecount = 0;
     nodecount = 1;
     emptynodecount = 0;
 
-	FLog("Building KD-tree ... ");
-	flush(cout);
-    for (list<Triangle*>::iterator it = alltris.begin(); it != alltris.end(); it++)
-        root->AddTriangle(*it); // add triangles to root node
+	printf("Building KD-tree ... ");
+	fflush(stdout);
+    for (list<Triangle>::iterator it = alltris.begin(); it != alltris.end(); it++)
+        root->AddTriangle(&(*it)); // add triangles to root node
     root->Split();  // split root node
-    FLog("Wrote %u triangles in %u nodes (%u empty)\n",facecount,nodecount,emptynodecount);   // print number of triangles contained in tree
+    printf("Wrote %u triangles in %u nodes (%u empty)\n\n",facecount,nodecount,emptynodecount);   // print number of triangles contained in tree
+    fflush(stdout);
 }
 
 // test segment p1->p2 for collision with a triangle and return a list of all found collisions

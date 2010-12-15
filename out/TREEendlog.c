@@ -29,15 +29,16 @@
 void TREEendlog(TString filename)
 {	gROOT->Reset(); // reset ROOT
 	
-	TString treename = filename + ".root";
-	cout << "Creating tree " << treename << endl;
-	TFile* file=TFile::Open(treename.Data(), "RECREATE"); // recreating a new file wherein the tree will be saved.
-	//++++++++ options: "CREATE" ~ create and open a new file if it does not already exist ++++++++++++++++++++++++++++++
-	//+++++++++++++++++ "RECREATE" ~ create and overwrite if existing +++++++++++++++++++++++++++++++++++++++++++++++++++
 	ifstream edfile; // new stream 'edfile' to the data file
 
 	edfile.open(filename, ios_base::in); // read and write access to the data file	
 	if (edfile.good()){
+		TString treename = filename + ".root";
+		cout << "Creating tree " << treename << endl;
+		TFile* file=TFile::Open(treename.Data(), "RECREATE"); // recreating a new file wherein the tree will be saved.
+		//++++++++ options: "CREATE" ~ create and open a new file if it does not already exist ++++++++++++++++++++++++++++++
+		//+++++++++++++++++ "RECREATE" ~ create and overwrite if existing +++++++++++++++++++++++++++++++++++++++++++++++++++
+
 		cout << "Reading data from " << filename << endl;
 		TString bdescriptor; // branch descriptor 'bdescriptor' as a empty string
 		bdescriptor.ReadLine(edfile); // read branch descriptor from file
@@ -55,5 +56,6 @@ void TREEendlog(TString filename)
 		file->Write();
 		tree->Print(); // output of the tree overview
 		delete tree;
+		delete file;
 	}
 }

@@ -1,4 +1,8 @@
+#include "nr/nr3.h"
+
 // functions to save and print neutron distribution
 void prepndist();
-void fillndist(long double x1, long double *y1, long double x2, long double *y2);
+void fillndist(long double x1, VecDoub_I &y1, long double x2, VecDoub_I &y2);
 void outndist(const char *ndistfile);
+
+extern int neutdist;
