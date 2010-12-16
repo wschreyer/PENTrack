@@ -495,11 +495,11 @@ struct TParticle{
 				else
 					currentsolid = &geom->solids[ID];
 		       	if(REFLECTLOG)
-					fprintf(REFLECTLOG, "%i %i %i %i "
+					fprintf(REFLECTLOG, "%i %i %i %i %i "
 										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
 										"%.10LG %.10LG %.10LG %.10LG"
 										"%.10LG %.10LG %.10LG\n",
-										particlenumber, protneut, 0, geom->solids[ID].kennz,
+										jobnumber, particlenumber, protneut, 0, geom->solids[ID].kennz,
 										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
 										normal[0],normal[1],normal[2],0.5*m_n*vabs*vabs,
 										winkeben,winksenkr,Trans);
@@ -646,7 +646,22 @@ struct TParticle{
 				logvlad=log10(vlad);
 			if (frac > 1e-99) 
 				logfrac=log10(frac);
-				
+			int pol = 3;
+			if (polarisation == -1) pol = 1;
+			else if (polarisation == 1) pol = 2;
+	
+			fprintf(trackfile,"%d %d %d "
+							 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
+							 "%.17LG %.17LG %.17LG ",
+							 particlenumber,protneut,pol,
+							 x,y[0],y[1],y[2],y[3],y[4],y[5],
+							 vend,Hend,Eend);
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					fprintf(trackfile,"%.17LG ",B[i][j]);
+			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %d",E[0],E[1],E[2],h,logvlad,logfrac,ExpPhase(x));
+	
+/*				
 			long double r_L[3] = {0,0,0};
 			long double adiabacity1 = 0, adiabacity2 = 0;
 			if (protneut == PROTON || protneut == ELECTRON){
@@ -666,22 +681,8 @@ struct TParticle{
 				if (protneut == PROTON) adiabacity2 *= m_p*ele_e;
 				else if (protneut == ELECTRON) adiabacity2 *= m_e*ele_e;
 			}
-			
-			int pol = 3;
-			if (polarisation == -1) pol = 1;
-			else if (polarisation == 1) pol = 2;
-	
-			fprintf(trackfile,"%d %d %d "
-							 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
-							 "%.17LG %.17LG %.17LG ",
-							 particlenumber,protneut,pol,
-							 x,y[0],y[1],y[2],y[3],y[4],y[5],
-							 vend,Hend,Eend);
-			for (int i = 0; i < 4; i++)
-				for (int j = 0; j < 4; j++)
-					fprintf(trackfile,"%.17LG ",B[i][j]);
-			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %d",E[0],E[1],E[2],h,logvlad,logfrac,ExpPhase(x));
 			fprintf(trackfile," %LG %LG %LG %LG %LG",r_L[0],r_L[1],r_L[2],adiabacity1,adiabacity2);
+*/
 			fprintf(trackfile,"\n");
 		};
 };
