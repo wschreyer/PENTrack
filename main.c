@@ -26,8 +26,9 @@ using namespace std;
 void ConfigInit(); // read config.in
 void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog);
 void OutputCodes(vector<int> kennz_counter[3]); // print simulation summary at program exit
-void PrintBFieldCut(const char *outfile, TField &field);
+void PrintBFieldCut(const char *outfile, TField &field); // evaluate fields on given plane and write to outfile
 void PrintBField(const char *outfile, TField &field);
+void PrintGeometry(const char *outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
 
 
 int MonteCarloAnzahl=1;   // number of particles for MC simulation
@@ -119,6 +120,12 @@ int main(int argc, char **argv){
 
 
 	TGeometry geom((inpath + "/geometry.in").c_str(), reflekt, diffuse, kennz_counter);
+	
+	if (protneut == GEOMETRY){
+		PrintGeometry((outpath+"/geometry.out").c_str(), geom);
+		return 0;
+	}
+	
 	TSource source((inpath + "/geometry.in").c_str(), geom, field);
 	
 	TMCGenerator mc((inpath + "/all3inone.in").c_str(), source.Emin_n, polarisation, decay, decayoffset, tau_n);
@@ -132,10 +139,10 @@ int main(int argc, char **argv){
 	gettimeofday(&simstart, NULL);	
 /*
 	stringstream filename;
-	filename << "in/42_0063eout2000m.out";
+	filename << "in/42_0063eout2000m_" << jobnumber << ".out";
 	ifstream infile(filename.str().c_str());
 	if (!infile.is_open()){
-		printf("\ninfile not found!\n");
+		printf("\ninfile %s not found!\n",filename.str().c_str());
 		exit(-1);
 	}
 	infile.ignore(1024*1024, '\n');
@@ -500,3 +507,37 @@ void PrintBField(const char *outfile, TField &field){
 	}
 }
 
+// do many random collisionchecks and write all collisions to outfile
+void PrintGeometry(const char *outfile, TGeometry &geom){
+    long double p1[3], p2[3];
+    long double theta, phi;
+    unsigned count = 1000000, collcount = 0, raylength = 1;
+    ofstream f(outfile);
+    f << "x y z" << endl;
+    list<TCollision> c;
+    srand(time(NULL));
+    float timer = clock(), colltimer = 0;
+    for (unsigned i = 0; i < count; i++){
+        p1[0] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[0] - geom.kdtree->lo[0]) + geom.kdtree->lo[0];
+        p1[1] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[1] - geom.kdtree->lo[1]) + geom.kdtree->lo[1];
+        p1[2] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[2] - geom.kdtree->lo[2]) + geom.kdtree->lo[2];
+		theta = (long double)rand()/RAND_MAX*pi;
+		phi = (long double)rand()/RAND_MAX*2*pi;
+		p2[0] = p1[0] + raylength*sin(theta)*cos(phi);
+		p2[1] = p1[1] + raylength*sin(theta)*sin(phi);
+		p2[2] = p1[2] + raylength*cos(theta);
+		timeval collstart,collend;
+		gettimeofday(&collstart,NULL);
+		if (geom.kdtree->Collision(p1,p2,c)){
+		gettimeofday(&collend,NULL);
+		colltimer += (collend.tv_sec - collstart.tv_sec)*1e6+collend.tv_usec - collstart.tv_usec;
+			collcount++;
+			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << endl;
+			}
+		}
+    }
+    timer = (clock() - timer)*1000/CLOCKS_PER_SEC;
+    printf("%u tests, %u collisions in %fms (%fms per Test, %fms per Collision)\n",count,collcount,timer,timer/count,colltimer/collcount/1000);
+    f.close();	
+}
