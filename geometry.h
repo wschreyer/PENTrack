@@ -40,7 +40,7 @@ struct TGeometry{
 		int diffuse; // diffuse reflection switch, reflection switch
 		int reflekt[7];	// reflection on/off in different experiment stages
 		
-		KDTree *geometry;
+		KDTree *kdtree;
 		vector<solid> solids;	// dynamic array to associate solids with material/kennzahl/name
 		
 		TGeometry(const char *geometryin, int areflekt[7], int adiffuse, vector<int> kennz_counter[3]){
@@ -68,12 +68,12 @@ struct TGeometry{
 		};
 
 		~TGeometry(){
-			if (geometry) delete geometry;
+			if (kdtree) delete kdtree;
 		};
 		
 		// check if point is inside geometry volume
 		bool CheckPoint(const long double x, const long double y[6]){
-			if (!geometry->PointInBox(y)){ // particle no longer contained inside geometry-volume?
+			if (!kdtree->PointInBox(y)){ // particle no longer contained inside geometry-volume?
 				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x,y[0],y[1],y[2]);
 				return false;
 			}	
@@ -82,7 +82,7 @@ struct TGeometry{
 		
 		// get all collisions of ray y1->y2 with surfaces
 		bool GetCollisions(const long double x1, const long double y1[6], const long double h, const long double y2[6], list<TCollision> &colls){
-			if (geometry->Collision(y1,y2,colls)){ // search in the kdtree for collisions
+			if (kdtree->Collision(y1,y2,colls)){ // search in the kdtree for collisions
 				for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
 					if (!solids[(*it).ID].ignoretimes.empty()){
 						long double x = x1 + (*it).s*h;
@@ -116,7 +116,7 @@ struct TGeometry{
 			string line;
 			string STLfile;
 			string matname;
-			geometry = new KDTree;
+			kdtree = new KDTree;
 			char name[80];
 			int ignoretime;
 			do{	// parse STLfile list
@@ -136,7 +136,7 @@ struct TGeometry{
 				for (unsigned i = 0; i < materials.size(); i++){
 					if (matname == materials[i].name){
 						model.mat = materials[i];
-						geometry->ReadFile(STLfile.c_str(),solids.size(),name);
+						kdtree->ReadFile(STLfile.c_str(),solids.size(),name);
 						model.name = name;
 						break;
 					}
@@ -155,14 +155,14 @@ struct TGeometry{
 				}
 				solids.push_back(model);
 			}while(infile.good() && getline(infile,line).good());
-			geometry->Init();
+			kdtree->Init();
 		};
 		
 };
 
 struct TSource{
 	public:
-		KDTree *sourcevolume;
+		KDTree *kdtree;
 		TGeometry *geometry;
 		string sourcemode; // volume/surface/customvol/customsurf
 		long double r_min, r_max, phi_min, phi_max, z_min, z_max; // for customvol/customsurf
@@ -173,7 +173,7 @@ struct TSource{
 		
 		TSource(const char *geometryin, TGeometry &geom, TField &field){
 			geometry = &geom;
-			sourcevolume = NULL;
+			kdtree = NULL;
 			E_normal = 0;
 			ifstream infile(geometryin);
 			string line;
@@ -211,7 +211,7 @@ struct TSource{
 		};
 	
 		~TSource(){
-			if (sourcevolume) delete sourcevolume;
+			if (kdtree) delete kdtree;
 		};
 	
 		void RandomPointInSourceVolume(TMCGenerator &mc, long double &x, long double &y, long double &z, long double &alpha, long double &gamma, long double n[3]){
@@ -219,9 +219,9 @@ struct TSource{
 			int count = 0;
 			do{
 				if (sourcemode == "volume"){ // random point inside a STL-volume
-					p1[0] = mc.UniformDist(sourcevolume->lo[0],sourcevolume->hi[0]); // random point 
-					p1[1] = mc.UniformDist(sourcevolume->lo[1],sourcevolume->hi[1]); // random point 
-					p1[2] = mc.UniformDist(sourcevolume->lo[2],sourcevolume->hi[2]); // random point 
+					p1[0] = mc.UniformDist(kdtree->lo[0],kdtree->hi[0]); // random point 
+					p1[1] = mc.UniformDist(kdtree->lo[1],kdtree->hi[1]); // random point 
+					p1[2] = mc.UniformDist(kdtree->lo[2],kdtree->hi[2]); // random point 
 					if (!InSourceVolume(p1))
 						continue;
 					mc.IsotropicDist(0, alpha, gamma);
@@ -271,9 +271,9 @@ struct TSource{
 					exit(-1);
 				}
 				
-				long double p2[3] = {p1[0], p1[1], geometry->geometry->lo[2]};
+				long double p2[3] = {p1[0], p1[1], geometry->kdtree->lo[2]};
 				list<TCollision> c;
-				if (geometry->geometry->Collision(p1,p2,c)){	// test if random point is inside solid
+				if (geometry->kdtree->Collision(p1,p2,c)){	// test if random point is inside solid
 					for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 						if (i->normal[2] > 0) count++; // count surfaces whose normals point to random point
 						else count--; // count surfaces whose normals point away from random point
@@ -303,9 +303,9 @@ struct TSource{
 				else if (sourcemode == "volume" || sourcemode == "surface"){
 					string sourcefile;
 					infile >> sourcefile;
-					sourcevolume = new KDTree;
-					sourcevolume->ReadFile(sourcefile.c_str(),0);
-					sourcevolume->Init();
+					kdtree = new KDTree;
+					kdtree->ReadFile(sourcefile.c_str(),0);
+					kdtree->Init();
 				}
 				if (sourcemode == "customsurf" || sourcemode == "surface")
 					infile >> E_normal;
@@ -313,7 +313,7 @@ struct TSource{
 			
 			if (sourcemode == "customsurf" || sourcemode == "surface"){
 				sourcearea = 0; // add triangles, whose vertices are all in the source volume, to sourcetris list
-				for (list<Triangle>::iterator i = geometry->geometry->alltris.begin(); i != geometry->geometry->alltris.end(); i++){
+				for (list<Triangle>::iterator i = geometry->kdtree->alltris.begin(); i != geometry->kdtree->alltris.end(); i++){
 					if (InSourceVolume(i->vertex[0]) && InSourceVolume(i->vertex[1]) && InSourceVolume(i->vertex[2])){
 						sourcetris.push_back(&*i);
 						long double n[3];
@@ -336,9 +336,9 @@ struct TSource{
 			}
 			else{ // shoot a ray to the bottom of the sourcevol bounding box and check for intersection with the sourcevol surface
 				long double p1[3] = {p[0], p[1], p[2]};
-				long double p2[3] = {p[0], p[1], sourcevolume->lo[2]}; 
+				long double p2[3] = {p[0], p[1], kdtree->lo[2]}; 
 				list<TCollision> c;
-				if (sourcevolume->Collision(p1,p2,c)){
+				if (kdtree->Collision(p1,p2,c)){
 					int count = 0;
 					for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 						if (i->normal[2] > 0) count++;  // surface normal pointing towards point?
