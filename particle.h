@@ -497,7 +497,7 @@ struct TParticle{
 		       	if(REFLECTLOG)
 					fprintf(REFLECTLOG, "%i %i %i %i %i "
 										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG %.10LG"
+										"%.10LG %.10LG %.10LG %.10LG "
 										"%.10LG %.10LG %.10LG\n",
 										jobnumber, particlenumber, protneut, 0, geom->solids[ID].kennz,
 										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
