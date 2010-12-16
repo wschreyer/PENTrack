@@ -1,7 +1,7 @@
 # config file for PENeLOPE Tracker program
 # put comments after #
 [global]
-# protneut: 1 => neutron, 2 => proton, 3 => Bfeld, 4 => cut through BField, 5 => enter particle interactively, 6 => electrons
+# protneut: 1 => neutron, 2 => proton, 3 => Bfeld, 4 => cut through BField, 5 => enter particle interactively, 6 => electrons, 7 => print geometry
 protneut 1
 # polarisation: 1 => low field seekers, 2 => high field seekers, 3 => no polarisation, 4 => dice (MC)
 polarisation 1

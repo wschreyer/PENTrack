@@ -21,6 +21,7 @@
 #define BF_CUT 4
 #define INTERACTIVE 5
 #define ELECTRON 6
+#define GEOMETRY 7
 
 #define POLARISATION_GOOD 1
 #define POLARISATION_BAD 2
