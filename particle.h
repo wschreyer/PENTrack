@@ -46,6 +46,7 @@ struct TParticle{
 			printf("Dice starting position for E_neutron = %LG neV ",NeutEnergie*1e9);
 			fflush(stdout);
 			long double normal[3];
+			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
 			for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
 				if (nroll % 1000000 == 0){
 					printf("."); // print progress
@@ -62,6 +63,7 @@ struct TParticle{
 				else if (nroll == MAX_DICE_ROLL){
 					kennz = KENNZAHL_INITIAL_NOT_FOUND;
 					printf(" ABORT: Failed %i times to find a compatible spot!! NO particle will be simulated!!\n\n", MAX_DICE_ROLL);
+					return;
 				}
 			}
 			switch (aprotneut){
@@ -76,12 +78,13 @@ struct TParticle{
 			long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
 			long double phi = atan2(ystart[1],ystart[0]);
 			
-			if (src.E_normal != 0){ // boost particle with directional energy
+			if (aprotneut == NEUTRON && src.E_normal != 0){ // boost particle with directional energy
 				long double v[3] = {sqrt(Estart)*cos(alphastart + phi)*sin(gammastart), sqrt(Estart)*sin(alphastart + phi)*sin(gammastart), sqrt(Estart)*cos(gammastart)};
 				for (int i = 0; i < 3; i++)
 					v[i] += sqrt(src.E_normal)*normal[i];									
 				alphastart = atan2(v[1],v[0]) - phi;
 				gammastart = acos(v[2]/sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]));
+				NeutEnergie = (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]) + m_n*gravconst*ystart[2] - polarisation*mu_nSI/ele_e*B[3][0];
 			}
 				
 			Init(aprotneut, number, xstart, mcgen.LifeTime(aprotneut), r, phi, ystart[2], 
