@@ -344,10 +344,10 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
     }
 	fprintf(endlog,"jobnumber teilchen protneut polarisation "
                    "tstart xstart ystart zstart "
-                   "vxstart vystart vzstart "
+                   "rstart phistart vstart alphastart gammastart "
                    "Hstart Estart NeutEnergie "
                    "tend xend yend zend "
-                   "vxend vyend vzend dt "
+                   "rend phiend vend alphaend gammaend dt "
                    "Hend Eend kennz NSF ComputingTime BFflipprob "
                    "AnzahlRefl vladmax vladtotal thumbmax trajlength "
                    "Hmax tauSF dtau\n");
@@ -360,10 +360,10 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 	    }
 		fprintf(snap,"jobnumber teilchen protneut polarisation "
 	                   "tstart xstart ystart zstart "
-	                   "vxstart vystart vzstart "
+	                   "rstart phistart vstart alphastart gammastart "
 	                   "Hstart Estart NeutEnergie "
 	                   "tend xend yend zend "
-	                   "vxend vyend vzend dt "
+	                   "rend phiend vend alphaend gammaend dt "
 	                   "Hend Eend kennz NSF ComputingTime BFflipprob "
 	                   "AnzahlRefl vladmax vladtotal thumbmax trajlength "
 	                   "Hmax tauSF dtau\n");
