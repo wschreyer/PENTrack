@@ -46,14 +46,13 @@ struct TParticle{
 			printf("Dice starting position for E_neutron = %LG neV ",NeutEnergie*1e9);
 			fflush(stdout);
 			long double normal[3];
-			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+			long double B[4][4];
 			for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
 				if (nroll % 1000000 == 0){
 					printf("."); // print progress
 					fflush(stdout);
 				}
 				src.RandomPointInSourceVolume(mcgen, ystart[0], ystart[1], ystart[2], alphastart, gammastart, normal);
-				long double B[4][4];
 				afield.BFeld(ystart[0], ystart[1], ystart[2], xstart, B);
 				Estart = NeutEnergie - m_n*gravconst*ystart[2] + polarisation*mu_nSI/ele_e*B[3][0];
 				if (Estart >= 0){
@@ -79,12 +78,19 @@ struct TParticle{
 			long double phi = atan2(ystart[1],ystart[0]);
 			
 			if (aprotneut == NEUTRON && src.E_normal != 0){ // boost particle with directional energy
-				long double v[3] = {sqrt(Estart)*cos(alphastart + phi)*sin(gammastart), sqrt(Estart)*sin(alphastart + phi)*sin(gammastart), sqrt(Estart)*cos(gammastart)};
+				long double vsenkr[3] = {sqrt(Estart)*cos(alphastart + phi)*sin(gammastart)*normal[0],
+										sqrt(Estart)*sin(alphastart + phi)*sin(gammastart)*normal[1],
+										sqrt(Estart)*cos(gammastart)*normal[2]};
+				long double veben[3] = {sqrt(Estart)*cos(alphastart + phi)*sin(gammastart) - vsenkr[0],
+										sqrt(Estart)*sin(alphastart + phi)*sin(gammastart) - vsenkr[1],
+										sqrt(Estart)*cos(gammastart) - vsenkr[2]};
+				long double v[3];
 				for (int i = 0; i < 3; i++)
-					v[i] += sqrt(src.E_normal)*normal[i];									
+					v[i] = sqrt(vsenkr[i]*vsenkr[i] + src.E_normal)*normal[i] + veben[i];									
+				Estart = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+				NeutEnergie = Estart + m_n*gravconst*ystart[2] - polarisation*mu_nSI/ele_e*B[3][0];
 				alphastart = atan2(v[1],v[0]) - phi;
 				gammastart = acos(v[2]/sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]));
-				NeutEnergie = (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]) + m_n*gravconst*ystart[2] - polarisation*mu_nSI/ele_e*B[3][0];
 			}
 				
 			Init(aprotneut, number, xstart, mcgen.LifeTime(aprotneut), r, phi, ystart[2], 
@@ -615,20 +621,20 @@ struct TParticle{
 			else if (polarisation == 1) pol = 2;
 
 			fprintf(file ,"%i %i %i %i "
-			               "%LG %.20LG %.20LG %.20LG "
-			               "%.20LG %.20LG %.20LG "
+			               "%.20LG %.20LG %.20LG %.20LG "
+			               "%.20LG %.20LG %.20LG %.20LG %.20LG "
 			               "%.20LG %.20LG %LG "
 			               "%.20LG %.20LG %.20LG %.20LG "
-			               "%LG %.20LG %.20LG %.20LG "
+			               "%.20LG %.20LG %.20LG %.20LG %.20LG %.20LG "
 			               "%.20LG %.20LG %i %i %LG %.20LG "
 			               "%i %.20LG %.20LG %.20LG %.20LG "
 			               "%.20LG %.20LG %.20LG\n",
 			               jobnumber, particlenumber, protneut, pol,
 			               xstart, ystart[0], ystart[1], ystart[2],
-			               ystart[3], ystart[4], ystart[5], 
+			               rstart, phistart, vstart, alphastart, gammastart, 
 			               Hstart, Estart, NeutEnergie*1.0e9,
 			               xstart + dt, yend[0], yend[1], yend[2],
-			               yend[3], yend[4], yend[5], dt,
+			               rend, phiend, vend, alphaend, gammaend, dt,
 			               Hend, Eend, kennz, NSF, comptime, 1 - BFsurvprob,
 			               nrefl, vladmax, vladtotal, thumbmax, trajlength,
 			               Hmax, tauSF, dtau);
