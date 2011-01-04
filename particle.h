@@ -172,10 +172,13 @@ struct TParticle{
 		};
 		
 		// integrate particle trajectory
-		void Integrate(TGeometry &geometry, TMCGenerator &mcgen, TField &afield, FILE *ENDLOG, FILE *trackfile, FILE *SNAP = NULL, set<int> *snapshots = NULL, FILE *REFLECTLOG = NULL){
+		void Integrate(TGeometry &geometry, TMCGenerator &mcgen, TField &afield, FILE *ENDLOG, FILE *trackfile, 
+						FILE *SNAP = NULL, set<int> *snapshots = NULL, int areflectlog = 0, FILE *aREFLECTLOG = NULL){
 			geom = &geometry;
 			mc = &mcgen;
 			field = &afield;
+			reflectlog = areflectlog;
+			REFLECTLOG = aREFLECTLOG;
 			timeval clock_start, clock_end, refl_start, refl_end;
 			gettimeofday(&clock_start, NULL); // start computing time measure
 			int snapshotsdone = 0, perc = 0;
@@ -223,7 +226,7 @@ struct TParticle{
 					}
 					
 					gettimeofday(&refl_start, NULL);
-					if (ReflectOrAbsorb(x1, y1, x2, y2, REFLECTLOG)){ // check for reflection or absorption between y1 and y2
+					if (ReflectOrAbsorb(x1, y1, x2, y2)){ // check for reflection or absorption between y1 and y2
 						x = x2;
 						y = y2;
 					}
@@ -318,6 +321,8 @@ struct TParticle{
 		TMCGenerator *mc;	
 		TField *field;	
 		StepperDopr853<TParticle> *stepper;
+		int reflectlog;
+		FILE *REFLECTLOG;
 
 		// set start values, called by every constructor
 		void Init(int aprotneut, int number, long double t, long double tend, long double r, long double phi, long double z,
@@ -409,7 +414,7 @@ struct TParticle{
 		};
 		
 		// check for reflection of absorption
-		bool ReflectOrAbsorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, FILE *REFLECTLOG){
+		bool ReflectOrAbsorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
 			if (!geom->CheckPoint(x1,&y1[0])){
 				kennz = KENNZAHL_HIT_BOUNDARIES;
 				return true;
@@ -423,7 +428,7 @@ struct TParticle{
 				VecDoub yp = y1;
 				for (unsigned int i = 0; i < colltimes.size(); i++){ // go through all collisions and check for absorption/reflection
 					if (Absorb(xp, yp, colltimes[i], collpoints[i]) 
-					|| Reflect(colltimes[i], collpoints[i], refls[i].normal, refls[i].ID, REFLECTLOG)){
+					|| Reflect(colltimes[i], collpoints[i], refls[i].normal, refls[i].ID)){
 						x2 = colltimes[i]; // if there was absorption/reflection set position of particle accordingly
 						y2 = collpoints[i];
 						return true;
@@ -473,7 +478,7 @@ struct TParticle{
 		};
 	
 		// reflect velocity according to particle type and hit material
-		bool Reflect(long double x1, VecDoub_IO &y1, long double normal[3], int ID, FILE *REFLECTLOG){
+		bool Reflect(long double x1, VecDoub_IO &y1, long double normal[3], int ID){
 			material *mat = &geom->solids[ID].mat; // get material		
 //			long double r = sqrt(y1[0]*y1[0] + y1[1]*y1[1]);
 //			Log("\nParticle hit %s (material %s) at t=%LG r=%LG z=%LG: ",solids[ID].name.c_str(),mat->name.c_str(),x1,r,y1[2]);
@@ -503,7 +508,7 @@ struct TParticle{
 					currentsolid = &defaultsolid;
 				else
 					currentsolid = &geom->solids[ID];
-		       	if(REFLECTLOG)
+		       	if(reflectlog & 2)
 					fprintf(REFLECTLOG, "%i %i %i %i %i "
 										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
 										"%.10LG %.10LG %.10LG %.10LG "
@@ -521,7 +526,7 @@ struct TParticle{
 			if ((geom->diffuse == 1) || ((geom->diffuse==3)&&(prob >= mat->DiffProb)))
 			{
 //		    	Log("Specular reflection! Erefl=%LG neV Transprop=%LG\n",Enormal*1e9,Trans);
-/*		       	if(REFLECTLOG)
+		       	if(reflectlog & 1)
 					fprintf(REFLECTLOG, "%i %i %i %i "
 										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
 										"%.10LG %.10LG %.10LG "
@@ -530,7 +535,7 @@ struct TParticle{
 										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
 										normal[0],normal[1],normal[2],
 										winkeben,winksenkr,Trans);
-*/				y1[3] -= 2*vnormal*normal[0]; // reflect velocity
+				y1[3] -= 2*vnormal*normal[0]; // reflect velocity
 				y1[4] -= 2*vnormal*normal[1];
 				y1[5] -= 2*vnormal*normal[2];
 			}
@@ -541,7 +546,7 @@ struct TParticle{
 				winkeben = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
 				winksenkr = mc->SinCosDist(0, 0.5*pi);
 				if (vnormal > 0) winksenkr += pi; // if normal points out of volume rotate by 180 degrees
-/*		       	if(REFLECTLOG)
+		       	if(reflectlog & 1)
 					fprintf(REFLECTLOG, "%i %i %i %i "
 										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
 										"%.10LG %.10LG %.10LG "
@@ -550,7 +555,7 @@ struct TParticle{
 										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
 										normal[0],normal[1],normal[2],
 										winkeben,winksenkr,Trans);
-*/				y1[3] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
+				y1[3] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
 				y1[4] = vabs*sin(winkeben)*cos(winksenkr);
 				y1[5] = vabs*sin(winksenkr);
 				RotateVector(&y1[3],normal); // rotate coordinate system so, that new z-axis lies on normal
