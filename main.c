@@ -181,7 +181,7 @@ int main(int argc, char **argv){
 		gettimeofday(&diceend, NULL);
 		DiceTime += diceend.tv_sec - dicestart.tv_sec + (float)(diceend.tv_usec - dicestart.tv_usec)/1e6;
 
-		particle->Integrate(geom, mc, field, endlog, tracklog, snap, &snapshots, reflectlog); // integrate particle trajectory
+		particle->Integrate(geom, mc, field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog); // integrate particle trajectory
 		kennz_counter[particle->protneut % 3][particle->kennz]++; // increase kennz-counter
 		ntotalsteps += particle->nsteps;
 		IntegratorTime += particle->comptime;
