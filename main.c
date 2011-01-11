@@ -38,6 +38,7 @@ set<int> snapshots;
 vector<int> kennz_counter[3];
 int diffuse = 1, reflekt[7] = {1, 1, 1, 1, 1, 1, 1};
 int polarisation = 1, decay = 2;
+int DiceEkin = 0;
 long double decayoffset = 0, tau_n = 885.7;
 int bfeldwahl = 0;
 long double BFeldSkalGlobal = 1.0, EFeldSkal = 1.0;
@@ -169,11 +170,11 @@ int main(int argc, char **argv){
 		gettimeofday(&dicestart, NULL);
 		switch(protneut)
 		{	
-			case NEUTRON:	particle = new TParticle(NEUTRON,iMC,source,mc,field);
+			case NEUTRON:	particle = new TParticle(NEUTRON,iMC,source,mc,field,DiceEkin);
 							break;		
-			case PROTON:	particle = new TParticle(PROTON,iMC,source,mc,field);
+			case PROTON:	particle = new TParticle(PROTON,iMC,source,mc,field,DiceEkin);
 							break;		
-			case ELECTRON:	particle = new TParticle(ELECTRON,iMC,source,mc,field);	
+			case ELECTRON:	particle = new TParticle(ELECTRON,iMC,source,mc,field,DiceEkin);	
 							break;
 			case INTERACTIVE: particle = new TParticle(iMC,field);
 							break;
@@ -279,6 +280,8 @@ void ConfigInit(void){
 	istringstream(config["global"]["BFeldSkalGlobal"])		>> BFeldSkalGlobal;
 	istringstream(config["global"]["EFeldSkal"])			>> EFeldSkal;
 	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
+	istringstream(config["global"]["DiceEkin"])				>> DiceEkin;
+	
 	
 	int snapshot;
 	istringstream(config["global"]["snapshot"])				>> snapshot;

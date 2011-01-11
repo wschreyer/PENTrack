@@ -39,7 +39,7 @@ struct TParticle{
 		};
 
 		// constructor, create particle, set start values randomly according to all3inone.in
-		TParticle(int aprotneut, int number, TSource &src, TMCGenerator &mcgen, TField &afield){
+		TParticle(int aprotneut, int number, TSource &src, TMCGenerator &mcgen, TField &afield, int DiceEkin){
 			xstart = mcgen.StartTime(aprotneut);
 			NeutEnergie = mcgen.NeutronSpectrum();
 			polarisation = mcgen.DicePolarisation();
@@ -54,7 +54,12 @@ struct TParticle{
 				}
 				src.RandomPointInSourceVolume(mcgen, ystart[0], ystart[1], ystart[2], alphastart, gammastart, normal);
 				afield.BFeld(ystart[0], ystart[1], ystart[2], xstart, B);
-				Estart = NeutEnergie - m_n*gravconst*ystart[2] + polarisation*mu_nSI/ele_e*B[3][0];
+				if (DiceEkin){
+					Estart = NeutEnergie;
+					NeutEnergie = Estart + m_n*gravconst*ystart[2] - polarisation*mu_nSI/ele_e*B[3][0];
+				}
+				else
+					Estart = NeutEnergie - m_n*gravconst*ystart[2] + polarisation*mu_nSI/ele_e*B[3][0];
 				if (Estart >= 0){
 					printf(" Found! %i dice(s) rolled\n", nroll+1);
 					break;
