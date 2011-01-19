@@ -81,13 +81,15 @@ struct TGeometry{
 		};
 		
 		// get all collisions of ray y1->y2 with surfaces
-		bool GetCollisions(const long double x1, const long double y1[6], const long double h, const long double y2[6], list<TCollision> &colls){
+		bool GetCollisions(const long double x1, const long double y1[6], const long double h, const long double y2[6], set<TCollision> &colls){
 			if (kdtree->Collision(y1,y2,colls)){ // search in the kdtree for collisions
-				for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
+				for (set<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
 					if (!solids[(*it).ID].ignoretimes.empty()){
 						long double x = x1 + (*it).s*h;
-						if (solids[(*it).ID].ignoretimes.count(ExpPhase(x)) > 0)
-							it = --colls.erase(it); // delete collision if it should be ignored according to geometry.in
+						if (solids[(*it).ID].ignoretimes.count(ExpPhase(x)) > 0){
+							colls.erase(it); // delete collision if it should be ignored according to geometry.in
+							it--;
+						}
 					}
 				}
 				if (!colls.empty())
@@ -168,7 +170,7 @@ struct TSource{
 		long double r_min, r_max, phi_min, phi_max, z_min, z_max; // for customvol/customsurf
 		long double E_normal, Emin_n;
 		
-		list<Triangle*> sourcetris;
+		vector<Triangle*> sourcetris;
 		long double sourcearea;
 		
 		TSource(const char *geometryin, TGeometry &geom, TField &field){
@@ -229,7 +231,7 @@ struct TSource{
 				else if (sourcemode == "surface" || sourcemode == "customsurf"){ // random point on a surface inside custom or STL volume
 					long double RandA = mc.UniformDist(0,sourcearea);
 					long double CurrA = 0, SumA = 0;
-					list<Triangle*>::iterator i;
+					vector<Triangle*>::iterator i;
 					for (i = sourcetris.begin(); i != sourcetris.end(); i++){
 						(*i)->CalcNormal(n);
 						CurrA = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
@@ -272,9 +274,9 @@ struct TSource{
 				}
 				
 				long double p2[3] = {p1[0], p1[1], geometry->kdtree->lo[2]};
-				list<TCollision> c;
+				set<TCollision> c;
 				if (geometry->kdtree->Collision(p1,p2,c)){	// test if random point is inside solid
-					for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+					for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 						if (i->normal[2] > 0) count++; // count surfaces whose normals point to random point
 						else count--; // count surfaces whose normals point away from random point
 					}
@@ -313,7 +315,7 @@ struct TSource{
 			
 			if (sourcemode == "customsurf" || sourcemode == "surface"){
 				sourcearea = 0; // add triangles, whose vertices are all in the source volume, to sourcetris list
-				for (list<Triangle>::iterator i = geometry->kdtree->alltris.begin(); i != geometry->kdtree->alltris.end(); i++){
+				for (vector<Triangle>::iterator i = geometry->kdtree->alltris.begin(); i != geometry->kdtree->alltris.end(); i++){
 					if (InSourceVolume(i->vertex[0]) && InSourceVolume(i->vertex[1]) && InSourceVolume(i->vertex[2])){
 						sourcetris.push_back(&*i);
 						long double n[3];
@@ -337,10 +339,10 @@ struct TSource{
 			else{ // shoot a ray to the bottom of the sourcevol bounding box and check for intersection with the sourcevol surface
 				long double p1[3] = {p[0], p[1], p[2]};
 				long double p2[3] = {p[0], p[1], kdtree->lo[2]}; 
-				list<TCollision> c;
+				set<TCollision> c;
 				if (kdtree->Collision(p1,p2,c)){
 					int count = 0;
-					for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+					for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 						if (i->normal[2] > 0) count++;  // surface normal pointing towards point?
 						else count--;					// or away from point?
 					}
