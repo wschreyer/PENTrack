@@ -41,6 +41,8 @@ struct TMCGenerator{
 		monthinmilliseconds = monthinmilliseconds + (unsigned long int)(monthday->tm_sec)*1000;  // add second in ms	
 		gettimeofday(&daysec, NULL);
 		monthinmilliseconds = monthinmilliseconds + daysec.tv_usec/1000; // add milliseconds
+		
+		printf("Random Seed: %lu\n", monthinmilliseconds);
 	
 		mt_set (&v_mt_state, monthinmilliseconds);
 		
@@ -181,9 +183,19 @@ struct TMCGenerator{
 		}
 	};
 	
-	// square root energy distribution of UCNs
+	// energy distribution of UCNs
 	long double NeutronSpectrum(){
 		return SqrtDist(nini.EnergieS*1e-9, nini.EnergieE*1e-9);
+/*		
+		//neutron energy spectrum by Gerd Petzoldt
+		long double x,y,cutoff = 900,decay = 0.05;
+		for(;;){
+			x = UniformDist(nini.EnergieS, nini.EnergieE);
+			y = UniformDist(0,cutoff);
+			if (x <= cutoff && y <= x) return (x+100)*1e-9; // linear spectrum until cutoff
+			else if (x > cutoff && y < cutoff*exp(-decay*(x - cutoff))) return (x+100)*1e-9; // epxonential decay after cutoff
+		}
+*/		
 		/*
 		// neutron energy distribution for AbEx@ILL
 		long double p1 = -77.6138, p2 = -1.34704, p3 = 0.00739579, p4 = 0.00012494, p5 = -1.88103e-6 , p6 = 8.52798e-9;

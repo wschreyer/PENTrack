@@ -62,7 +62,7 @@ bool Triangle::intersect(const long double p1[3], const long double p2[3], long 
     CrossProduct(v,w,normal);
 
     long double un = DotProduct(u,normal);
-    if (un == 0)   // direction vector parallel to triangle plane?
+    if (abs(un) == 0)   // direction vector parallel to triangle plane?
         return false;
     long double x[3] = {p1[0] - vertex[0][0], p1[1] - vertex[0][1], p1[2] - vertex[0][2]};   // vector from first vertex to first segment point
     s = -DotProduct(x,normal) / un;  // parametric coordinate of intersection point (i = p1 + s*u)
@@ -246,8 +246,8 @@ void KDTree::KDNode::Split(){
         newlo[splitdir] = lo[splitdir];
         lochild = new KDNode(newlo,newhi,newdepth,this);
 
-        list<Triangle*> lotris, hitris;
-        list<Triangle*>::iterator i;
+        vector<Triangle*> lotris, hitris;
+        vector<Triangle*>::iterator i;
         for (i = tris.begin(); i != tris.end(); i++){
             bool inhi = hichild->TriangleInBox(*i);
             bool inlo = lochild->TriangleInBox(*i);
@@ -286,11 +286,11 @@ void KDTree::KDNode::Split(){
 }
 
 // test all triangles in this node and his leaves for intersection with segment p1->p2
-bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2[3], list<TCollision> &colls){
+bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2[3], set<TCollision> &colls){
     if (tricount == 0) return false;
     bool result = false;
     long double s_loc;
-    for (list<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
+    for (vector<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
         if ((*i)->intersect(p1,p2,s_loc)){
             long double normal[3];
             (*i)->CalcNormal(normal);
@@ -302,7 +302,7 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
         	c.normal[2] = normal[2]/n;
         	c.ID = (*i)->ID;
         	c.tri = *i;
-        	colls.push_back(c);
+        	colls.insert(c);
         	result = true;
         }
     }
@@ -317,7 +317,7 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
 }
 
 // find smallest box which contains segment and call TestCollision there
-bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls){
+bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, set<TCollision> &colls){
     colls.clear();
     if (hichild && hichild->PointInBox(p1) && hichild->PointInBox(p2))    // if both segment points are contained in the first leave, test collision there
         return hichild->Collision(p1,p2,lastnode,colls);
@@ -406,7 +406,7 @@ void KDTree::Init(){
 
 	printf("Building KD-tree ... ");
 	fflush(stdout);
-    for (list<Triangle>::iterator it = alltris.begin(); it != alltris.end(); it++)
+    for (vector<Triangle>::iterator it = alltris.begin(); it != alltris.end(); it++)
         root->AddTriangle(&(*it)); // add triangles to root node
     root->Split();  // split root node
     printf("Wrote %u triangles in %u nodes (%u empty)\n\n",facecount,nodecount,emptynodecount);   // print number of triangles contained in tree
@@ -414,15 +414,9 @@ void KDTree::Init(){
 }
 
 // test segment p1->p2 for collision with a triangle and return a list of all found collisions
-bool KDTree::Collision(const long double p1[3], const long double p2[3], list<TCollision> &colls){
+bool KDTree::Collision(const long double p1[3], const long double p2[3], set<TCollision> &colls){
     if (!root) return false; // stop if Init was not called yet
     if (!lastnode) lastnode = root; // start search in last tested node, when last node is not known start in root node
-    if (lastnode->Collision(p1,p2,lastnode,colls)){
-    	colls.sort();
-    	colls.unique();
-    	return true;
-    }
-    else return false;
-
+    return lastnode->Collision(p1,p2,lastnode,colls);
 }
 
