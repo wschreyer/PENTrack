@@ -201,7 +201,7 @@ struct TParticle{
 				PrintIntegrationStep(trackfile, x, y, h); // print start into track file
 			long double lastsave = x;
 			// create integrator class (stepperdopr853 = 8th order Runge Kutta)
-			stepper = new StepperDopr853<TParticle>(y, dydx, x, 0, 1e-13, true);// y, dydx, x, atol, rtol, dense output			
+			stepper = new StepperDopr853<TParticle>(y, dydx, x, 0, 1e-13, true);// y, dydx, x, atol, rtol, dense output
 			
 			while (kennz == KENNZAHL_UNKNOWN){ // integrate as long as nothing happened to particle
 				x1 = x; // save point before next step
@@ -231,7 +231,7 @@ struct TParticle{
 					}
 					
 					gettimeofday(&refl_start, NULL);
-					if (ReflectOrAbsorb(x1, y1, x2, y2)){ // check for reflection or absorption between y1 and y2
+					if (ReflectOrAbsorb(x1, y1, x2, y2, 0)){ // check for reflection or absorption between y1 and y2
 						x = x2;
 						y = y2;
 					}
@@ -267,8 +267,8 @@ struct TParticle{
 							polarisation *= -1;
 							NSF++;
 							printf("\n The spin has flipped! Number of flips: %i\n",NSF);
-							y = y2;
 							x = x2;
+							y = y2;
 						}
 					
 						// take snapshots of neutrons at certain times
@@ -418,72 +418,54 @@ struct TParticle{
 			}
 		};
 		
-		// check for reflection of absorption
-		bool ReflectOrAbsorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
+		// check for reflection or absorption
+		bool ReflectOrAbsorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, int iteration){
 			if (!geom->CheckPoint(x1,&y1[0])){
 				kennz = KENNZAHL_HIT_BOUNDARIES;
 				return true;
 			}
-			vector<long double> colltimes;
-			vector<VecDoub> collpoints;
-			vector<TCollision> refls;
-			GetReflection(x1, y1, x2, y2, colltimes, collpoints, refls, 0); // get collisions of particle with walls
-			if (colltimes.size() > 0){ // if there was a collision
-				long double xp = x1;
-				VecDoub yp = y1;
-				for (unsigned int i = 0; i < colltimes.size(); i++){ // go through all collisions and check for absorption/reflection
-					if (Absorb(xp, yp, colltimes[i], collpoints[i]) 
-					|| Reflect(colltimes[i], collpoints[i], refls[i].normal, refls[i].ID)){
-						x2 = colltimes[i]; // if there was absorption/reflection set position of particle accordingly
-						y2 = collpoints[i];
-						return true;
-					}
-					xp = colltimes[i];
-					yp = collpoints[i];
-				}
-				return Absorb(xp, yp, x2, y2); // check for absorption between last collision and integration point
-			}
-			else
-				return Absorb(x1, y1, x2, y2); // if there was no reflection just check for absorption
-		};
-	
-		// get all collisions between y1 and y2
-		void GetReflection(long double x1, VecDoub_I &y1, long double x2, VecDoub_IO &y2,
-							vector<long double> &colltimes, vector<VecDoub> &collpoints, vector<TCollision> &refls, int iteration){
-			list<TCollision> colls;
+			set<TCollision> colls;
 			if (geom->GetCollisions(x1, &y1[0], stepper->hdid, &y2[0], colls)){	// if there is a collision with a wall
-				TCollision coll = colls.front();
+				TCollision coll = *colls.begin();
 				long double u[3] = {y2[0] - y1[0], y2[1] - y1[1], y2[2] - y1[2]};
 				long double distnormal = u[0]*coll.normal[0] + u[1]*coll.normal[1] + u[2]*coll.normal[2];
-				// if there is only one collision which is closer to y1 than REFLECT_TOLERANCE: add point to collision list
+				// if there is only one collision which is closer to y1 than REFLECT_TOLERANCE: reflect
 				if ((colls.size() == 1 && coll.s*abs(distnormal) < REFLECT_TOLERANCE) || iteration > 99){
-					colltimes.push_back(x1);
-					collpoints.push_back(y1);
-					refls.push_back(coll);
-//					if (colls.size() > 1) printf("Reflection from two surfaces at once!");
+					if (colls.size() > 1) printf("Reflection from two surfaces at once!");
+					if (Reflect(x1, y1, x2, y2, coll.normal, coll.ID)){
+						return true;
+					}
+					else if (Absorb(x1, y1, x2, y2)) return true;
 				}
 				else{ // else cut integration step right before collision points and call GetReflection again for each smaller step (quite similar to bisection algorithm)
 					long double xbisect1 = x1;
 					long double xbisect2 = x2;
 					VecDoub ybisect1 = y1, ybisect2(6);
-					for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through collisions
+					for (set<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through collisions
 						long double v1 = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 						long double v2 = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
 						long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]);
-						xbisect2 = x1 + dist/(v1 + 0.5*(v2 - v1)*it->s)*it->s*(1 - 0.01*iteration); // cut integration step at this time
+						xbisect2 = x1 + dist/(0.5*(v2 + v1)*it->s)*it->s*(1 - 0.01*iteration); // cut integration step at this time
 						for (int i = 0; i < 6; i++)
 							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
-						GetReflection(xbisect1, ybisect1, xbisect2, ybisect2, colltimes, collpoints, refls, iteration+1); // recursive call for each smaller step
+						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for each smaller step
+							x2 = xbisect2;
+							y2 = ybisect2;
+							return true;
+						}
 						xbisect1 = xbisect2;
 						ybisect1 = ybisect2;
 					}
-					GetReflection(xbisect2, ybisect2, x2, y2, colltimes, collpoints, refls, iteration+1); // recursive call for last small step
+					if (ReflectOrAbsorb(xbisect2, ybisect2, x2, y2, iteration+1)) // recursive call for last small step
+						return true;
 				}
-			}		
+			}
+			else return (Absorb(x1, y1, x2, y2));
+			return false;
 		};
 	
 		// reflect velocity according to particle type and hit material
-		bool Reflect(long double x1, VecDoub_IO &y1, long double normal[3], int ID){
+		bool Reflect(long double x1, VecDoub_I &y1, long double x2, VecDoub_IO &y2, long double normal[3], unsigned ID){
 			material *mat = &geom->solids[ID].mat; // get material		
 //			long double r = sqrt(y1[0]*y1[0] + y1[1]*y1[1]);
 //			Log("\nParticle hit %s (material %s) at t=%LG r=%LG z=%LG: ",solids[ID].name.c_str(),mat->name.c_str(),x1,r,y1[2]);
@@ -499,6 +481,11 @@ struct TParticle{
 		
 			long double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 			long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+			if (vnormal > 0 && currentsolid == &defaultsolid){
+				printf("Particle inside solid without being transmitted through surface first! Stopping it!\n");
+				kennz = KENNZAHL_NRERROR;
+				return true;
+			}
 			long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 			long double winkeben = 0, winksenkr = 0;
 			
@@ -532,17 +519,18 @@ struct TParticle{
 			{
 //		    	Log("Specular reflection! Erefl=%LG neV Transprop=%LG\n",Enormal*1e9,Trans);
 		       	if(reflectlog & 1)
-					fprintf(REFLECTLOG, "%i %i %i %i "
+					fprintf(REFLECTLOG, "%i %i %i %i %i "
 										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG "
+										"%.10LG %.10LG %.10LG %.10LG "
 										"%.10LG %.10LG %.10LG\n",
-										particlenumber, protneut, 1, geom->solids[ID].kennz,
+										jobnumber, particlenumber, protneut, 0, geom->solids[ID].kennz,
 										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
-										normal[0],normal[1],normal[2],
+										normal[0],normal[1],normal[2],0.5*m_n*vabs*vabs,
 										winkeben,winksenkr,Trans);
-				y1[3] -= 2*vnormal*normal[0]; // reflect velocity
-				y1[4] -= 2*vnormal*normal[1];
-				y1[5] -= 2*vnormal*normal[2];
+		       	y2 = y1;
+				y2[3] -= 2*vnormal*normal[0]; // reflect velocity
+				y2[4] -= 2*vnormal*normal[1];
+				y2[5] -= 2*vnormal*normal[2];
 			}
 			
 			//************** diffuse reflection ************
@@ -552,18 +540,19 @@ struct TParticle{
 				winksenkr = mc->SinCosDist(0, 0.5*pi);
 				if (vnormal > 0) winksenkr += pi; // if normal points out of volume rotate by 180 degrees
 		       	if(reflectlog & 1)
-					fprintf(REFLECTLOG, "%i %i %i %i "
+					fprintf(REFLECTLOG, "%i %i %i %i %i "
 										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG "
+										"%.10LG %.10LG %.10LG %.10LG "
 										"%.10LG %.10LG %.10LG\n",
-										particlenumber, protneut, 1, geom->solids[ID].kennz,
+										jobnumber, particlenumber, protneut, 0, geom->solids[ID].kennz,
 										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
-										normal[0],normal[1],normal[2],
+										normal[0],normal[1],normal[2],0.5*m_n*vabs*vabs,
 										winkeben,winksenkr,Trans);
-				y1[3] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
-				y1[4] = vabs*sin(winkeben)*cos(winksenkr);
-				y1[5] = vabs*sin(winksenkr);
-				RotateVector(&y1[3],normal); // rotate coordinate system so, that new z-axis lies on normal
+				y2 = y1;
+		       	y2[3] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
+				y2[4] = vabs*sin(winkeben)*cos(winksenkr);
+				y2[5] = vabs*sin(winksenkr);
+				RotateVector(&y2[3],normal); // rotate coordinate system so, that new z-axis lies on normal
 //		       	Log("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG Transprop=%LG\n",Enormal*1e9,winkeben/conv,winksenkr/conv,Trans);
 			}	
 			return true;
@@ -577,6 +566,7 @@ struct TParticle{
 				long double E = 0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5])*1e9;
 				if (mc->UniformDist(0,1) < Absorption(E, currentsolid->mat.FermiReal, currentsolid->mat.FermiImag, l)){
 					long double s = mc->UniformDist(0,l)/v;
+					x2 = x1 + s*(x2 - x1);
 					for (int i = 0; i < 6; i++)
 						y2[i] = stepper->dense_out(i, x1 + s*(x2 - x1), stepper->hdid);
 					printf("Absorption in %s (material %s)!\n",currentsolid->name.c_str(), currentsolid->mat.name.c_str());
@@ -585,6 +575,7 @@ struct TParticle{
 				}
 			}
 			else if (currentsolid != &defaultsolid){
+				x2 = x1;
 				y2 = y1;
 				kennz = currentsolid->kennz;
 				return true;

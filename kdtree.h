@@ -18,7 +18,7 @@
 *****************************************************************/
 
 #include <cmath>
-#include <list>
+#include <vector>
 #include <set>
 
 using namespace std;
@@ -36,8 +36,8 @@ struct TCollision{
 	long double s, normal[3]; // parametric coordinate of intersection point, normal and area of intersected surface
 	unsigned ID;	// ID of intersected surface
 	Triangle *tri;	// pointer to intersected triangle
-	bool operator < (TCollision c){ return s < c.s; };	// overloaded operator, needed for sorting
-	bool operator == (TCollision c){ return c.tri == tri; };	// overloaded operator, needed for unique()
+	inline bool operator < (const TCollision c) const { return s < c.s; };	// overloaded operator, needed for sorting
+	inline bool operator == (const TCollision c) const { return c.tri == tri; };	// overloaded operator, to avoid double reflection
 };
 
 // root of kd-Tree
@@ -47,9 +47,9 @@ class KDTree{
         struct TVertex{
             float vertex[3];
             inline bool operator == (const TVertex v) const { 
-            	return  abs(vertex[0] - v.vertex[0]) <= 0 && 
-            			abs(vertex[1] - v.vertex[1]) <= 0 && 
-            			abs(vertex[2] - v.vertex[2]) <= 0; 
+            	return  abs(vertex[0] - v.vertex[0]) <= 1e-10 &&
+            			abs(vertex[1] - v.vertex[1]) <= 1e-10 &&
+            			abs(vertex[2] - v.vertex[2]) <= 1e-10;
             };
         	inline bool operator < (const TVertex v) const { return !(*this == v); };
         };
@@ -61,16 +61,16 @@ class KDTree{
                 float lo[3], hi[3]; // node box defined by the three highest and three lowest coordinates
                 short splitdir, depth; // direction in which this node will be split to form new leaves (0 = x, 1 = y, 2 = z), depth of this node
                 unsigned tricount;  // count of stored triangles
-                list<Triangle*> tris;   // list of triangles in this box
+                vector<Triangle*> tris;   // list of triangles in this box
                 template <typename coord> bool SegmentInBox(const coord p1[3], const coord p2[3]);    // test if segment p1->p2 cuts through box
                 bool TriangleInBox(Triangle *tri); // test if triangle cuts through box
-                bool TestCollision(const long double p1[3], const long double p2[3], list<TCollision> &colls); // test all triangles for intersection in this tree and his leaves
+                bool TestCollision(const long double p1[3], const long double p2[3], set<TCollision> &colls); // test all triangles for intersection in this tree and his leaves
             public:
                 KDNode(const float boxlo[3], const float boxhi[3], const int depth, KDNode *aparent); // constructor
                 ~KDNode();  // destructor
                 void AddTriangle(Triangle *tri);    // add triangle to node
                 void Split();   // split node in two leaves
-                bool Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls);  // find the smallest box which contains the segment p1->p2 and call TestCollision there
+                bool Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, set<TCollision> &colls);  // find the smallest box which contains the segment p1->p2 and call TestCollision there
                 template <typename coord> bool PointInBox(const coord p[3]) {
                 	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) && (p[1] <= hi[1]) && (p[1] >= lo[1]) && (p[2] <= hi[2]) && (p[2] >= lo[2]));
                 } // test if point is inside box
@@ -80,12 +80,12 @@ class KDTree{
         KDNode *root;   // root node
         KDNode *lastnode;    // remember last collision-tested node to speed up search when segments are adjacent
     public:
-        KDTree();   // constructor, parameter: see FLog above
+        KDTree();   // constructor
         ~KDTree();  // destructor
         float lo[3],hi[3];    // bounding box of root node
-        list<Triangle> alltris; // list of all triangles in the tree
+        vector<Triangle> alltris; // list of all triangles in the tree
         void ReadFile(const char *filename, const unsigned ID, char name[80] = NULL);    // read STL-file
         void Init();    // create KD-tree
-        bool Collision(const long double p1[3], const long double p2[3], list<TCollision> &colls);  // test segment p1->p2 for collision with triangle
+        bool Collision(const long double p1[3], const long double p2[3], set<TCollision> &colls);  // test segment p1->p2 for collision with triangle
         bool PointInBox(const long double p[3]){ return (root && root->PointInBox(p)); };  // test if point is inside root node
 };

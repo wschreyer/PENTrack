@@ -517,7 +517,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
     unsigned count = 1000000, collcount = 0, raylength = 1;
     ofstream f(outfile);
     f << "x y z" << endl;
-    list<TCollision> c;
+    set<TCollision> c;
     srand(time(NULL));
     float timer = clock(), colltimer = 0;
     for (unsigned i = 0; i < count; i++){
@@ -535,7 +535,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 		gettimeofday(&collend,NULL);
 		colltimer += (collend.tv_sec - collstart.tv_sec)*1e6+collend.tv_usec - collstart.tv_usec;
 			collcount++;
-			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+			for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << endl;
 			}
 		}

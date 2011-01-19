@@ -2,7 +2,7 @@
 #define FIELDS_H_
 
 
-#include <list>
+#include <vector>
 #include <string>
 
 #include "2dinterpolfeld.h"
@@ -12,8 +12,8 @@ using namespace std;
 
 struct TField{
 	public:
-		list<TabField*> fields;
-		list<TRacetrack*> racetracks;
+		vector<TabField*> fields;
+		vector<TRacetrack*> racetracks;
 		int bfeldwahl;
 		long double BFeldSkalGlobal, EFeldSkal;
 		// incorporate B-fieldoszillations into the code
@@ -69,9 +69,9 @@ struct TField{
 		};
 		
 		~TField(){
-			for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++)
+			for (vector<TabField*>::iterator i = fields.begin(); i != fields.end(); i++)
 				delete (*i);	
-			for (list<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
+			for (vector<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
 				delete (*i);	
 		};
 	
@@ -92,7 +92,7 @@ struct TField{
 				switch (bfeldwahl)
 				{				
 					case 0:	if (BFeldSkal != 0){
-								for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){
+								for (vector<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){
 									if ((*i)->BInterpol(x, y, z, B))
 										break;
 		/*							else if (++i == fields.end())
@@ -130,7 +130,7 @@ struct TField{
 		void EFeld(long double x, long double y, long double z, long double &V, long double Ei[3]){
 			Ei[0] = Ei[1] = Ei[2] = V = 0;
 			if (EFeldSkal != 0 && (bfeldwahl == 0 || bfeldwahl == 2)){
-				for (list<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){ 
+				for (vector<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){
 					if ((*i)->EInterpol(x, y, z, V, Ei))
 						break;
 		/*			else if (++i == fields.end())
@@ -254,7 +254,7 @@ struct TField{
 		};	
 		
 		void RacetrackField(long double x, long double y, long double z, long double B[4][4]){
-			for (list<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
+			for (vector<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
 				(*i)->BFeld(x,y,z,B);
 		};
 
