@@ -39,27 +39,27 @@ struct TParticle{
 		};
 
 		// constructor, create particle, set start values randomly according to all3inone.in
-		TParticle(int aprotneut, int number, TSource &src, TMCGenerator &mcgen, TField &afield, int DiceEkin){
+		TParticle(int aprotneut, int number, TSource &src, TMCGenerator &mcgen, TField &afield){
 			xstart = mcgen.StartTime(aprotneut);
 			NeutEnergie = mcgen.NeutronSpectrum();
 			polarisation = mcgen.DicePolarisation();
 			printf("Dice starting position for E_neutron = %LG neV ",NeutEnergie*1e9);
 			fflush(stdout);
-			long double normal[3];
 			long double B[4][4];
 			for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
 				if (nroll % 1000000 == 0){
 					printf("."); // print progress
 					fflush(stdout);
 				}
-				src.RandomPointInSourceVolume(mcgen, ystart[0], ystart[1], ystart[2], alphastart, gammastart, normal);
+
+				src.RandomPointInSourceVolume(mcgen, xstart, NeutEnergie, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
 				afield.BFeld(ystart[0], ystart[1], ystart[2], xstart, B);
-				if (DiceEkin){
+				if (src.sourcemode == "volume" || src.sourcemode == "customvol")
+					Estart = NeutEnergie - m_n*gravconst*ystart[2] + polarisation*mu_nSI/ele_e*B[3][0];
+				else{
 					Estart = NeutEnergie;
 					NeutEnergie = Estart + m_n*gravconst*ystart[2] - polarisation*mu_nSI/ele_e*B[3][0];
 				}
-				else
-					Estart = NeutEnergie - m_n*gravconst*ystart[2] + polarisation*mu_nSI/ele_e*B[3][0];
 				if (Estart >= 0){
 					printf(" Found! %i dice(s) rolled\n", nroll+1);
 					break;
@@ -82,22 +82,6 @@ struct TParticle{
 			long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
 			long double phi = atan2(ystart[1],ystart[0]);
 			
-			if (aprotneut == NEUTRON && src.E_normal != 0){ // boost particle with directional energy
-				long double vsenkr[3] = {sqrt(Estart)*cos(alphastart + phi)*sin(gammastart)*normal[0],
-										sqrt(Estart)*sin(alphastart + phi)*sin(gammastart)*normal[1],
-										sqrt(Estart)*cos(gammastart)*normal[2]};
-				long double veben[3] = {sqrt(Estart)*cos(alphastart + phi)*sin(gammastart) - vsenkr[0],
-										sqrt(Estart)*sin(alphastart + phi)*sin(gammastart) - vsenkr[1],
-										sqrt(Estart)*cos(gammastart) - vsenkr[2]};
-				long double v[3];
-				for (int i = 0; i < 3; i++)
-					v[i] = sqrt(vsenkr[i]*vsenkr[i] + src.E_normal)*normal[i] + veben[i];									
-				Estart = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-				NeutEnergie = Estart + m_n*gravconst*ystart[2] - polarisation*mu_nSI/ele_e*B[3][0];
-				alphastart = atan2(v[1],v[0]) - phi;
-				gammastart = acos(v[2]/sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]));
-			}
-				
 			Init(aprotneut, number, xstart, mcgen.LifeTime(aprotneut), r, phi, ystart[2], 
 				Estart, alphastart, gammastart, NeutEnergie, polarisation, afield);
 		};
@@ -189,7 +173,7 @@ struct TParticle{
 			int snapshotsdone = 0, perc = 0;
 			printf("\nTeilchennummer: %i, Teilchensorte: %i\n",particlenumber,protneut);
 			printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG l: %LG\n",
-				rstart, phistart/conv, ystart[2], vstart, alphastart/conv,gammastart/conv, Hstart, xend, mc->MaxTrajLength(protneut));
+				rstart, phistart/conv, ystart[2], vstart, alphastart/conv,gammastart/conv, Estart, xend, mc->MaxTrajLength(protneut));
 		
 			// set initial values for integrator
 			long double x = xstart, x1, x2;
@@ -231,7 +215,7 @@ struct TParticle{
 					}
 					
 					gettimeofday(&refl_start, NULL);
-					if (ReflectOrAbsorb(x1, y1, x2, y2, 0)){ // check for reflection or absorption between y1 and y2
+					if (ReflectOrAbsorb(x1, y1, x2, y2)){ // check for reflection or absorption between y1 and y2
 						x = x2;
 						y = y2;
 					}
@@ -317,7 +301,7 @@ struct TParticle{
 			SetEndValues(x,y,B,E,V);
 			Print(ENDLOG);
 			printf("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG l: %LG\n",
-				(1 - BFsurvprob), rend, yend[2], Hend, kennz, dt, trajlength);		
+				(1 - BFsurvprob), rend, yend[2], Eend, kennz, dt, trajlength);
 		};
 	
 	private:
@@ -419,33 +403,31 @@ struct TParticle{
 		};
 		
 		// check for reflection or absorption
-		bool ReflectOrAbsorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, int iteration){
+		bool ReflectOrAbsorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, int iteration = 1){
 			if (!geom->CheckPoint(x1,&y1[0])){
 				kennz = KENNZAHL_HIT_BOUNDARIES;
 				return true;
 			}
-			set<TCollision> colls;
+			list<TCollision> colls;
 			if (geom->GetCollisions(x1, &y1[0], stepper->hdid, &y2[0], colls)){	// if there is a collision with a wall
 				TCollision coll = *colls.begin();
 				long double u[3] = {y2[0] - y1[0], y2[1] - y1[1], y2[2] - y1[2]};
 				long double distnormal = u[0]*coll.normal[0] + u[1]*coll.normal[1] + u[2]*coll.normal[2];
 				// if there is only one collision which is closer to y1 than REFLECT_TOLERANCE: reflect
 				if ((colls.size() == 1 && coll.s*abs(distnormal) < REFLECT_TOLERANCE) || iteration > 99){
-					if (colls.size() > 1) printf("Reflection from two surfaces at once!");
-					if (Reflect(x1, y1, x2, y2, coll.normal, coll.ID)){
-						return true;
-					}
+					if (colls.size() > 1) printf("Reflection from two surfaces (%s & %s) at once!", geom->solids[coll.ID].name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
+					if (Reflect(x1, y1, x2, y2, coll.normal, coll.ID)) return true;
 					else if (Absorb(x1, y1, x2, y2)) return true;
 				}
 				else{ // else cut integration step right before collision points and call GetReflection again for each smaller step (quite similar to bisection algorithm)
 					long double xbisect1 = x1;
 					long double xbisect2 = x2;
 					VecDoub ybisect1 = y1, ybisect2(6);
-					for (set<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through collisions
+					for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through collisions
 						long double v1 = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 						long double v2 = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
 						long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]);
-						xbisect2 = x1 + dist/(0.5*(v2 + v1)*it->s)*it->s*(1 - 0.01*iteration); // cut integration step at this time
+						xbisect2 = x1 + dist/(v1 + 0.5*(v2 - v1)*it->s)*it->s*(1 - 0.01*iteration); // cut integration step at this time
 						for (int i = 0; i < 6; i++)
 							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
 						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for each smaller step
@@ -549,9 +531,9 @@ struct TParticle{
 										normal[0],normal[1],normal[2],0.5*m_n*vabs*vabs,
 										winkeben,winksenkr,Trans);
 				y2 = y1;
-		       	y2[3] = vabs*cos(winkeben)*cos(winksenkr);	// new velocity with respect to z-axis
-				y2[4] = vabs*sin(winkeben)*cos(winksenkr);
-				y2[5] = vabs*sin(winksenkr);
+		       	y2[3] = vabs*cos(winkeben)*sin(winksenkr);	// new velocity with respect to z-axis
+				y2[4] = vabs*sin(winkeben)*sin(winksenkr);
+				y2[5] = vabs*cos(winksenkr);
 				RotateVector(&y2[3],normal); // rotate coordinate system so, that new z-axis lies on normal
 //		       	Log("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG Transprop=%LG\n",Enormal*1e9,winkeben/conv,winksenkr/conv,Trans);
 			}	

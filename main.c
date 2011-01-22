@@ -38,7 +38,6 @@ set<int> snapshots;
 vector<int> kennz_counter[3];
 int diffuse = 1, reflekt[7] = {1, 1, 1, 1, 1, 1, 1};
 int polarisation = 1, decay = 2;
-int DiceEkin = 0;
 long double decayoffset = 0, tau_n = 885.7;
 int bfeldwahl = 0;
 long double BFeldSkalGlobal = 1.0, EFeldSkal = 1.0;
@@ -170,11 +169,11 @@ int main(int argc, char **argv){
 		gettimeofday(&dicestart, NULL);
 		switch(protneut)
 		{	
-			case NEUTRON:	particle = new TParticle(NEUTRON,iMC,source,mc,field,DiceEkin);
+			case NEUTRON:	particle = new TParticle(NEUTRON,iMC,source,mc,field);
 							break;		
-			case PROTON:	particle = new TParticle(PROTON,iMC,source,mc,field,DiceEkin);
+			case PROTON:	particle = new TParticle(PROTON,iMC,source,mc,field);
 							break;		
-			case ELECTRON:	particle = new TParticle(ELECTRON,iMC,source,mc,field,DiceEkin);	
+			case ELECTRON:	particle = new TParticle(ELECTRON,iMC,source,mc,field);
 							break;
 			case INTERACTIVE: particle = new TParticle(iMC,field);
 							break;
@@ -280,8 +279,6 @@ void ConfigInit(void){
 	istringstream(config["global"]["BFeldSkalGlobal"])		>> BFeldSkalGlobal;
 	istringstream(config["global"]["EFeldSkal"])			>> EFeldSkal;
 	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
-	istringstream(config["global"]["DiceEkin"])				>> DiceEkin;
-	
 	
 	int snapshot;
 	istringstream(config["global"]["snapshot"])				>> snapshot;
@@ -517,7 +514,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
     unsigned count = 1000000, collcount = 0, raylength = 1;
     ofstream f(outfile);
     f << "x y z" << endl;
-    set<TCollision> c;
+    list<TCollision> c;
     srand(time(NULL));
     float timer = clock(), colltimer = 0;
     for (unsigned i = 0; i < count; i++){
@@ -535,7 +532,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 		gettimeofday(&collend,NULL);
 		colltimer += (collend.tv_sec - collstart.tv_sec)*1e6+collend.tv_usec - collstart.tv_usec;
 			collcount++;
-			for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << endl;
 			}
 		}
