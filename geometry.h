@@ -81,15 +81,13 @@ struct TGeometry{
 		};
 		
 		// get all collisions of ray y1->y2 with surfaces
-		bool GetCollisions(const long double x1, const long double y1[6], const long double h, const long double y2[6], set<TCollision> &colls){
-			if (kdtree->Collision(y1,y2,colls)){ // search in the kdtree for collisions
-				for (set<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
+		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], list<TCollision> &colls){
+			if (kdtree->Collision(p1,p2,colls)){ // search in the kdtree for collisions
+				for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
 					if (!solids[(*it).ID].ignoretimes.empty()){
 						long double x = x1 + (*it).s*h;
-						if (solids[(*it).ID].ignoretimes.count(ExpPhase(x)) > 0){
-							colls.erase(it); // delete collision if it should be ignored according to geometry.in
-							it--;
-						}
+						if (solids[(*it).ID].ignoretimes.count(ExpPhase(x)) > 0)
+							it = --colls.erase(it); // delete collision if it should be ignored according to geometry.in
 					}
 				}
 				if (!colls.empty())
@@ -216,7 +214,7 @@ struct TSource{
 			if (kdtree) delete kdtree;
 		};
 	
-		void RandomPointInSourceVolume(TMCGenerator &mc, long double &x, long double &y, long double &z, long double &alpha, long double &gamma, long double n[3]){
+		void RandomPointInSourceVolume(TMCGenerator &mc, long double t, long double &NeutEnergie, long double &x, long double &y, long double &z, long double &alpha, long double &gamma){
 			long double p1[3];
 			int count = 0;
 			do{
@@ -228,7 +226,17 @@ struct TSource{
 						continue;
 					mc.IsotropicDist(0, alpha, gamma);
 				}
+				else if (sourcemode == "customvol"){ // random point inside a volume defined by a custom parameter range
+					long double r = mc.SquareDist(r_min, r_max); // weighting because of the volume element and a r^2 probability outwards
+					long double phi = mc.UniformDist(phi_min,phi_max);
+					z = mc.UniformDist(z_min,z_max);
+					p1[0] = r*cos(phi);
+					p1[1] = r*sin(phi);
+					p1[2] = z;
+					mc.IsotropicDist(0, alpha, gamma);
+				}
 				else if (sourcemode == "surface" || sourcemode == "customsurf"){ // random point on a surface inside custom or STL volume
+					long double n[3];
 					long double RandA = mc.UniformDist(0,sourcearea);
 					long double CurrA = 0, SumA = 0;
 					vector<Triangle*>::iterator i;
@@ -245,38 +253,36 @@ struct TSource{
 						b = 1 - b;
 					}
 					for (int j = 0; j < 3; j++){
-						n[j] /= CurrA;
+						n[j] /= CurrA; // normalize normal vector
 						p1[j] = (*i)->vertex[0][j] + a*((*i)->vertex[1][j] - (*i)->vertex[0][j]) + b*((*i)->vertex[2][j] - (*i)->vertex[0][j]);
-						p1[j] += REFLECT_TOLERANCE*n[j];
+						p1[j] += REFLECT_TOLERANCE*n[j]; // add some tolerance to avoid starting inside solid
 					}
 					if (!InSourceVolume(p1))
 						continue;				
 					long double winkeben = mc.UniformDist(0, 2*pi); // generate random velocity angles in upper hemisphere
 					long double winksenkr = mc.SinCosDist(0, 0.5*pi); // Lambert's law!
-					long double v[3] = {cos(winkeben)*cos(winksenkr), sin(winkeben)*cos(winksenkr), sin(winksenkr)};
+					if (E_normal > 0){
+						long double vsenkr = sqrt(NeutEnergie*cos(winksenkr)*cos(winksenkr) + E_normal); // add E_normal to component normal to surface
+						long double veben = sqrt(NeutEnergie)*sin(winksenkr);
+						winksenkr = atan2(veben,vsenkr); // update angle
+						NeutEnergie = vsenkr*vsenkr + veben*veben; // update energy
+					}
+					long double v[3] = {cos(winkeben)*sin(winksenkr), sin(winkeben)*sin(winksenkr), cos(winksenkr)};
 					RotateVector(v,n);
 					
 					alpha = atan2(v[1],v[0]) - atan2(p1[1],p1[0]);
 					gamma = acos(v[2]);
-				}
-				else if (sourcemode == "customvol"){ // random point inside a volume defined by a custom parameter range
-					long double r = mc.SquareDist(r_min, r_max); // weighting because of the volume element and a r^2 probability outwards
-					long double phi = mc.UniformDist(phi_min,phi_max);
-					z = mc.UniformDist(z_min,z_max);
-					p1[0] = r*cos(phi);
-					p1[1] = r*sin(phi);
-					p1[2] = z;
-					mc.IsotropicDist(0, alpha, gamma);
 				}
 				else{
 					printf("Invalid sourcemode: %s",sourcemode.c_str());
 					exit(-1);
 				}
 				
-				long double p2[3] = {p1[0], p1[1], geometry->kdtree->lo[2]};
-				set<TCollision> c;
-				if (geometry->kdtree->Collision(p1,p2,c)){	// test if random point is inside solid
-					for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+				long double p2[3] = {p1[0], p1[1], geometry->kdtree->lo[2] - REFLECT_TOLERANCE};
+				list<TCollision> c;
+				count = 0;
+				if (geometry->GetCollisions(t,p1,0,p2,c)){	// test if random point is inside solid
+					for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 						if (i->normal[2] > 0) count++; // count surfaces whose normals point to random point
 						else count--; // count surfaces whose normals point away from random point
 					}
@@ -339,10 +345,10 @@ struct TSource{
 			else{ // shoot a ray to the bottom of the sourcevol bounding box and check for intersection with the sourcevol surface
 				long double p1[3] = {p[0], p[1], p[2]};
 				long double p2[3] = {p[0], p[1], kdtree->lo[2]}; 
-				set<TCollision> c;
+				list<TCollision> c;
 				if (kdtree->Collision(p1,p2,c)){
 					int count = 0;
-					for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+					for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 						if (i->normal[2] > 0) count++;  // surface normal pointing towards point?
 						else count--;					// or away from point?
 					}

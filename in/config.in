@@ -9,8 +9,6 @@ polarisation 4
 neutdist 0
 # diffuse: 1 => specular reflection, 2 => only diffuse, 3 => statistical specular and diffuse
 diffuse 3
-#DiceEkin: 0 => dice total energy of neutron (including gravitational and magnetic potential), 1 => dice kinetic energy of neutron
-DiceEkin 0
 # bfeldwahl: 0 => Interpolation, 1 => no field, 3 => analytic field for ramping tests 
 bfeldwahl 0
 # scaling of B field with respect to input table file
