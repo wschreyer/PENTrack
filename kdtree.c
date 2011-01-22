@@ -62,7 +62,7 @@ bool Triangle::intersect(const long double p1[3], const long double p2[3], long 
     CrossProduct(v,w,normal);
 
     long double un = DotProduct(u,normal);
-    if (abs(un) == 0)   // direction vector parallel to triangle plane?
+    if (un == 0)   // direction vector parallel to triangle plane?
         return false;
     long double x[3] = {p1[0] - vertex[0][0], p1[1] - vertex[0][1], p1[2] - vertex[0][2]};   // vector from first vertex to first segment point
     s = -DotProduct(x,normal) / un;  // parametric coordinate of intersection point (i = p1 + s*u)
@@ -286,7 +286,7 @@ void KDTree::KDNode::Split(){
 }
 
 // test all triangles in this node and his leaves for intersection with segment p1->p2
-bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2[3], set<TCollision> &colls){
+bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2[3], list<TCollision> &colls){
     if (tricount == 0) return false;
     bool result = false;
     long double s_loc;
@@ -302,7 +302,7 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
         	c.normal[2] = normal[2]/n;
         	c.ID = (*i)->ID;
         	c.tri = *i;
-        	colls.insert(c);
+        	colls.push_back(c);
         	result = true;
         }
     }
@@ -317,7 +317,7 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
 }
 
 // find smallest box which contains segment and call TestCollision there
-bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, set<TCollision> &colls){
+bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls){
     colls.clear();
     if (hichild && hichild->PointInBox(p1) && hichild->PointInBox(p2))    // if both segment points are contained in the first leave, test collision there
         return hichild->Collision(p1,p2,lastnode,colls);
@@ -414,9 +414,15 @@ void KDTree::Init(){
 }
 
 // test segment p1->p2 for collision with a triangle and return a list of all found collisions
-bool KDTree::Collision(const long double p1[3], const long double p2[3], set<TCollision> &colls){
+bool KDTree::Collision(const long double p1[3], const long double p2[3], list<TCollision> &colls){
     if (!root) return false; // stop if Init was not called yet
     if (!lastnode) lastnode = root; // start search in last tested node, when last node is not known start in root node
-    return lastnode->Collision(p1,p2,lastnode,colls);
+    if (lastnode->Collision(p1,p2,lastnode,colls)){
+    	colls.sort();
+    	colls.unique();
+    	return true;
+    }
+    else return false;
+
 }
 
