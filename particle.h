@@ -463,8 +463,8 @@ struct TParticle{
 		
 			long double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 			long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-			if (vnormal > 0 && currentsolid == &defaultsolid){
-				printf("Particle inside solid without being transmitted through surface first! Stopping it!\n");
+			if (vnormal > 0 && currentsolid != &geom->solids[ID]){
+				printf("Particle inside solid which it did not enter before! Stopping it!\n");
 				kennz = KENNZAHL_NRERROR;
 				return true;
 			}
