@@ -185,7 +185,7 @@ struct TParticle{
 				PrintIntegrationStep(trackfile, x, y, h); // print start into track file
 			long double lastsave = x;
 			// create integrator class (stepperdopr853 = 8th order Runge Kutta)
-			stepper = new StepperDopr853<TParticle>(y, dydx, x, 0, 1e-13, true);// y, dydx, x, atol, rtol, dense output
+			stepper = new StepperDopr853<TParticle>(y, dydx, x, 1e-13, 1e-13, true);// y, dydx, x, atol, rtol, dense output
 			
 			while (kennz == KENNZAHL_UNKNOWN){ // integrate as long as nothing happened to particle
 				x1 = x; // save point before next step
@@ -464,7 +464,7 @@ struct TParticle{
 			long double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 			long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 			if (vnormal > 0 && currentsolid != &geom->solids[ID]){
-				printf("Particle inside solid which it did not enter before! Stopping it!\n");
+				printf("Particle inside solid %s which it did not enter before! Stopping it!\n", geom->solids[ID].name.c_str());
 				kennz = KENNZAHL_NRERROR;
 				return true;
 			}
