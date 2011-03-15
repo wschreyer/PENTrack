@@ -22,7 +22,7 @@ struct TMCGenerator{
 
 	mt_state_t v_mt_state; //mersenne twister state var
 	
-	TMCGenerator(const char *infile, long double Emin_n, int apolarisation, int adecay, long double adecayoffset, long double NeutLifetime){
+	TMCGenerator(const char *infile, int apolarisation, int adecay, long double adecayoffset, long double NeutLifetime){
 		decay = adecay;
 		polarisation = apolarisation;
 		decayoffset = adecayoffset;
@@ -42,7 +42,7 @@ struct TMCGenerator{
 		gettimeofday(&daysec, NULL);
 		monthinmilliseconds = monthinmilliseconds + daysec.tv_usec/1000; // add milliseconds
 		
-		printf("Random Seed: %lu\n", monthinmilliseconds);
+		printf("Random Seed: %lu\n\n", monthinmilliseconds);
 	
 		mt_set (&v_mt_state, monthinmilliseconds);
 		
@@ -105,16 +105,6 @@ struct TMCGenerator{
 			if(ncont < 1) printf("an error occured while reading the %i. item in line %i of all3inone.in", ncont, i);
 	    }
 	    
-		// check if lower neutron energy boundary is possible, if not set to possible value
-		if(Emin_n*1e9 > nini.EnergieE)
-		{	printf("\n\n\nERROR: Emin_n (= %.5LG neV) > nini.EnergieE (= %.5LG neV)\n"
-			             "       Check the energy range of the neutrons and / or the B-field configuration!\n\n"
-			             "EXIT!!\n", (Emin_n*1e9), nini.EnergieE);
-			exit(-1);
-		}
-	
-		nini.EnergieS = max(Emin_n*1e9, nini.EnergieS); // higher energy of the neutron
-	
 		// starting value (S) > final value (E)?? EXIT!!
 		for(int i = 1; i < 4; i++)
 		{	struct initial particleini;
@@ -163,29 +153,38 @@ struct TMCGenerator{
 	// write isotropically distributed 3D-angles into alpha and gamma
 	// alpha = angle between x-axis and vector projected onto xy-plane
 	// gamma = angle between z-axis and vector
-	void IsotropicDist(int protneut, long double &alpha, long double &gamma){
-		switch (protneut){
-			case NEUTRON: 
-				alpha = UniformDist(nini.alphas, nini.alphae);
-				gamma = SinDist(nini.gammas, nini.gammae);
-				break;
-			case PROTON:
-				alpha = UniformDist(pini.alphas, pini.alphae);
-				gamma = SinDist(pini.gammas, pini.gammae);
-				break;
-			case ELECTRON:
-				alpha = UniformDist(eini.alphas, eini.alphae);
-				gamma = SinDist(eini.gammas, eini.gammae);
-				break;
-			default:	
-				alpha = UniformDist(0,2*pi);
-				gamma = SinDist(0,pi);
-		}
+	void IsotropicDist(long double &alpha, long double &gamma){
+		alpha = UniformDist(0,2*pi);
+		gamma = SinDist(0,pi);
 	};
 	
-	// energy distribution of UCNs
+	// energy distribution of UCNs (0 to Hmax!, potential minimum has to be added!)
 	long double NeutronSpectrum(){
 		return SqrtDist(nini.EnergieS*1e-9, nini.EnergieE*1e-9);
+/*
+		//neutron energy spectrum for PENeLOPE (storage only) 180cm above source and 10cm absorber
+		long double x,y;
+		for(;;){
+			x = UniformDist(0, 130);
+			y = UniformDist(0,500);
+			if ((x <= 53.2 && y <= (0.0817*x*x + 5.106*x - 4))
+				|| (x > 53.2 && x <= 71.4 && y <= 487)
+				|| (x > 71.4 && y <= (1.727e-4*x*x*x*x - 0.07839*x*x*x + 13.2296*x*x - 985.9*x + 27485)))
+				return x*1e-9;
+		}
+*/
+/*
+		//neutron energy spectrum for PENeLOPE (storage+buffer) 180cm above source and 10cm absorber
+		long double x,y;
+		for(;;){
+			x = UniformDist(-18, 130);
+			y = UniformDist(0,585);
+			if ((x <= 56 && y <= (8*x + 140))
+				|| (x > 56 && x <= 70 && y <= -3.87*x + 802)
+				|| (x > 70 && y <= (-3.719e-5*x*x*x*x + 7.585e-3*x*x*x + 0.1614*x*x - 113.3*x + 5.951e3)))
+				return (x + 18)*1e-9;
+		}
+*/
 /*		
 		//neutron energy spectrum by Gerd Petzoldt
 		long double x,y,cutoff = 900,decay = 0.05;
@@ -219,7 +218,7 @@ struct TMCGenerator{
 		// dice as long as point is above curve
 		do
 		{	//cout << "above distribution... dicing on..." << endl;
-			Energie = UniformDist(pini.EnergieS, pini.EnergieE); // constant distribution between 0 and 800 eV // [eV]
+			Energie = UniformDist(0, 751); // constant distribution between 0 and 800 eV // [eV]
 			WktTMP = UniformDist(0, 2);
 			
 			long double DeltaM = m_n - m_p;
@@ -243,7 +242,7 @@ struct TMCGenerator{
 		// dice as long as point is above curve
 		do
 		{
-			Energie = UniformDist(eini.EnergieS*1e3, eini.EnergieE*1e3); // constant distribution between 0 and 800 keV
+			Energie = UniformDist(0, 782e3); // constant distribution between 0 and 800 keV
 			WktTMP = UniformDist(0, 0.12);
 	
 			Elvert = sqrtl(Energie*1e-6 * Energie*1e-6 + 2*Energie*1e-6 * m_e * c_0 * c_0*1e-6) * pow(Qvalue*1e-6 - Energie*1e-6, 2) * (Energie*1e-6 + m_e * c_0 * c_0*1e-6);			
@@ -351,7 +350,7 @@ struct TMCGenerator{
 	
 	//-------- Step 2 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
-		IsotropicDist(0,beta1,delta1);
+		IsotropicDist(beta1,delta1);
 		// 3-momentum of the proton
 		p[1] = pabs * sin(delta1) * cos(beta1);
 		p[2] = pabs * sin(delta1) * sin(beta1);
@@ -371,7 +370,7 @@ struct TMCGenerator{
 	
 	//-------- Step 5 ----------------------------------------------------------------------------------------------------------
 		// isotropic emission characteristics (in the rest frame of the virtual state)
-		IsotropicDist(0,beta2, delta2);
+		IsotropicDist(beta2, delta2);
 		// 3-momentum of the electron
 		e[1] = pabs * sin(delta2) * cos(beta2);
 		e[2] = pabs * sin(delta2) * sin(beta2);

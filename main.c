@@ -128,7 +128,7 @@ int main(int argc, char **argv){
 	
 	TSource source((inpath + "/geometry.in").c_str(), geom, field);
 	
-	TMCGenerator mc((inpath + "/all3inone.in").c_str(), source.Emin_n, polarisation, decay, decayoffset, tau_n);
+	TMCGenerator mc((inpath + "/all3inone.in").c_str(), polarisation, decay, decayoffset, tau_n);
 	
 	FILE *endlog = NULL, *tracklog = NULL, *snap = NULL, *reflectlog = NULL;
 	OpenFiles(endlog, tracklog, snap, reflectlog);	
@@ -264,7 +264,7 @@ void ConfigInit(void){
 		else if (section != ""){
 			infile >> key;
 			getline(infile,config[section][key]);
-			printf("%s:%s", key.c_str(), config[section][key].c_str());
+			printf("%s:%s\n", key.c_str(), config[section][key].c_str());
 		}
 		else
 			getline(infile,rest);
@@ -387,7 +387,7 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 	    	printf("\n%s not found!\n",(fileprefix.str() + "reflect.out").c_str());
 	    	exit(-1);
 	    }
-		fprintf(reflectlog,"jobnumber teilchen protneut reflection solid t x y z vx vy vz nx ny nz E winkeben winksenkr Transprob\n"); // Header for Reflection File
+		fprintf(reflectlog,"jobnumber teilchen protneut reflection solid t x y z vx vy vz nx ny nz H winkeben winksenkr Transprob\n"); // Header for Reflection File
 	}
 
 	if (neutdist == 1) outndist((fileprefix.str() + "ndist.out").c_str());   // Neutronenverteilung in der Flasche ausgeben
