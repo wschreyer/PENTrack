@@ -24,7 +24,7 @@ struct solid{
 	string name;
 	material mat;
 	unsigned kennz;
-	set<int> ignoretimes;
+	vector<long double> ignoretimes;
 };
 
 extern solid defaultsolid;
@@ -84,10 +84,15 @@ struct TGeometry{
 		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], list<TCollision> &colls){
 			if (kdtree->Collision(p1,p2,colls)){ // search in the kdtree for collisions
 				for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
-					if (!solids[(*it).ID].ignoretimes.empty()){
+					vector<long double> *times = &solids[(*it).ID].ignoretimes;
+					if (!times->empty()){
 						long double x = x1 + (*it).s*h;
-						if (solids[(*it).ID].ignoretimes.count(ExpPhase(x)) > 0)
-							it = --colls.erase(it); // delete collision if it should be ignored according to geometry.in
+						for (unsigned int i = 0; i < times->size(); i += 2){
+							if (x >= (*times)[i] && x < (*times)[i+1]){
+								it = --colls.erase(it); // delete collision if it should be ignored according to geometry.in
+								break;
+							}
+						}
 					}
 				}
 				if (!colls.empty())
@@ -118,7 +123,7 @@ struct TGeometry{
 			string matname;
 			kdtree = new KDTree;
 			char name[80];
-			int ignoretime;
+			long double ignorestart, ignoreend;
 			do{	// parse STLfile list
 				infile >> ws; // ignore whitespaces
 				c = infile.peek();
@@ -148,8 +153,15 @@ struct TGeometry{
 				while ((c = infile.peek()) == '\t' || c == ' ')
 					infile.ignore();
 				while (infile && c != '#' && c != '\n'){
-					infile >> ignoretime;
-					model.ignoretimes.insert(ignoretime);
+					infile >> ignorestart;
+					if (infile.peek() == '-') infile.ignore();
+					infile >> ignoreend;
+					if (!infile.good()){
+						cout << "Invalid ignoretimes in geometry.in" << endl;
+						exit(-1);
+					}
+					model.ignoretimes.push_back(ignorestart);
+					model.ignoretimes.push_back(ignoreend);
 					while ((c = infile.peek()) == '\t' || c == ' ')
 						infile.ignore();
 				}
@@ -166,7 +178,7 @@ struct TSource{
 		TGeometry *geometry;
 		string sourcemode; // volume/surface/customvol/customsurf
 		long double r_min, r_max, phi_min, phi_max, z_min, z_max; // for customvol/customsurf
-		long double E_normal, Emin_n;
+		long double E_normal, Hmin_lfs, Hmin_hfs;
 		
 		vector<Triangle*> sourcetris;
 		long double sourcearea;
@@ -190,24 +202,29 @@ struct TSource{
 				else getline(infile,line);
 			}
 			
+			const long double d = 0.003;
 			if (sourcemode == "customvol"){ // get minimal possible energy for neutrons to avoid long inital value dicing for too-low-energy neutron
-				Emin_n = 9e90;
-				long double rBabsmin = NAN, zBabsmin = NAN, EnTemp, B[4][4];
-				for (long double r = r_min; r <= r_max; r += 0.003){
-					for (long double z = z_min; z <= z_max; z += 0.003){
-						field.BFeld(r,0,z,0,B);
-						EnTemp =  m_n*gravconst*z + (mu_nSI/ele_e)*B[3][0];
-						if(EnTemp < Emin_n)
-						{
-							Emin_n = EnTemp;
-							rBabsmin = r;
-							zBabsmin = z;
+				Hmin_lfs = Hmin_hfs = 9e99;
+				for (long double r = r_min; r <= r_max; r += d){
+					for (long double z = z_min; z <= z_max; z += d){
+						long double p[3] = {r,0.0,z};
+						CalcHmin(field,p,d*d*2*r*pi);
+					}
+				}
+			}
+			else if (sourcemode == "volume"){
+				Hmin_lfs = Hmin_hfs = 9e99;
+				long double p[3];
+				for (p[0] = kdtree->lo[0]; p[0] <= kdtree->hi[0]; p[0] += d){
+					for (p[1] = kdtree->lo[1]; p[1] <= kdtree->lo[1]; p[1] += d){
+						for (p[2] = kdtree->lo[2]; p[2] <= kdtree->lo[2]; p[2] += d){
+							if (InSourceVolume(p)) CalcHmin(field,p,d*d*d);
 						}
 					}
 				}
-				printf("The minimum energy a low field seeking neutron has to have is %.3LG neV (at r:%.3LG, z: %.3LG).\n",Emin_n*1e9,rBabsmin,zBabsmin);
 			}
-			else Emin_n = -9e90;
+			else Hmin_lfs = Hmin_hfs = 0;
+			printf("min. total energy a lfs/hfs neutron must have: %LG / %LG neV\n\n", Hmin_lfs, Hmin_hfs);
 		};
 	
 		~TSource(){
@@ -217,14 +234,13 @@ struct TSource{
 		void RandomPointInSourceVolume(TMCGenerator &mc, long double t, long double &NeutEnergie, long double &x, long double &y, long double &z, long double &alpha, long double &gamma){
 			long double p1[3];
 			int count = 0;
-			do{
+			for(;;){
 				if (sourcemode == "volume"){ // random point inside a STL-volume
-					p1[0] = mc.UniformDist(kdtree->lo[0],kdtree->hi[0]); // random point 
-					p1[1] = mc.UniformDist(kdtree->lo[1],kdtree->hi[1]); // random point 
-					p1[2] = mc.UniformDist(kdtree->lo[2],kdtree->hi[2]); // random point 
-					if (!InSourceVolume(p1))
-						continue;
-					mc.IsotropicDist(0, alpha, gamma);
+					p1[0] = mc.UniformDist(kdtree->lo[0],kdtree->hi[0]); // random point
+					p1[1] = mc.UniformDist(kdtree->lo[1],kdtree->hi[1]); // random point
+					p1[2] = mc.UniformDist(kdtree->lo[2],kdtree->hi[2]); // random point
+					if (!InSourceVolume(p1)) continue;
+					mc.IsotropicDist(alpha, gamma);
 				}
 				else if (sourcemode == "customvol"){ // random point inside a volume defined by a custom parameter range
 					long double r = mc.SquareDist(r_min, r_max); // weighting because of the volume element and a r^2 probability outwards
@@ -233,15 +249,15 @@ struct TSource{
 					p1[0] = r*cos(phi);
 					p1[1] = r*sin(phi);
 					p1[2] = z;
-					mc.IsotropicDist(0, alpha, gamma);
+					mc.IsotropicDist(alpha, gamma);
 				}
 				else if (sourcemode == "surface" || sourcemode == "customsurf"){ // random point on a surface inside custom or STL volume
-					long double n[3];
+					long double *n = NULL;
 					long double RandA = mc.UniformDist(0,sourcearea);
 					long double CurrA = 0, SumA = 0;
 					vector<Triangle*>::iterator i;
 					for (i = sourcetris.begin(); i != sourcetris.end(); i++){
-						(*i)->CalcNormal(n);
+						n = (*i)->normal;
 						CurrA = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 						SumA += CurrA;
 						if (RandA <= SumA) break; // select random triangle, weighted by triangle area
@@ -257,8 +273,7 @@ struct TSource{
 						p1[j] = (*i)->vertex[0][j] + a*((*i)->vertex[1][j] - (*i)->vertex[0][j]) + b*((*i)->vertex[2][j] - (*i)->vertex[0][j]);
 						p1[j] += REFLECT_TOLERANCE*n[j]; // add some tolerance to avoid starting inside solid
 					}
-					if (!InSourceVolume(p1))
-						continue;				
+					if (!InSourceVolume(p1)) continue;
 					long double winkeben = mc.UniformDist(0, 2*pi); // generate random velocity angles in upper hemisphere
 					long double winksenkr = mc.SinCosDist(0, 0.5*pi); // Lambert's law!
 					if (E_normal > 0){
@@ -287,7 +302,8 @@ struct TSource{
 						else count--; // count surfaces whose normals point away from random point
 					}
 				}
-			}while (count != 0);
+				if (count == 0) break;
+			}
 			x = p1[0];
 			y = p1[1];
 			z = p1[2];
@@ -324,8 +340,7 @@ struct TSource{
 				for (vector<Triangle>::iterator i = geometry->kdtree->alltris.begin(); i != geometry->kdtree->alltris.end(); i++){
 					if (InSourceVolume(i->vertex[0]) && InSourceVolume(i->vertex[1]) && InSourceVolume(i->vertex[2])){
 						sourcetris.push_back(&*i);
-						long double n[3];
-						i->CalcNormal(n);
+						long double *n = i->normal;
 						sourcearea += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 					}
 				}
@@ -344,7 +359,7 @@ struct TSource{
 			}
 			else{ // shoot a ray to the bottom of the sourcevol bounding box and check for intersection with the sourcevol surface
 				long double p1[3] = {p[0], p[1], p[2]};
-				long double p2[3] = {p[0], p[1], kdtree->lo[2]}; 
+				long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
 				list<TCollision> c;
 				if (kdtree->Collision(p1,p2,c)){
 					int count = 0;
@@ -358,6 +373,27 @@ struct TSource{
 			}
 		}
 	
+		void CalcHmin(TField &field, long double p[3], long double vol){
+			long double p2[3] = {p[0], p[1], geometry->kdtree->lo[2] - REFLECT_TOLERANCE};
+			list<TCollision> c;
+			int count = 0;
+			if (geometry->GetCollisions(0,p,0,p2,c)){	// test if random point is inside solid
+				for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+					if (i->normal[2] > 0) count++; // count surfaces whose normals point to random point
+					else count--; // count surfaces whose normals point away from random point
+				}
+			}
+			if (count == 0){
+				long double B[4][4];
+				field.BFeld(p[0],p[1],p[2],0,B);
+				long double Epot = m_n*gravconst*p[2];
+				long double Emag = (mu_nSI/ele_e)*B[3][0];
+				long double Hlfs = Epot + Emag;
+				long double Hhfs = Epot - Emag;
+				Hmin_lfs = min(Hmin_lfs,Hlfs);
+				Hmin_hfs = min(Hmin_hfs,Hhfs);
+			}
+		}
 };
 
 #endif /*GEOMETRY_H_*/

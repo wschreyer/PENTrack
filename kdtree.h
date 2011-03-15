@@ -27,8 +27,9 @@ using namespace std;
 // Triangle class
 struct Triangle{
     const float *vertex[3]; // the three vertices of the triangle (in counterclockwise order according to STL standard)
+    long double normal[3];
     unsigned ID;          // user defined surface number
-    void CalcNormal(long double normal[3]); // calculate normal vector on triangle (length = triangle area)
+    Triangle(const float *vertices[3]);
     bool intersect(const long double p1[3], const long double p2[3], long double &s);    // does the segment defined by p1,p2 intersect the triangle?
 };
 

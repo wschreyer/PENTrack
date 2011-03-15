@@ -11,7 +11,7 @@ UCNdet	0.1			1			0		# high efficiency assumed
 [GEOMETRY]
 #models the program will load, particle absorbed at the surface will be flagged with the kennzahl of the surface
 #kennzahlen 0-5 are reserved for special events
-#kennzahl	STLfile							material name as defined above		ignore times (1 = filling, 2 = cleaning, 3 = rampup, 4 = fullfield, 5 = rampdown, 6 = counting)
+#kennzahl	STLfile							material name as defined above		ignore times (pairs of times [s] in between the part will be ignored, e.g. 100-200)
 7			in/heliumtank+buffernew.STL		Nocado
 6			in/protdet.STL					CsI
 7			in/protdet_support.STL			PE

@@ -43,7 +43,10 @@ inline void CrossProduct(float v1[3], float v2[3], long double v[3]){
 //-------------------------------------------------------------------------------------------------------------
 // Triangle class definition
 
-void Triangle::CalcNormal(long double normal[3]){
+Triangle::Triangle(const float *vertices[3]){
+	vertex[0] = vertices[0];
+	vertex[1] = vertices[1];
+	vertex[2] = vertices[2];
     float v[3] = {vertex[1][0] - vertex[0][0], vertex[1][1] - vertex[0][1], vertex[1][2] - vertex[0][2]}; // triangle edge vectors
     float w[3] = {vertex[2][0] - vertex[0][0], vertex[2][1] - vertex[0][1], vertex[2][2] - vertex[0][2]};
     CrossProduct(v,w,normal);
@@ -52,15 +55,11 @@ void Triangle::CalcNormal(long double normal[3]){
     normal[2] *= 0.5; // length = triangle area
 }
 
+
 // does the segment p1->p2 intersect the triangle?
 // http://softsurfer.com/Archive/algorithm_0105/algorithm_0105.htm#Segment-Triangle
 bool Triangle::intersect(const long double p1[3], const long double p2[3], long double &s){
     long double u[3] = {p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]};   // segment direction vector
-    float v[3] = {vertex[1][0] - vertex[0][0], vertex[1][1] - vertex[0][1], vertex[1][2] - vertex[0][2]}; // triangle edge vectors
-    float w[3] = {vertex[2][0] - vertex[0][0], vertex[2][1] - vertex[0][1], vertex[2][2] - vertex[0][2]};
-    long double normal[3];
-    CrossProduct(v,w,normal);
-
     long double un = DotProduct(u,normal);
     if (un == 0)   // direction vector parallel to triangle plane?
         return false;
@@ -73,6 +72,8 @@ bool Triangle::intersect(const long double p1[3], const long double p2[3], long 
     x[2] += s*u[2]; // vector from first vertex to intersection point
     
     // calculate barycentric coordinates a,b of intersection point
+    float v[3] = {vertex[1][0] - vertex[0][0], vertex[1][1] - vertex[0][1], vertex[1][2] - vertex[0][2]}; // triangle edge vectors
+    float w[3] = {vertex[2][0] - vertex[0][0], vertex[2][1] - vertex[0][1], vertex[2][2] - vertex[0][2]};
     long double vw = DotProduct(v,w), vv = DotProduct(v,v), ww = DotProduct(w,w);
     long double parametric_factor = 1/(vw*vw - vv*ww);
     long double xw = DotProduct(x,w)*parametric_factor, xv = DotProduct(x,v)*parametric_factor;
@@ -292,14 +293,12 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
     long double s_loc;
     for (vector<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
         if ((*i)->intersect(p1,p2,s_loc)){
-            long double normal[3];
-            (*i)->CalcNormal(normal);
-        	long double n = sqrt(DotProduct(normal,normal));
+        	long double n = sqrt(DotProduct((*i)->normal,(*i)->normal));
         	TCollision c;
         	c.s = s_loc;
-        	c.normal[0] = normal[0]/n;	// return normalized normal vector
-        	c.normal[1] = normal[1]/n;
-        	c.normal[2] = normal[2]/n;
+        	c.normal[0] = (*i)->normal[0]/n;	// return normalized normal vector
+        	c.normal[1] = (*i)->normal[1]/n;
+        	c.normal[2] = (*i)->normal[2]/n;
         	c.ID = (*i)->ID;
         	c.tri = *i;
         	colls.push_back(c);
@@ -367,23 +366,23 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 		fflush(stdout);
 
         for (i = 0; i < filefacecount && !f.eof(); i++){
-            Triangle tri;
-            tri.ID = ID;
             f.seekg(3*4,fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
             TVertex v;
+            const float *vertices[3];
             for (short j = 0; j < 3; j++){
                 f.read((char*)&v.vertex[0],4);
                 f.read((char*)&v.vertex[1],4);
                 f.read((char*)&v.vertex[2],4);
-                tri.vertex[j] = allvertices.insert(v).first->vertex; // insert vertex into vertex list and save pointer to inserted vertex into triangle
+                vertices[j] = allvertices.insert(v).first->vertex; // insert vertex into vertex list and save pointer to inserted vertex into triangle
             }
             f.seekg(2,fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
 
+            Triangle tri(vertices);
+            tri.ID = ID;
             for (short j = 0; j < 3; j++){
                 lo[j] = min(lo[j], min(min(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));  // save lowest and highest vertices to get the size for the root node
                 hi[j] = max(hi[j], max(max(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));
             }
-            
             alltris.push_back(tri); // add triangle to list
         }
         f.close();
