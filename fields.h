@@ -39,7 +39,7 @@ struct TField{
 					if ((infile.peek() == '[') && getline(infile,line).good()){	// parse infile for section header
 						if (line.compare(0,8,"[FIELDS]") == 0)
 							LoadFieldsSection(infile);
-						else if (line.compare(0,8,"[RACETRACKS]") == 0)
+						else if (line.compare(0,12,"[RACETRACKS]") == 0)
 							LoadRacetrackSection(infile);
 						else getline(infile,line);
 					}
@@ -221,14 +221,20 @@ struct TField{
 					return 0;
 				case RAMPUP_PHASE:
 					// ramping up field smoothly with cosine
-					result = (0.5 - 0.5*cos(pi*(t - CleaningTime - FillingTime)/RampUpTime)) * BFeldSkalGlobal;
+//					result = (0.5 - 0.5*cos(pi*(t - CleaningTime - FillingTime)/RampUpTime)) * BFeldSkalGlobal;
+
+					// linear ramp
+					result = (t - CleaningTime - FillingTime)/RampUpTime * BFeldSkalGlobal;
 					break;
 				case FULLFIELD_PHASE:
 					result = BFeldSkalGlobal;
 					break;
 				case RAMPDOWN_PHASE:
 					// ramping down field smoothly with cosine
-					result = (0.5 + 0.5*cos(pi*(t - (RampUpTime + CleaningTime + FillingTime + FullFieldTime)) / RampDownTime)) * BFeldSkalGlobal;
+					//result = (0.5 + 0.5*cos(pi*(t - (RampUpTime + CleaningTime + FillingTime + FullFieldTime)) / RampDownTime)) * BFeldSkalGlobal;
+
+					// linear ramp
+					result = (1 - (t - RampUpTime - CleaningTime - FillingTime - FullFieldTime)/RampDownTime) * BFeldSkalGlobal;
 					break;
 				default: result = BFeldSkalGlobal;
 			}
