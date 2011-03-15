@@ -41,8 +41,15 @@ struct TParticle{
 		// constructor, create particle, set start values randomly according to all3inone.in
 		TParticle(int aprotneut, int number, TSource &src, TMCGenerator &mcgen, TField &afield){
 			xstart = mcgen.StartTime(aprotneut);
-			NeutEnergie = mcgen.NeutronSpectrum();
+
 			polarisation = mcgen.DicePolarisation();
+			NeutEnergie = mcgen.NeutronSpectrum();
+			long double Emax = NeutEnergie;
+			if (polarisation > 0)
+				NeutEnergie += src.Hmin_hfs;
+			else if (polarisation < 0)
+				NeutEnergie += src.Hmin_lfs;
+
 			printf("Dice starting position for E_neutron = %LG neV ",NeutEnergie*1e9);
 			fflush(stdout);
 			long double B[4][4];
@@ -54,9 +61,12 @@ struct TParticle{
 
 				src.RandomPointInSourceVolume(mcgen, xstart, NeutEnergie, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
 				afield.BFeld(ystart[0], ystart[1], ystart[2], xstart, B);
-				if (src.sourcemode == "volume" || src.sourcemode == "customvol")
+				if (src.sourcemode == "volume" || src.sourcemode == "customvol"){ // dice H for volume source
 					Estart = NeutEnergie - m_n*gravconst*ystart[2] + polarisation*mu_nSI/ele_e*B[3][0];
-				else{
+					if (mcgen.UniformDist(0,1) > sqrt(Estart/Emax))
+						Estart = -1; // correct weighting of phase space (see Golub/Richardson/Lamoreaux p. 82)
+				}
+				else{ // dice E for surface source
 					Estart = NeutEnergie;
 					NeutEnergie = Estart + m_n*gravconst*ystart[2] - polarisation*mu_nSI/ele_e*B[3][0];
 				}
@@ -64,7 +74,7 @@ struct TParticle{
 					printf(" Found! %i dice(s) rolled\n", nroll+1);
 					break;
 				}
-				else if (nroll == MAX_DICE_ROLL){
+				else if (nroll >= MAX_DICE_ROLL){
 					kennz = KENNZAHL_INITIAL_NOT_FOUND;
 					printf(" ABORT: Failed %i times to find a compatible spot!! NO particle will be simulated!!\n\n", MAX_DICE_ROLL);
 					return;
@@ -170,8 +180,8 @@ struct TParticle{
 			REFLECTLOG = aREFLECTLOG;
 			timeval clock_start, clock_end, refl_start, refl_end;
 			gettimeofday(&clock_start, NULL); // start computing time measure
-			int snapshotsdone = 0, perc = 0;
-			printf("\nTeilchennummer: %i, Teilchensorte: %i\n",particlenumber,protneut);
+			int snapshotsdone = -1, perc = 0;
+			printf("Teilchennummer: %i, Teilchensorte: %i\n",particlenumber,protneut);
 			printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG l: %LG\n",
 				rstart, phistart/conv, ystart[2], vstart, alphastart/conv,gammastart/conv, Estart, xend, mc->MaxTrajLength(protneut));
 		
@@ -300,7 +310,7 @@ struct TParticle{
 			field->EFeld(y[0],y[1],y[2],V,E);
 			SetEndValues(x,y,B,E,V);
 			Print(ENDLOG);
-			printf("Done!!\nBFFlipProb: %.17LG rend: %.17LG zend: %.17LG Eend: %.17LG Code: %i t: %.17LG l: %LG\n",
+			printf("Done!!\nBFFlipProb: %LG rend: %LG zend: %LG Eend: %LG Code: %i t: %LG l: %LG\n\n",
 				(1 - BFsurvprob), rend, yend[2], Eend, kennz, dt, trajlength);
 		};
 	
@@ -424,10 +434,7 @@ struct TParticle{
 					long double xbisect2 = x2;
 					VecDoub ybisect1 = y1, ybisect2(6);
 					for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through collisions
-						long double v1 = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-						long double v2 = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
-						long double dist = sqrt(u[0]*u[0] + u[1]*u[1] + u[2]*u[2]);
-						xbisect2 = x1 + dist/(v1 + 0.5*(v2 - v1)*it->s)*it->s*(1 - 0.01*iteration); // cut integration step at this time
+						xbisect2 = x1 + (x2 - x1)*it->s*(1 - 0.01*iteration); // cut integration step at this time
 						for (int i = 0; i < 6; i++)
 							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
 						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for each smaller step
@@ -464,80 +471,75 @@ struct TParticle{
 			long double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 			long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 			if (vnormal > 0 && currentsolid != &geom->solids[ID]){
-				printf("Particle inside solid %s which it did not enter before! Stopping it!\n", geom->solids[ID].name.c_str());
+				printf("Particle inside '%s' which it did not enter before! Stopping it!\n", geom->solids[ID].name.c_str());
 				kennz = KENNZAHL_NRERROR;
 				return true;
 			}
 			long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 			long double winkeben = 0, winksenkr = 0;
+			bool log = false;
+			long double prob = mc->UniformDist(0,1);
+			long double Trans=Transmission(Enormal*1e9,mat->FermiReal,mat->FermiImag);
+			int refl = prob < Trans ? 0 : 1; // 0 for transmission, 1 for reflection
 			
 			//************** statistical absorption ***********
-			long double prob = mc->UniformDist(0,1);
-			long double Trans=Transmission(Enormal*1e9,mat->FermiReal,mat->FermiImag);	
-			if (prob < Trans)
+			if (!refl)
 			{
 				// if particle is transmitted through surface set the new medium as currentsolid
-//				printf("Transmission! Erefl=%LG neV Transprob=%LG\n",Enormal*1e9,Trans);
+				//printf("Transmission! Erefl=%LG neV Transprob=%LG\n",Enormal*1e9,Trans);
 				if (vnormal > 0)
 					currentsolid = &defaultsolid;
 				else
 					currentsolid = &geom->solids[ID];
 		       	if(reflectlog & 2)
-					fprintf(REFLECTLOG, "%i %i %i %i %i "
-										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG\n",
-										jobnumber, particlenumber, protneut, 0, geom->solids[ID].kennz,
-										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
-										normal[0],normal[1],normal[2],0.5*m_n*vabs*vabs,
-										winkeben,winksenkr,Trans);
-				return false;
+		       		log = true;
 			}	
-			
-			//*************** specular reflexion ************
-			prob = mc->UniformDist(0,1);
-			nrefl++;
-			if ((geom->diffuse == 1) || ((geom->diffuse==3)&&(prob >= mat->DiffProb)))
-			{
-//		    	Log("Specular reflection! Erefl=%LG neV Transprop=%LG\n",Enormal*1e9,Trans);
-		       	if(reflectlog & 1)
-					fprintf(REFLECTLOG, "%i %i %i %i %i "
-										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG\n",
-										jobnumber, particlenumber, protneut, 0, geom->solids[ID].kennz,
-										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
-										normal[0],normal[1],normal[2],0.5*m_n*vabs*vabs,
-										winkeben,winksenkr,Trans);
-		       	y2 = y1;
-				y2[3] -= 2*vnormal*normal[0]; // reflect velocity
-				y2[4] -= 2*vnormal*normal[1];
-				y2[5] -= 2*vnormal*normal[2];
+			else{
+				//*************** specular reflexion ************
+				prob = mc->UniformDist(0,1);
+				nrefl++;
+				if ((geom->diffuse == 1) || ((geom->diffuse==3)&&(prob >= mat->DiffProb)))
+				{
+					//printf("Specular reflection! Erefl=%LG neV Transprop=%LG\n",Enormal*1e9,Trans);
+					if(reflectlog & 1)
+						log = true;
+					y2 = y1;
+					y2[3] -= 2*vnormal*normal[0]; // reflect velocity
+					y2[4] -= 2*vnormal*normal[1];
+					y2[5] -= 2*vnormal*normal[2];
+				}
+
+				//************** diffuse reflection ************
+				else if ((geom->diffuse == 2) || ((geom->diffuse == 3)&&(prob < mat->DiffProb)))
+				{
+					winkeben = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
+					winksenkr = mc->SinCosDist(0, 0.5*pi);
+					if (vnormal > 0) winksenkr += pi; // if normal points out of volume rotate by 180 degrees
+					if(reflectlog & 1)
+						log = true;
+					y2 = y1;
+					y2[3] = vabs*cos(winkeben)*sin(winksenkr);	// new velocity with respect to z-axis
+					y2[4] = vabs*sin(winkeben)*sin(winksenkr);
+					y2[5] = vabs*cos(winksenkr);
+					RotateVector(&y2[3],normal); // rotate coordinate system so, that new z-axis lies on normal
+					//printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG Transprop=%LG\n",Enormal*1e9,winkeben/conv,winksenkr/conv,Trans);
+				}
 			}
-			
-			//************** diffuse reflection ************
-			else if ((geom->diffuse == 2) || ((geom->diffuse == 3)&&(prob < mat->DiffProb)))
-			{
-				winkeben = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
-				winksenkr = mc->SinCosDist(0, 0.5*pi);
-				if (vnormal > 0) winksenkr += pi; // if normal points out of volume rotate by 180 degrees
-		       	if(reflectlog & 1)
-					fprintf(REFLECTLOG, "%i %i %i %i %i "
-										"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG %.10LG "
-										"%.10LG %.10LG %.10LG\n",
-										jobnumber, particlenumber, protneut, 0, geom->solids[ID].kennz,
-										x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
-										normal[0],normal[1],normal[2],0.5*m_n*vabs*vabs,
-										winkeben,winksenkr,Trans);
-				y2 = y1;
-		       	y2[3] = vabs*cos(winkeben)*sin(winksenkr);	// new velocity with respect to z-axis
-				y2[4] = vabs*sin(winkeben)*sin(winksenkr);
-				y2[5] = vabs*cos(winksenkr);
-				RotateVector(&y2[3],normal); // rotate coordinate system so, that new z-axis lies on normal
-//		       	Log("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG Transprop=%LG\n",Enormal*1e9,winkeben/conv,winksenkr/conv,Trans);
-			}	
-			return true;
+			if (log){
+				long double B[4][4];
+				field->BFeld(y1[0], y1[1], y1[2], x1, B);
+				long double H = 0.5*m_n*vabs*vabs + m_n*gravconst*y1[2] - polarisation*mu_nSI/ele_e*B[3][0];
+				fprintf(REFLECTLOG, "%i %i %i %i %i "
+									"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
+									"%.10LG %.10LG %.10LG %.10LG "
+									"%.10LG %.10LG %.10LG\n",
+									jobnumber, particlenumber, protneut, refl, geom->solids[ID].kennz,
+									x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
+									normal[0],normal[1],normal[2],H,
+									winkeben,winksenkr,Trans);
+			}
+
+			return refl;
 		};
 		
 		// check for absorption in current medium
@@ -652,29 +654,6 @@ struct TParticle{
 				for (int j = 0; j < 4; j++)
 					fprintf(trackfile,"%.17LG ",B[i][j]);
 			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %d",E[0],E[1],E[2],h,logvlad,logfrac,ExpPhase(x));
-	
-/*				
-			long double r_L[3] = {0,0,0};
-			long double adiabacity1 = 0, adiabacity2 = 0;
-			if (protneut == PROTON || protneut == ELECTRON){
-				VecDoub dydx(6);
-				derivs(x,y,dydx);
-				long double rho_L = sqrt(vend*vend - (y[3]*B[0][0]*y[3]*B[0][0] + y[4]*B[1][0]*y[4]*B[1][0] + y[5]*B[2][0]*y[5]*B[2][0])/B[3][0]/B[3][0])/B[3][0];
-				if (protneut == PROTON) rho_L *= m_p;
-				else if (protneut == ELECTRON) rho_L *= m_e;
-				long double dvdt = sqrt(dydx[3]*dydx[3] + dydx[4]*dydx[4] + dydx[5]*dydx[5]);
-				long double d2rds2[3] = {(dydx[3] - dvdt*dydx[0]/vend)/vend/vend, (dydx[4] - dvdt*dydx[1]/vend)/vend/vend, (dydx[5] - dvdt*dydx[2]/vend)/vend/vend};
-				long double d2rds2abs = sqrt(d2rds2[0]*d2rds2[0] + d2rds2[1]*d2rds2[1] + d2rds2[2]*d2rds2[2]);
-				r_L[0] = y[0] + rho_L*d2rds2[0]/d2rds2abs;
-				r_L[1] = y[1] + rho_L*d2rds2[1]/d2rds2abs;
-				r_L[2] = y[2] + rho_L*d2rds2[2]/d2rds2abs;
-				adiabacity1 = rho_L*sqrt(B[3][1]*B[3][1] + B[3][2]*B[3][2] + B[3][3]*B[3][3])/B[3][0];
-				adiabacity2 = sqrt(B[3][1]*y[3]*B[3][1]*y[3] + B[3][2]*y[4]*B[3][2]*y[4] + B[3][3]*y[5]*B[3][3]*y[5])/ele_e/B[3][0]/B[3][0];
-				if (protneut == PROTON) adiabacity2 *= m_p*ele_e;
-				else if (protneut == ELECTRON) adiabacity2 *= m_e*ele_e;
-			}
-			fprintf(trackfile," %LG %LG %LG %LG %LG",r_L[0],r_L[1],r_L[2],adiabacity1,adiabacity2);
-*/
 			fprintf(trackfile,"\n");
 		};
 };
