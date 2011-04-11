@@ -28,7 +28,7 @@ struct TParticle{
 		long double Estart, Eend; //start/end kinetic energy
 		long double rstart, rend, phistart, phiend, alphastart, alphaend, gammastart, gammaend, vstart, vend;
 		long double trajlength, comptime, refltime;	// trajectory length, computing time, reflection computing time
-		long double vlad, vladmax, vladtotal, frac, thumbmax, BFsurvprob; // spinflip probabilities, numerical error in decay calculation
+		long double vlad, vladmax, vladtotal, frac, thumbmax, BFsurvprob, logBF; // spinflip probabilities, numerical error in decay calculation
 		int polarisation; // polarisation of particle (-1,0,1)
 		int nrefl, NSF, nsteps; // number of reflections/spin flips/"good" and "bad" integration steps 
 
@@ -40,7 +40,7 @@ struct TParticle{
 
 		// constructor, create particle, set start values randomly according to all3inone.in
 		TParticle(int aprotneut, int number, TSource &src, TMCGenerator &mcgen, TField &afield){
-			xstart = mcgen.StartTime(aprotneut);
+			xstart = mcgen.UniformDist(0,src.ActiveTime);
 
 			polarisation = mcgen.DicePolarisation();
 			NeutEnergie = mcgen.NeutronSpectrum();
@@ -172,7 +172,7 @@ struct TParticle{
 		
 		// integrate particle trajectory
 		void Integrate(TGeometry &geometry, TMCGenerator &mcgen, TField &afield, FILE *ENDLOG, FILE *trackfile, 
-						FILE *SNAP = NULL, set<int> *snapshots = NULL, int areflectlog = 0, FILE *aREFLECTLOG = NULL){
+						FILE *SNAP = NULL, vector<float> *snapshots = NULL, int areflectlog = 0, FILE *aREFLECTLOG = NULL){
 			geom = &geometry;
 			mc = &mcgen;
 			field = &afield;
@@ -180,7 +180,8 @@ struct TParticle{
 			REFLECTLOG = aREFLECTLOG;
 			timeval clock_start, clock_end, refl_start, refl_end;
 			gettimeofday(&clock_start, NULL); // start computing time measure
-			int snapshotsdone = -1, perc = 0;
+			unsigned int nextsnapshot = 0;
+			int perc = 0;
 			printf("Teilchennummer: %i, Teilchensorte: %i\n",particlenumber,protneut);
 			printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG l: %LG\n",
 				rstart, phistart/conv, ystart[2], vstart, alphastart/conv,gammastart/conv, Estart, xend, mc->MaxTrajLength(protneut));
@@ -195,7 +196,7 @@ struct TParticle{
 				PrintIntegrationStep(trackfile, x, y, h); // print start into track file
 			long double lastsave = x;
 			// create integrator class (stepperdopr853 = 8th order Runge Kutta)
-			stepper = new StepperDopr853<TParticle>(y, dydx, x, 1e-13, 1e-13, true);// y, dydx, x, atol, rtol, dense output
+			stepper = new StepperDopr853<TParticle>(y, dydx, x, 1e-13, 0, true);// y, dydx, x, atol, rtol, dense output
 			
 			while (kennz == KENNZAHL_UNKNOWN){ // integrate as long as nothing happened to particle
 				x1 = x; // save point before next step
@@ -237,9 +238,8 @@ struct TParticle{
 					// do special calculations for neutrons (spinflipcheck, snapshots, etc)
 					if (protneut == NEUTRON){
 						field->BFeld(y1[0],y1[1],y1[2],x1,B);
-						field->EFeld(y1[0],y1[1],y1[2],V,E);
 						// spin flip properties according to Vladimirsky and thumbrule
-/*						vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
+						vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
 										   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
 										   y1[3], y1[4], y1[5]);
 						frac = thumbrule(B[0][0], B[1][0], B[2][0], 
@@ -250,12 +250,14 @@ struct TParticle{
 							vladmax = max(vladmax,log10(vlad));
 						if (frac > 1e-99)
 							thumbmax = max(thumbmax,log10(frac));	
-*/
+
 						long double B2[4][4];
 						field->BFeld(y2[0],y2[1],y2[2],x2,B2);
-						long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2); // integrate spinflip pobability
+						long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2,min(xstart+xend,StorageTime)); // integrate spinflip probability
+						if (1-sp > 1e-30) logBF = log10(1-sp);
+						else logBF = -99;
 						BFsurvprob *= sp;
-						// flip the spin with a probability of 1-BFpol
+						// flip the spin with a probability of 1-BFsurvprob
 						if (flipspin && mc->UniformDist(0,1) < 1-sp) 
 						{
 							polarisation *= -1;
@@ -266,15 +268,16 @@ struct TParticle{
 						}
 					
 						// take snapshots of neutrons at certain times
-						if(SNAP && snapshots->count((int) x1) > 0 && (int) x1 != snapshotsdone)
+						if(SNAP && snapshots && nextsnapshot < snapshots->size() && x1 >= (*snapshots)[nextsnapshot])
 						{
 							printf("\n Snapshot at %LG s \n", x1);
+							field->EFeld(y1[0],y1[1],y1[2],V,E);
 							SetEndValues(x1,y1,B,E,V);
 							Print(SNAP);
-							snapshotsdone=(int) x1;
+							nextsnapshot++;
 						}	
 			
-						if ((neutdist == 1) && (ExpPhase(x) == 4))
+						if (neutdist == 1)
 							fillndist(x1, y1, x2, y2); // write spatial neutron distribution
 					}
 					
@@ -334,7 +337,7 @@ struct TParticle{
 			Hstart = Hend = Hmax = NeutEnergie = Estart = Eend = 0;
 			rstart = rend = phistart = phiend = alphastart = alphaend = gammastart = gammaend = vstart = vend = 0;
 			trajlength = comptime = refltime = 0;
-			BFsurvprob = 1; vladtotal = vladmax = thumbmax = 0;
+			BFsurvprob = vladtotal = 1; vladmax = thumbmax = logBF = -9e99;
 			polarisation = 0;
 			nrefl = NSF = nsteps = 0;
 			currentsolid = &defaultsolid;
@@ -460,7 +463,7 @@ struct TParticle{
 //			Log("\nParticle hit %s (material %s) at t=%LG r=%LG z=%LG: ",solids[ID].name.c_str(),mat->name.c_str(),x1,r,y1[2]);
 				
 			//************ absorption of electrons/protons ***********
-			if (protneut != NEUTRON || !geom->reflekt[ExpPhase(x1)]){
+			if (protneut != NEUTRON){
 				kennz = geom->solids[ID].kennz;
 				printf("Absorption!");
 				return true;
@@ -498,7 +501,7 @@ struct TParticle{
 				//*************** specular reflexion ************
 				prob = mc->UniformDist(0,1);
 				nrefl++;
-				if ((geom->diffuse == 1) || ((geom->diffuse==3)&&(prob >= mat->DiffProb)))
+				if (prob >= mat->DiffProb)
 				{
 					//printf("Specular reflection! Erefl=%LG neV Transprop=%LG\n",Enormal*1e9,Trans);
 					if(reflectlog & 1)
@@ -510,7 +513,7 @@ struct TParticle{
 				}
 
 				//************** diffuse reflection ************
-				else if ((geom->diffuse == 2) || ((geom->diffuse == 3)&&(prob < mat->DiffProb)))
+				else
 				{
 					winkeben = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
 					winksenkr = mc->SinCosDist(0, 0.5*pi);
@@ -576,7 +579,7 @@ struct TParticle{
 			phiend = fmod(atan2(y[1],y[0]) + 2*pi, 2*pi);
 			vend = sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5]);
 			switch (protneut){
-				case NEUTRON: 
+				case NEUTRON:
 					Eend = 0.5*m_n*vend*vend;
 					Hend = Eend + m_n*gravconst*yend[2] - polarisation*mu_nSI/ele_e*B[3][0];
 					break;
@@ -653,7 +656,8 @@ struct TParticle{
 			for (int i = 0; i < 4; i++)
 				for (int j = 0; j < 4; j++)
 					fprintf(trackfile,"%.17LG ",B[i][j]);
-			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %d",E[0],E[1],E[2],h,logvlad,logfrac,ExpPhase(x));
+			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG",E[0],E[1],E[2],h,logvlad,logfrac,logBF);
+
 			fprintf(trackfile,"\n");
 		};
 };

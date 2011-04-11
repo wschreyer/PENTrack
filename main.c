@@ -34,13 +34,10 @@ void PrintGeometry(const char *outfile, TGeometry &geom); // do many random coll
 int MonteCarloAnzahl=1;   // number of particles for MC simulation
 int protneut;       //user choice for reflecting walls, B-field, prot or neutrons, experiment mode
 int reflektlog = 0; // write reflections to file
-set<int> snapshots;
+vector<float> snapshots;
 vector<int> kennz_counter[3];
-int diffuse = 1, reflekt[7] = {1, 1, 1, 1, 1, 1, 1};
 int polarisation = 1, decay = 2;
 long double decayoffset = 0, tau_n = 885.7;
-int bfeldwahl = 0;
-long double BFeldSkalGlobal = 1.0, EFeldSkal = 1.0;
 long double BCutPlanePoint[9];	// 3 points on plane for B field cut
 int BCutPlaneSampleCount1, BCutPlaneSampleCount2;
 
@@ -108,7 +105,7 @@ int main(int argc, char **argv){
 
 	//printf("\nMonteCarlo: %i\n MonteCarloAnzahl %i \n", MonteCarlo, MonteCarloAnzahl);
 
-	TField field((inpath + "/geometry.in").c_str(), bfeldwahl, BFeldSkalGlobal, EFeldSkal);
+	TField field((inpath + "/geometry.in").c_str());
 
 	switch(protneut)
 	{
@@ -119,7 +116,7 @@ int main(int argc, char **argv){
 	}
 
 
-	TGeometry geom((inpath + "/geometry.in").c_str(), reflekt, diffuse, kennz_counter);
+	TGeometry geom((inpath + "/geometry.in").c_str(), kennz_counter);
 	
 	if (protneut == GEOMETRY){
 		PrintGeometry((outpath+"/geometry.out").c_str(), geom);
@@ -218,6 +215,10 @@ int main(int argc, char **argv){
 			InitTime, SimulationTime, IntegratorTime, IntegratorTime*100/SimulationTime, ReflTime, ReflTime*100/SimulationTime, DiceTime);
 	printf("That's it... Have a nice day!\n");
 	
+
+	ostringstream fileprefix;
+	fileprefix << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0);
+	if (neutdist == 1) outndist((fileprefix.str() + "ndist.out").c_str());   // Neutronenverteilung in der Flasche ausgeben
 	if (tracklog)
 		fclose(tracklog);
 	if (endlog)
@@ -236,8 +237,6 @@ void ConfigInit(void){
 	protneut = NEUTRON;
 	polarisation = 1;
 	neutdist = 0;
-	diffuse = 3;
-	bfeldwahl = 0;
 	ausgabewunsch = 2;
 	MonteCarloAnzahl = 1;
 	/*end default values*/
@@ -274,31 +273,31 @@ void ConfigInit(void){
 	istringstream(config["global"]["protneut"])				>> protneut;
 	istringstream(config["global"]["polarisation"])			>> polarisation;
 	istringstream(config["global"]["neutdist"])				>> neutdist;
-	istringstream(config["global"]["diffuse"])				>> diffuse;
-	istringstream(config["global"]["bfeldwahl"])			>> bfeldwahl;
-	istringstream(config["global"]["BFeldSkalGlobal"])		>> BFeldSkalGlobal;
-	istringstream(config["global"]["EFeldSkal"])			>> EFeldSkal;
 	istringstream(config["global"]["ausgabewunsch"])		>> ausgabewunsch;
 	
 	int snapshot;
 	istringstream(config["global"]["snapshot"])				>> snapshot;
 	if (snapshot){
-		int tmp_snapshot;
+		float tmp_snapshot;
 		istringstream isnapshots(config["global"]["snapshots"]);	
 		do{
 			isnapshots >> tmp_snapshot;
-			if (isnapshots.good()) snapshots.insert(tmp_snapshot);
+			if (isnapshots.good()) snapshots.push_back(tmp_snapshot);
 		}while(isnapshots.good());
 	}
 	
+	int BFstart, BFend;
+	istringstream iBruteForce(config["global"]["BruteForce"]);
+	do{
+		iBruteForce >> BFstart >> BFend;
+		if (iBruteForce.good()){
+			BFtimes.push_back(BFstart);
+			BFtimes.push_back(BFend);
+		}
+	}while(iBruteForce.good());
+
 	istringstream(config["global"]["reflektlog"])			>> reflektlog;
 	istringstream(config["global"]["MonteCarloAnzahl"])		>> MonteCarloAnzahl;
-	istringstream(config["global"]["FillingTime"])			>> FillingTime;
-	istringstream(config["global"]["CleaningTime"])			>> CleaningTime;
-	istringstream(config["global"]["RampUpTime"])			>> RampUpTime;
-	istringstream(config["global"]["FullFieldTime"])		>> FullFieldTime;
-	istringstream(config["global"]["RampDownTime"])			>> RampDownTime;
-	istringstream(config["global"]["EmptyingTime"])			>> EmptyingTime;
 	istringstream(config["global"]["storagetime"])			>> StorageTime;
 	istringstream(config["global"]["BFTargetB"])			>> BFTargetB;
 	istringstream(config["global"]["decay"])				>> decay;
@@ -308,27 +307,6 @@ void ConfigInit(void){
 															>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
 															>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
 															>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
-	
-	istringstream(config["filling"]["BruteForce"])			>> BruteForce[1];
-	istringstream(config["filling"]["reflekt"])				>> reflekt[1];
-	                                    
-	istringstream(config["cleaning"]["BruteForce"])			>> BruteForce[2];
-	istringstream(config["cleaning"]["reflekt"])			>> reflekt[2];
-
-	istringstream(config["rampup"]["BruteForce"])			>> BruteForce[3];
-	istringstream(config["rampup"]["reflekt"])				>> reflekt[3];
-	                                    
-	istringstream(config["fullfield"]["BruteForce"])		>> BruteForce[4];
-	istringstream(config["fullfield"]["reflekt"])			>> reflekt[4];
-	                                    
-	istringstream(config["rampdown"]["BruteForce"])			>> BruteForce[5];
-	istringstream(config["rampdown"]["reflekt"])			>> reflekt[5];
-	                                    
-	istringstream(config["counting"]["BruteForce"])			>> BruteForce[6];
-	istringstream(config["counting"]["reflekt"])			>> reflekt[6];
-
-
-	return;
 }
 
 // open logfiles
@@ -378,7 +356,7 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 		fprintf(tracklog,"Teilchen protneut polarisation t x y z dxdt dydt dzdt "
 							"v H E Bx dBxdx dBxdy dBxdz By dBydx "
 							 "dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez "
-							 "timestep logvlad logthumb ExpPhase\n");
+							 "timestep logvlad logthumb logBF\n");
 	}
 
 	if (protneut == NEUTRON && reflektlog){
@@ -389,8 +367,6 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 	    }
 		fprintf(reflectlog,"jobnumber teilchen protneut reflection solid t x y z vx vy vz nx ny nz H winkeben winksenkr Transprob\n"); // Header for Reflection File
 	}
-
-	if (neutdist == 1) outndist((fileprefix.str() + "ndist.out").c_str());   // Neutronenverteilung in der Flasche ausgeben
 	// **************** end create log files ****************	
 }
 
@@ -404,7 +380,7 @@ void OutputCodes(vector<int> kennz_counter[3]){
 	       "   0 %12i %20i %19i 		(were not categorized)\n"
 	       "   1 %12i %20i %19i 		(did not finish)\n"
 	       "   2 %12i %20i %19i 		(hit outer boundaries)\n"
-	       "   3 %12i %20i %19i 		(produced a numerical error (most likely step size underflow))\n"
+	       "   3 %12i %20i %19i 		(produced a numerical error)\n"
 	       "   4 %12i %20i %19i 		(decayed)\n"
 	       "   5 %12i %20i %19i 		(found no initial position)\n",
 	       ncount + pcount + ecount,

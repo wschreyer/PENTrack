@@ -28,18 +28,18 @@ UCNdet	0.1			1			0		# high efficiency assumed
 # customsurf: starting values are on triangles which have at least one vertex in the given parameter range (r,phi,z)
 ########################################
 
-#customxxx	r_min	r_max	phi_min	phi_max		z_min	z_max	Enormal (customsurf only)
-#customsurf	0.123	0.495	0		360			0.003	1.145	0
-customvol	0.125	0.495	0		360			0.005	1.145
+#customxxx	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	Enormal (customsurf only)
+#customsurf	0.123	0.495	0		360			0.003	1.145	200			0
+customvol	0.125	0.495	0		360			0.005	1.145	0
 
 #inital conditions will be randomly picked from this volume (has to be a solid body in Solidworks)
-#sourcetype 	STL-file		Enormal (surface only)
-#surface 		in/source.STL	0
-#volume 		in/source.STL
+#sourcetype 	STL-file		ActiveTime	Enormal (surface only)
+#surface 		in/source.STL	200			0
+#volume 		in/source.STL	0
 
 [FIELDS]
-#field table-file
-in/fieldval.tab
+#field table-file	BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime
+in/fieldval.tab		1			1			0				0			200				100
 
 [RACETRACKS]
 #InfiniteWireZ			I		x			y
@@ -51,7 +51,7 @@ in/fieldval.tab
 
 #FullRacetrack			2250	-0.15		1.35		0.6
 
-#FiniteWireZCenter		10000	-1			2
+FiniteWireZCenter		10000	-1			2
 
 ############# How to use STL-files ############
 # STL files use a list of triangles to describe 3D-surfaces (see here for file format: http://www.ennex.com/~fabbers/StL.asp)

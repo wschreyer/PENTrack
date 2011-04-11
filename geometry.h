@@ -37,15 +37,10 @@ long double Absorption(const long double E, const long double Mf, const long dou
 
 struct TGeometry{
 	public:
-		int diffuse; // diffuse reflection switch, reflection switch
-		int reflekt[7];	// reflection on/off in different experiment stages
-		
 		KDTree *kdtree;
 		vector<solid> solids;	// dynamic array to associate solids with material/kennzahl/name
 		
-		TGeometry(const char *geometryin, int areflekt[7], int adiffuse, vector<int> kennz_counter[3]){
-			diffuse = adiffuse;
-			for (int i = 0; i < 7; i++) reflekt[i] = areflekt[i];
+		TGeometry(const char *geometryin, vector<int> kennz_counter[3]){
 			ifstream infile(geometryin);
 			string line;
 			vector<material> materials;	// dynamic array to store material properties
@@ -179,6 +174,7 @@ struct TSource{
 		string sourcemode; // volume/surface/customvol/customsurf
 		long double r_min, r_max, phi_min, phi_max, z_min, z_max; // for customvol/customsurf
 		long double E_normal, Hmin_lfs, Hmin_hfs;
+		long double ActiveTime;
 		
 		vector<Triangle*> sourcetris;
 		long double sourcearea;
@@ -320,13 +316,13 @@ struct TSource{
 				else if (!infile.good() || c == '[') break;	// next section found
 				infile >> sourcemode;
 				if (sourcemode == "customvol" || sourcemode == "customsurf"){
-					infile >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max;
+					infile >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime;
 					phi_min *= conv;
 					phi_max *= conv;
 				}
 				else if (sourcemode == "volume" || sourcemode == "surface"){
 					string sourcefile;
-					infile >> sourcefile;
+					infile >> sourcefile >> ActiveTime;
 					kdtree = new KDTree;
 					kdtree->ReadFile(sourcefile.c_str(),0);
 					kdtree->Init();
