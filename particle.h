@@ -181,6 +181,8 @@ struct TParticle{
 			timeval clock_start, clock_end, refl_start, refl_end;
 			gettimeofday(&clock_start, NULL); // start computing time measure
 			unsigned int nextsnapshot = 0;
+			while (snapshots && nextsnapshot < snapshots->size() && (*snapshots)[nextsnapshot] < xstart)
+				nextsnapshot++;
 			int perc = 0;
 			printf("Teilchennummer: %i, Teilchensorte: %i\n",particlenumber,protneut);
 			printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG l: %LG\n",
