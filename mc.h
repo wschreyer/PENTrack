@@ -161,6 +161,7 @@ struct TMCGenerator{
 	// energy distribution of UCNs (0 to Hmax!, potential minimum has to be added!)
 	long double NeutronSpectrum(){
 		return SqrtDist(nini.EnergieS*1e-9, nini.EnergieE*1e-9);
+
 /*
 		//neutron energy spectrum for PENeLOPE (storage only) 180cm above source and 10cm absorber
 		long double x,y;
@@ -185,6 +186,19 @@ struct TMCGenerator{
 				return (x + 18)*1e-9;
 		}
 */
+/*
+		//low-field-seeker spectrum after ramping (storage+buffer) 180cm above source and 10cm absorber (outer&inner)
+		long double x,y;
+		for(;;){
+			x = UniformDist(-12, 105);
+			y = UniformDist(0,1900);
+			if ((x <= 75 && y <= 22*x + 246)
+				|| (x > 75 && x <= 87 && y <= 1900)
+				|| (x > 87 && y <= -116.4*x + 12092))
+				return (x + 12)*1e-9;
+		}
+*/
+
 /*		
 		//neutron energy spectrum by Gerd Petzoldt
 		long double x,y,cutoff = 900,decay = 0.05;
@@ -250,13 +264,6 @@ struct TMCGenerator{
 	 
 		}while(WktTMP > Elvert);
 		return Energie;
-	};
-	
-	long double StartTime(int protneut){
-		if (protneut == NEUTRON && FillingTime > 0)
-			return UniformDist(0, FillingTime);
-		else
-			return 0;
 	};
 	
 	// start time, lifetime/simulationtime for different particles

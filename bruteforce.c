@@ -19,10 +19,9 @@ using namespace std;
 
 FILE *BFLOG = NULL; 
 //parameters for different experiment phases
-int BruteForce[7] = {0,0,0,0,0,0,0}; // bruteforce on/off in different experiment stages
-int flipspin = 1;
+int flipspin = 0;
+vector<long double> BFtimes;
 
-const long double gamma_n = -1.83247185e8; // gyromagnetic ratio of neutron
 const long double BFdxsav=5e-7;  // timestep for intermediate output
 long double BFBminmem=10.0;
 long BFZeilencount, intsteps = 0;
@@ -120,9 +119,12 @@ void PrintBFStep(Output &out, TBFderivs &BFderivs){
 }
 
 // calculate spin flip probability by integrating Bloch equations
-long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[4][4], long double x2, VecDoub_I &y2, long double B2[4][4]){
-	int BruteForce1 = BruteForce[ExpPhase(x1)];
-	int BruteForce2 = BruteForce[ExpPhase(x2)];
+long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[4][4], long double x2, VecDoub_I &y2, long double B2[4][4], long double xmax){
+	bool BruteForce1 = false, BruteForce2 = false;;
+	for (unsigned int i = 0; i < BFtimes.size(); i += 2){
+		BruteForce1 |= (x1 >= BFtimes[i] && x1 < BFtimes[i+1]);
+		BruteForce2 |= (x2 >= BFtimes[i] && x2 < BFtimes[i+1]);
+	}
 	if (BruteForce1 || BruteForce2){
 		BFBminmem = min(BFBminmem,min(B1[3][0],B2[3][0])); // save lowest value for info
 		
@@ -142,12 +144,15 @@ long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[
 			}
 	
 			TBFderivs BFderivs(x1,y1,B1,x2,y2,B2); // create derivs-struct
-			Output out((int)((x2-x1)/BFdxsav)); // create output object (save integrations steps in BFdxsav intervals)
+			int nsave = 0;
+			if (ausgabewunsch==OUTPUT_EVERYTHINGandSPIN || ausgabewunsch==OUTPUT_ENDPOINTSandSPIN)
+				nsave = (int)((x2-x1)/BFdxsav);
+			Output out(nsave); // create output object (save integrations steps in BFdxsav intervals)
 			// create integrator<stepper<derivobject> >, params: spin vector, start time, end time, atol, rtol, first step size, min step size, output object, derivobject
-			Odeint<StepperDopr853<TBFderivs> > ode(*I_n, x1, x2, 0, 1e-13, 1e-9, 0, out, BFderivs);
+			Odeint<StepperDopr853<TBFderivs> > ode(*I_n, x1, x2, 1e-13, 0, 1e-9, 0, out, BFderivs);
 			ode.integrate(); // integrate
 			intsteps += ode.nok + ode.nbad; // add up integration steps
-			if((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
+			if ((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
 				PrintBFStep(out,BFderivs); // print integrations steps
 			
 			if (B2[3][0] > BFTargetB || !BruteForce2){
@@ -155,7 +160,7 @@ long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[
 				// calculate polarisation at end of step BFpol = (I_n*B/|B|) in [-1/2,1/2]
 				long double BFpol = ((*I_n)[0]*B2[0][0] + (*I_n)[1]*B2[1][0] + (*I_n)[2]*B2[2][0])/B2[3][0];
 		
-				printf(" BF endtime %LG, BFflipprop %.17LG, BFpol %.17LG, intsteps taken %ld, Bmin %LG",
+				printf(" BF endtime %LG, BFflipprop %.17LG, BFpol %.17LG, intsteps taken %ld, Bmin %LG\n",
 						x2, 1-(BFpol+0.5), BFpol, intsteps, BFBminmem);
 		
 				BFBminmem=10; // reset values when done

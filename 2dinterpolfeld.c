@@ -83,11 +83,17 @@ void CylToCart(long double v_r, long double v_phi, long double phi, long double 
 long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 
 
 // constructor
-TabField::TabField(const char *tabfile){	
+TabField::TabField(const char *tabfile, long double Bscale, long double Escale,
+		long double aNullFieldTime, long double aRampUpTime, long double aFullFieldTime, long double aRampDownTime){
+	NullFieldTime = aNullFieldTime;
+	RampUpTime = aRampUpTime;
+	FullFieldTime = aFullFieldTime;
+	RampDownTime = aRampDownTime;
+
 	MatDoub BrTab, BphiTab, BzTab;	// Br/Bz values
 	MatDoub ErTab , EphiTab, EzTab;	// Er/Ez values
 	MatDoub VTab; // potential values
-	ReadTabFile(tabfile,BrTab,BphiTab,BzTab,ErTab,EphiTab,EzTab,VTab); // open tabfile and read values into arrays
+	ReadTabFile(tabfile,Bscale,Escale,BrTab,BphiTab,BzTab,ErTab,EphiTab,EzTab,VTab); // open tabfile and read values into arrays
 	
 	CheckTab(BrTab,BphiTab,BzTab,ErTab,EphiTab,EzTab,VTab); // print some info
 
@@ -137,7 +143,8 @@ TabField::TabField(const char *tabfile){
 
 
 // read table file given in the constructor parameter
-void TabField::ReadTabFile(const char *tabfile, MatDoub_O &BrTab, MatDoub_O &BphiTab, MatDoub_O &BzTab, MatDoub_O &ErTab, MatDoub_O &EphiTab, MatDoub_O &EzTab, MatDoub_O &VTab){
+void TabField::ReadTabFile(const char *tabfile, long double Bscale, long double Escale,
+		MatDoub_O &BrTab, MatDoub_O &BphiTab, MatDoub_O &BzTab, MatDoub_O &ErTab, MatDoub_O &EphiTab, MatDoub_O &EzTab, MatDoub_O &VTab){
 	ifstream FIN(tabfile, ifstream::in);
 	if (!FIN.is_open()){
 		printf("\nCould not open %s!\n",tabfile);
@@ -215,34 +222,47 @@ void TabField::ReadTabFile(const char *tabfile, MatDoub_O &BrTab, MatDoub_O &Bph
 		zind[zi] = z;
 		if (BrTab.nrows() > 0){
 			FIN >> val;
-			BrTab[ri][zi] = val*Bconv;
+			BrTab[ri][zi] = val*Bconv*Bscale;
 		}
 		if (BphiTab.nrows() > 0){
 			FIN >> val;
-			BphiTab[ri][zi] = val*Bconv;
+			BphiTab[ri][zi] = val*Bconv*Bscale;
 		}
 		if (BzTab.nrows() > 0){
 			FIN >> val;
-			BzTab[ri][zi] = val*Bconv;
+			BzTab[ri][zi] = val*Bconv*Bscale;
 		}
 		if (ErTab.nrows() > 0){
 			FIN >> val;
-			ErTab[ri][zi] = val*Econv;
+			ErTab[ri][zi] = val*Econv*Escale;
 		}
 		if (EphiTab.nrows() > 0){
 			FIN >> val;
-			EphiTab[ri][zi] = val*Econv;
+			EphiTab[ri][zi] = val*Econv*Escale;
 		}
 		if (EzTab.nrows() > 0){
 			FIN >> val;
-			EzTab[ri][zi] = val*Econv;
+			EzTab[ri][zi] = val*Econv*Escale;
 		}
 		if (VTab.nrows() > 0){
-			FIN >> VTab[ri][zi];
+			FIN >> val;
+			VTab[ri][zi] = val*Escale;
 		}
 		FIN >> ws;
 	}
 	
+	if (Bscale == 0){
+		BrTab.resize(0,0);
+		BphiTab.resize(0,0);
+		BzTab.resize(0,0);
+	}
+	if (Escale == 0){
+		ErTab.resize(0,0);
+		EphiTab.resize(0,0);
+		EzTab.resize(0,0);
+		VTab.resize(0,0);
+	}
+
 	r_mi = rind[0];
 	z_mi = zind[0];
 	rdist = rind[1] - rind[0];
@@ -376,9 +396,10 @@ void TabField::PreInterpol(NRmatrix<Doub[4][4]> &coeff, MatDoub_I &Tab){
 
 
 // interpolate B-field (return true when calculation was successful)
-bool TabField::BInterpol(long double x, long double y, long double z, long double B[4][4]){
+bool TabField::BInterpol(long double t, long double x, long double y, long double z, long double B[4][4]){
 	long double r = sqrt(x*x+y*y);
-	if ((r - r_mi)/rdist > 0 && (r - r_mi - (m-1)*rdist)/rdist < 0 && (z - z_mi)/zdist > 0 && (z - z_mi - (n-1)*zdist)/zdist < 0){
+	long double Bscale = BFieldScale(t);
+	if (Bscale != 0 && (r - r_mi)/rdist > 0 && (r - r_mi - (m-1)*rdist)/rdist < 0 && (z - z_mi)/zdist > 0 && (z - z_mi - (n-1)*zdist)/zdist < 0){
 		// bicubic interpolation
 		int indr = (int)((r - r_mi)/rdist);
 		int indz = (int)((z - z_mi)/zdist);
@@ -399,10 +420,36 @@ bool TabField::BInterpol(long double x, long double y, long double z, long doubl
 		if (Bzc.nrows() > 0)   bcuint_new(Bzc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, B[2][0], dBzdr, B[2][3]);
 		B[2][1] = dBzdr*cos(phi);
 		B[2][2] = dBzdr*sin(phi);
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
+				B[i][j] *= Bscale;
 		return (Brc.nrows() > 0 || Bphic.nrows() > 0 || Bzc.nrows() > 0);
 	}
 	return false;
 }
+
+//B-Feld nach Wunsch skalieren, BFeldSkal wird an alle B Komp und deren Ableitungen multipliziert
+long double TabField::BFieldScale(long double t){
+	if (t < NullFieldTime || t >= NullFieldTime + RampUpTime + FullFieldTime + RampDownTime)
+		return 0;
+	else if (t >= NullFieldTime && t < NullFieldTime + RampUpTime){
+		// ramping up field smoothly with cosine
+		//result = (0.5 - 0.5*cos(pi*(t - CleaningTime - FillingTime)/RampUpTime)) * BFeldSkalGlobal;
+
+		// linear ramp
+		return (t - NullFieldTime)/RampUpTime;
+	}
+	else if (t >= NullFieldTime + RampUpTime && t < NullFieldTime + RampUpTime + FullFieldTime)
+		return 1;
+	else if (t >= NullFieldTime + RampUpTime + FullFieldTime && t < NullFieldTime + RampUpTime + FullFieldTime + RampDownTime){
+		// ramping down field smoothly with cosine
+		//result = (0.5 + 0.5*cos(pi*(t - (RampUpTime + CleaningTime + FillingTime + FullFieldTime)) / RampDownTime)) * BFeldSkalGlobal;
+
+		// linear ramp
+		return (1 - (t - RampUpTime - NullFieldTime - FullFieldTime)/RampDownTime);
+	}
+	else return 0;
+};
 
 
 // interpolate E-field (return true when calculation was successful)
