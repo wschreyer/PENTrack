@@ -240,18 +240,20 @@ struct TParticle{
 					// do special calculations for neutrons (spinflipcheck, snapshots, etc)
 					if (protneut == NEUTRON){
 						field->BFeld(y1[0],y1[1],y1[2],x1,B);
-						// spin flip properties according to Vladimirsky and thumbrule
-						vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
-										   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
-										   y1[3], y1[4], y1[5]);
-						frac = thumbrule(B[0][0], B[1][0], B[2][0], 
-										   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
-										   y1[3], y1[4], y1[5]);
-						vladtotal *= 1-vlad;
-						if (vlad > 1e-99)
-							vladmax = max(vladmax,log10(vlad));
-						if (frac > 1e-99)
-							thumbmax = max(thumbmax,log10(frac));	
+						if (B[3][0] > 0){
+							// spin flip properties according to Vladimirsky and thumbrule
+							vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
+											   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
+											   y1[3], y1[4], y1[5]);
+							frac = thumbrule(B[0][0], B[1][0], B[2][0],
+											   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
+											   y1[3], y1[4], y1[5]);
+							vladtotal *= 1-vlad;
+							if (vlad > 1e-99)
+								vladmax = max(vladmax,log10(vlad));
+							if (frac > 1e-99)
+								thumbmax = max(thumbmax,log10(frac));
+						}
 
 						long double B2[4][4];
 						field->BFeld(y2[0],y2[1],y2[2],x2,B2);
