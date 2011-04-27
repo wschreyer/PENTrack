@@ -22,7 +22,7 @@ MonteCarloAnzahl 1
 storagetime 100
 
 # do bruteforce integration between these times
-BruteForce 0 1
+BruteForce 0 0
 # flux density below which the spin will also be tracked, when BF is turned on
 BFTargetB 0.2
 
