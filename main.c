@@ -36,7 +36,7 @@ int protneut;       //user choice for reflecting walls, B-field, prot or neutron
 int reflektlog = 0; // write reflections to file
 vector<float> snapshots;
 vector<int> kennz_counter[3];
-int polarisation = 1, decay = 2;
+int polarisation = POLARISATION_GOOD, decay = 2;
 long double decayoffset = 0, tau_n = 885.7;
 long double BCutPlanePoint[9];	// 3 points on plane for B field cut
 int BCutPlaneSampleCount1, BCutPlaneSampleCount2;
@@ -97,12 +97,6 @@ int main(int argc, char **argv){
 		neutdist = 0;
 	
 			
-	printf(
-	" ################################################################\n"
-	" ###                 Welcome to PNTracker,                    ###\n"
-	" ###     the tracking program for neutrons and protons        ###\n"
-	" ################################################################\n");
-
 	//printf("\nMonteCarlo: %i\n MonteCarloAnzahl %i \n", MonteCarlo, MonteCarloAnzahl);
 
 	TField field((inpath + "/geometry.in").c_str());
@@ -116,6 +110,7 @@ int main(int argc, char **argv){
 	}
 
 
+	cout << "Loading geometry..." << endl;
 	TGeometry geom((inpath + "/geometry.in").c_str(), kennz_counter);
 	
 	if (protneut == GEOMETRY){
@@ -123,8 +118,10 @@ int main(int argc, char **argv){
 		return 0;
 	}
 	
+	cout << "Loading source..." << endl;
 	TSource source((inpath + "/geometry.in").c_str(), geom, field);
 	
+	cout << "Loading random number generator..." << endl;
 	TMCGenerator mc((inpath + "/all3inone.in").c_str(), polarisation, decay, decayoffset, tau_n);
 	
 	FILE *endlog = NULL, *tracklog = NULL, *snap = NULL, *reflectlog = NULL;
@@ -134,6 +131,13 @@ int main(int argc, char **argv){
 	float InitTime = (1.*clock())/CLOCKS_PER_SEC, DiceTime = 0, IntegratorTime = 0, ReflTime = 0; // time statistics
 	timeval simstart, simend;
 	gettimeofday(&simstart, NULL);	
+
+	printf(
+	" ################################################################\n"
+	" ###                 Welcome to PNTracker,                    ###\n"
+	" ###     the tracking program for neutrons and protons        ###\n"
+	" ################################################################\n");
+
 /*
 	stringstream filename;
 	filename << "in/42_0063eout2000m_" << jobnumber << ".out";
@@ -158,51 +162,48 @@ int main(int argc, char **argv){
 		infile >> ws;
 	}
 */
-	TParticle *particle = NULL;
+	TNeutron *neutron = NULL;
 	for (int iMC = 1; iMC <= MonteCarloAnzahl; iMC++)
 	{      
 		// create particle class according to protneut choice in config
 		timeval dicestart, diceend;
 		gettimeofday(&dicestart, NULL);
-		switch(protneut)
-		{	
-			case NEUTRON:	particle = new TParticle(NEUTRON,iMC,source,mc,field);
-							break;		
-			case PROTON:	particle = new TParticle(PROTON,iMC,source,mc,field);
-							break;		
-			case ELECTRON:	particle = new TParticle(ELECTRON,iMC,source,mc,field);
-							break;
-			case INTERACTIVE: particle = new TParticle(iMC,field);
-							break;
-		}
+		neutron = new TNeutron(iMC, source, mc, field);
 		gettimeofday(&diceend, NULL);
 		DiceTime += diceend.tv_sec - dicestart.tv_sec + (float)(diceend.tv_usec - dicestart.tv_usec)/1e6;
-
-		particle->Integrate(geom, mc, field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog); // integrate particle trajectory
-		kennz_counter[particle->protneut % 3][particle->kennz]++; // increase kennz-counter
-		ntotalsteps += particle->nsteps;
-		IntegratorTime += particle->comptime;
-		ReflTime += particle->refltime;
+		if (protneut == NEUTRON){
+			neutron->Integrate(geom, mc, field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog);
+			kennz_counter[NEUTRON][neutron->kennz]++; // increase kennz-counter
+			ntotalsteps += neutron->nsteps;
+			IntegratorTime += neutron->comptime;
+			ReflTime += neutron->refltime;
+		}
 		
-		if(particle->kennz == KENNZAHL_DECAYED && decay == 2)
+		if(protneut == PROTON || protneut == ELECTRON ||
+			(neutron->kennz == KENNZAHL_DECAYED && decay == 2))
 		{	
 			// if decay products should be simulated
 			long double v_p[3], v_e[3];
-			mc.MCZerfallsstartwerte(&particle->yend[3], v_p, v_e); // dice decay products
+			mc.MCZerfallsstartwerte(&neutron->yend[3], v_p, v_e); // dice decay products
+			if (protneut != ELECTRON){
+				TProton p(neutron, v_p, mc, field);
+				p.Integrate(geom, mc, field, endlog, tracklog);
+				kennz_counter[2][p.kennz]++;
+				ntotalsteps += p.nsteps;
+				IntegratorTime += p.comptime;
+				ReflTime += p.refltime;
+			}
+			if (protneut != PROTON){
+				TElectron e(neutron, v_e, mc, field);
+				e.Integrate(geom, mc, field, endlog, tracklog);
+				kennz_counter[0][e.kennz]++;
+				ntotalsteps += e.nsteps;
+				IntegratorTime += e.comptime;
+				ReflTime += e.refltime;
+			}
 			
-			TParticle p(PROTON, particle, v_p, mc, field);
-			p.Integrate(geom, mc, field, endlog, tracklog);
-			kennz_counter[2][p.kennz]++;
-			
-			TParticle e(ELECTRON, particle, v_e, mc, field);
-			e.Integrate(geom, mc, field, endlog, tracklog);
-			kennz_counter[0][e.kennz]++;
-			
-			ntotalsteps += p.nsteps + e.nsteps;
-			IntegratorTime += p.comptime + e.comptime;
-			ReflTime += p.refltime + e.refltime;
 		}
-		delete particle;
+		delete neutron;
 	}
 
 
@@ -235,7 +236,7 @@ int main(int argc, char **argv){
 void ConfigInit(void){
 	/* setting default values */
 	protneut = NEUTRON;
-	polarisation = 1;
+	polarisation = POLARISATION_GOOD;
 	neutdist = 0;
 	ausgabewunsch = 2;
 	MonteCarloAnzahl = 1;
@@ -323,7 +324,7 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 	fprintf(endlog,"jobnumber teilchen protneut polarisation "
                    "tstart xstart ystart zstart "
                    "rstart phistart vstart alphastart gammastart "
-                   "Hstart Estart NeutEnergie "
+                   "Hstart Estart "
                    "tend xend yend zend "
                    "rend phiend vend alphaend gammaend dt "
                    "Hend Eend kennz NSF ComputingTime BFflipprob "
@@ -339,7 +340,7 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 		fprintf(snap,"jobnumber teilchen protneut polarisation "
 	                   "tstart xstart ystart zstart "
 	                   "rstart phistart vstart alphastart gammastart "
-	                   "Hstart Estart NeutEnergie "
+	                   "Hstart Estart "
 	                   "tend xend yend zend "
 	                   "rend phiend vend alphaend gammaend dt "
 	                   "Hend Eend kennz NSF ComputingTime BFflipprob "
