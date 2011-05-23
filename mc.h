@@ -145,6 +145,11 @@ struct TMCGenerator{
 		return powl(mt_get_double(&v_mt_state) * (pow(max,3) - pow(min,3)) + pow(min,3),1.0/3.0);
 	};
 	
+	// return linearly distributed random number in [min..max]
+	long double LinearDist(long double min, long double max){
+		return sqrt(mt_get_double(&v_mt_state) * (max*max - min*min) + min*min);
+	};
+
 	// return sqrt(x) distributed random number in [min..max]
 	long double SqrtDist(long double min, long double max){
 		return powl((powl(max, 1.5) - powl(min, 1.5)) * mt_get_double(&v_mt_state) + powl(min, 1.5), 2.0/3.0);
@@ -158,7 +163,7 @@ struct TMCGenerator{
 		gamma = SinDist(0,pi);
 	};
 	
-	// energy distribution of UCNs (0 to Hmax!, potential minimum has to be added!)
+	// energy distribution of UCNs
 	long double NeutronSpectrum(){
 		return SqrtDist(nini.EnergieS*1e-9, nini.EnergieE*1e-9);
 
@@ -183,7 +188,7 @@ struct TMCGenerator{
 			if ((x <= 56 && y <= (8*x + 140))
 				|| (x > 56 && x <= 70 && y <= -3.87*x + 802)
 				|| (x > 70 && y <= (-3.719e-5*x*x*x*x + 7.585e-3*x*x*x + 0.1614*x*x - 113.3*x + 5.951e3)))
-				return (x + 18)*1e-9;
+				return x*1e-9;
 		}
 */
 /*
@@ -195,10 +200,21 @@ struct TMCGenerator{
 			if ((x <= 75 && y <= 22*x + 246)
 				|| (x > 75 && x <= 87 && y <= 1900)
 				|| (x > 87 && y <= -116.4*x + 12092))
-				return (x + 12)*1e-9;
+				return x*1e-9;
 		}
 */
+/*
+		//low-field-seeker spectrum after ramping (storage only) 180cm above source and 10cm absorber (outer&inner)
+		long double x,y;
+		for(;;){
+			x = UniformDist(11,107);
+			y = 6.74339e-11*pow(x,8) - 2.56528e-8*pow(x,7) + 3.89341e-6*pow(x,6) - 0.000301768*pow(x,5) + 0.0126685*pow(x,4) - 0.284483*pow(x,3) + 3.54352*pow(x,2) - 23.9924*x + 72.2083;
+			// polynom 8th order
+			if (UniformDist(0,1060)  < y)
+				return x*1e-9;
+		}
 
+*/
 /*		
 		//neutron energy spectrum by Gerd Petzoldt
 		long double x,y,cutoff = 900,decay = 0.05;
@@ -305,9 +321,9 @@ struct TMCGenerator{
 				return 1;
 		}
 		else if (polarisation == POLARISATION_GOOD)
-			return -1;
-		else if (polarisation == POLARISATION_BAD)
 			return 1;
+		else if (polarisation == POLARISATION_BAD)
+			return -1;
 		return 0;	
 	};
 

@@ -354,7 +354,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
     ifstream f(filename, fstream::binary);
     if (f.is_open()){
         char header[80];
-        unsigned long int filefacecount, i;
+        unsigned int filefacecount, i;
         f.read((char*)header,80);   // read header
         for (i = 79; i >= 0; i--){
             if (header[i] == ' ') header[i] = 0;    // trim trailing whitespaces
@@ -362,7 +362,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
         }
         if (name) memcpy(name,header,80);
         f.read((char*)&filefacecount,4);
-        printf("Reading '%.80s' from '%s' containing %lu triangles ... ",header,filename,filefacecount);    // print header
+        printf("Reading '%.80s' from '%s' containing %u triangles ... ",header,filename,filefacecount);    // print header
 		fflush(stdout);
 
         for (i = 0; i < filefacecount && !f.eof(); i++){
@@ -386,7 +386,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
             alltris.push_back(tri); // add triangle to list
         }
         f.close();
-        printf("Read %lu triangles\n",i);
+        printf("Read %u triangles\n",i);
     }
     else{
         printf("Could not open '%s'!\n",filename);

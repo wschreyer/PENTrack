@@ -6,13 +6,15 @@
 #include <string>
 
 #include "2dinterpolfeld.h"
+#include "3dinterpolfeld.h"
 #include "racetrack.h"
 
 using namespace std;
 
 struct TField{
 	public:
-		vector<TabField*> fields;
+		vector<TabField*> tables2;
+		vector<TabField3*> tables3;
 		vector<TRacetrack*> racetracks;
 		// incorporate B-fieldoszillations into the code
 		int FieldOscillation;        // turn field oscillation on if 1
@@ -31,8 +33,6 @@ struct TField{
 				if ((infile.peek() == '[') && getline(infile,line).good()){	// parse infile for section header
 					if (line.compare(0,8,"[FIELDS]") == 0)
 						LoadFieldsSection(infile);
-					else if (line.compare(0,12,"[RACETRACKS]") == 0)
-						LoadRacetrackSection(infile);
 					else getline(infile,line);
 				}
 				else getline(infile,line);
@@ -40,10 +40,12 @@ struct TField{
 		};
 		
 		~TField(){
-			for (vector<TabField*>::iterator i = fields.begin(); i != fields.end(); i++)
+			for (vector<TabField*>::iterator i = tables2.begin(); i != tables2.end(); i++)
+				delete (*i);
+			for (vector<TabField3*>::iterator i = tables3.begin(); i != tables3.end(); i++)
 				delete (*i);	
 			for (vector<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
-				delete (*i);	
+				delete (*i);
 		};
 	
 		// fill B field matrix with values
@@ -58,76 +60,76 @@ struct TField{
 				for (int j = 0; j < 4; j++)
 					B[i][j] = 0;
 
-			if (fields.size() > 0){
-				long double BFeldSkal = BFieldScale(t);
-				for (vector<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){
+			long double BFeldSkal = BFieldScale(t);
+			if (BFeldSkal != 0){
+				for (vector<TabField*>::iterator i = tables2.begin(); i != tables2.end(); i++){
 					if ((*i)->BInterpol(t, x, y, z, B))
 						break;
-/*					else if (++i == fields.end())
-						Log("\nThe particle has left fieldval boundaries: x=%LG, y=%LG z=%LG!", x, y, z);
-*/				}
+				}
+				for (vector<TabField3*>::iterator i = tables3.begin(); i != tables3.end(); i++){
+					if ((*i)->BInterpol(t, x, y, z, B))
+						break;
+				}
+				for (vector<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
+					(*i)->BFeld(x,y,z,B);
+
 				if (BFeldSkal != 1)
 					for (int i = 0; i < 3; i++)
 						for (int j = 0; j < 4; j++)
 							B[i][j] *= BFeldSkal;
-			}
-			for (vector<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
-				(*i)->BFeld(x,y,z,B);
 
-			B[3][0] = sqrt(B[0][0]*B[0][0] + B[1][0]*B[1][0] + B[2][0]*B[2][0]); // absolute value of B-Vector
-			if (B[3][0]>1e-31)
-			{
-				B[3][1] = (B[0][0]*B[0][1] + B[1][0]*B[1][1] + B[2][0]*B[2][1])/B[3][0]; // derivatives of absolute value
-				B[3][2] = (B[0][0]*B[0][2] + B[1][0]*B[1][2] + B[2][0]*B[2][2])/B[3][0];
-				B[3][3] = (B[0][0]*B[0][3] + B[1][0]*B[1][3] + B[2][0]*B[2][3])/B[3][0];
+				B[3][0] = sqrt(B[0][0]*B[0][0] + B[1][0]*B[1][0] + B[2][0]*B[2][0]); // absolute value of B-Vector
+				if (B[3][0]>1e-31)
+				{
+					B[3][1] = (B[0][0]*B[0][1] + B[1][0]*B[1][1] + B[2][0]*B[2][1])/B[3][0]; // derivatives of absolute value
+					B[3][2] = (B[0][0]*B[0][2] + B[1][0]*B[1][2] + B[2][0]*B[2][2])/B[3][0];
+					B[3][3] = (B[0][0]*B[0][3] + B[1][0]*B[1][3] + B[2][0]*B[2][3])/B[3][0];
+				}
 			}
-			
 		};
 		
 		// fill E field-vector with values
 		void EFeld(long double x, long double y, long double z, long double &V, long double Ei[3]){
 			Ei[0] = Ei[1] = Ei[2] = V = 0;
-			for (vector<TabField*>::iterator i = fields.begin(); i != fields.end(); i++){
+			for (vector<TabField*>::iterator i = tables2.begin(); i != tables2.end(); i++){
 				if ((*i)->EInterpol(x, y, z, V, Ei))
 					break;
-	/*			else if (++i == fields.end())
-					Log("\nThe particle has left fieldval boundaries: x=%LG, y=%LG z=%LG!", x, y, z);
-	*/		}
+			}
+			for (vector<TabField3*>::iterator i = tables3.begin(); i != tables3.end(); i++){
+				if ((*i)->EInterpol(x, y, z, V, Ei))
+					break;
+			}
 		};
 	
 	private:
 		void LoadFieldsSection(ifstream &infile){
 			char c;
 			string line;
-			cout << "Loading table fields..." << endl;
+			cout << "Loading fields..." << endl;
 			do{	// parse table field list
 				infile >> ws; // ignore whitespaces
 				c = infile.peek();
 				if (c == '#') continue;	// skip comments
 				else if (!infile.good() || c == '[') break;	// next section found
+				string type;
 				string ft;
 				long double Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime;
-				infile >> ft >> Bscale >> Escale >> NullFieldTime >> RampUpTime >> FullFieldTime >> RampDownTime;
-				TabField *tf;
-				tf = new TabField(ft.c_str(), Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime);
-				fields.push_back(tf);
-			}while(infile.good() && getline(infile,line).good());
-		};
-		
-		void LoadRacetrackSection(ifstream &infile){
-			char c;
-			string line;
-			cout << "Loading racetracks..." << endl;
-			do{	// parse STLfile list
-				infile >> ws; // ignore whitespaces
-				c = infile.peek();
-				if (c == '#') continue;	// skip comments
-				else if (!infile.good() || c == '[') break;	// next section found
-				string type;
 				long double Ibar, p1, p2, p3, p4, p5, p6;
 				TRacetrack *rt = NULL;
 				infile >> type;
-				if (type == "InfiniteWireZ"){
+				if (type == "2Dtable"){
+					infile >> ft >> Bscale >> Escale >> NullFieldTime >> RampUpTime >> FullFieldTime >> RampDownTime;
+					TabField *tf;
+					tf = new TabField(ft.c_str(), Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime);
+					tables2.push_back(tf);
+				}
+				else if (type == "3Dtable"){
+					infile >> ft >> Bscale >> Escale >> NullFieldTime >> RampUpTime >> FullFieldTime >> RampDownTime;
+					TabField3 *tf;
+					tf = new TabField3(ft.c_str(), Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime);
+					tables3.push_back(tf);
+				}
+				else if (type == "InfiniteWireZ"){
 					infile >> Ibar >> p1 >> p2;
 					rt = new TInfiniteWireZ(p1, p2, Ibar);
 				}
@@ -163,7 +165,7 @@ struct TField{
 					racetracks.push_back(rt);
 			}while(infile.good() && getline(infile,line).good());
 		};
-	
+
 		//B-Feld nach Wunsch skalieren, BFeldSkal wird an alle B Komp und deren Ableitungen multipliziert
 		long double BFieldScale(long double t){		
 			if (FieldOscillation==1)
