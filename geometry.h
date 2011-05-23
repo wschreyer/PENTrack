@@ -239,7 +239,7 @@ struct TSource{
 					mc.IsotropicDist(alpha, gamma);
 				}
 				else if (sourcemode == "customvol"){ // random point inside a volume defined by a custom parameter range
-					long double r = mc.SquareDist(r_min, r_max); // weighting because of the volume element and a r^2 probability outwards
+					long double r = mc.LinearDist(r_min, r_max); // weighting because of the volume element and a r^2 probability outwards
 					long double phi = mc.UniformDist(phi_min,phi_max);
 					z = mc.UniformDist(z_min,z_max);
 					p1[0] = r*cos(phi);
@@ -383,7 +383,7 @@ struct TSource{
 				long double B[4][4];
 				field.BFeld(p[0],p[1],p[2],0,B);
 				long double Epot = m_n*gravconst*p[2];
-				long double Emag = (mu_nSI/ele_e)*B[3][0];
+				long double Emag = -(mu_nSI/ele_e)*B[3][0];
 				long double Hlfs = Epot + Emag;
 				long double Hhfs = Epot - Emag;
 				Hmin_lfs = min(Hmin_lfs,Hlfs);

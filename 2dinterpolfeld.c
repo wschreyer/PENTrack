@@ -80,8 +80,6 @@ void CylToCart(long double v_r, long double v_phi, long double phi, long double 
 	v_y = v_r*sin(phi) + v_phi*cos(phi);	
 }
 
-long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen 
-
 // constructor
 TabField::TabField(const char *tabfile, long double Bscale, long double Escale,
 		long double aNullFieldTime, long double aRampUpTime, long double aFullFieldTime, long double aRampDownTime){
@@ -209,7 +207,7 @@ void TabField::ReadTabFile(const char *tabfile, long double Bscale, long double 
 		if (!FIN) break;
 		r *= lengthconv;
 		z *= lengthconv;
-		if (zi > 0 && z < zind[zi-1]){
+		if (zi >= 0 && z < zind[zi]){
 			ri++;
 			zi = 0;
 		}
@@ -266,7 +264,7 @@ void TabField::ReadTabFile(const char *tabfile, long double Bscale, long double 
 	r_mi = rind[0];
 	z_mi = zind[0];
 	rdist = rind[1] - rind[0];
-	zdist = rind[1] - rind[0];
+	zdist = zind[1] - zind[0];
 	
 	printf("\n");
 	if (ri+1 != m || zi+1 != n){
@@ -282,7 +280,7 @@ void TabField::CheckTab(MatDoub_I &BrTab, MatDoub_I &BphiTab, MatDoub_I &BzTab, 
 	//  calculate factors for conversion of coordinates to indexes  r = conv_rA + index * conv_rB	
 	printf("The arrays are %d by %d.\n",m,n);
 	printf("The r values go from %LG to %LG\n",r_mi,r_mi + rdist*(m-1));
-	printf("The z values go from %LG to %LG.\n",z_mi,z_mi + rdist*(n-1));
+	printf("The z values go from %LG to %LG.\n",z_mi,z_mi + zdist*(n-1));
 	printf("rdist = %LG zdist = %LG\n",rdist,zdist);
 		
 	long double Babsmax = 0, Babsmin = 9e99, Babs;
@@ -355,8 +353,8 @@ void TabField::PreInterpol(NRmatrix<Doub[4][4]> &coeff, MatDoub_I &Tab){
 	CalcDerivs(Tab,Tab1,Tab2,Tab12);
 	
 	// allocating space for the preinterpolation
-	// The B*c are 4D arrays with m x n x 4 x 4 fields
-	coeff.resize(m,n);
+	// The B*c are 4D arrays with (m-1) x (n-1) x 4 x 4 fields
+	coeff.resize(m-1,n-1);
 
 	int indr, indz;
 	VecDoub yyy(4), yyy1(4), yyy2(4), yyy12(4);        //rectangle with values at the 4 corners for interpolation
@@ -399,7 +397,8 @@ void TabField::PreInterpol(NRmatrix<Doub[4][4]> &coeff, MatDoub_I &Tab){
 bool TabField::BInterpol(long double t, long double x, long double y, long double z, long double B[4][4]){
 	long double r = sqrt(x*x+y*y);
 	long double Bscale = BFieldScale(t);
-	if (Bscale != 0 && (r - r_mi)/rdist > 0 && (r - r_mi - (m-1)*rdist)/rdist < 0 && (z - z_mi)/zdist > 0 && (z - z_mi - (n-1)*zdist)/zdist < 0){
+	if (Bscale != 0 && (r - r_mi)/rdist > 0 && (r - r_mi - m*rdist)/rdist < 0
+					&& (z - z_mi)/zdist > 0 && (z - z_mi - n*zdist)/zdist < 0){
 		// bicubic interpolation
 		int indr = (int)((r - r_mi)/rdist);
 		int indz = (int)((z - z_mi)/zdist);
@@ -457,7 +456,8 @@ bool TabField::EInterpol(long double x, long double y, long double z, long doubl
 	long double dummy, dVdrj[3];
 	if (Vc.nrows() > 0){ // prefer E-field from potential over pure E-field interpolation
 		long double r = sqrt(x*x+y*y);
-		if ((r - r_mi)/rdist > 0 && (r - r_mi - (m-1)*rdist)/rdist < 0 && (z - z_mi)/zdist > 0 && (z - z_mi - (n-1)*zdist)/zdist < 0){
+		if ((r - r_mi)/rdist > 0 && (r - r_mi - m*rdist)/rdist < 0
+		 && (z - z_mi)/zdist > 0 && (z - z_mi - n*zdist)/zdist < 0){
 			// bicubic interpolation
 			int indr = (int)((r - r_mi)/rdist);
 			int indz = (int)((z - z_mi)/zdist);

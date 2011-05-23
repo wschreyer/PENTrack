@@ -40,7 +40,7 @@
 using namespace std;
 
 void percent(long double x, long double x1, long double len, int &perc); // print percent of (x-x1)/len
-// rotate coordinate system so, that new z-axis lies on NORMALIZED vector n
+// rotate vector into new coordinate sys whose z-axis lies on NORMALIZED vector n (active transformation)
 void RotateVector(long double v[3], long double n[3]);
 void BOOST(long double beta[3], long double p[4]); // Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta
 long double ProtonSpectrum(long double E);
@@ -57,8 +57,10 @@ const long double m_p = 1.672621637E-27/ele_e;	//proton mass (eV/c^2)
 const long double m_e = 9.10938215e-31/ele_e;	//electron mass
 const long double c_0 = 299792458;	// lightspeed
 const long double hquer = 1.05457266e-34;	// planck constant (Js)
-const long double mu_nSI = 0.96623641e-26;	// Neutron magn Mom (in J/T)
+const long double mu_nSI = -0.96623641e-26;	// Neutron magn Mom (in J/T)
 const long double gamma_n = -1.83247185e8; // gyromagnetic ratio of neutron
+
+const long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen
 
 extern long double StorageTime; // max. simulation time
 

@@ -11,7 +11,7 @@ UCNdet	0.1			1			0		# high efficiency assumed
 [GEOMETRY]
 #models the program will load, particle absorbed at the surface will be flagged with the kennzahl of the surface
 #kennzahlen 0-5 are reserved for special events
-#kennzahl	STLfile							material name as defined above		ignore times (pairs of times [s] in between the part will be ignored, e.g. 100-200)
+#kennzahl	STLfile							material name		ignore times (pairs of times [s] in between the part will be ignored, e.g. 100-200)
 7			in/heliumtank+buffernew.STL		Nocado
 6			in/protdet.STL					CsI
 7			in/protdet_support.STL			PE
@@ -38,10 +38,9 @@ customvol	0.125	0.495	0		360			0.005	1.145	0
 #volume 		in/source.STL	0
 
 [FIELDS]
-#field table-file	BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime
-in/fieldval.tab		1			1			0				0			200				100
+#field 		table-file			BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime
+2Dtable 	in/fieldval.tab		1			1			0				0			200				100
 
-[RACETRACKS]
 #InfiniteWireZ			I		x			y
 #InfiniteWireZCenter	I
 #FiniteWire				I		x1			y1			z1		x2		y2		z2
