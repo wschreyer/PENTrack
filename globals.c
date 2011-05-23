@@ -67,7 +67,7 @@ int ExpPhase(long double t){
 	return 0;
 }
 
-// rotate coordinate system so, that new z-axis lies on NORMALIZED vector n
+// rotate vector into new coordinate sys whose z-axis lies on NORMALIZED vector n (active transformation)
 void RotateVector(long double v[3], long double n[3])
 {
 	long double cosalpha = n[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
@@ -78,6 +78,11 @@ void RotateVector(long double v[3], long double n[3])
 		v[0] = (cosalpha + a[0]*a[0]*(1 - cosalpha))*	vtemp[0] +  a[0]*a[1]*(1 - cosalpha)*				vtemp[1] + a[1]*sinalpha*	vtemp[2];
 		v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
 		v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
+	}
+	else if (cosalpha < 0){
+		v[0] = -v[0];
+		v[1] = -v[1];
+		v[2] = -v[2];
 	}
 }
 
