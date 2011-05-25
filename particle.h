@@ -550,11 +550,14 @@ protected:
 			long double B[4][4];
 			field->BFeld(y1[0], y1[1], y1[2], x1, B);
 			long double H = 0.5*m_n*vabs*vabs + m_n*gravconst*y1[2] - polarisation*mu_nSI/ele_e*B[3][0];
-			fprintf(REFLECTLOG, "%i %i %i %i %i "
+			int pol = 3;
+			if (polarisation == -1) pol = POLARISATION_BAD;
+			else if (polarisation == 1) pol = POLARISATION_GOOD;
+			fprintf(REFLECTLOG, "%i %i %i %i %i %i "
 								"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
 								"%.10LG %.10LG %.10LG %.10LG "
 								"%.10LG %.10LG %.10LG\n",
-								jobnumber, particlenumber, protneut, refl, geom->solids[ID].kennz,
+								jobnumber, particlenumber, protneut, pol, refl, geom->solids[ID].kennz,
 								x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
 								normal[0],normal[1],normal[2],H,
 								winkeben,winksenkr,Trans);
