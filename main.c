@@ -366,7 +366,7 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 	    	printf("\n%s not found!\n",(fileprefix.str() + "reflect.out").c_str());
 	    	exit(-1);
 	    }
-		fprintf(reflectlog,"jobnumber teilchen protneut reflection solid t x y z vx vy vz nx ny nz H winkeben winksenkr Transprob\n"); // Header for Reflection File
+		fprintf(reflectlog,"jobnumber teilchen protneut polarisation reflection solid t x y z vx vy vz nx ny nz H winkeben winksenkr Transprob\n"); // Header for Reflection File
 	}
 	// **************** end create log files ****************	
 }
