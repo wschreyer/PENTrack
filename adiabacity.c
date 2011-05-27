@@ -76,7 +76,7 @@ long double vladimirsky(long double Bx,long double By, long double Bz,long doubl
 	dBdt_perp = sqrtl(dBdt_square-dBdt_par*dBdt_par);
 
 	// spin flip probability according to Vladimirsky
-	W = exp(-pi*mu_nSI*Bws*Bws/(hquer*dBdt_perp));
+	W = exp(pi*mu_nSI*Bws*Bws/(hquer*dBdt_perp));
 	
 	if (W>1){
 		printf("Scheisse!!!\n");
@@ -97,6 +97,6 @@ long double thumbrule(long double Bx, long double By, long double Bz,long double
 
 	// Adiabacity mit Daumenformel
 
-    if(Bws!=0) return (dBdt*hquer)/(2*mu_nSI*Bws*Bws);
+    if(Bws!=0) return (dBdt*hquer)/(-2*mu_nSI*Bws*Bws);
     else return 1e31;
 }
