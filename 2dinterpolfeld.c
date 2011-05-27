@@ -410,9 +410,9 @@ bool TabField::BInterpol(long double t, long double x, long double y, long doubl
 		if (Bphic.nrows() > 0) bcuint_new(Bphic[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, Bphi, dBphidr, dBphidz);
 		CylToCart(Br,Bphi,phi,B[0][0],B[1][0]);
 		if (r > 0){
-			B[0][1] = dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) - Bphi*cos(phi)*sin(phi))/r;
-			B[1][1] = dBrdr*cos(phi)*sin(phi) - dBphidr*cos(phi)*cos(phi) - (Br*cos(phi)*sin(phi) - Bphi*sin(phi)*sin(phi))/r;
-			B[0][2] = dBrdr*cos(phi)*sin(phi) + dBphidr*sin(phi)*sin(phi) - (Br*cos(phi)*sin(phi) + Bphi*cos(phi)*cos(phi))/r;
+			B[0][1] = dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r;
+			B[0][2] = dBrdr*cos(phi)*sin(phi) - dBphidr*sin(phi)*sin(phi) - (Br*cos(phi)*sin(phi) + Bphi*cos(phi)*cos(phi))/r;
+			B[1][1] = dBrdr*cos(phi)*sin(phi) + dBphidr*cos(phi)*cos(phi) - (Br*cos(phi)*sin(phi) - Bphi*sin(phi)*sin(phi))/r;
 			B[1][2] = dBrdr*sin(phi)*sin(phi) + dBphidr*cos(phi)*sin(phi) + (Br*cos(phi)*cos(phi) - Bphi*cos(phi)*sin(phi))/r;
 		}
 		CylToCart(dBrdz,dBphidz,phi,B[0][3],B[1][3]);
