@@ -397,11 +397,10 @@ void TabField::PreInterpol(NRmatrix<Doub[4][4]> &coeff, MatDoub_I &Tab){
 bool TabField::BInterpol(long double t, long double x, long double y, long double z, long double B[4][4]){
 	long double r = sqrt(x*x+y*y);
 	long double Bscale = BFieldScale(t);
-	if (Bscale != 0 && (r - r_mi)/rdist > 0 && (r - r_mi - m*rdist)/rdist < 0
-					&& (z - z_mi)/zdist > 0 && (z - z_mi - n*zdist)/zdist < 0){
+	int indr = (int)((r - r_mi)/rdist);
+	int indz = (int)((z - z_mi)/zdist);
+	if (Bscale != 0 && indr >= 0 && indr < m - 1 && indz >= 0 && indz < n - 1){
 		// bicubic interpolation
-		int indr = (int)((r - r_mi)/rdist);
-		int indz = (int)((z - z_mi)/zdist);
 		long double rl = r_mi + indr*rdist;
 		long double zl = z_mi + indz*zdist;
 		long double Br = 0, dBrdr = 0, dBrdz = 0, Bphi = 0, dBphidr = 0, dBphidz = 0, dBzdr = 0;
@@ -433,7 +432,7 @@ long double TabField::BFieldScale(long double t){
 		return 0;
 	else if (t >= NullFieldTime && t < NullFieldTime + RampUpTime){
 		// ramping up field smoothly with cosine
-		//result = (0.5 - 0.5*cos(pi*(t - CleaningTime - FillingTime)/RampUpTime)) * BFeldSkalGlobal;
+		//return 0.5 - 0.5*cos(pi*(t - NullFieldTime)/RampUpTime);
 
 		// linear ramp
 		return (t - NullFieldTime)/RampUpTime;
@@ -442,7 +441,7 @@ long double TabField::BFieldScale(long double t){
 		return 1;
 	else if (t >= NullFieldTime + RampUpTime + FullFieldTime && t < NullFieldTime + RampUpTime + FullFieldTime + RampDownTime){
 		// ramping down field smoothly with cosine
-		//result = (0.5 + 0.5*cos(pi*(t - (RampUpTime + CleaningTime + FillingTime + FullFieldTime)) / RampDownTime)) * BFeldSkalGlobal;
+		//return 0.5 + 0.5*cos(pi*(t - (RampUpTime + NullFieldTime + FullFieldTime)) / RampDownTime);
 
 		// linear ramp
 		return (1 - (t - RampUpTime - NullFieldTime - FullFieldTime)/RampDownTime);
