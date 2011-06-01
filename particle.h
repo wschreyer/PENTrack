@@ -162,6 +162,7 @@ struct TParticle{
 					if(SNAP && snapshots && nextsnapshot < snapshots->size() && x1 >= (*snapshots)[nextsnapshot])
 					{
 						printf("\n Snapshot at %LG s \n", x1);
+						field->BFeld(y[0],y[1],y[2],x,B);
 						field->EFeld(y1[0],y1[1],y1[2],V,E);
 						SetEndValues(x1,y1,B,E,V);
 						Print(SNAP);
