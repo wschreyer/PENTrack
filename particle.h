@@ -127,6 +127,8 @@ struct TParticle{
 				
 				if (x + h > xstart + xend) 
 					h = xstart + xend - x;	//If stepsize can overshoot, decrease.
+				if (x + h > StorageTime)
+					h = StorageTime - x;
 				
 				try{
 					stepper->step(h, *this); // integrate one step
@@ -150,7 +152,7 @@ struct TParticle{
 					
 					gettimeofday(&refl_start, NULL);
 					if (ReflectOrAbsorb(x1, y1, x2, y2)){ // check for reflection or absorption between y1 and y2
-						x = x2;
+						x = x2; // if there was reflection or absorption: reset integration end point
 						y = y2;
 					}
 					gettimeofday(&refl_end, NULL);
@@ -159,14 +161,19 @@ struct TParticle{
 					trajlength += sqrt(pow(y2[0] - y1[0],2) + pow(y2[1] - y1[1],2) + pow(y2[2] - y1[2],2)); // Trajectory length calculation		
 
 					// take snapshots of neutrons at certain times
-					if(SNAP && snapshots && nextsnapshot < snapshots->size() && x1 >= (*snapshots)[nextsnapshot])
-					{
-						printf("\n Snapshot at %LG s \n", x1);
-						field->BFeld(y1[0],y1[1],y1[2],x,B);
-						field->EFeld(y1[0],y1[1],y1[2],V,E);
-						SetEndValues(x1,y1,B,E,V);
-						Print(SNAP);
-						nextsnapshot++;
+					if(SNAP && snapshots && nextsnapshot < snapshots->size()){
+						long double xsnap = (*snapshots)[nextsnapshot];
+						if (x1 <= xsnap && x2 > xsnap){
+							VecDoub ysnap(6);
+							for (int i = 0; i < 6; i++)
+								ysnap[i] = stepper->dense_out(i, xsnap, stepper->hdid);
+							printf("\n Snapshot at %LG s \n", xsnap);
+							field->BFeld(ysnap[0],ysnap[1],ysnap[2],xsnap,B);
+							field->EFeld(ysnap[0],ysnap[1],ysnap[2],V,E);
+							SetEndValues(xsnap,ysnap,B,E,V);
+							Print(SNAP);
+							nextsnapshot++;
+						}
 					}
 
 					if (trackfile && x2 - lastsave > MIN_SAMPLE_DIST/v1){
@@ -189,7 +196,7 @@ struct TParticle{
 					percent(trajlength, 0, mc->MaxTrajLength(protneut), perc); // print percent of calculation
 
 				// x >= xstart + xend?
-				if (kennz == KENNZAHL_UNKNOWN && (x >= xstart + xend || x > StorageTime || trajlength >= mc->MaxTrajLength(protneut)))
+				if (kennz == KENNZAHL_UNKNOWN && (x >= xstart + xend || x >= StorageTime || trajlength >= mc->MaxTrajLength(protneut)))
 					kennz = KENNZAHL_NOT_FINISH;
 			
 				h = stepper->hnext; // set suggested stepsize for next step
@@ -298,16 +305,25 @@ struct TParticle{
 				long double distnormal = u[0]*coll.normal[0] + u[1]*coll.normal[1] + u[2]*coll.normal[2];
 				// if there is only one collision which is closer to y1 than REFLECT_TOLERANCE: reflect
 				if ((colls.size() == 1 && coll.s*abs(distnormal) < REFLECT_TOLERANCE) || iteration > 99){
-					if (colls.size() > 1)
-						printf("Reflection from two surfaces (%s & %s) at once!", geom->solids[coll.ID].name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
-					if (Reflect(x1, y1, x2, y2, coll.normal, coll.ID)) return true;
+					long double vnormal = y1[3]*coll.normal[0] + y1[4]*coll.normal[1] + y1[5]*coll.normal[2]; // velocity normal to reflection plane
+					if (vnormal > 0 && currentsolid != &geom->solids[coll.ID]){
+						printf("Particle inside '%s' which it did not enter before! Stopping it!\n", geom->solids[coll.ID].name.c_str());
+						x2 = x1;
+						y2 = y1;
+						kennz = KENNZAHL_NRERROR;
+						return true;
+					}
+					if (colls.size() > 1 && coll.ID != (++colls.begin())->ID){
+						printf("Reflection from two surfaces (%s & %s) at once!\n", geom->solids[coll.ID].name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
+						printf("Check geometry for touching surfaces!");
+						x2 = x1;
+						y2 = y1;
+						kennz = KENNZAHL_NRERROR;
+						return true;
+					}
+					if (Reflect(x1, y1, x2, y2, coll.normal, coll.ID))
+						return true;
 					else{
-						long double vnormal = y1[3]*coll.normal[0] + y1[4]*coll.normal[1] + y1[5]*coll.normal[2]; // velocity normal to reflection plane
-						if (vnormal > 0 && currentsolid != &geom->solids[coll.ID]){
-							printf("Particle inside '%s' which it did not enter before! Stopping it!\n", geom->solids[coll.ID].name.c_str());
-							kennz = KENNZAHL_NRERROR;
-							return true;
-						}
 						if (vnormal > 0)
 							currentsolid = &defaultsolid;
 						else
@@ -318,15 +334,28 @@ struct TParticle{
 						}
 					}
 				}
-				else{ // else cut integration step right before collision points and call GetReflection again for each smaller step (quite similar to bisection algorithm)
+				else{
+					// else cut integration step right before and after collision points
+					// and call ReflectOrAbsorb again for each smaller step (quite similar to bisection algorithm)
 					long double xbisect1 = x1;
 					long double xbisect2 = x2;
 					VecDoub ybisect1 = y1, ybisect2(6);
 					for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through collisions
-						xbisect2 = x1 + (x2 - x1)*it->s*(1 - 0.01*iteration); // cut integration step at this time
+						xbisect2 = x1 + (x2 - x1)*it->s*(1 - 0.01*iteration); // cut integration right before collision point
 						for (int i = 0; i < 6; i++)
 							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
-						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for each smaller step
+						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step before coll. point
+							x2 = xbisect2;
+							y2 = ybisect2;
+							return true;
+						}
+						xbisect1 = xbisect2;
+						ybisect1 = ybisect2;
+
+						xbisect2 = x1 + (x2 - x1)*it->s*(1 + 0.01*iteration); // cut integration right after collision point
+						for (int i = 0; i < 6; i++)
+							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
+						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step over coll. point
 							x2 = xbisect2;
 							y2 = ybisect2;
 							return true;
@@ -334,11 +363,11 @@ struct TParticle{
 						xbisect1 = xbisect2;
 						ybisect1 = ybisect2;
 					}
-					if (ReflectOrAbsorb(xbisect2, ybisect2, x2, y2, iteration+1)) // recursive call for last small step
+					if (ReflectOrAbsorb(xbisect2, ybisect2, x2, y2, iteration+1)) // // recursive call for step after coll. point
 						return true;
 				}
 			}
-			else if (Absorb(x1, y1, x2, y2)){
+			else if (Absorb(x1, y1, x2, y2)){ // if there was no collision: just check for absorption
 				printf("Absorption in %s (material %s)!\n",currentsolid->name.c_str(), currentsolid->mat.name.c_str());
 				return true;
 			}
@@ -506,7 +535,11 @@ protected:
 		long double winkeben = 0, winksenkr = 0;
 		bool log = false;
 		long double prob = mc->UniformDist(0,1);
-		long double Trans=Transmission(Enormal*1e9,mat->FermiReal,mat->FermiImag);
+		long double Trans;
+		if (vnormal < 0)
+			Trans = Transmission(Enormal*1e9,mat->FermiReal,mat->FermiImag);
+		else
+			Trans = Transmission(Enormal*1e9 - mat->FermiReal, -mat->FermiReal, -mat->FermiImag);
 		int refl = prob < Trans ? 0 : 1; // 0 for transmission, 1 for reflection
 
 		//************** statistical absorption ***********
