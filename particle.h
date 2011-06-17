@@ -1,5 +1,6 @@
 #include <cmath>
 #include <vector>
+#include <algorithm>
 #include <sys/time.h>
 
 using namespace std;
@@ -216,7 +217,7 @@ struct TParticle{
 		};
 	
 	protected:
-		solid *currentsolid; // solid in which particle is currently moving
+		list<solid*> currentsolids; // solids in which particle is currently inside
 		TGeometry *geom;
 		TMCGenerator *mc;	
 		TField *field;	
@@ -231,7 +232,7 @@ struct TParticle{
 			trajlength = comptime = refltime = 0;
 			BFsurvprob = vladtotal = 1; vladmax = thumbmax = logBF = -9e99;
 			nrefl = NSF = nsteps = 0;
-			currentsolid = &defaultsolid;
+			currentsolids.push_back(&defaultsolid);
 
 			particlenumber = number;
 			polarisation = pol;
@@ -305,8 +306,10 @@ struct TParticle{
 				long double distnormal = u[0]*coll.normal[0] + u[1]*coll.normal[1] + u[2]*coll.normal[2];
 				// if there is only one collision which is closer to y1 than REFLECT_TOLERANCE: reflect
 				if ((colls.size() == 1 && coll.s*abs(distnormal) < REFLECT_TOLERANCE) || iteration > 99){
+					solid *sld = &geom->solids[coll.ID];
 					long double vnormal = y1[3]*coll.normal[0] + y1[4]*coll.normal[1] + y1[5]*coll.normal[2]; // velocity normal to reflection plane
-					if (vnormal > 0 && currentsolid != &geom->solids[coll.ID]){
+					if (vnormal > 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) == currentsolids.rend()){
+						// if particle is leaving solid and solid is not in currentsolids list something went wrong
 						printf("Particle inside '%s' which it did not enter before! Stopping it!\n", geom->solids[coll.ID].name.c_str());
 						x2 = x1;
 						y2 = y1;
@@ -314,7 +317,7 @@ struct TParticle{
 						return true;
 					}
 					if (colls.size() > 1 && coll.ID != (++colls.begin())->ID){
-						printf("Reflection from two surfaces (%s & %s) at once!\n", geom->solids[coll.ID].name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
+						printf("Reflection from two surfaces (%s & %s) at once!\n", sld->name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
 						printf("Check geometry for touching surfaces!");
 						x2 = x1;
 						y2 = y1;
@@ -325,11 +328,11 @@ struct TParticle{
 						return true;
 					else{
 						if (vnormal > 0)
-							currentsolid = &defaultsolid;
+							currentsolids.remove(sld);
 						else
-							currentsolid = &geom->solids[coll.ID];
+							currentsolids.push_back(sld);
 						if (Absorb(x1, y1, x2, y2)){
-							printf("Absorption in %s (material %s)!\n",currentsolid->name.c_str(), currentsolid->mat.name.c_str());
+							printf("Absorption in %s (material %s)!\n",sld->name.c_str(), sld->mat.name.c_str());
 							return true;
 						}
 					}
@@ -368,7 +371,7 @@ struct TParticle{
 				}
 			}
 			else if (Absorb(x1, y1, x2, y2)){ // if there was no collision: just check for absorption
-				printf("Absorption in %s (material %s)!\n",currentsolid->name.c_str(), currentsolid->mat.name.c_str());
+				printf("Absorption in %s (material %s)!\n",currentsolids.back()->name.c_str(), currentsolids.back()->mat.name.c_str());
 				return true;
 			}
 			return false;
@@ -605,12 +608,13 @@ protected:
 		long double l = sqrt(pow(y2[0] - y1[0],2) + pow(y2[1] - y1[1],2) + pow(y2[2] - y1[2],2));
 		long double v = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 		long double E = 0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5])*1e9;
-		if (mc->UniformDist(0,1) < Absorption(E, currentsolid->mat.FermiReal, currentsolid->mat.FermiImag, l)){
+		solid *sld = currentsolids.back();
+		if (mc->UniformDist(0,1) < Absorption(E, sld->mat.FermiReal, sld->mat.FermiImag, l)){
 			long double s = mc->UniformDist(0,l)/v;
 			x2 = x1 + s*(x2 - x1);
 			for (int i = 0; i < 6; i++)
 				y2[i] = stepper->dense_out(i, x1 + s*(x2 - x1), stepper->hdid);
-			kennz = currentsolid->kennz;
+			kennz = sld->kennz;
 			return true;
 		}
 		return false;
@@ -703,10 +707,10 @@ protected:
 	};
 
 	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
-		if (currentsolid != &defaultsolid){
+		if (currentsolids.size() > 1){
 			x2 = x1;
 			y2 = y1;
-			kennz = currentsolid->kennz;
+			kennz = currentsolids.back()->kennz;
 			return true;
 		}
 		return false;
@@ -757,10 +761,10 @@ protected:
 	};
 
 	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
-		if (currentsolid != &defaultsolid){
+		if (currentsolids.size() > 1){
 			x2 = x1;
 			y2 = y1;
-			kennz = currentsolid->kennz;
+			kennz = currentsolids.back()->kennz;
 			return true;
 		}
 		return false;
