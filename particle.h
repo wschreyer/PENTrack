@@ -605,7 +605,7 @@ protected:
 	};
 
 	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
-		long double l = sqrt(pow(y2[0] - y1[0],2) + pow(y2[1] - y1[1],2) + pow(y2[2] - y1[2],2));
+/*		long double l = sqrt(pow(y2[0] - y1[0],2) + pow(y2[1] - y1[1],2) + pow(y2[2] - y1[2],2));
 		long double v = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 		long double E = 0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5])*1e9;
 		long double absprob = 0;
@@ -624,6 +624,14 @@ protected:
 				y2[i] = stepper->dense_out(i, x1 + s*(x2 - x1), stepper->hdid);
 			kennz = sld->kennz;
 			return true;
+		}*/
+		for (list<solid*>::iterator i = currentsolids.begin(); i != currentsolids.end(); i++){
+			if ((*i)->mat.FermiReal != 0 || (*i)->mat.FermiImag != 0){
+				x2 = x1;
+				y2 = y1;
+				kennz = (*i)->kennz;
+				return true;
+			}
 		}
 		return false;
 	};
