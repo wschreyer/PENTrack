@@ -15,6 +15,9 @@ long double Transmission(const long double Er, const long double Mf, const long 
 // absorption probability of neutron flying distance l (in m) through Fermi potential Mf + i*Pf (all in neV)
 long double Absorption(const long double E, const long double Mf, const long double Pf, const long double l){
 	complex<long double> V(Mf,Pf);
-	return 1 - exp(-2*imag(sqrt(2*m_n*1e-9*(E - V))) / (hquer/ele_e) * l ); // absorption length 2*Im(sqrt(2m(E-V))/hquer)
+	complex<long double> i(0,1);
+	complex<long double> k = sqrt(2*m_n*1e-9*(E - V)); // complex wave vector
+	complex<long double> wavefunc = exp(i*k*l/(hquer/ele_e));
+	return 1 - (real(wavefunc)*real(wavefunc) + imag(wavefunc)*imag(wavefunc));
 }
 	
