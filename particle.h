@@ -609,8 +609,14 @@ protected:
 		long double v = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 		long double E = 0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5])*1e9;
 		long double absprob = 0;
-		for (list<solid*>::iterator i = currentsolids.begin(); i != currentsolids.end(); i++)
-			absprob = max(absprob, Absorption(E, i->mat.FermiReal, i->mat.FermiImag, l));
+		solid *sld = &defaultsolid;
+		for (list<solid*>::iterator i = currentsolids.begin(); i != currentsolids.end(); i++){
+			long double abs = Absorption(E, (*i)->mat.FermiReal, (*i)->mat.FermiImag, l);
+			if (absprob < abs){
+				absprob = abs;
+				sld = *i;
+			}
+		}
 		if (mc->UniformDist(0,1) < absprob){
 			long double s = mc->UniformDist(0,l)/v;
 			x2 = x1 + s*(x2 - x1);
