@@ -332,7 +332,7 @@ struct TParticle{
 						else
 							currentsolids.push_back(sld);
 						if (Absorb(x1, y1, x2, y2)){
-							printf("Absorption in %s (material %s)!\n",sld->name.c_str(), sld->mat.name.c_str());
+							printf("Absorption!\n");
 							return true;
 						}
 					}
@@ -371,7 +371,7 @@ struct TParticle{
 				}
 			}
 			else if (Absorb(x1, y1, x2, y2)){ // if there was no collision: just check for absorption
-				printf("Absorption in %s (material %s)!\n",currentsolids.back()->name.c_str(), currentsolids.back()->mat.name.c_str());
+				printf("Absorption!\n");
 				return true;
 			}
 			return false;
@@ -608,8 +608,10 @@ protected:
 		long double l = sqrt(pow(y2[0] - y1[0],2) + pow(y2[1] - y1[1],2) + pow(y2[2] - y1[2],2));
 		long double v = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 		long double E = 0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5])*1e9;
-		solid *sld = currentsolids.back();
-		if (mc->UniformDist(0,1) < Absorption(E, sld->mat.FermiReal, sld->mat.FermiImag, l)){
+		long double absprob = 0;
+		for (list<solid*>::iterator i = currentsolids.begin(); i != currentsolids.end(); i++)
+			absprob = max(absprob, Absorption(E, i->mat.FermiReal, i->mat.FermiImag, l));
+		if (mc->UniformDist(0,1) < absprob){
 			long double s = mc->UniformDist(0,l)/v;
 			x2 = x1 + s*(x2 - x1);
 			for (int i = 0; i < 6; i++)
