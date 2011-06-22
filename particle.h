@@ -307,8 +307,7 @@ struct TParticle{
 				// if there is only one collision which is closer to y1 than REFLECT_TOLERANCE: reflect
 				if ((colls.size() == 1 && coll.s*abs(distnormal) < REFLECT_TOLERANCE) || iteration > 99){
 					solid *sld = &geom->solids[coll.ID];
-					long double vnormal = y1[3]*coll.normal[0] + y1[4]*coll.normal[1] + y1[5]*coll.normal[2]; // velocity normal to reflection plane
-					if (vnormal > 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) == currentsolids.rend()){
+					if (distnormal > 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) == currentsolids.rend()){
 						// if particle is leaving solid and solid is not in currentsolids list something went wrong
 						printf("Particle inside '%s' which it did not enter before! Stopping it!\n", geom->solids[coll.ID].name.c_str());
 						x2 = x1;
@@ -316,7 +315,15 @@ struct TParticle{
 						kennz = KENNZAHL_NRERROR;
 						return true;
 					}
-					if (colls.size() > 1 && coll.ID != (++colls.begin())->ID){
+					else if (distnormal < 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) != currentsolids.rend()){
+						// if particle is entering solid and solid is in currentsolids list something went wrong
+						printf("Particle entering '%s' which it did enter before! Stopping it!\n", geom->solids[coll.ID].name.c_str());
+						x2 = x1;
+						y2 = y1;
+						kennz = KENNZAHL_NRERROR;
+						return true;
+					}
+					else if (colls.size() > 1 && coll.ID != (++colls.begin())->ID){
 						printf("Reflection from two surfaces (%s & %s) at once!\n", sld->name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
 						printf("Check geometry for touching surfaces!");
 						x2 = x1;
@@ -327,7 +334,7 @@ struct TParticle{
 					if (Reflect(x1, y1, x2, y2, coll.normal, coll.ID))
 						return true;
 					else{
-						if (vnormal > 0)
+						if (distnormal > 0)
 							currentsolids.remove(sld);
 						else
 							currentsolids.push_back(sld);
@@ -345,26 +352,30 @@ struct TParticle{
 					VecDoub ybisect1 = y1, ybisect2(6);
 					for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through collisions
 						xbisect2 = x1 + (x2 - x1)*it->s*(1 - 0.01*iteration); // cut integration right before collision point
-						for (int i = 0; i < 6; i++)
-							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
-						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step before coll. point
-							x2 = xbisect2;
-							y2 = ybisect2;
-							return true;
+						if (xbisect2 > xbisect1){
+							for (int i = 0; i < 6; i++)
+								ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
+							if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step before coll. point
+								x2 = xbisect2;
+								y2 = ybisect2;
+								return true;
+							}
+							xbisect1 = xbisect2;
+							ybisect1 = ybisect2;
 						}
-						xbisect1 = xbisect2;
-						ybisect1 = ybisect2;
 
 						xbisect2 = x1 + (x2 - x1)*it->s*(1 + 0.01*iteration); // cut integration right after collision point
-						for (int i = 0; i < 6; i++)
-							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
-						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step over coll. point
-							x2 = xbisect2;
-							y2 = ybisect2;
-							return true;
+						if (xbisect2 > xbisect1){
+							for (int i = 0; i < 6; i++)
+								ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
+							if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step over coll. point
+								x2 = xbisect2;
+								y2 = ybisect2;
+								return true;
+							}
+							xbisect1 = xbisect2;
+							ybisect1 = ybisect2;
 						}
-						xbisect1 = xbisect2;
-						ybisect1 = ybisect2;
 					}
 					if (ReflectOrAbsorb(xbisect2, ybisect2, x2, y2, iteration+1)) // // recursive call for step after coll. point
 						return true;
