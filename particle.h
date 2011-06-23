@@ -723,7 +723,7 @@ public:
 		alphastart = fmod(atan2(v[1],v[0]) - neutron->phiend + 4*pi,2*pi);
 		gammastart = acos(v[2]/vstart);
 		Estart = 0.5*m*vstart*vstart;
-		Init(neutron->particlenumber, neutron->xend, mcgen.LifeTime(PROTON),
+		Init(neutron->particlenumber, neutron->xstart + neutron->dt, mcgen.LifeTime(PROTON),
 			neutron->rend, neutron->phiend, neutron->yend[2],
 			Estart, alphastart, gammastart, neutron->polarisation, afield);
 	};
@@ -777,7 +777,7 @@ public:
 		alphastart = fmod(atan2(v[1],v[0]) - neutron->phiend + 4*pi,2*pi);
 		gammastart = acos(v[2]/vstart);
 		Estart = (1/sqrt(1 - vstart*vstart/c_0/c_0) - 1)*m_e*c_0*c_0;
-		Init(neutron->particlenumber, neutron->xend, mcgen.LifeTime(ELECTRON),
+		Init(neutron->particlenumber, neutron->xstart + neutron->dt, mcgen.LifeTime(ELECTRON),
 			neutron->rend, neutron->phiend, neutron->yend[2],
 			Estart, alphastart, gammastart, neutron->polarisation, afield);
 	};
