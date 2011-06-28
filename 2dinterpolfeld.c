@@ -462,9 +462,10 @@ bool TabField::EInterpol(long double x, long double y, long double z, long doubl
 			int indz = (int)((z - z_mi)/zdist);
 			long double rl = r_mi + indr*rdist;
 			long double zl = z_mi + indz*zdist;
-			long double phi = atan2(y,x);
 			bcuint_new(Vc[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, V, dVdrj[0], dVdrj[2]);
-			CylToCart(-dVdrj[0],0,phi,Ei[0],Ei[1]);
+			long double phi = atan2(y,x);
+			Ei[0] = -dVdrj[0]*cos(phi);
+			Ei[1] = -dVdrj[0]*sin(phi);
 			Ei[2] = -dVdrj[2];
 			return true;
 		}
