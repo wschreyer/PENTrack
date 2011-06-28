@@ -105,7 +105,6 @@ struct TField{
 		void LoadFieldsSection(ifstream &infile){
 			char c;
 			string line;
-			cout << "Loading fields..." << endl;
 			do{	// parse table field list
 				infile >> ws; // ignore whitespaces
 				c = infile.peek();

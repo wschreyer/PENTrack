@@ -63,30 +63,15 @@ int main(int argc, char **argv){
 	signal (SIGUSR2, catch_alarm);
 	signal (SIGXCPU, catch_alarm);   
 	
-	if(argc>3) // if user supplied 3 args (outputfilestamp, inpath, outpath)
-	{
-		outpath = argv[3]; // set the output path pointer
-		inpath = argv[2]; // same with input path pointer
-		jobnumber = atoi(argv[1]); // stamp for output filenames
-	}
-	else if(argc>2) // if user supplied 2 args (outputfilestamp, inpath)
-	{
-		inpath = argv[2]; // input path pointer set
-		jobnumber = atoi(argv[1]); 
-		outpath = "./out"; // setting outpath to default
-	}
-	else if(argc==2) // if user supplied 1 arg (outputfilestamp)
-	{
+	jobnumber=0;
+	outpath = "./out";
+	inpath = "./in";
+	if(argc>1) // if user supplied at least 1 arg (outputfilestamp)
 		jobnumber=atoi(argv[1]);
-		outpath = "./out";
-		inpath = "./in";
-	}
-	else // no args supplied
-	{
-		jobnumber=0;
-		outpath = "./out";
-		inpath = "./in";
-	}
+	if(argc>2) // if user supplied 2 or more args (outputfilestamp, inpath)
+		inpath = argv[2]; // input path pointer set
+	if(argc>3) // if user supplied all 3 args (outputfilestamp, inpath, outpath)
+		outpath = argv[3]; // set the output path pointer
 	
 	// initial step ... reading userinput, inputfiles etc ...
 	ConfigInit();
@@ -99,6 +84,7 @@ int main(int argc, char **argv){
 			
 	//printf("\nMonteCarlo: %i\n MonteCarloAnzahl %i \n", MonteCarlo, MonteCarloAnzahl);
 
+	cout << "Loading fields..." << endl;
 	TField field((inpath + "/geometry.in").c_str());
 
 	switch(protneut)
@@ -356,7 +342,7 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 	    }
 		fprintf(tracklog,"Teilchen protneut polarisation t x y z dxdt dydt dzdt "
 							"v H E Bx dBxdx dBxdy dBxdz By dBydx "
-							 "dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez "
+							 "dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V "
 							 "timestep logvlad logthumb logBF\n");
 	}
 
