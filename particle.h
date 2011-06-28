@@ -405,11 +405,12 @@ struct TParticle{
 			rend = sqrt(y[0]*y[0] + y[1]*y[1]);
 			phiend = fmod(atan2(y[1],y[0]) + 2*pi, 2*pi);
 			vend = sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5]);
-			long double gammarel = 1/sqrt(1 - vend*vend/(c_0*c_0));
-			if (gammarel < 1.0001)
+			if (vend/c_0 < 0.01)
 				Eend = 0.5*m*vend*vend;
-			else
+			else{
+				long double gammarel = 1/sqrt(1 - vend*vend/(c_0*c_0));
 				Eend = c_0*c_0*m*(gammarel - 1);
+			}
 			Hend = Eend + m*gravconst*yend[2] + q/ele_e*V - polarisation*mu/ele_e*B[3][0];
 			if(vend > 0) gammaend = acos(y[5]/vend);
 			else gammaend = 0;
@@ -475,7 +476,7 @@ struct TParticle{
 			for (int i = 0; i < 4; i++)
 				for (int j = 0; j < 4; j++)
 					fprintf(trackfile,"%.17LG ",B[i][j]);
-			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG",E[0],E[1],E[2],h,logvlad,logfrac,logBF);
+			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG",E[0],E[1],E[2],V,h,logvlad,logfrac,logBF);
 
 			fprintf(trackfile,"\n");
 			fflush(trackfile);

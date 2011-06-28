@@ -48,17 +48,17 @@ long double ElectronSpectrum(long double E);
 
 // physical constants
 const long double pi = 3.1415926535897932384626;
-const long double ele_e = 1.602176487E-19;      //elementary charge in SI
-const long double gravconst = 9.80665;	// g
-const long double conv = pi/180.;
-const long double mu0 = 4*pi*1e-7;      //permeability,
+const long double ele_e = 1.602176487E-19;      //elementary charge (C)
+const long double gravconst = 9.80665;	// g (m/s)
+const long double conv = pi/180.;	// deg to rad conversion factor
+const long double mu0 = 4*pi*1e-7;      //permeability (Vs/Am)
 const long double m_n = 1.674927211E-27/ele_e;	//neutron mass (eV/c^2)
 const long double m_p = 1.672621637E-27/ele_e;	//proton mass (eV/c^2)
-const long double m_e = 9.10938215e-31/ele_e;	//electron mass
-const long double c_0 = 299792458;	// lightspeed
+const long double m_e = 9.10938215e-31/ele_e;	//electron mass (eV/c^2)
+const long double c_0 = 299792458;	// lightspeed (m/s)
 const long double hquer = 1.05457266e-34;	// planck constant (Js)
-const long double mu_nSI = -0.96623641e-26;	// Neutron magn Mom (in J/T)
-const long double gamma_n = -1.83247185e8; // gyromagnetic ratio of neutron
+const long double mu_nSI = -0.96623641e-26;	// Neutron magn Mom (J/T)
+const long double gamma_n = -1.83247185e8; // = 2*mu_n/hquer gyromagnetic ratio of neutron (1/Ts)
 
 const long double lengthconv = 0.01 , Bconv = 1e-4, Econv = 1e2;    // Einheiten aus field Tabelle (cgs) und Programm (si) abgleichen
 

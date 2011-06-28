@@ -5,18 +5,11 @@
 
 #include "globals.h"
 
-//set the duration of the experiment
-long double FillingTime = 0;				// filling time, entrance open
-long double CleaningTime = 0;				// cleaning without field
-long double RampUpTime = 0;					// ramping up coils
-long double FullFieldTime = 1000;			// storing in full field
-long double RampDownTime = 5;				// ramping down coils
-long double EmptyingTime = 0;				// emptying without field
-long double StorageTime = 1500.0;			// time when ramping down shall start, if xend > storage time, let neutron decay
 
 int jobnumber = 0;
 string inpath = ".", outpath = ".";
 int ausgabewunsch=5; // Ausgabewunsch
+long double StorageTime = 1500.0; // max. simulation time
 
 // print percent of (x-x1)/len
 void percent(long double x, long double x1, long double len, int &perc){
@@ -36,35 +29,6 @@ void percent(long double x, long double x1, long double len, int &perc){
 			fflush(stdout);
 		}
 	}
-}
-
-// return experiment stage (filling, cleaning, rampup, storage, fullfield, rampdown, ...)
-int ExpPhase(long double t){
-	if ((t < FillingTime)&&(FillingTime>0))
-	{      // filling in neutrons
-		return 1;
-	}	
-	else if ((t>=FillingTime)&&(t < (CleaningTime+FillingTime)) && (CleaningTime>0))
-	{      // spectrum cleaning
-		return 2;
-	}
-	else if ((RampUpTime>0)&&(t >= CleaningTime+FillingTime) && (t < (RampUpTime+CleaningTime+FillingTime)) && (RampUpTime > 0))
-	{   // ramping up field
-		return 3;
-	}
-	else if ((FullFieldTime>0)&&(t >= (RampUpTime+CleaningTime+FillingTime)) && (t < (RampUpTime+CleaningTime+FullFieldTime+FillingTime)))
-	{  // fullfield time
-		return 4;
-	}
-	else if ((t >= (RampUpTime+CleaningTime+FillingTime+FullFieldTime)) && (t < (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime)) && (RampDownTime != 0))
-	{   // ramping down field
-		return 5;
-	}
-	else if (t >=  (RampUpTime+CleaningTime+FillingTime+FullFieldTime+RampDownTime))
-	{      // emptying of neutrons into detector
-		return 6;
-	}
-	return 0;
 }
 
 // rotate vector into new coordinate sys whose z-axis lies on NORMALIZED vector n (active transformation)
