@@ -197,7 +197,9 @@ struct TParticle{
 					percent(trajlength, 0, mc->MaxTrajLength(protneut), perc); // print percent of calculation
 
 				// x >= xstart + xend?
-				if (kennz == KENNZAHL_UNKNOWN && (x >= xstart + xend || x >= StorageTime || trajlength >= mc->MaxTrajLength(protneut)))
+				if (kennz == KENNZAHL_UNKNOWN && x >= xstart + xend)
+					kennz = KENNZAHL_DECAYED;
+				else if (kennz == KENNZAHL_UNKNOWN && (x >= StorageTime || trajlength >= mc->MaxTrajLength(protneut)))
 					kennz = KENNZAHL_NOT_FINISH;
 			
 				h = stepper->hnext; // set suggested stepsize for next step
