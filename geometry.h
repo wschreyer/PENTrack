@@ -248,12 +248,14 @@ struct TSource{
 					mc.IsotropicDist(alpha, gamma);
 				}
 				else if (sourcemode == "surface" || sourcemode == "customsurf"){ // random point on a surface inside custom or STL volume
-					long double *n = NULL;
+					long double n[3];
 					long double RandA = mc.UniformDist(0,sourcearea);
 					long double CurrA = 0, SumA = 0;
 					vector<Triangle*>::iterator i;
 					for (i = sourcetris.begin(); i != sourcetris.end(); i++){
-						n = (*i)->normal;
+						n[0] = (*i)->normal[0];
+						n[1] = (*i)->normal[1];
+						n[2] = (*i)->normal[2];
 						CurrA = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 						SumA += CurrA;
 						if (RandA <= SumA) break; // select random triangle, weighted by triangle area
