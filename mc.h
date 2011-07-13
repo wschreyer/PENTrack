@@ -1,3 +1,8 @@
+/**
+ * \file
+ * All about random numbers.
+ */
+
 #ifndef MC_H_
 #define MC_H_
 
@@ -10,18 +15,45 @@
 
 using namespace std;
 
-struct TMCGenerator{
-	struct initial{
-		long double EnergieS, EnergieE;
-		long double alphas, alphae, gammas, gammae;
-		long double trajend, xend;
-	} nini, pini, eini;
-	unsigned long int monthinmilliseconds; // RandomSeed
-	int decay, polarisation; //decay on or off?
-	long double tau_n, decayoffset;
 
-	mt_state_t v_mt_state; //mersenne twister state var
+/**
+ * Class to generate random numbers in several distributions.
+ */
+struct TMCGenerator{
+	/// struct to store limits for initial conditions read from all3inone.in
+	struct initial{
+		long double EnergieS; ///< minimum of energy spectrum
+		long double EnergieE; ///< maximum of energy spectrum
+		long double alphas; ///< minimum of starting angle between position vector and velocity vector projected onto xy-plane
+		long double alphae; ///< maximum of starting angle between position vector and velocity vector projected onto xy-plane
+		long double gammas; ///< minimum of starting angle between z axis and velocity vector
+		long double gammae; ///< maximum of starting angle between z axis and velocity vector
+		long double trajend; ///< max trajectory length
+		long double xend; ///< max. lifetime
+	};
+	initial nini; ///< Initial condition limits for neutrons
+	initial pini; ///< Initial condition limits for protons
+	initial eini; ///< Initial condition limits for electrons
+	unsigned long int monthinmilliseconds; ///< Random seed, derived from program start time and #jobnumber
+	int decay; ///< decay on (1/2) or off (0)
+	int polarisation; ///< Polarisation parallel (1), antiparallel (2) or random (4)
+	long double tau_n; ///< neutron lifetime
+	long double decayoffset; ///< start decay timer after this time
+
+	mt_state_t v_mt_state; ///< mersenne twister random number generator
 	
+
+	/**
+	 * Constructor.
+	 *
+	 * Create random seed and read all3inone.in.
+	 *
+	 * @param infile Path to configuration file
+	 * @param apolarisation Polarisation parallel (1), antiparallel (2) or random (4)
+	 * @param adecay decay on (1/2) or off (0)
+	 * @param adecayoffset Start decay timer after this time
+	 * @param NeutLifetime Neutron lifetime
+	 */
 	TMCGenerator(const char *infile, int apolarisation, int adecay, long double adecayoffset, long double NeutLifetime){
 		decay = adecay;
 		polarisation = apolarisation;
@@ -31,7 +63,7 @@ struct TMCGenerator{
 		tm *monthday;
 		timeval daysec;
 	
-		// for random numbers we need a statevar + we need to set an initial seed
+		// for random numbers we need to set an initial seed
 		mytime = time(NULL);
 		
 		monthday = localtime(&mytime);
@@ -125,45 +157,56 @@ struct TMCGenerator{
 		}
 	};
 
-	// return uniformly distributed random number in [min..max]
+
+	/// return uniformly distributed random number in [min..max]
 	long double UniformDist(long double min, long double max){
 		return mt_get_double(&v_mt_state)*(max - min) + min;
 	};
 	
-	// return sin distributed random number in [min..max] (in rad!)
+
+	/// return sine distributed random number in [min..max] (in rad!)
 	long double SinDist(long double min, long double max){
 		return acos(cos(min) - mt_get_double(&v_mt_state) * (cos(min) - cos(max)));	
 	};
 	
-	// return sin(x)*cos(x) distributed random number in [min..max] (0 <= min/max < pi/2!)
+
+	/// return sin(x)*cos(x) distributed random number in [min..max] (0 <= min/max < pi/2!)
 	long double SinCosDist(long double min, long double max){
 		return acos(sqrt(mt_get_double(&v_mt_state)*(cos(max)*cos(max) - cos(min)*cos(min)) + cos(min)*cos(min)));
 	};
 	
-	// return x^2 distributed random number in [min..max]
+
+	/// return x^2 distributed random number in [min..max]
 	long double SquareDist(long double min, long double max){
 		return powl(mt_get_double(&v_mt_state) * (pow(max,3) - pow(min,3)) + pow(min,3),1.0/3.0);
 	};
 	
-	// return linearly distributed random number in [min..max]
+
+	/// return linearly distributed random number in [min..max]
 	long double LinearDist(long double min, long double max){
 		return sqrt(mt_get_double(&v_mt_state) * (max*max - min*min) + min*min);
 	};
 
-	// return sqrt(x) distributed random number in [min..max]
+
+	/// return sqrt(x) distributed random number in [min..max]
 	long double SqrtDist(long double min, long double max){
 		return powl((powl(max, 1.5) - powl(min, 1.5)) * mt_get_double(&v_mt_state) + powl(min, 1.5), 2.0/3.0);
 	};
 	
-	// write isotropically distributed 3D-angles into alpha and gamma
-	// alpha = angle between x-axis and vector projected onto xy-plane
-	// gamma = angle between z-axis and vector
+
+	/**
+	 * Create isotropically distributed 3D angles.
+	 *
+	 * @param alpha Angle between vector and x-axis projected onto xy-plane
+	 * @param gamma Angle between vector and z-axis
+	 */
 	void IsotropicDist(long double &alpha, long double &gamma){
 		alpha = UniformDist(0,2*pi);
 		gamma = SinDist(0,pi);
 	};
 	
-	// energy distribution of UCNs
+
+	/// energy distribution of UCNs (usually in [nini::EnergieS..nini::EnergieE])
 	long double NeutronSpectrum(){
 		return SqrtDist(nini.EnergieS*1e-9, nini.EnergieE*1e-9);
 
@@ -213,7 +256,27 @@ struct TMCGenerator{
 			if (UniformDist(0,1060)  < y)
 				return x*1e-9;
 		}
-
+*/
+/*
+		//spectrum entering buffervolume from guide
+		long double x,y;
+		for(;;){
+			x = UniformDist(0,150);
+			y = -3.142e-10*pow(x,7) + 9.549e-8*pow(x,6) - 6.808e-6*pow(x,5) - 0.000414*pow(x,4) + 0.0635*pow(x,3) - 2.672*pow(x,2) + 131.12*x - 23.6645;
+			if (UniformDist(0,5120) < y)
+				return x*1e-9;
+		}
+*/
+/*
+		//lfs spectrum after ramping with 0.5B and absorber 34cm above storage bottom
+		long double x,y;
+		for(;;){
+			x = UniformDist(10,58);
+			y = UniformDist(0,180);
+			if ((x <= 49 && y < 4.86222*x - 58.4666)
+			|| (x > 49 && y < exp(-0.616279*x + 35.3488)))
+				return x*1e-9;
+		}
 */
 /*		
 		//neutron energy spectrum by Gerd Petzoldt
@@ -241,14 +304,18 @@ struct TMCGenerator{
 		*/
 	};
 	
-	// energy distribution of protons (0 < 'Energie' < 750 eV)			
-	// proton recoil spectrum from "Diplomarbeit M. Simson"
+
+	/**
+	 * Energy distribution of protons [0..750 eV]
+	 *
+	 * Proton recoil spectrum from neutron beta decay from "Diplomarbeit M. Simson"
+	 */
 	long double ProtonSpectrum(){
 		long double Wahrschl, WktTMP, Energie;
 		// dice as long as point is above curve
 		do
 		{	//cout << "above distribution... dicing on..." << endl;
-			Energie = UniformDist(0, 751); // constant distribution between 0 and 800 eV // [eV]
+			Energie = UniformDist(0, 751); // constant distribution between 0 and 751 eV // [eV]
 			WktTMP = UniformDist(0, 2);
 			
 			long double DeltaM = m_n - m_p;
@@ -264,8 +331,12 @@ struct TMCGenerator{
 		return Energie;
 	};
 	
-	// energy distribution of electrons (0 < 'Energie' < 782 keV)			
-	// from "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
+
+	/**
+	 * Energy distribution of electrons [0..782 keV]
+	 *
+	 * Electron energy spectrum from neutron beta decay from http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html
+	 */
 	long double ElectronSpectrum(){
 		long double Elvert, Energie, WktTMP;
 		long double Qvalue = 782e3;
@@ -282,7 +353,13 @@ struct TMCGenerator{
 		return Energie;
 	};
 	
-	// start time, lifetime/simulationtime for different particles
+
+	/**
+	 * Lifetime of different particles
+	 *
+	 * For neutrons it either returns nini::xend (from all3inone.in, if #decay=0) or a random exponential decay lifetime (if #decay =1 or =2 in config.in) with decay time #tau_n plus #decayoffset.
+	 * For electrons and protons it always returns eini::xend and pini::xend.
+	 */
 	long double LifeTime(int protneut){
 		switch (protneut){
 			case NEUTRON:
@@ -298,7 +375,8 @@ struct TMCGenerator{
 		return 0;
 	};
 	
-	// max. trajectory length for different particles
+
+	/// max. trajectory length for different particles
 	long double MaxTrajLength(int protneut){
 		switch (protneut){
 			case NEUTRON:
@@ -311,7 +389,8 @@ struct TMCGenerator{
 		return 9e99;
 	};
 	
-	// get neutron polarisation (diced or fixed)
+
+	/// get neutron polarisation, either diced (#polarisation==4) or fixed (#polarisation==1/2)
 	int DicePolarisation(){
 		if (polarisation == 4)
 		{
@@ -327,36 +406,40 @@ struct TMCGenerator{
 		return 0;	
 	};
 
-	//======== Determination of starting velocities of the decay products =========================
-	void MCZerfallsstartwerte(long double v_n[3], long double v_p[3], long double v_e[3])
-	{	
-		long double m_nue = 1 / powl(c_0, 2); // [eV/c^2]
-		
-	/*
-	 * The starting values (energie, position, orientation) of the proton and electron from the decay of the latest simulated 
-	 * neutron will be set. Initial parameters of the products will be concerned, but due to the Lorentz boost the energy may 
-	 * exceed the limits.
+
+	/**
+	 * Simulate neutron beta decay.
 	 *
-	 * Reaction(s): 
-	 *     A   ->  B   +  C
+	 * Calculates velocities of neutron decay products proton and electron.
+	 *
+	 * Reaction(s):
+	 *
 	 *     n0  ->  p+  +  R-
+	 *
 	 *     R-  ->  e-  +  nue
 	 * 
 	 * Procedure:
-	 * (1) Dicing the energy of the decay proton according to the characteristic spectrum in the rest frame of the neutron and
-	 *     calculating the proton momentum via the energy momentum relation. 
-	 * (2) Dicing isotrope orientation of the decay proton
-	 * (3) Calculating 4-momentum of R- via 4-momentum conservation
-	 * (4) Getting fixed electron energy from two body decay of R-
-	 * (5) Dicing isotrope electron orientation in the rest frame of R-
-	 * (6) Lorentz boosting electron 4-momentum into moving frame of R-
-	 * (7) Calculating neutrino 4-momentum via 4-momentum conservation
-	 * (8) Boosting all 4-momentums into moving neutron frame
+	 * (1) Dice the energy of the decay proton according to #ProtonSpectrum in the rest frame of the neutron and
+	 *     calculate the proton momentum via the energy momentum relation.
+	 * (2) Dice isotropic orientation of the decay proton.
+	 * (3) Calculate 4-momentum of rest R- via 4-momentum conservation.
+	 * (4) Get fixed electron energy from two body decay of R-.
+	 * (5) Dice isotropic electron orientation in the rest frame of R-.
+	 * (6) Lorentz boost electron 4-momentum into moving frame of R-.
+	 * (7) Calculate neutrino 4-momentum via 4-momentum conservation.
+	 * (8) Boost all 4-momentums into moving neutron frame.
 	 * 
 	 * Cross-check:
-	 * (9) Check if neutrino 4-momentum has the correct invariant mass (4-momentum square)
+	 * (9) Print neutrino 4-momentum invariant mass (4-momentum square, should be zero).
 	 * 
+	 * @param v_n Velocity of decayed neutron
+	 * @param v_p Returns proton velocity
+	 * @param v_e Returns electron velocity
 	 */
+	void MCZerfallsstartwerte(long double v_n[3], long double v_p[3], long double v_e[3])
+	{
+		long double m_nue = 1 / powl(c_0, 2); // [eV/c^2]
+
 	 	long double pabs, beta1, beta2, delta1, delta2; // 3-momentums (abs+directions)
 	 	long double p[4], e[4];
 	 	
@@ -372,7 +455,7 @@ struct TMCGenerator{
 		pabs = sqrt(p[0]*p[0] - m_p*m_p*c_0*c_0);
 	
 	//-------- Step 2 ----------------------------------------------------------------------------------------------------------
-		// isotropic emission characteristics (in the rest frame of the neutron with the z''-axis as its track)
+		// isotropic emission characteristics (in the rest frame of the neutron)
 		IsotropicDist(beta1,delta1);
 		// 3-momentum of the proton
 		p[1] = pabs * sin(delta1) * cos(beta1);
