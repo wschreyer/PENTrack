@@ -1,3 +1,8 @@
+/**
+ * \file
+ * Contains classes to include experiment geometry and particle sources.
+ */
+
 #ifndef GEOMETRY_H_
 #define GEOMETRY_H_
 
@@ -12,14 +17,20 @@
 
 using namespace std;
 
-#define MAX_DICE_ROLL 42000000 // number of tries to find start point
-#define REFLECT_TOLERANCE 1e-8 	// max distance of reflection point to actual surface collision point
+#define MAX_DICE_ROLL 42000000 ///< number of tries to find start point
+#define REFLECT_TOLERANCE 1e-8 	///< max distance of reflection point to actual surface collision point
 
+
+/// Struct to store material properties (read from geometry.in, right now only for neutrons)
 struct material{
-	string name;
-	long double FermiReal, FermiImag, DiffProb;
+	string name; ///< Material name
+	long double FermiReal; ///< Real part of Fermi potential
+	long double FermiImag; ///< Imaginary part of Fermi potential
+	long double DiffProb; ///< Diffuse reflection probability
 };
 
+
+/// Struct to store solid information (read from geometry.in)
 struct solid{
 	string name;
 	material mat;
@@ -27,20 +38,55 @@ struct solid{
 	vector<long double> ignoretimes;
 };
 
-extern solid defaultsolid;
 
-// transmission probability of neutron hitting surface mit Fermi Potential Mf + i*Pf (all in neV)
+extern solid defaultsolid; ///< Solid which is used when particle is not inside an actual solid.
+
+
+/**
+ * Neutron transmission probability.
+ *
+ * Transmission probability of a neutron hitting a surface with Fermi Potential Mf + i*Pf (all in neV)
+ *
+ * @param Er Kinetic energy of neutron perpendicular to the surface [neV].
+ * @param Mf Real part of Fermi potential [neV].
+ * @param Pf Imaginary part of Fermi potential [neV].
+ *
+ * @return Returns transmission probability
+ */
 long double Transmission(const long double Er, const long double Mf, const long double Pf);
-// absorption probability of neutron flying distance l (in m) through Fermi potential Mf + i*Pf (all in neV)
+
+
+/**
+ * Neutron absorption probability.
+ *
+ * Absorption probability of neutron flying distance l (in m) through Fermi potential Mf + i*Pf (all in neV)
+ *
+ * @param E Kinetic energy of neutron [neV]
+ * @param Mf Real part of Fermi potential [neV]
+ * @param Pf Imaginary part of Fermi potential [neV]
+ * @param l Path length of neutron
+ *
+ * @return Returns absorption probability
+ */
 long double Absorption(const long double E, const long double Mf, const long double Pf, const long double l);
 
 
+/**
+ * Class to include experiment geometry.
+ *
+ * Loads solids and materials from geometry.in, maintains solids list, checks for collisions.
+ */
 struct TGeometry{
 	public:
-		KDTree *kdtree;
-		vector<solid> solids;	// dynamic array to associate solids with material/kennzahl/name
+		KDTree *kdtree; ///< kd-tree structure containing triangle meshes from STL-files
+		vector<solid> solids; ///< solids list
 		
-		TGeometry(const char *geometryin, vector<int> kennz_counter[3]){
+		/**
+		 * Constructor, reads geometry configuration file, loads triangle meshes.
+		 *
+		 * @param geometryin Path to geometry configuration file
+		 */
+		TGeometry(const char *geometryin){
 			ifstream infile(geometryin);
 			string line;
 			vector<material> materials;	// dynamic array to store material properties
@@ -54,7 +100,7 @@ struct TGeometry{
 						LoadMaterialsSection(infile, materials);
 					}
 					else if (line.compare(0,10,"[GEOMETRY]") == 0){
-						LoadGeometrySection(infile, materials, kennz_counter);
+						LoadGeometrySection(infile, materials);
 					}
 					else getline(infile,line);
 				}
@@ -66,16 +112,32 @@ struct TGeometry{
 			if (kdtree) delete kdtree;
 		};
 		
-		// check if point is inside geometry volume
-		bool CheckPoint(const long double x, const long double y[6]){
-			if (!kdtree->PointInBox(y)){ // particle no longer contained inside geometry-volume?
-				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x,y[0],y[1],y[2]);
-				return false;
-			}	
-			return true;
+		/**
+		 * Check if point is inside geometry bounding box.
+		 *
+		 * @param x Time
+		 * @param y Position vector
+		 *
+		 * @return Returns true if point is inside the bounding box
+		 */
+		bool CheckPoint(const long double x, const long double y[3]){
+			return !kdtree->PointInBox(y);
 		};
 		
-		// get all collisions of ray y1->y2 with surfaces
+		/**
+		 * Checks if line segment p1->p2 collides with a surface.
+		 *
+		 * Calls KDTree::Collision to check for collisions and removes all collisions
+		 * which should be ignored (given by ignore times in geometry configuration file).
+		 *
+		 * @param x1 Start time of line segment
+		 * @param p1 Start point of line segment
+		 * @param h Time length of line segment
+		 * @param p2 End point of line segment
+		 * @param colls List of collisions
+		 *
+		 * @return Returns true if line segment collides with a surface
+		 */
 		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], list<TCollision> &colls){
 			if (kdtree->Collision(p1,p2,colls)){ // search in the kdtree for collisions
 				for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
@@ -97,6 +159,12 @@ struct TGeometry{
 		};
 			
 	private:	
+		/**
+		 * Read [MATERIALS] section in geometry configuration file.
+		 *
+		 * @param infile File stream to geometry configuration file
+		 * @param materials Vector of material structs, returns list of materials in the configuration file
+		 */
 		void LoadMaterialsSection(ifstream &infile, vector<material> &materials){
 			char c;
 			string line;
@@ -111,7 +179,13 @@ struct TGeometry{
 			}while(infile.good() && getline(infile,line).good());	
 		};
 	
-		void LoadGeometrySection(ifstream &infile, vector<material> &materials, vector<int> kennz_counter[3]){
+		/**
+		 * Read [GEOMETRY] section in geometry configuration file.
+		 *
+		 * @param infile File stream to geometry configuration file
+		 * @param materials Vector of material structs given by LoadMaterialsSection
+		 */
+		void LoadGeometrySection(ifstream &infile, vector<material> &materials){
 			char c;
 			string line;
 			string STLfile;
@@ -126,11 +200,6 @@ struct TGeometry{
 				else if (!infile.good() || c == '[') break;	// next section found
 				solid model;
 				infile >> model.kennz;
-				if (kennz_counter[0].size() <= model.kennz){
-					kennz_counter[0].resize(model.kennz+1,0);
-					kennz_counter[1].resize(model.kennz+1,0);
-					kennz_counter[2].resize(model.kennz+1,0);
-				}
 				infile >> STLfile;
 				infile >> matname;
 				for (unsigned i = 0; i < materials.size(); i++){
@@ -167,18 +236,42 @@ struct TGeometry{
 		
 };
 
+/**
+ * Class which can produce random particle starting points from different sources.
+ *
+ * There are four source modes which can be specified in the [SOURCE] section of the configuration file:
+ * "volume" - random points inside a STL solid (#kdtree) are created;
+ * "surface" - random points on triangles (part of #geometry) COMPLETELY surrounded by a STL solid (#kdtree) are created;
+ * "customvol" - random points inside a cylindrical coordinate range ([#r_min..#r_max]:[#phi_min..#phi_max]:[#z_min:#z_max]) are created;
+ * "customsurf"	- random points on triangles (part of #geometry) COMPLETELY inside a cylindrical coordinate range  ([#r_min..#r_max]:[#phi_min..#phi_max]:[#z_min:#z_max]) are created
+ */
 struct TSource{
 	public:
-		KDTree *kdtree;
-		TGeometry *geometry;
-		string sourcemode; // volume/surface/customvol/customsurf
-		long double r_min, r_max, phi_min, phi_max, z_min, z_max; // for customvol/customsurf
-		long double E_normal, Hmin_lfs, Hmin_hfs;
-		long double ActiveTime;
+		KDTree *kdtree; ///< KDTree structure containing triangle meshes surrounding the source volume/surface (if sourcemode is volume or surface)
+		TGeometry *geometry; ///< TGeometry structure to check the random points against, also used as source surface if sourcemode is "surface" or "customsurf"
+		string sourcemode; ///< volume/surface/customvol/customsurf
+		long double r_min; ///< minimum radial coordinate for customvol/customsurf source
+		long double r_max; ///< maximum radial coordinate for customvol/customsurf source
+		long double phi_min; ///< minimum azimuth for customvol/customsurf source
+		long double phi_max; ///< maximum azimuth coordinate for customvol/customsurf source
+		long double z_min; ///< minimum z coordinate for customvol/customsurf source
+		long double z_max;  ///< maximum z coordinate for customvol/customsurf source
+		long double E_normal; ///< For surface sources an additional energy "boost" perpendicular to the surface can be added (e.g. neutrons "dropping" from a Fermi potential >0 into vacuum)
+		long double Hmin_lfs; ///< Minimum total energy of low field seeking neutrons inside the source volume
+		long double Hmin_hfs; ///< Minimum total energy of high field seeking neutrons inside the source volume
+		long double ActiveTime; ///< the source produces particles in the time range [0..ActiveTime]
 		
-		vector<Triangle*> sourcetris;
-		long double sourcearea;
+		vector<Triangle*> sourcetris; ///< list of triangles (part of #geometry) inside the source volume (only relevant if source mode is "surface" or "customsurf")
+		long double sourcearea; ///< area of all triangles in #sourcetris (needed for correct weighting)
 		
+
+		/**
+		 * Constructor, loads [SOURCE] section of configuration file, calculates #Hmin_lfs and #Hmin_hfs
+		 *
+		 * @param geometryin Configuration file containing [SOURCE] section
+		 * @param geom TGeometry class against which start points are checked and which contains source surfaces
+		 * @param field TField class to calculate #Hmin_lfs and #Hmin_hfs
+		 */
 		TSource(const char *geometryin, TGeometry &geom, TField &field){
 			geometry = &geom;
 			kdtree = NULL;
@@ -204,7 +297,7 @@ struct TSource{
 				for (long double r = r_min; r <= r_max; r += d){
 					for (long double z = z_min; z <= z_max; z += d){
 						long double p[3] = {r,0.0,z};
-						CalcHmin(field,p,d*d*2*r*pi);
+						CalcHmin(field,p);
 					}
 				}
 			}
@@ -214,7 +307,7 @@ struct TSource{
 				for (p[0] = kdtree->lo[0]; p[0] <= kdtree->hi[0]; p[0] += d){
 					for (p[1] = kdtree->lo[1]; p[1] <= kdtree->lo[1]; p[1] += d){
 						for (p[2] = kdtree->lo[2]; p[2] <= kdtree->lo[2]; p[2] += d){
-							if (InSourceVolume(p)) CalcHmin(field,p,d*d*d);
+							if (InSourceVolume(p)) CalcHmin(field,p);
 						}
 					}
 				}
@@ -223,11 +316,34 @@ struct TSource{
 			printf("min. total energy a lfs/hfs neutron must have: %LG / %LG neV\n\n", Hmin_lfs, Hmin_hfs);
 		};
 	
+
+		/**
+		 * Destructor, deletes #kdtree
+		 */
 		~TSource(){
 			if (kdtree) delete kdtree;
 		};
 	
-		void RandomPointInSourceVolume(TMCGenerator &mc, long double t, long double &NeutEnergie, long double &x, long double &y, long double &z, long double &alpha, long double &gamma){
+
+		/**
+		 * Create random point in source volume.
+		 *
+		 * "volume": Random points with isotropic velocity distribution inside the bounding box of #kdtree are produced until ::InSourceVolume is true for a point.
+		 * "customvol": Random points with isotropic velocity deistribution in the coordinate range ([#r_min..#r_max]:[#phi_min..#phi_max]:[#z_min:#z_max]) are produced.
+		 * "surface/customsurf": A random point on a random triangle from the #sourcetris list is chosen (weighted by triangle area).
+		 * 						Starting angles are cosine-distributed to the triangle normal and then angles and Ekin are modified according to #E_normal.
+		 * This is repeated for all source modes until the point does not lie inside a solid in #geometry.
+		 *
+		 * @param mc TMCGenerator to produce random number distributions
+		 * @param t Start time of particle
+		 * @param Ekin Kinetic start energy of particle, might be modified by E_normal
+		 * @param x Returns starting x coordinate of particle
+		 * @param y Returns starting y coordinate of particle
+		 * @param z Returns starting z coordinate of particle
+		 * @param alpha Returns starting angle between position vector and velocity vector, projected onto xy-plane
+		 * @param gamma Returns starting angle between z axis and velocity vector
+		 */
+		void RandomPointInSourceVolume(TMCGenerator &mc, long double t, long double &Ekin, long double &x, long double &y, long double &z, long double &alpha, long double &gamma){
 			long double p1[3];
 			int count = 0;
 			for(;;){
@@ -275,10 +391,10 @@ struct TSource{
 					long double winkeben = mc.UniformDist(0, 2*pi); // generate random velocity angles in upper hemisphere
 					long double winksenkr = mc.SinCosDist(0, 0.5*pi); // Lambert's law!
 					if (E_normal > 0){
-						long double vsenkr = sqrt(NeutEnergie*cos(winksenkr)*cos(winksenkr) + E_normal); // add E_normal to component normal to surface
-						long double veben = sqrt(NeutEnergie)*sin(winksenkr);
+						long double vsenkr = sqrt(Ekin*cos(winksenkr)*cos(winksenkr) + E_normal); // add E_normal to component normal to surface
+						long double veben = sqrt(Ekin)*sin(winksenkr);
 						winksenkr = atan2(veben,vsenkr); // update angle
-						NeutEnergie = vsenkr*vsenkr + veben*veben; // update energy
+						Ekin = vsenkr*vsenkr + veben*veben; // update energy
 					}
 					long double v[3] = {cos(winkeben)*sin(winksenkr), sin(winkeben)*sin(winksenkr), cos(winksenkr)};
 					RotateVector(v,n);
@@ -308,6 +424,14 @@ struct TSource{
 		};
 
 	private:
+		/**
+		 * Loads [SOURCE] section from configuration file.
+		 *
+		 * Reads #sourcemode, #kdtree from given STL file, #r_min, #r_max, #phi_min, #phi_max, #z_min, #z_max, #ActiveTime, #E_normal.
+		 * Determines #sourcetris and #sourcearea.
+		 *
+		 * @param infile File stream to configuration file containing [SOURCE] section
+		 */
 		void LoadSourceSection(ifstream &infile){
 			char c;
 			string line;
@@ -346,7 +470,18 @@ struct TSource{
 			}	
 		};
 		
-		// check if a point is inside the source volume
+
+		/**
+		 * Checks if a point is inside the source volume.
+		 *
+		 * "customvol/customsurf": checks if point is in the coordinate range.
+		 * "volume/surface": Shoots a ray to the bottom of the #kdtree bounding box and counts collision with surfaces.
+		 * Implemented as template to allow long double precision points (simulation) as well as float precision points (triangle vertices).
+		 *
+		 * @param p Point to check.
+		 *
+		 * @return Returns true if point lies inside source volume.
+		 */
 		template<typename coord> bool InSourceVolume(const coord p[3]){
 			if (sourcemode == "customvol" || sourcemode == "customsurf"){
 				long double r = sqrt(p[0]*p[0] + p[1]*p[1]);
@@ -371,7 +506,14 @@ struct TSource{
 			}
 		}
 	
-		void CalcHmin(TField &field, long double p[3], long double vol){
+
+		/**
+		 * Calculates energies of low and high field seeking neutrons at point p and updates Hmin_hfs/lfs accordingly.
+		 *
+		 * @param field TField to calculate magnet fields
+		 * @param p Point to calculate energy at
+		 */
+		void CalcHmin(TField &field, long double p[3]){
 			long double p2[3] = {p[0], p[1], geometry->kdtree->lo[2] - REFLECT_TOLERANCE};
 			list<TCollision> c;
 			int count = 0;
