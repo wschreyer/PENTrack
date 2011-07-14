@@ -240,10 +240,10 @@ struct TGeometry{
  * Class which can produce random particle starting points from different sources.
  *
  * There are four source modes which can be specified in the [SOURCE] section of the configuration file:
- * "volume" - random points inside a STL solid (#kdtree) are created;
- * "surface" - random points on triangles (part of #geometry) COMPLETELY surrounded by a STL solid (#kdtree) are created;
- * "customvol" - random points inside a cylindrical coordinate range ([#r_min..#r_max]:[#phi_min..#phi_max]:[#z_min:#z_max]) are created;
- * "customsurf"	- random points on triangles (part of #geometry) COMPLETELY inside a cylindrical coordinate range  ([#r_min..#r_max]:[#phi_min..#phi_max]:[#z_min:#z_max]) are created
+ * "volume" - random points inside a STL solid (::kdtree) are created;
+ * "surface" - random points on triangles (part of ::geometry) COMPLETELY surrounded by a STL solid (::kdtree) are created;
+ * "customvol" - random points inside a cylindrical coordinate range ([::r_min..::r_max]:[::phi_min..::phi_max]:[::z_min:::z_max]) are created;
+ * "customsurf"	- random points on triangles (part of ::geometry) COMPLETELY inside a cylindrical coordinate range  ([::r_min..::r_max]:[::phi_min..::phi_max]:[::z_min:::z_max]) are created
  */
 struct TSource{
 	public:
@@ -261,16 +261,16 @@ struct TSource{
 		long double Hmin_hfs; ///< Minimum total energy of high field seeking neutrons inside the source volume
 		long double ActiveTime; ///< the source produces particles in the time range [0..ActiveTime]
 		
-		vector<Triangle*> sourcetris; ///< list of triangles (part of #geometry) inside the source volume (only relevant if source mode is "surface" or "customsurf")
-		long double sourcearea; ///< area of all triangles in #sourcetris (needed for correct weighting)
+		vector<Triangle*> sourcetris; ///< list of triangles (part of ::geometry) inside the source volume (only relevant if source mode is "surface" or "customsurf")
+		long double sourcearea; ///< area of all triangles in ::sourcetris (needed for correct weighting)
 		
 
 		/**
-		 * Constructor, loads [SOURCE] section of configuration file, calculates #Hmin_lfs and #Hmin_hfs
+		 * Constructor, loads [SOURCE] section of configuration file, calculates ::Hmin_lfs and ::Hmin_hfs
 		 *
 		 * @param geometryin Configuration file containing [SOURCE] section
 		 * @param geom TGeometry class against which start points are checked and which contains source surfaces
-		 * @param field TField class to calculate #Hmin_lfs and #Hmin_hfs
+		 * @param field TField class to calculate ::Hmin_lfs and ::Hmin_hfs
 		 */
 		TSource(const char *geometryin, TGeometry &geom, TField &field){
 			geometry = &geom;
@@ -318,7 +318,7 @@ struct TSource{
 	
 
 		/**
-		 * Destructor, deletes #kdtree
+		 * Destructor, deletes ::kdtree
 		 */
 		~TSource(){
 			if (kdtree) delete kdtree;
@@ -328,11 +328,11 @@ struct TSource{
 		/**
 		 * Create random point in source volume.
 		 *
-		 * "volume": Random points with isotropic velocity distribution inside the bounding box of #kdtree are produced until ::InSourceVolume is true for a point.
-		 * "customvol": Random points with isotropic velocity deistribution in the coordinate range ([#r_min..#r_max]:[#phi_min..#phi_max]:[#z_min:#z_max]) are produced.
-		 * "surface/customsurf": A random point on a random triangle from the #sourcetris list is chosen (weighted by triangle area).
-		 * 						Starting angles are cosine-distributed to the triangle normal and then angles and Ekin are modified according to #E_normal.
-		 * This is repeated for all source modes until the point does not lie inside a solid in #geometry.
+		 * "volume": Random points with isotropic velocity distribution inside the bounding box of ::kdtree are produced until ::InSourceVolume is true for a point.
+		 * "customvol": Random points with isotropic velocity deistribution in the coordinate range ([::r_min..::r_max]:[::phi_min..::phi_max]:[::z_min:::z_max]) are produced.
+		 * "surface/customsurf": A random point on a random triangle from the ::sourcetris list is chosen (weighted by triangle area).
+		 * 						Starting angles are cosine-distributed to the triangle normal and then angles and Ekin are modified according to ::E_normal.
+		 * This is repeated for all source modes until the point does not lie inside a solid in ::geometry.
 		 *
 		 * @param mc TMCGenerator to produce random number distributions
 		 * @param t Start time of particle
@@ -427,8 +427,8 @@ struct TSource{
 		/**
 		 * Loads [SOURCE] section from configuration file.
 		 *
-		 * Reads #sourcemode, #kdtree from given STL file, #r_min, #r_max, #phi_min, #phi_max, #z_min, #z_max, #ActiveTime, #E_normal.
-		 * Determines #sourcetris and #sourcearea.
+		 * Reads ::sourcemode, ::kdtree from given STL file, ::r_min, ::r_max, ::phi_min, ::phi_max, ::z_min, ::z_max, ::ActiveTime, ::E_normal.
+		 * Determines ::sourcetris and ::sourcearea.
 		 *
 		 * @param infile File stream to configuration file containing [SOURCE] section
 		 */
@@ -475,7 +475,7 @@ struct TSource{
 		 * Checks if a point is inside the source volume.
 		 *
 		 * "customvol/customsurf": checks if point is in the coordinate range.
-		 * "volume/surface": Shoots a ray to the bottom of the #kdtree bounding box and counts collision with surfaces.
+		 * "volume/surface": Shoots a ray to the bottom of the ::kdtree bounding box and counts collision with surfaces.
 		 * Implemented as template to allow long double precision points (simulation) as well as float precision points (triangle vertices).
 		 *
 		 * @param p Point to check.
