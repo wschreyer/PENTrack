@@ -1,3 +1,12 @@
+/**
+ * \file
+ * Particle class definitions.
+ */
+
+#ifndef PARTICLE_H_
+#define PARTICLE_H_
+
+
 #include <cmath>
 #include <vector>
 #include <algorithm>
@@ -49,8 +58,8 @@ struct TParticle{
 		long double rend; ///< radial end coordinate
 		long double phistart; ///< start azimuth
 		long double phiend; ///< end azimuth
-		long double alphastart; ///< start angle between position vector and velocity vector
-		long double alphaend; ///< end angle between position vector and velocity vector
+		long double alphastart; ///< start angle between position vector and velocity vector projected onto xy-plane
+		long double alphaend; ///< end angle between position vector and velocity vector projected onto xy-plane
 		long double gammastart; ///< start angle between z axis and velocity vector
 		long double gammaend; ///< end angle between z axis and velocity vector
 		long double vstart; ///< absolute start velocity
@@ -70,60 +79,12 @@ struct TParticle{
 		int NSF; ///< number of spin flips
 		int nsteps; ///< number of integration steps
 
+
 		/**
 		 * Generic constructor (empty), has to be implemented by each derived particle
 		 */
 		TParticle(int pp, long double qq, long double mm, long double mumu): protneut(pp), q(qq), m(mm), mu(mumu){ };
 
-/*
-		// constructor, enter particle starting values interactively
-		TParticle(int number, TField &afield){
-			cout << "Particle type: ";
-			cin >> protneut;
-			particlenumber = number;
-			cout << "Starting time [s]: ";
-			cin >> xstart;
-			cout << "Lifetime [s]: ";
-			cin >> xend;
-			cout << "r: ";
-			cin >> rstart;
-			cout << "phi [rad]: ";
-			cin >> phistart;
-			cout << "z: ";
-			cin >> ystart[2];
-			long double B[4][4], E[3], V;
-			afield.BFeld(ystart[0],ystart[1],ystart[2],xstart,B);
-			afield.EFeld(ystart[0],ystart[1],ystart[2],V,E);
-			switch(protneut){
-				case NEUTRON:
-					cout << "Polarisation [-1 (lfs), 0, 1 (hfs)]: ";
-					cin >> polarisation;
-					do{
-						if (Estart < 0) cout << "Neutron with energy " << Hstart << " not possible here! Try again..." << endl;
-						cout << "Neutron energy [neV]: ";
-						cin >> NeutEnergie;
-						NeutEnergie *= 1e-9;
-						Estart = NeutEnergie - m_n*gravconst*ystart[2] + polarisation*mu_nSI/ele_e*B[3][0];	
-					}while (Estart < 0);
-					break;
-				case PROTON:
-					cout << "Proton energy [eV]: ";
-					cin >> Estart;
-					break;
-				case ELECTRON:
-					cout << "Electron energy [keV]: ";
-					cin >> Estart;
-					Estart *= 1e3;
-					break;
-			}
-			cout << "alpha [rad]: ";
-			cin >> alphastart;
-			cout << "gamma [rad]: ";
-			cin >> gammastart;
-			
-			Init(protneut, number, xstart, xend, rstart, phistart, ystart[2], Estart, alphastart, gammastart, NeutEnergie, polarisation, afield);
-		};
-*/
 
 		/**
 		 * Returns equations of motion.
@@ -138,6 +99,7 @@ struct TParticle{
 			derivs(x,y,dydx);
 		};
 		
+
 		/**
 		 * Integrate particle trajectory.
 		 *
@@ -268,7 +230,7 @@ struct TParticle{
 				h = stepper->hnext; // set suggested stepsize for next step
 			}
 			
-			gettimeofday(&clock_end, NULL);	
+			gettimeofday(&clock_end, NULL);
 			comptime = clock_end.tv_sec - clock_start.tv_sec + (long double)(clock_end.tv_usec - clock_start.tv_usec)/1e6;
 			delete stepper;
 			
@@ -290,6 +252,7 @@ struct TParticle{
 		int reflectlog; ///< Should reflections (1) or transmissions (2) or both (3) be logged? Passed by "Integrate"
 		FILE *REFLECTLOG; ///< reflection log file passed by "Integrate"
 
+
 		/**
 		 * Set start values, should be called by every constructor.
 		 *
@@ -302,7 +265,7 @@ struct TParticle{
 		 * @param phi Start azimuth
 		 * @param z Start z coordinate
 		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector
+		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
 		 * @param gamma Start angle between z axis and velocity vector
 		 * @param pol Start polarisation
 		 * @param afield Electric and magnetic fields (needed to determine total energy)
@@ -345,6 +308,7 @@ struct TParticle{
 			ystart[5] = yend[5] = vstart * cos(gammastart);
 		};
 
+
 		/**
 		 * Equations of motion dy/dx = f(x,y).
 		 *
@@ -383,6 +347,7 @@ struct TParticle{
 			dydx[5] = rel*(F[2] - (y[5]*y[3]*F[0] + y[5]*y[4]*F[1] + y[5]*y[5]*F[2])/c_0/c_0);
 		};
 		
+
 		/**
 		 * Check for reflection on surfaces or absorption in materials.
 		 *
@@ -401,6 +366,7 @@ struct TParticle{
 		 */
 		bool ReflectOrAbsorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, int iteration = 1){
 			if (!geom->CheckPoint(x1,&y1[0])){ // check if start point is inside bounding box of the simulation geometry
+				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x1,y1[0],y1[1],y1[2]);
 				kennz = KENNZAHL_HIT_BOUNDARIES;
 				return true;
 			}
@@ -497,6 +463,7 @@ struct TParticle{
 			return false;
 		};
 	
+
 		/**
 		 * Virtual routine to check for reflection on surfaces, has to be implemented separately for each derived particle.
 		 *
@@ -510,6 +477,7 @@ struct TParticle{
 		 */
 		virtual bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID) = 0;
 
+
 		/**
 		 * Virtual routine to check for absorption in solids, has to be implemented separately for each derived particle.
 		 *
@@ -521,6 +489,7 @@ struct TParticle{
 		 */
 		virtual bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2) = 0;
 
+
 		/**
 		 * Virtual routine which allows additional calculations for each line segment, has to be implemented for each derived particle.
 		 *
@@ -530,6 +499,7 @@ struct TParticle{
 		 * @param y2 End point of line segment
 		 */
 		virtual bool ForEachStep(long double x1, VecDoub_I &y1, long double x2, VecDoub_I &y2) = 0;
+
 
 		/**
 		 * Calculates *end variables of particle at time x, position/velocity y and fields B,E,V.
@@ -559,6 +529,7 @@ struct TParticle{
 			alphaend = fmod(atan2(y[4],y[3]) - phiend + 2*pi, 2*pi);	
 			if (Hend > Hmax) Hmax = Hend;
 		};
+
 
 		/**
 		 * Print *start and *end values to a file.
@@ -596,6 +567,7 @@ struct TParticle{
 			fflush(file);
 		};
 	
+
 		/**
 		 * Print current particle state into file to allow visualization of the particle's trajectory.
 		 *
@@ -655,7 +627,7 @@ public:
 		 * @param phi Start azimuth
 		 * @param z Start z coordinate
 		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector
+		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
 		 * @param gamma Start angle between z axis and velocity vector
 		 * @param pol Start polarisation
 		 * @param afield Electric and magnetic fields (needed to determine total energy)
@@ -665,17 +637,18 @@ public:
 		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
 	};
 
+
 	/**
 	 * Constructor, create particle, set start values randomly according to all3inone.in.
 	 *
-	 * Sets start time #xstart according to [SOURCE] in geometry.in.
-	 * Sets start #polarisation according to config.in.
+	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
+	 * Sets start ::polarisation according to config.in.
 	 * Sets start energy according to TMCGenerator::NeutronSpectrum.
 	 * Then tries to find a position according to [SOURCE] in geometry.in.
-	 * For volume sources the total energy #Hstart is diced by TMCGenerator::NeutronSpectrum
-	 * and the position search is repeated until the kinetic energy #Estart is >0.
+	 * For volume sources the total energy ::Hstart is diced by TMCGenerator::NeutronSpectrum
+	 * and the position search is repeated until the kinetic energy ::Estart is >0.
 	 * Additionally the kinetic energy spectrum is weighted by sqrt(Estart) (see Golub/Richardson/Lamoreaux p. 82).
-	 * For surface sources the kinetic energy #Estart is diced and all positions are allowed.
+	 * For surface sources the kinetic energy ::Estart is diced and all positions are allowed.
 	 *
 	 * @param number Particle number
 	 * @param src TSource in which particle should be generated
@@ -732,7 +705,7 @@ protected:
 	 * Uses Fermi-potential formalism to calculate reflection/transmission probabilities.
 	 * Each reflection has a certain chance of being diffuse.
 	 * Diffuse reflection angles are cosine-distributed around the normal vector of the surface.
-	 * Prints surface hits into #REFLECTLOG if reflectlog is set in config.in.
+	 * Prints surface hits into ::REFLECTLOG if reflectlog is set in config.in.
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -823,10 +796,11 @@ protected:
 		return refl;
 	};
 
+
 	/**
 	 * Checks for absorption in solids using Fermi-potential formalism
 	 *
-	 * If #currentsolids contains more than one solid, it uses the one with highest absorption probability
+	 * If ::currentsolids contains more than one solid, it uses the one with highest absorption probability
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -866,11 +840,12 @@ protected:
 		return false;
 	};
 
+
 	/**
 	 * Do some additional calculations for neutrons.
 	 *
-	 * Caclulates adiabacity condition (#frac).
-	 * Estimates spin flip probability according to Vladimirskii (#vlad)
+	 * Caclulates adiabacity condition (::frac).
+	 * Estimates spin flip probability according to Vladimirskii (::vlad)
 	 * and by doing a bruteforce integration of the Bloch equation describing spin precession.
 	 * Additionally it can print out a spatial neutron distribution matrix.
 	 *
@@ -922,6 +897,11 @@ protected:
 };
 
 
+/**
+ * Proton particle class.
+ *
+ * Simulates a proton including gravitation and Lorentz-force
+ */
 struct TProton: TParticle{
 public:
 	/**
@@ -934,7 +914,7 @@ public:
 		 * @param phi Start azimuth
 		 * @param z Start z coordinate
 		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector
+		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
 		 * @param gamma Start angle between z axis and velocity vector
 		 * @param pol Start polarisation
 		 * @param afield Electric and magnetic fields (needed to determine total energy)
@@ -944,10 +924,11 @@ public:
 		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
 	};
 
+
 	/**
 	 * Constructor, create particle, set start values randomly according to all3inone.in.
 	 *
-	 * Sets start time #xstart according to [SOURCE] in geometry.in.
+	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
 	 * Sets kinetic start energy according to TMCGenerator::ProtonSpectrum.
 	 * Then tries to find a position according to [SOURCE] in geometry.in.
 	 *
@@ -968,6 +949,7 @@ public:
 		Init(number, xstart, mcgen.LifeTime(PROTON), r, phi, ystart[2],
 			Estart, alphastart, gammastart, polarisation, afield);
 	};
+
 
 	/**
 	 * Constructor, create proton from neutron decay
@@ -1008,10 +990,11 @@ protected:
 		return false;
 	};
 
+
 	/**
 	 * Checks for absorption
 	 *
-	 * Protons are immediately absorbed in solids other than #defaultsolid
+	 * Protons are immediately absorbed in solids other than ::defaultsolid
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -1029,6 +1012,7 @@ protected:
 		return false;
 	};
 
+
 	/**
 	 * Do some additional calculations for protons.
 	 *
@@ -1045,6 +1029,11 @@ protected:
 };
 
 
+/**
+ * Electron particle class.
+ *
+ * Simulates an electron including gravitation and Lorentz-force
+ */
 struct TElectron: TParticle{
 public:
 	/**
@@ -1057,7 +1046,7 @@ public:
 		 * @param phi Start azimuth
 		 * @param z Start z coordinate
 		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector
+		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
 		 * @param gamma Start angle between z axis and velocity vector
 		 * @param pol Start polarisation
 		 * @param afield Electric and magnetic fields (needed to determine total energy)
@@ -1067,10 +1056,11 @@ public:
 		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
 	};
 
+
 	/**
 	 * Constructor, create particle, set start values randomly according to all3inone.in.
 	 *
-	 * Sets start time #xstart according to [SOURCE] in geometry.in.
+	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
 	 * Sets kinetic start energy according to TMCGenerator::ProtonSpectrum.
 	 * Then tries to find a position according to [SOURCE] in geometry.in.
 	 *
@@ -1091,6 +1081,7 @@ public:
 		Init(number, xstart, mcgen.LifeTime(ELECTRON), r, phi, ystart[2],
 			Estart, alphastart, gammastart, polarisation, afield);
 	};
+
 
 	/**
 	 * Constructor, create electron from neutron decay
@@ -1131,10 +1122,11 @@ protected:
 		return false;
 	};
 
+
 	/**
 	 * Checks for absorption
 	 *
-	 * Electron are immediately absorbed in solids other than #defaultsolid
+	 * Electrons are immediately absorbed in solids other than ::defaultsolid
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -1152,8 +1144,9 @@ protected:
 		return false;
 	};
 
+
 	/**
-	 * Do some additional calculations for protons.
+	 * Do some additional calculations for electrons.
 	 *
 	 * Not used right now.
 	 *
@@ -1166,3 +1159,6 @@ protected:
 		return false;
 	};
 };
+
+
+#endif // PARTICLE_H_
