@@ -2,7 +2,7 @@
 #define GLOBALS_H_
 
 #define KENNZAHL_UNKNOWN 0 ///< standard kennz flag for particles
-#define KENNZAHL_NOT_FINISH 1 ///< kennz flag for particles which reached #SimulationTime
+#define KENNZAHL_NOT_FINISH 1 ///< kennz flag for particles which reached ::StorageTime
 #define KENNZAHL_HIT_BOUNDARIES 2 ///< kennz flag for particles which left bounding box of TParticle::geom
 #define KENNZAHL_NRERROR 3 ///< kennz flag for particles which produces a serious numerical error (step size underflow, missed reflection, ...)
 #define KENNZAHL_DECAYED 4 ///< kennz flag for particles which reached TParticle::xend
@@ -25,8 +25,6 @@
 #define OUTPUT_EVERYTHINGandSPIN 3 ///< configuration value to print endlog+tracklog+spintrack
 #define OUTPUT_ENDPOINTSandSPIN 4 ///< configuration value to print endlog+spintrack
 
-#include <cstdarg>
-#include <cstring>
 #include <string>
 
 using namespace std;
@@ -36,6 +34,9 @@ void RotateVector(long double v[3], long double n[3]);///< rotate vector into ne
 void BOOST(long double beta[3], long double p[4]); ///< Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta
 long double ProtonSpectrum(long double E); ///< proton recoil spectrum from neutron beta decay
 long double ElectronSpectrum(long double E); ///< electron recoil spectrum from neutron beta decay
+
+void CylToCart(long double v_r, long double v_phi, long double phi, long double &v_x, long double &v_y); ///< Translate cylindrical VECTOR (not point) components into cartesian components
+
 
 // physical constants
 const long double pi = 3.1415926535897932384626; ///< Pi
@@ -49,7 +50,7 @@ const long double m_e = 9.10938215e-31/ele_e; ///< electron mass [eV/c^2]
 const long double c_0 = 299792458; ///< light speed [m/s]
 const long double hquer = 1.05457266e-34; ///< planck constant [Js]
 const long double mu_nSI = -0.96623641e-26;	///< Neutron magnetic moment [J/T]
-const long double gamma_n = -1.83247185e8; ///< 2*#mu_n/#hquer gyromagnetic ratio of neutron [1/Ts]
+const long double gamma_n = -1.83247185e8; ///< 2*::mu_nSI/::hquer gyromagnetic ratio of neutron [1/Ts]
 
 const long double lengthconv = 0.01; ///< length conversion factor cgs -> SI [cm -> m]
 const long double Bconv = 1e-4; ///< magnetic field conversion factor cgs -> SI [G -> T]
