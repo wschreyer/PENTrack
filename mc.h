@@ -258,6 +258,18 @@ struct TMCGenerator{
 		}
 */
 /*
+		//high-field-seeker spectrum after ramping (storage+buffer) 180cm above source and 10cm absorber (outer&inner)
+		long double x,y;
+		for(;;){
+			x = UniformDist(-200,50);
+			y = UniformDist(0,750);
+			// two gaussians
+			if ((x < -35 && y < 554*exp(-(x - 40.28)*(x - 40.28)/2/43.15/43.15))
+			|| (x >= -35 && y < 751*exp(-(x - 38.47)*(x - 38.47)/2/19.69/19.69)))
+				return x*1e-9;
+		}
+*/
+/*
 		//spectrum entering buffervolume from guide
 		long double x,y;
 		for(;;){
