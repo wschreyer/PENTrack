@@ -1,3 +1,8 @@
+/**
+ * \file
+ * Bicubic interpolation of axisymmetric field tables.
+ */
+
 #ifndef DINTERPOLFELD2_H_
 #define DINTERPOLFELD2_H_
 
@@ -478,7 +483,7 @@ class TabField{
 
 
 		/**
-		 * Get magnetic field at a specific point
+		 * Get magnetic field at a specific point.
 		 *
 		 * Searches the right interpolation coefficients by determining the indices from ::r_mi, ::rdist, ::z_mi, ::zdist
 		 * and evaluates the interpolation polynom ::bcuint_new.
@@ -526,7 +531,7 @@ class TabField{
 
 
 		/**
-		 * Get electric field at a specific point
+		 * Get electric field at a specific point.
 		 *
 		 * Searches the right interpolation coefficients by determining the indices from ::r_mi, ::rdist, ::z_mi, ::zdist
 		 * and evaluates the interpolation polynom ::bcuint_new.
