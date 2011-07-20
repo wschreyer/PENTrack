@@ -121,7 +121,7 @@ struct TGeometry{
 		 * @return Returns true if point is inside the bounding box
 		 */
 		bool CheckPoint(const long double x, const long double y[3]){
-			return !kdtree->PointInBox(y);
+			return kdtree->PointInBox(y);
 		};
 		
 		/**

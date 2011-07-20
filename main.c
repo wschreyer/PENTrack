@@ -214,7 +214,7 @@ int main(int argc, char **argv){
 				exit(-1);
 			}
 			p->Integrate(geom, mc, field, endlog, tracklog); // integrate particle
-			kennz_counter[protneut].push_back(p->kennz); // increment counters
+			kennz_counter[protneut % 3].push_back(p->kennz); // increment counters
 			ntotalsteps += p->nsteps;
 			IntegratorTime += p->comptime;
 			ReflTime += p->refltime;
@@ -445,7 +445,9 @@ void OutputCodes(){
 	       (int)count(kennz_counter[1].begin(), kennz_counter[1].end(), 5),
 	       (int)count(kennz_counter[2].begin(), kennz_counter[2].end(), 5),
 	       (int)count(kennz_counter[0].begin(), kennz_counter[0].end(), 5));
-	for (unsigned i = 6; i < kennz_counter[0].size(); i++){
+	for (unsigned i = 6; i < kennz_counter[0].size()
+					  && i < kennz_counter[1].size()
+					  && i < kennz_counter[2].size(); i++){
 		printf("  %2i %12i %20i %19i		(were statistically absorbed)\n",
 				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i]);
 	}
