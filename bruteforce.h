@@ -1,3 +1,6 @@
+#ifndef BRUTEFORCE_H_
+#define BRUTEFORCE_H_
+
 #include <vector>
 
 using namespace std;
@@ -9,3 +12,4 @@ extern long double BFTargetB;     // smallest value of Babs during step, Babs < 
 extern int flipspin;
 extern vector<long double> BFtimes;
 
+#endif // BRUTEFORCE_H_
