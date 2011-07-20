@@ -27,7 +27,7 @@ using namespace std;
 
 void ConfigInit(); // read config.in
 void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog);
-void OutputCodes(); // print simulation summary at program exit
+void OutputCodes(vector<int> kennz_counter[3]); // print simulation summary at program exit
 void PrintBFieldCut(const char *outfile, TField &field); // evaluate fields on given plane and write to outfile
 void PrintBField(const char *outfile, TField &field);
 void PrintGeometry(const char *outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
@@ -37,7 +37,6 @@ int MonteCarloAnzahl=1; ///< number of particles for MC simulation (read from co
 int protneut; ///< type of particle which shall be simulated (read from config)
 int reflektlog = 0; ///< write reflections (1), transmissions (2) or both (3) to file? (read from config)
 vector<float> snapshots; ///< times when to take snapshots (read from config)
-vector<int> kennz_counter[3]; ///< Array of three vectors (for n, p and e) to store particle kennzahlen
 int polarisation = POLARISATION_GOOD; ///< polarisation of neutrons (read from config)
 int decay = 2; ///< should neutrons decay? (no: 0; yes: 1; yes, with simulation of decay particles: 2) (read from config)
 long double decayoffset = 0; ///< start neutron decay timer after decayoffset seconds (read from config)
@@ -143,7 +142,17 @@ int main(int argc, char **argv){
 	" ###     the tracking program for neutrons and protons        ###\n"
 	" ################################################################\n");
 
-/*
+	vector<int> kennz_counter[3]; // Array of three vectors (for n, p and e) to store particle kennzahlen
+	for (vector<solid>::iterator i = geom.solids.begin(); i != geom.solids.end(); i++){ // set size of array
+		unsigned size = i->kennz + 1;
+		if (size > kennz_counter[0].size()){
+			kennz_counter[0].resize(size,0);
+			kennz_counter[1].resize(size,0);
+			kennz_counter[2].resize(size,0);
+		}
+	}
+
+	/*
 	stringstream filename;
 	filename << "in/42_0063eout2000m_" << jobnumber << ".out";
 	ifstream infile(filename.str().c_str());
@@ -189,14 +198,14 @@ int main(int argc, char **argv){
 
 				TProton p(&neutron, v_p, mc, field); // create proton
 				p.Integrate(geom, mc, field, endlog, tracklog); // integrate proton
-				kennz_counter[PROTON].push_back(p.kennz); // increment counters
+				kennz_counter[PROTON][p.kennz]++; // increment counters
 				ntotalsteps += p.nsteps;
 				IntegratorTime += p.comptime;
 				ReflTime += p.refltime;
 
 				TElectron e(&neutron, v_e, mc, field); // create electron
 				e.Integrate(geom, mc, field, endlog, tracklog); // integrate electron
-				kennz_counter[ELECTRON % 3].push_back(e.kennz); // increment counters
+				kennz_counter[ELECTRON % 3][e.kennz]++; // increment counters
 				ntotalsteps += e.nsteps;
 				IntegratorTime += e.comptime;
 				ReflTime += e.refltime;
@@ -214,7 +223,7 @@ int main(int argc, char **argv){
 				exit(-1);
 			}
 			p->Integrate(geom, mc, field, endlog, tracklog); // integrate particle
-			kennz_counter[protneut % 3].push_back(p->kennz); // increment counters
+			kennz_counter[protneut % 3][p->kennz]++; // increment counters
 			ntotalsteps += p->nsteps;
 			IntegratorTime += p->comptime;
 			ReflTime += p->refltime;
@@ -223,7 +232,7 @@ int main(int argc, char **argv){
 	}
 
 
-	OutputCodes(); // print particle kennzahlen
+	OutputCodes(kennz_counter); // print particle kennzahlen
 	
 	// print statistics
 	printf("The integrator made %d steps. \n", ntotalsteps);
@@ -413,10 +422,10 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 /**
  * Print final particles statistics.
  */
-void OutputCodes(){
-	int ncount = kennz_counter[1].size();
-	int pcount = kennz_counter[2].size();
-	int ecount = kennz_counter[0].size();
+void OutputCodes(vector<int> kennz_counter[3]){
+	int ncount = accumulate(kennz_counter[1].begin(), kennz_counter[1].end(), 0);
+	int pcount = accumulate(kennz_counter[2].begin(), kennz_counter[2].end(), 0);
+	int ecount = accumulate(kennz_counter[0].begin(), kennz_counter[0].end(), 0);
 	printf("\nThe calculations of %i particle(s) yielded:\n"
 	       "endcode:  of %4i neutron(s) ; of %4i proton(s) ; of %4i electron(s)\n"
 	       "   0 %12i %20i %19i 		(were not categorized)\n"
@@ -427,27 +436,13 @@ void OutputCodes(){
 	       "   5 %12i %20i %19i 		(found no initial position)\n",
 	       ncount + pcount + ecount,
 	       ncount, pcount, ecount,
-	       (int)count(kennz_counter[1].begin(), kennz_counter[1].end(), 0),
-	       (int)count(kennz_counter[2].begin(), kennz_counter[2].end(), 0),
-	       (int)count(kennz_counter[0].begin(), kennz_counter[0].end(), 0),
-	       (int)count(kennz_counter[1].begin(), kennz_counter[1].end(), 1),
-	       (int)count(kennz_counter[2].begin(), kennz_counter[2].end(), 1),
-	       (int)count(kennz_counter[0].begin(), kennz_counter[0].end(), 1),
-	       (int)count(kennz_counter[1].begin(), kennz_counter[1].end(), 2),
-	       (int)count(kennz_counter[2].begin(), kennz_counter[2].end(), 2),
-	       (int)count(kennz_counter[0].begin(), kennz_counter[0].end(), 2),
-	       (int)count(kennz_counter[1].begin(), kennz_counter[1].end(), 3),
-	       (int)count(kennz_counter[2].begin(), kennz_counter[2].end(), 3),
-	       (int)count(kennz_counter[0].begin(), kennz_counter[0].end(), 3),
-	       (int)count(kennz_counter[1].begin(), kennz_counter[1].end(), 4),
-	       (int)count(kennz_counter[2].begin(), kennz_counter[2].end(), 4),
-	       (int)count(kennz_counter[0].begin(), kennz_counter[0].end(), 4),
-	       (int)count(kennz_counter[1].begin(), kennz_counter[1].end(), 5),
-	       (int)count(kennz_counter[2].begin(), kennz_counter[2].end(), 5),
-	       (int)count(kennz_counter[0].begin(), kennz_counter[0].end(), 5));
-	for (unsigned i = 6; i < kennz_counter[0].size()
-					  && i < kennz_counter[1].size()
-					  && i < kennz_counter[2].size(); i++){
+	       kennz_counter[1][0], kennz_counter[2][0], kennz_counter[0][0],
+	       kennz_counter[1][1], kennz_counter[2][1], kennz_counter[0][1],
+	       kennz_counter[1][2], kennz_counter[2][2], kennz_counter[0][2],
+	       kennz_counter[1][3], kennz_counter[2][3], kennz_counter[0][3],
+	       kennz_counter[1][4], kennz_counter[2][4], kennz_counter[0][4],
+	       kennz_counter[1][5], kennz_counter[2][5], kennz_counter[0][5]);
+	for (unsigned i = 6; i < kennz_counter[0].size(); i++){
 		printf("  %2i %12i %20i %19i		(were statistically absorbed)\n",
 				i,kennz_counter[1][i],kennz_counter[2][i],kennz_counter[0][i]);
 	}
