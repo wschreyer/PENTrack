@@ -218,6 +218,7 @@ int main(int argc, char **argv){
 			ntotalsteps += p->nsteps;
 			IntegratorTime += p->comptime;
 			ReflTime += p->refltime;
+			delete p;
 		}
 	}
 
