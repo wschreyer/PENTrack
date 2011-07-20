@@ -167,49 +167,58 @@ int main(int argc, char **argv){
 		infile >> ws;
 	}
 */
-	TNeutron *neutron = NULL;
 	for (int iMC = 1; iMC <= MonteCarloAnzahl; iMC++)
 	{      
-		timeval dicestart, diceend;
-		gettimeofday(&dicestart, NULL); // measure time to find initial point
-		neutron = new TNeutron(iMC, source, mc, field); // always create a neutron first, p/e will be simulated from its decay
-		gettimeofday(&diceend, NULL);
-		DiceTime += diceend.tv_sec - dicestart.tv_sec + (float)(diceend.tv_usec - dicestart.tv_usec)/1e6;
-
 		if (protneut == NEUTRON){ // if neutron should be simulated
-			neutron->Integrate(geom, mc, field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog);
-			kennz_counter[NEUTRON].push_back(neutron->kennz); // increment counters
-			ntotalsteps += neutron->nsteps;
-			IntegratorTime += neutron->comptime;
-			ReflTime += neutron->refltime;
-		}
-		
-		if(protneut == PROTON || protneut == ELECTRON ||
-			(neutron->kennz == KENNZAHL_DECAYED && decay == 2)) // if only p/e should be simulated or neutron decayed
-		{	
-			long double v_p[3], v_e[3];
-			mc.MCZerfallsstartwerte(&neutron->yend[3], v_p, v_e); // get velocity spectrum from random number generator
+			timeval dicestart, diceend;
+			gettimeofday(&dicestart, NULL); // measure time to find initial point
+			TNeutron neutron(iMC, source, mc, field); // always create a neutron first, p/e will be simulated from its decay
+			gettimeofday(&diceend, NULL);
+			DiceTime += diceend.tv_sec - dicestart.tv_sec + (float)(diceend.tv_usec - dicestart.tv_usec)/1e6;
 
-			if (protneut != ELECTRON){ // if not only electrons should be simulated
-				TProton p(neutron, v_p, mc, field); // create proton
+			neutron.Integrate(geom, mc, field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog);
+			kennz_counter[NEUTRON].push_back(neutron.kennz); // increment counters
+			ntotalsteps += neutron.nsteps;
+			IntegratorTime += neutron.comptime;
+			ReflTime += neutron.refltime;
+
+			if(neutron.kennz == KENNZAHL_DECAYED && decay == 2) // if neutron decayed
+			{
+				long double v_p[3], v_e[3];
+				mc.MCZerfallsstartwerte(&neutron.yend[3], v_p, v_e); // get velocity spectrum from random number generator
+
+				TProton p(&neutron, v_p, mc, field); // create proton
 				p.Integrate(geom, mc, field, endlog, tracklog); // integrate proton
 				kennz_counter[PROTON].push_back(p.kennz); // increment counters
 				ntotalsteps += p.nsteps;
 				IntegratorTime += p.comptime;
 				ReflTime += p.refltime;
-			}
 
-			if (protneut != PROTON){ // if not only protons should be simulated
-				TElectron e(neutron, v_e, mc, field); // create electron
+				TElectron e(&neutron, v_e, mc, field); // create electron
 				e.Integrate(geom, mc, field, endlog, tracklog); // integrate electron
 				kennz_counter[ELECTRON % 3].push_back(e.kennz); // increment counters
 				ntotalsteps += e.nsteps;
 				IntegratorTime += e.comptime;
 				ReflTime += e.refltime;
+
 			}
-			
 		}
-		delete neutron;
+		else if (protneut == PROTON || protneut == ELECTRON){ // if proton or neutron shall be simulated
+			TParticle *p;
+			if (protneut == PROTON) // create particle according to protneut
+				p = new TProton(iMC, source, mc, field);
+			else if (protneut == ELECTRON)
+				p = new TElectron(iMC, source, mc, field);
+			else{
+				printf("\nDon't know protneut==%i! Exiting...\n",protneut);
+				exit(-1);
+			}
+			p->Integrate(geom, mc, field, endlog, tracklog); // integrate particle
+			kennz_counter[protneut].push_back(p->kennz); // increment counters
+			ntotalsteps += p->nsteps;
+			IntegratorTime += p->comptime;
+			ReflTime += p->refltime;
+		}
 	}
 
 
