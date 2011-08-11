@@ -223,7 +223,7 @@ int main(int argc, char **argv){
 				exit(-1);
 			}
 			p->Integrate(geom, mc, field, endlog, tracklog); // integrate particle
-			kennz_counter[protneut % 3][p->kennz]++; // increment counters
+			kennz_counter[p->protneut % 3][p->kennz]++; // increment counters
 			ntotalsteps += p->nsteps;
 			IntegratorTime += p->comptime;
 			ReflTime += p->refltime;
