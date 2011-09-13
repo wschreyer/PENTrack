@@ -1,43 +1,24 @@
-/**************************************************************
-	This algorithm uses a kd-tree structure to search
-	for collisions with a surface consisting of a list
-	of triangles.
-	Initially, the triangles are read from a set of STL-files
-	(http://www.ennex.com/~fabbers/StL.asp)	via
-	ReadFile(filename,surfacetype) and stored in the kd-tree
-	via Init().
-	You can define a surfacetype for each file which is
-	returned on collision tests to identify different surfaces
-	during runtime.
-	During runtime segments point1->point2 can be checked for
-	intersection with the surface via
-	Collision(point1,point2,list of TCollision). Collision returns
-	true if an intersection occurred and gives the parametric
-	coordinate s of the intersection point (I=p1+s*(p2-p1)),
-	the normal n and the surfacetype of the intersected surface.
-*****************************************************************/
-
-
 #include <cstring>
 #include <fstream>
 #include <algorithm>
 
 #include "kdtree.h"
 
-#define MIN_SIZE 0.02		// when the size of a node is smaller than that, it will be splitted no more
-#define MAX_FACECOUNT 10        // when the number of faces in one node exceeds this value the node is split up in two new nodes
-#define TOLERANCE 0         // kd-nodes will overlap this far
+#define MIN_SIZE 0.02 ///< when the size of a node is smaller than that, it will be splitted no more
+#define MAX_FACECOUNT 10 ///< when the number of faces in one node exceeds this value the node is split up in two new nodes
+#define TOLERANCE 0 ///< kd-nodes will overlap this far
 
 // misc functions
 
-//Dot-Product of two vectors
+/// Returns dot-product of two vectors x and y
 template <typename coord1, typename coord2> inline long double DotProduct(const coord1 x[3], const coord2 y[3]){
     return x[0]*y[0] + x[1]*y[1] + x[2]*y[2];
 }
 
+/// Put cross-product of vectors v1 and v2 into v
 inline void CrossProduct(float v1[3], float v2[3], long double v[3]){
     for (short i = 0; i < 3; i++)
-        v[i] = v1[(i+1)%3]*v2[(i+2)%3] - v1[(i+2)%3]*v2[(i+1)%3];  // recalculate normal
+        v[i] = v1[(i+1)%3]*v2[(i+2)%3] - v1[(i+2)%3]*v2[(i+1)%3];
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -91,9 +72,9 @@ bool Triangle::intersect(const long double p1[3], const long double p2[3], long 
 //----------------------------------------------------------------------------------------------------------------------------------
 // kd-tree node class definition
 
-unsigned facecount;
-unsigned nodecount;
-unsigned emptynodecount;
+unsigned facecount; ///< number of triangles in tree
+unsigned nodecount; ///< number of nodes in tree
+unsigned emptynodecount; ///< number of empty nodes in tree
 
 // constructor
 KDTree::KDNode::KDNode(const float boxlo[3], const float boxhi[3], const int adepth, KDNode *aparent){
@@ -233,104 +214,104 @@ void KDTree::KDNode::AddTriangle(Triangle *tri){
 
 // split node into two new leaves
 void KDTree::KDNode::Split(){
-    if ((hi[splitdir]-lo[splitdir] > MIN_SIZE) && (tricount > MAX_FACECOUNT)){ // only split if node not too deep and contains enough triangles
-        float newlo[3], newhi[3];
-        int newdepth = depth + 1;
-        for (short i = 0; i < 3; i++){
-            newlo[i] = lo[i];
-            newhi[i] = hi[i];
-        }
+	if ((hi[splitdir]-lo[splitdir] > MIN_SIZE) && (tricount > MAX_FACECOUNT)){ // only split if node not too deep and contains enough triangles
+		float newlo[3], newhi[3];
+		int newdepth = depth + 1;
+		for (short i = 0; i < 3; i++){
+			newlo[i] = lo[i];
+			newhi[i] = hi[i];
+		}
 
-        newlo[splitdir] += (hi[splitdir] - lo[splitdir])/2 - TOLERANCE; // split this node in half in splitdirection (with small overlap)
-        hichild = new KDNode(newlo,newhi,newdepth,this);    // create new leaves
-        newhi[splitdir] = newlo[splitdir] + 2*TOLERANCE;
-        newlo[splitdir] = lo[splitdir];
-        lochild = new KDNode(newlo,newhi,newdepth,this);
+		newlo[splitdir] += (hi[splitdir] - lo[splitdir])/2 - TOLERANCE; // split this node in half in splitdirection (with small overlap)
+		hichild = new KDNode(newlo,newhi,newdepth,this);    // create new leaves
+		newhi[splitdir] = newlo[splitdir] + 2*TOLERANCE;
+		newlo[splitdir] = lo[splitdir];
+		lochild = new KDNode(newlo,newhi,newdepth,this);
 
-        vector<Triangle*> lotris, hitris;
-        vector<Triangle*>::iterator i;
-        for (i = tris.begin(); i != tris.end(); i++){
-            bool inhi = hichild->TriangleInBox(*i);
-            bool inlo = lochild->TriangleInBox(*i);
-            if (inhi)
-                hitris.push_back(*i);
-            if (inlo)
-                lotris.push_back(*i);
-            else if (!inhi && !inlo)
-                printf("Gap in tree!\n");
-        }
-        if (hitris != lotris){
-            tris.clear();
-            for (i = hitris.begin(); i != hitris.end(); i++)
-                hichild->AddTriangle(*i);
-            for (i = lotris.begin(); i != lotris.end(); i++)
-                lochild->AddTriangle(*i);
-            hitris.clear();
-            lotris.clear();
-            hichild->Split();   // split leaves
-            lochild->Split();
-        }
-        else{
-            hitris.clear();
-            lotris.clear();
-            delete hichild;
-            hichild = NULL;
-            delete lochild;
-            lochild = NULL;
-        }
-    }
-    else{
-        facecount += tricount;
-        nodecount++;
-        if (tricount == 0) emptynodecount++;
-    }
+		vector<Triangle*> lotris, hitris;
+		vector<Triangle*>::iterator i;
+		for (i = tris.begin(); i != tris.end(); i++){
+			bool inhi = hichild->TriangleInBox(*i); // check for each triangle in which leaf it is contained
+			bool inlo = lochild->TriangleInBox(*i);
+			if (inhi)
+				hitris.push_back(*i); // and add them to the respective list
+			if (inlo)
+				lotris.push_back(*i);
+			else if (!inhi && !inlo)
+				printf("Gap in tree!\n");
+		}
+		if (hitris != lotris){ // only split if both leaves do not contain the same triangles
+			tris.clear();
+			for (i = hitris.begin(); i != hitris.end(); i++)
+				hichild->AddTriangle(*i);
+			for (i = lotris.begin(); i != lotris.end(); i++)
+				lochild->AddTriangle(*i);
+			hitris.clear();
+			lotris.clear();
+			hichild->Split();   // split leaves
+			lochild->Split();
+		}
+		else{ // if both leaves contain the same triangles splitting makes no sense
+			hitris.clear();
+			lotris.clear();
+			delete hichild;
+			hichild = NULL;
+			delete lochild;
+			lochild = NULL;
+		}
+	}
+	else{
+		facecount += tricount; // increase info counters
+		nodecount++;
+		if (tricount == 0) emptynodecount++;
+	}
 }
 
 // test all triangles in this node and his leaves for intersection with segment p1->p2
 bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2[3], list<TCollision> &colls){
-    if (tricount == 0) return false;
-    bool result = false;
-    long double s_loc;
-    for (vector<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
-        if ((*i)->intersect(p1,p2,s_loc)){
-        	long double n = sqrt(DotProduct((*i)->normal,(*i)->normal));
-        	TCollision c;
-        	c.s = s_loc;
-        	c.normal[0] = (*i)->normal[0]/n;	// return normalized normal vector
-        	c.normal[1] = (*i)->normal[1]/n;
-        	c.normal[2] = (*i)->normal[2]/n;
-        	c.ID = (*i)->ID;
-        	c.tri = *i;
-        	colls.push_back(c);
-        	result = true;
-        }
-    }
-    bool inhi = false, inlo = false;
-    if (hichild && (inhi = hichild->SegmentInBox(p1,p2)))
-        result |= hichild->TestCollision(p1,p2,colls);   // test in leaves
-    if (lochild && (inlo = lochild->SegmentInBox(p1,p2)))
-        result |= lochild->TestCollision(p1,p2,colls);
-    else if ((hichild || lochild) && !inhi && !inlo)
-        printf("Gap in tree!\n");
-    return result;
+	if (tricount == 0) return false;
+	bool result = false;
+	long double s_loc;
+	for (vector<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
+		if ((*i)->intersect(p1,p2,s_loc)){
+			long double n = sqrt(DotProduct((*i)->normal,(*i)->normal));
+			TCollision c;
+			c.s = s_loc;
+			c.normal[0] = (*i)->normal[0]/n;	// return normalized normal vector
+			c.normal[1] = (*i)->normal[1]/n;
+			c.normal[2] = (*i)->normal[2]/n;
+			c.ID = (*i)->ID;
+			c.tri = *i;
+			colls.push_back(c);
+			result = true;
+		}
+	}
+	bool inhi = false, inlo = false;
+	if (hichild && (inhi = hichild->SegmentInBox(p1,p2)))
+		result |= hichild->TestCollision(p1,p2,colls);   // test in leaves
+	if (lochild && (inlo = lochild->SegmentInBox(p1,p2)))
+		result |= lochild->TestCollision(p1,p2,colls);
+	else if ((hichild || lochild) && !inhi && !inlo)
+		printf("Gap in tree!\n");
+	return result;
 }
 
 // find smallest box which contains segment and call TestCollision there
 bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls){
-    colls.clear();
-    if (hichild && hichild->PointInBox(p1) && hichild->PointInBox(p2))    // if both segment points are contained in the first leave, test collision there
-        return hichild->Collision(p1,p2,lastnode,colls);
-    else if (lochild && lochild->PointInBox(p1) && lochild->PointInBox(p2))   // if both segment points are contained in the second leave, test collision there
-        return lochild->Collision(p1,p2,lastnode,colls);
-    else if (PointInBox(p1) && PointInBox(p2)){ // else if both segment point are contained in this box, test collision here
-        lastnode = this;    // remember this node to speed up search when segments are adjacent
-        return TestCollision(p1,p2,colls);
-    }
-    else if (parent) // else if parent exists, test collision there
-        return parent->Collision(p1,p2,lastnode,colls);
-    else if (SegmentInBox(p1,p2)) // else if a part of the segment is inside the (root) box
-        return TestCollision(p1,p2,colls);
-    return false;
+	colls.clear();
+	if (hichild && hichild->PointInBox(p1) && hichild->PointInBox(p2))    // if both segment points are contained in the first leave, test collision there
+		return hichild->Collision(p1,p2,lastnode,colls);
+	else if (lochild && lochild->PointInBox(p1) && lochild->PointInBox(p2))   // if both segment points are contained in the second leave, test collision there
+		return lochild->Collision(p1,p2,lastnode,colls);
+	else if (PointInBox(p1) && PointInBox(p2)){ // else if both segment point are contained in this box, test collision here
+		lastnode = this;    // remember this node to speed up search when segments are adjacent
+		return TestCollision(p1,p2,colls);
+	}
+	else if (parent) // else if parent exists, test collision there
+		return parent->Collision(p1,p2,lastnode,colls);
+	else if (SegmentInBox(p1,p2)) // else if a part of the segment is inside the (root) box
+		return TestCollision(p1,p2,colls);
+	return false;
 }
 
 //-----------------------------------------------------------------------------------------------------------
@@ -396,20 +377,20 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 
 // build search tree
 void KDTree::Init(){
-    printf("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
+	printf("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
 
-    root = new KDNode(lo,hi,0,NULL);  // create root node
-    facecount = 0;
-    nodecount = 1;
-    emptynodecount = 0;
+	root = new KDNode(lo,hi,0,NULL);  // create root node
+	facecount = 0;
+	nodecount = 1;
+	emptynodecount = 0;
 
 	printf("Building KD-tree ... ");
 	fflush(stdout);
-    for (vector<Triangle>::iterator it = alltris.begin(); it != alltris.end(); it++)
-        root->AddTriangle(&(*it)); // add triangles to root node
-    root->Split();  // split root node
-    printf("Wrote %u triangles in %u nodes (%u empty)\n\n",facecount,nodecount,emptynodecount);   // print number of triangles contained in tree
-    fflush(stdout);
+	for (vector<Triangle>::iterator it = alltris.begin(); it != alltris.end(); it++)
+		root->AddTriangle(&(*it)); // add triangles to root node
+	root->Split();  // split root node
+	printf("Wrote %u triangles in %u nodes (%u empty)\n\n",facecount,nodecount,emptynodecount);   // print number of triangles contained in tree
+	fflush(stdout);
 }
 
 // test segment p1->p2 for collision with a triangle and return a list of all found collisions
