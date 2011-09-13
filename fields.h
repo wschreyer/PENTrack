@@ -11,15 +11,28 @@
 
 using namespace std;
 
+/**
+ * Contains list of all fields (2D/3D-maps, racetracks).
+ */
 struct TField{
 	public:
-		vector<TabField*> tables2;
-		vector<TabField3*> tables3;
-		vector<TRacetrack*> racetracks;
-		// incorporate B-fieldoszillations into the code
-		int FieldOscillation;        // turn field oscillation on if 1
-		long double OscillationFraction, OscillationFrequency;    // Frequency in Hz
+		vector<TabField*> tables2; ///< list of 2D-maps
+		vector<TabField3*> tables3; ///< list of 3D-maps
+		vector<TRacetrack*> racetracks; ///< list of racetracks
+		int FieldOscillation; ///< If =1 field oscillation is turned on
+		long double OscillationFraction; ///< Field oscillation amplitude
+		long double OscillationFrequency; ///< Field oscillation frequency
 		
+		/**
+		 * Constructor.
+		 *
+		 * Reads [FIELDS] section of configuration file and loads all field maps/racetracks given there
+		 *
+		 * @param infilename File name of configuration file
+		 * @param aFieldOscillation Turn on field oscillations
+		 * @param aOscillationFraction Amplitude of field oscillation
+		 * @param aOscillationFrequency Frequency of field oscillation
+		 */
 		TField(const char *infilename, int aFieldOscillation = 0, long double aOscillationFraction = 0, long double aOscillationFrequency = 0){
 			FieldOscillation = aFieldOscillation;
 			OscillationFraction = aOscillationFraction;
@@ -39,6 +52,9 @@ struct TField{
 			}
 		};
 		
+		/**
+		 * Destructor, delete all fields.
+		 */
 		~TField(){
 			for (vector<TabField*>::iterator i = tables2.begin(); i != tables2.end(); i++)
 				delete (*i);
@@ -48,13 +64,22 @@ struct TField{
 				delete (*i);
 		};
 	
-		// fill B field matrix with values
-		/* field matrix:
-			Bx		dBxdx	dBxdy	dBxdz
-			By		dBydx	dBydy	dBydz
-			Bz		dBzdx	dBzdy	dBzdz
-			Babs	dBdx	dBdy	dBdz
-		*/
+		/**
+		 * Calculate magnetic field at a given position and time.
+		 *
+		 * Chooses the right map for this position and adds racetrack fields.
+		 * field matrix B:
+		 *	Bx		dBxdx	dBxdy	dBxdz
+		 *	By		dBydx	dBydy	dBydz
+		 *	Bz		dBzdx	dBzdy	dBzdz
+		 *	Babs	dBdx	dBdy	dBdz
+		 *
+		 * @param x Cartesian x coordinate
+		 * @param y Cartesian y coordinate
+		 * @param z Cartesian z coordinate
+		 * @param t Time
+		 * @param B Returns magnetic field component matrix
+		 */
 		void BFeld (long double x, long double y, long double z, long double t, long double B[4][4]){      //B-Feld am Ort des Teilchens berechnen
 			for (int i = 0; i < 4; i++)
 				for (int j = 0; j < 4; j++)
@@ -88,7 +113,17 @@ struct TField{
 			}
 		};
 		
-		// fill E field-vector with values
+		/**
+		 * Calculate electric field and potential at a given position.
+		 *
+		 * Chooses the right map for this position and returns interpolated values.
+		 *
+		 * @param x Cartesian x coordinate
+		 * @param y Cartesian y coordinate
+		 * @param z Cartesian z coordinate
+		 * @param V Return electric potential (!=0 only if a map with potential was loaded)
+		 * @param Ei Returns electric field vector
+		 */
 		void EFeld(long double x, long double y, long double z, long double &V, long double Ei[3]){
 			Ei[0] = Ei[1] = Ei[2] = V = 0;
 			for (vector<TabField*>::iterator i = tables2.begin(); i != tables2.end(); i++){
@@ -102,6 +137,11 @@ struct TField{
 		};
 	
 	private:
+		/**
+		 * Read configuration file.
+		 *
+		 * @param infile Configuration file stream
+		 */
 		void LoadFieldsSection(ifstream &infile){
 			char c;
 			string line;
@@ -165,7 +205,11 @@ struct TField{
 			}while(infile.good() && getline(infile,line).good());
 		};
 
-		//B-Feld nach Wunsch skalieren, BFeldSkal wird an alle B Komp und deren Ableitungen multipliziert
+		/**
+		 * Scale magnetic field due to field oscillation.
+		 *
+		 * @param t Time
+		 */
 		long double BFieldScale(long double t){		
 			if (FieldOscillation==1)
 				return 1 + OscillationFraction*sin(OscillationFrequency*2*pi*t);
