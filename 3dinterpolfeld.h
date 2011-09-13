@@ -1,3 +1,11 @@
+/**
+ * \file
+ * Tricubic interpolation of 3D field tables.
+ */
+
+#ifndef DINTERPOLFELD3_H_
+#define DINTERPOLFELD3_H_
+
 #include <vector>
 
 #include "nr/nr3.h"
@@ -6,15 +14,48 @@
 
 using namespace std;
 
-// class for field interpolation, create one for every table file you want to use
+/**
+ * Class for tricubic field interpolation, create one for every table file you want to use.
+ *
+ * This class loads a special file format from "Vectorfields Opera" containing a regular, cuboid table of magnetic and electric fields and
+ * calculates tricubic interpolation coefficients (4x4x4 = 64 for each grid point) to allow fast evaluation of the fields at arbitrary points.
+ *
+ */
 class TabField3{
 	private:
-		int xl,yl,zl;	// size of the arrays
-		long double xdist, ydist, zdist, x_mi, y_mi, z_mi;	// distance between coordinates
-		NRMat3d<double[64]> *Bxc, *Byc, *Bzc, *Vc;
-		long double NullFieldTime, RampUpTime, FullFieldTime, RampDownTime;
+		int xl; ///< size of the table in x direction
+		int yl; ///< size of the table in y direction
+		int zl; ///< size of the table in z direction
+		long double xdist; ///< distance between grid points in x direction
+		long double ydist; ///< distance between grid points in y direction
+		long double zdist; ///< distance between grid points in z direction
+		long double x_mi; ///< lower x coordinate of cuboid grid
+		long double y_mi; ///< lower y coordinate of cuboid grid
+		long double z_mi; ///< lower z coordinate of cuboid grid
+		NRMat3d<double[64]> *Bxc; ///< interpolation coefficients for magnetic x component
+		NRMat3d<double[64]> *Byc; ///< interpolation coefficients for magnetic y component
+		NRMat3d<double[64]> *Bzc; ///< interpolation coefficients for magnetic z component
+		NRMat3d<double[64]> *Vc; ///< interpolation coefficients for electric potential
+		long double NullFieldTime; ///< Time before magnetic field is ramped (passed by constructor)
+		long double RampUpTime; ///< field is ramped linearly from 0 to 100% in this time (passed by constructor)
+		long double FullFieldTime; ///< Time the field stays at 100% (passed by constructor)
+		long double RampDownTime; ///< field is ramped down linearly from 100% to 0 in this time (passed by constructor)
 
-		// read table file given in the constructor parameter
+
+		/**
+		 * Reads an Opera table file.
+		 *
+		 * File has to contain x,y and z coordinates, it may contain B_x, B_y ,B_z and V columns.
+		 * Sets ::xl, ::yl, ::zl, ::xdist, ::ydist, ::zdist, ::x_mi, ::y_mi, ::z_mi according to the values in the table file which are used to determine the needed indeces on interpolation.
+		 *
+		 * @param tabfile Path to table file
+		 * @param Bscale Magnetic field is always scaled by this factor
+		 * @param Escale Electric field is always scaled by this factor
+		 * @param BxTab Returns magnetic field x components at grid points
+		 * @param ByTab Returns magnetic field y components at grid points
+		 * @param BzTab Returns magnetic field z components at grid points
+		 * @param VTab Returns electric potential at grid points
+		 */
 		void ReadTabFile(const char *tabfile, long double Bscale, long double Escale,
 				Mat3DDoub_O *&BxTab, Mat3DDoub_O *&ByTab, Mat3DDoub_O *&BzTab, Mat3DDoub_O *&VTab){
 			ifstream FIN(tabfile, ifstream::in);
@@ -189,7 +230,15 @@ class TabField3{
 */
 		};
 
-		// print info about tablefile, calculate min/max fields
+
+		/**
+		 * Print some information for each table column
+		 *
+		 * @param BxTab B_x column
+		 * @param ByTab B_y column
+		 * @param BzTab B_z column
+		 * @param VTab V column
+		 */
 		void CheckTab(Mat3DDoub_I *BxTab, Mat3DDoub_I *ByTab, Mat3DDoub_I *BzTab, Mat3DDoub_I *VTab){
 			//  calculate factors for conversion of coordinates to indexes  r = conv_rA + index * conv_rB
 			printf("The arrays are %d by %d by %d.\n",xl,yl,zl);
@@ -225,7 +274,19 @@ class TabField3{
 			printf("The input table file has values of |B| from %LG T to %LG T and values of V from %LG V to %LG V\n",Babsmin,Babsmax,Vmin,Vmax);
 		};
 
-		// calculate derivatives of Tab and write them to TabXXX
+
+		/**
+		 * Calculate spatial derivatives of a table column using 1D cubic spline interpolations.
+		 *
+		 * @param Tab Table column of which derivatives shall be calculated
+		 * @param Tab1 Returns derivatives with respect to x
+		 * @param Tab2 Returns derivatives with respect to y
+		 * @param Tab3 Returns derivatives with respect to z
+		 * @param Tab12 Returns second derivatives with respect to x and y
+		 * @param Tab13 Returns second derivatives with respect to x and z
+		 * @param Tab23 Returns second derivatives with respect to y and z
+		 * @param Tab123 Returns third derivatives with respect to x, y and z
+		 */
 		void CalcDerivs(Mat3DDoub_I &Tab, Mat3DDoub_O &Tab1, Mat3DDoub_O &Tab2, Mat3DDoub_O &Tab3,
 						Mat3DDoub_O &Tab12, Mat3DDoub_O &Tab13, Mat3DDoub_O &Tab23, Mat3DDoub_O &Tab123)
 		{
@@ -331,7 +392,15 @@ class TabField3{
 
 		};
 
-		// calculate interpolation coefficients to speed up interpolation
+
+		/**
+		 * Calculate tricubic interpolation coefficients for a table column
+		 *
+		 * Calls ::CalcDerivs and determines the interpolation coefficients with ::tricubic_get_coeff
+		 *
+		 * @param coeff Returns coefficients
+		 * @param Tab Table column
+		 */
 		void PreInterpol(NRMat3d<double[64]> *&coeff, Mat3DDoub_I &Tab){
 			Mat3DDoub Tab1(xl,yl,zl), Tab2(xl,yl,zl), Tab3(xl,yl,zl);
 			Mat3DDoub Tab12(xl,yl,zl), Tab13(xl,yl,zl), Tab23(xl,yl,zl), Tab123(xl,yl,zl);
@@ -428,7 +497,16 @@ class TabField3{
 			}
 		};
 
-		//B-Feld nach Wunsch skalieren, BFeldSkal wird an alle B Komp und deren Ableitungen multipliziert
+
+		/**
+		 * Get magnetic field scale factor for a specific time.
+		 *
+		 * Determined by ::NullFieldTime, ::RampUpTime, ::FullFieldTime, ::RampDownTime
+		 *
+		 * @param t Time
+		 *
+		 * @return Returns magnetic field scale factor
+		 */
 		long double BFieldScale(long double t){
 			if (t < NullFieldTime || t >= NullFieldTime + RampUpTime + FullFieldTime + RampDownTime)
 				return 0;
@@ -451,7 +529,19 @@ class TabField3{
 			else return 0;
 		};
 	public:
-		// constructor
+		/**
+		 * Constructor.
+		 *
+		 * Calls ::ReadTabFile, ::CheckTab and for each column ::PreInterpol
+		 *
+		 * @param tabfile Path of table file
+		 * @param Bscale Magnetic field is always scaled by this factor
+		 * @param Escale Electric field is always scaled by this factor
+		 * @param aNullFieldTime Sets ::NullFieldTime
+		 * @param aRampUpTime Sets ::RampUpTime
+		 * @param aFullFieldTime Sets ::FullFieldTime
+		 * @param aRampDownTime Set ::RampDownTime
+		 */
 		TabField3(const char *tabfile, long double Bscale, long double Escale,
 				long double aNullFieldTime, long double aRampUpTime, long double aFullFieldTime, long double aRampDownTime){
 			NullFieldTime = aNullFieldTime;
@@ -499,7 +589,20 @@ class TabField3{
 			printf("Done (%.f MB)\n",size);
 		}
 
-		// interpolate B-field (return true when calculation was successful)
+		/**
+		 * Get magnetic field at a specific point.
+		 *
+		 * Searches the right interpolation coefficients by determining the indices from ::x_mi, ::xdist, ::y_mi, ::ydist, ::z_mi, ::zdist
+		 * and evaluates the interpolation polynom ::tricubic_eval.
+		 *
+		 * @param t Time
+		 * @param x X coordinate where the field shall be evaluated
+		 * @param y Y coordinate where the field shall be evaluated
+		 * @param z Z coordinate where the field shall be evaluated
+		 * @param B Returns magnetic field components B[0..2][0], their derivatives B[0..2][1..3], the absolute value B[3][0] and its derivatives B[3][1..3]
+		 *
+		 * @return Returns true if magnetic field could be evaluated at this point
+		 */
 		bool BInterpol(long double t, long double x, long double y, long double z, long double B[4][4]){
 			long double Bscale = BFieldScale(t);
 			// get coordinate index
@@ -538,7 +641,20 @@ class TabField3{
 			return false;
 		};
 
-		// interpolate E-field (return true when calculation was successful)
+		/**
+		 * Get electric field at a specific point.
+		 *
+		 * Searches the right interpolation coefficients by determining the indices from ::x_mi, ::xdist, ::y_mi, ::ydist, ::z_mi, ::zdist
+		 * and evaluates the interpolation polynom ::tricubic_eval.
+		 *
+		 * @param x X coordinate where the field shall be evaluated
+		 * @param y Y coordinate where the field shall be evaluated
+		 * @param z Z coordinate where the field shall be evaluated
+		 * @param V Returns electric potential
+		 * @param Ei Returns electric field (negative spatial derivatives of V)
+		 *
+		 * @return Returns true if magnetic field could be evaluated at this point
+		 */
 		bool EInterpol(long double x, long double y, long double z, long double &V, long double Ei[3]){
 			if (Vc &&
 				(x - x_mi)/xdist > 0 && (x - x_mi - xl*xdist)/xdist < 0 &&
@@ -562,3 +678,6 @@ class TabField3{
 			return false;
 		};
 };
+
+
+#endif // DINTERPOLFELD3_H_
