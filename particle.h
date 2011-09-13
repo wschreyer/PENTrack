@@ -665,13 +665,13 @@ public:
 
 
 	/**
-	 * Constructor, create proton from neutron decay
+	 * Constructor, pass initial values directly in cartesian coordinates
 	 *
-	 * Sets start position and time to position and time where neutron decayed.
-	 * Get velocity from TMCGenerator decay simulation.
-	 *
-	 * @param neutron Decayed neutron
-	 * @param v Proton velocity vector determined by TMCGenerator::MCZerfallsstartwerte
+	 * @param number Particle number
+	 * @param t Start time
+	 * @param pos Start position in cartesian coordinates
+	 * @param v Start velocity in cartesian coordinates
+	 * @param pol Polarisation
 	 * @param mcgen TMCGenerator used to get lifetime from
 	 * @param afield TField used to calculate energies
 	 */
@@ -747,17 +747,17 @@ public:
 	/**
 	 * Constructor, pass inital values directly.
 	 *
-		 * @param number Particle number
-		 * @param t Start time
-		 * @param tend Life time
-		 * @param r Radial start coordinate
-		 * @param phi Start azimuth
-		 * @param z Start z coordinate
-		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
-		 * @param gamma Start angle between z axis and velocity vector
-		 * @param pol Start polarisation
-		 * @param afield Electric and magnetic fields (needed to determine total energy)
+	 * @param number Particle number
+	 * @param t Start time
+	 * @param tend Life time
+	 * @param r Radial start coordinate
+	 * @param phi Start azimuth
+	 * @param z Start z coordinate
+	 * @param Ekin Kinetic start energy
+	 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
+	 * @param gamma Start angle between z axis and velocity vector
+	 * @param pol Start polarisation
+	 * @param afield Electric and magnetic fields (needed to determine total energy)
 	 */
 	TElectron(int number, long double t, long double tend, long double r, long double phi, long double z,
 				long double Ekin, long double alpha, long double gamma, int pol, TField &afield): TParticle(ELECTRON, -ele_e, m_e, 0){
@@ -792,13 +792,13 @@ public:
 
 
 	/**
-	 * Constructor, create electron from neutron decay
+	 * Constructor, pass initial values directly in cartesian coordinates
 	 *
-	 * Sets start position and time to position and time where neutron decayed.
-	 * Get velocity from TMCGenerator decay simulation.
-	 *
-	 * @param neutron Decayed neutron
-	 * @param v Electron velocity vector determined by TMCGenerator::MCZerfallsstartwerte
+	 * @param number Particle number
+	 * @param t Start time
+	 * @param pos Start position in cartesian coordinates
+	 * @param v Start velocity in cartesian coordinates
+	 * @param pol Polarisation
 	 * @param mcgen TMCGenerator used to get lifetime from
 	 * @param afield TField used to calculate energies
 	 */
