@@ -54,6 +54,7 @@ extern long double rabimin(double Br,double Bz,double dBrdr,double dBrdz,double 
  * @param dBzdx Derivative of z component with respect to x
  * @param dBzdy Derivative of z component with respect to y
  * @param dBzdz Derivative of z component with respect to z
+ * @param Bws Absolute magnetic field
  * @param vx Velocity of neutron in x direction
  * @param vy Velocity of neutron in y direction
  * @param vz Velocity of neutron in z direction
@@ -78,6 +79,7 @@ extern long double vladimirsky(long double Bx,long double By, long double Bz,lon
  * @param dBzdx Derivative of z component with respect to x
  * @param dBzdy Derivative of z component with respect to y
  * @param dBzdz Derivative of z component with respect to z
+ * @param Bws Absolute magnetic field
  * @param vx Velocity of neutron in x direction
  * @param vy Velocity of neutron in y direction
  * @param vz Velocity of neutron in z direction

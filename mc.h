@@ -34,7 +34,7 @@ struct TMCGenerator{
 	initial nini; ///< Initial condition limits for neutrons
 	initial pini; ///< Initial condition limits for protons
 	initial eini; ///< Initial condition limits for electrons
-	unsigned long int monthinmilliseconds; ///< Random seed, derived from program start time and #jobnumber
+	unsigned long int monthinmilliseconds; ///< Random seed, derived from program start time
 	int decay; ///< decay on (1/2) or off (0)
 	int polarisation; ///< Polarisation parallel (1), antiparallel (2) or random (4)
 	long double tau_n; ///< neutron lifetime
@@ -73,7 +73,7 @@ struct TMCGenerator{
 		monthinmilliseconds = monthinmilliseconds + (unsigned long int)(monthday->tm_sec)*1000;  // add second in ms	
 		gettimeofday(&daysec, NULL);
 		monthinmilliseconds = monthinmilliseconds + daysec.tv_usec/1000; // add milliseconds
-		
+
 		printf("Random Seed: %lu\n\n", monthinmilliseconds);
 	
 		mt_set (&v_mt_state, monthinmilliseconds);
