@@ -178,43 +178,11 @@ int main(int argc, char **argv){
 */
 	for (int iMC = 1; iMC <= MonteCarloAnzahl; iMC++)
 	{      
-		if (protneut == NEUTRON){ // if neutron should be simulated
-			timeval dicestart, diceend;
-			gettimeofday(&dicestart, NULL); // measure time to find initial point
-			TNeutron neutron(iMC, source, mc, field); // always create a neutron first, p/e will be simulated from its decay
-			gettimeofday(&diceend, NULL);
-			DiceTime += diceend.tv_sec - dicestart.tv_sec + (float)(diceend.tv_usec - dicestart.tv_usec)/1e6;
-
-			neutron.Integrate(geom, mc, field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog);
-			kennz_counter[NEUTRON].push_back(neutron.kennz); // increment counters
-			ntotalsteps += neutron.nsteps;
-			IntegratorTime += neutron.comptime;
-			ReflTime += neutron.refltime;
-
-			if(neutron.kennz == KENNZAHL_DECAYED && decay == 2) // if neutron decayed
-			{
-				long double v_p[3], v_e[3];
-				mc.MCZerfallsstartwerte(&neutron.yend[3], v_p, v_e); // get velocity spectrum from random number generator
-
-				TProton p(&neutron, v_p, mc, field); // create proton
-				p.Integrate(geom, mc, field, endlog, tracklog); // integrate proton
-				kennz_counter[PROTON][p.kennz]++; // increment counters
-				ntotalsteps += p.nsteps;
-				IntegratorTime += p.comptime;
-				ReflTime += p.refltime;
-
-				TElectron e(&neutron, v_e, mc, field); // create electron
-				e.Integrate(geom, mc, field, endlog, tracklog); // integrate electron
-				kennz_counter[ELECTRON % 3][e.kennz]++; // increment counters
-				ntotalsteps += e.nsteps;
-				IntegratorTime += e.comptime;
-				ReflTime += e.refltime;
-
-			}
-		}
-		else if (protneut == PROTON || protneut == ELECTRON){ // if proton or neutron shall be simulated
+		if (protneut == NEUTRON || protneut == PROTON || protneut == ELECTRON){ // if proton or neutron shall be simulated
 			TParticle *p;
-			if (protneut == PROTON) // create particle according to protneut
+			if (protneut == NEUTRON) // create particle according to protneut
+				p = new TNeutron(iMC, source, mc, field);
+			else if (protneut == PROTON)
 				p = new TProton(iMC, source, mc, field);
 			else if (protneut == ELECTRON)
 				p = new TElectron(iMC, source, mc, field);
@@ -227,6 +195,17 @@ int main(int argc, char **argv){
 			ntotalsteps += p->nsteps;
 			IntegratorTime += p->comptime;
 			ReflTime += p->refltime;
+
+			if (decay == 2){
+				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
+					(*i)->Integrate(geom, mc, field, endlog, tracklog); // integrate secondary particles
+					kennz_counter[(*i)->protneut % 3][(*i)->kennz]++;
+					ntotalsteps += (*i)->nsteps;
+					IntegratorTime += (*i)->comptime;
+					ReflTime += (*i)->refltime;
+				}
+			}
+
 			delete p;
 		}
 	}

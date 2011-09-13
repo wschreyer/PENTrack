@@ -29,6 +29,7 @@ using namespace std;
 #include "ndist.h"
 #include "adiabacity.h"
 
+//#include "f.glueck/eH2.c"
 
 /**
  * Basic particle class (virtual).
@@ -78,13 +79,20 @@ struct TParticle{
 		int nrefl; ///< number of reflection from wall
 		int NSF; ///< number of spin flips
 		int nsteps; ///< number of integration steps
-
+		vector<TParticle*> secondaries; ///< list of secondary particles
 
 		/**
 		 * Generic constructor (empty), has to be implemented by each derived particle
 		 */
 		TParticle(int pp, long double qq, long double mm, long double mumu): protneut(pp), q(qq), m(mm), mu(mumu){ };
 
+		/**
+		 * Destructor, deletes secondaries
+		 */
+		~TParticle(){
+			for (vector<TParticle*>::reverse_iterator i = secondaries.rbegin(); i != secondaries.rend(); i++)
+				delete *i;
+		};
 
 		/**
 		 * Returns equations of motion.
@@ -207,11 +215,6 @@ struct TParticle{
 						lastsave = x1;
 					}
 
-					if (ForEachStep(x1, y1, x2, y2)){ // do calculations for each step
-						x2 = x; // if true is returned, redo integration from this point
-						y2 = y;
-					}
-						
 					x1 = x2;
 					y1 = y2;
 				}		
@@ -239,6 +242,10 @@ struct TParticle{
 			field->EFeld(y[0],y[1],y[2],V,E);
 			SetEndValues(x,y,B,E,V);
 			Print(ENDLOG);
+
+			if (kennz == KENNZAHL_DECAYED)
+				Decay();
+
 			printf("Done!!\nBFFlipProb: %LG rend: %LG zend: %LG Eend: %LG Code: %i t: %LG l: %LG\n\n",
 				(1 - BFsurvprob), rend, yend[2], Eend, kennz, dt, trajlength);
 		};
@@ -491,15 +498,9 @@ struct TParticle{
 
 
 		/**
-		 * Virtual routine which allows additional calculations for each line segment, has to be implemented for each derived particle.
-		 *
-		 * @param x1 Start time of line segment
-		 * @param y1 Start point of line segment
-		 * @param x2 End time of line segment
-		 * @param y2 End point of line segment
+		 * Virtual routine which is called when particles reaches its lifetime, has to be implemented for each derived particle.
 		 */
-		virtual bool ForEachStep(long double x1, VecDoub_I &y1, long double x2, VecDoub_I &y2) = 0;
-
+		virtual void Decay() = 0;
 
 		/**
 		 * Calculates *end variables of particle at time x, position/velocity y and fields B,E,V.
@@ -606,6 +607,278 @@ struct TParticle{
 			fprintf(trackfile,"\n");
 			fflush(trackfile);
 		};
+};
+
+
+/**
+ * Proton particle class.
+ *
+ * Simulates a proton including gravitation and Lorentz-force
+ */
+struct TProton: TParticle{
+public:
+	/**
+	 * Constructor, pass inital values directly.
+	 *
+		 * @param number Particle number
+		 * @param t Start time
+		 * @param tend Life time
+		 * @param r Radial start coordinate
+		 * @param phi Start azimuth
+		 * @param z Start z coordinate
+		 * @param Ekin Kinetic start energy
+		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
+		 * @param gamma Start angle between z axis and velocity vector
+		 * @param pol Start polarisation
+		 * @param afield Electric and magnetic fields (needed to determine total energy)
+	 */
+	TProton(int number, long double t, long double tend, long double r, long double phi, long double z,
+				long double Ekin, long double alpha, long double gamma, int pol, TField &afield): TParticle(PROTON, ele_e, m_p, 0){
+		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
+	};
+
+
+	/**
+	 * Constructor, create particle, set start values randomly according to all3inone.in.
+	 *
+	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
+	 * Sets kinetic start energy according to TMCGenerator::ProtonSpectrum.
+	 * Then tries to find a position according to [SOURCE] in geometry.in.
+	 *
+	 * @param number Particle number
+	 * @param src TSource in which particle should be generated
+	 * @param mcgen TMCGenerator used to dice inital values
+	 * @param afield TField used to calculate energies
+	 */
+	TProton(int number, TSource &src, TMCGenerator &mcgen, TField &afield): TParticle(PROTON, ele_e, m_p, 0){
+		xstart = mcgen.UniformDist(0,src.ActiveTime);
+
+		Estart = mcgen.ProtonSpectrum();
+		src.RandomPointInSourceVolume(mcgen, xstart, Estart, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
+
+		long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
+		long double phi = atan2(ystart[1],ystart[0]);
+
+		Init(number, xstart, mcgen.LifeTime(PROTON), r, phi, ystart[2],
+			Estart, alphastart, gammastart, polarisation, afield);
+	};
+
+
+	/**
+	 * Constructor, create proton from neutron decay
+	 *
+	 * Sets start position and time to position and time where neutron decayed.
+	 * Get velocity from TMCGenerator decay simulation.
+	 *
+	 * @param neutron Decayed neutron
+	 * @param v Proton velocity vector determined by TMCGenerator::MCZerfallsstartwerte
+	 * @param mcgen TMCGenerator used to get lifetime from
+	 * @param afield TField used to calculate energies
+	 */
+	TProton(int number, long double t, long double pos[3], long double v[3], int pol,
+			TMCGenerator &mcgen, TField &afield): TParticle(PROTON,ele_e,m_p,0){
+		vstart = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+		phistart = atan2(pos[1],pos[0]);
+		alphastart = fmod(atan2(v[1],v[0]) - phistart + 4*pi,2*pi);
+		gammastart = acos(v[2]/vstart);
+		Estart = 0.5*m*vstart*vstart;
+		Init(number, t, mcgen.LifeTime(PROTON),
+			sqrt(pos[0]*pos[0] + pos[1]*pos[1]), phistart, pos[2],
+			Estart, alphastart, gammastart, pol, afield);
+	};
+
+protected:
+	/**
+	 * Check for reflection on surfaces.
+	 *
+	 * Proton is never reflected
+	 *
+	 * @param x1 Start time of line segment
+	 * @param y1 Start point of line segment
+	 * @param x2 End time of line segment, set to x1 if reflection happened
+	 * @param y2 End point of line segment, returns reflected velocity
+	 * @param normal Normal vector of hit surface
+	 * @param ID Index of solid in the TGeometry::solids vector
+	 * @return Returns true if particle was reflected
+	 */
+	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID){
+		return false;
+	};
+
+
+	/**
+	 * Checks for absorption
+	 *
+	 * Protons are immediately absorbed in solids other than ::defaultsolid
+	 *
+	 * @param x1 Start time of line segment
+	 * @param y1 Start point of line segment
+	 * @param x2 End time of line segment, may be altered
+	 * @param y2 End point of line segment, may be altered
+	 * @return Returns true if particle was absorbed
+	 */
+	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
+		if (currentsolids.size() > 1){
+			x2 = x1;
+			y2 = y1;
+			kennz = currentsolids.back()->kennz;
+			return true;
+		}
+		return false;
+	};
+
+
+	/**
+	 * Proton decay (not used)
+	 */
+	void Decay(){
+
+	};
+};
+
+
+/**
+ * Electron particle class.
+ *
+ * Simulates an electron including gravitation and Lorentz-force
+ */
+struct TElectron: TParticle{
+public:
+	/**
+	 * Constructor, pass inital values directly.
+	 *
+		 * @param number Particle number
+		 * @param t Start time
+		 * @param tend Life time
+		 * @param r Radial start coordinate
+		 * @param phi Start azimuth
+		 * @param z Start z coordinate
+		 * @param Ekin Kinetic start energy
+		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
+		 * @param gamma Start angle between z axis and velocity vector
+		 * @param pol Start polarisation
+		 * @param afield Electric and magnetic fields (needed to determine total energy)
+	 */
+	TElectron(int number, long double t, long double tend, long double r, long double phi, long double z,
+				long double Ekin, long double alpha, long double gamma, int pol, TField &afield): TParticle(ELECTRON, -ele_e, m_e, 0){
+		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
+	};
+
+
+	/**
+	 * Constructor, create particle, set start values randomly according to all3inone.in.
+	 *
+	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
+	 * Sets kinetic start energy according to TMCGenerator::ProtonSpectrum.
+	 * Then tries to find a position according to [SOURCE] in geometry.in.
+	 *
+	 * @param number Particle number
+	 * @param src TSource in which particle should be generated
+	 * @param mcgen TMCGenerator used to dice inital values
+	 * @param afield TField used to calculate energies
+	 */
+	TElectron(int number, TSource &src, TMCGenerator &mcgen, TField &afield): TParticle(ELECTRON, -ele_e, m_e, 0){
+		xstart = mcgen.UniformDist(0,src.ActiveTime);
+
+		Estart = mcgen.ElectronSpectrum();
+		src.RandomPointInSourceVolume(mcgen, xstart, Estart, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
+
+		long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
+		long double phi = atan2(ystart[1],ystart[0]);
+
+		Init(number, xstart, mcgen.LifeTime(ELECTRON), r, phi, ystart[2],
+			Estart, alphastart, gammastart, polarisation, afield);
+	};
+
+
+	/**
+	 * Constructor, create electron from neutron decay
+	 *
+	 * Sets start position and time to position and time where neutron decayed.
+	 * Get velocity from TMCGenerator decay simulation.
+	 *
+	 * @param neutron Decayed neutron
+	 * @param v Electron velocity vector determined by TMCGenerator::MCZerfallsstartwerte
+	 * @param mcgen TMCGenerator used to get lifetime from
+	 * @param afield TField used to calculate energies
+	 */
+	TElectron(int number, long double t, long double pos[3], long double v[3], int pol,
+			TMCGenerator &mcgen, TField &afield): TParticle(ELECTRON,-ele_e,m_e,0){
+		vstart = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+		phistart = atan2(pos[1],pos[0]);
+		alphastart = fmod(atan2(v[1],v[0]) - phistart + 4*pi,2*pi);
+		gammastart = acos(v[2]/vstart);
+		Estart = (1/sqrt(1 - vstart*vstart/c_0/c_0) - 1)*m_e*c_0*c_0;
+		Init(number, t, mcgen.LifeTime(ELECTRON),
+			sqrt(pos[0]*pos[0] + pos[1]*pos[1]), phistart, pos[2],
+			Estart, alphastart, gammastart, pol, afield);
+	};
+
+protected:
+	/**
+	 * Check for reflection on surfaces.
+	 *
+	 * Electron is never reflected
+	 *
+	 * @param x1 Start time of line segment
+	 * @param y1 Start point of line segment
+	 * @param x2 End time of line segment, set to x1 if reflection happened
+	 * @param y2 End point of line segment, returns reflected velocity
+	 * @param normal Normal vector of hit surface
+	 * @param ID Index of solid in the TGeometry::solids vector
+	 * @return Returns true if particle was reflected
+	 */
+	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID){
+		return false;
+	};
+
+
+	/**
+	 * Checks for absorption
+	 *
+	 * Electrons are immediately absorbed in solids other than ::defaultsolid
+	 *
+	 * @param x1 Start time of line segment
+	 * @param y1 Start point of line segment
+	 * @param x2 End time of line segment, may be altered
+	 * @param y2 End point of line segment, may be altered
+	 * @return Returns true if particle was absorbed
+	 */
+	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
+		if (currentsolids.size() > 1){
+			x2 = x1;
+			y2 = y1;
+			kennz = currentsolids.back()->kennz;
+			return true;
+		}
+/*		else{
+			long double v = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
+			long double s = sqrt(pow(y2[0]- y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
+			long double Ekin = m*c_0*c_0*(1/sqrt(1 - v*v/c_0/c_0) - 1);
+			double Eloss, theta;
+			int index;
+			long double n = (1e-3*100)/(1.3806488e-23)/(77); // number density of rest gas (P [Pa])/(k [J/K])/(T [K])
+			eH2(Ekin, s, n, &Eloss, &theta, &index); // did scattering happen?
+			if (index != 0){
+				printf("\nScattering %d, Eloss = %f\n",index,Eloss);
+				double v_scat[3] = {y2[3], y2[4], y2[5]};
+				eH2velocity(Eloss, theta, v_scat); // change velocity accordingly
+				if (index == 3){ // on ionization create secondary electron
+					TElectron *e = new TElectron(particlenumber, x2, &y2[0], &y2[3], polarisation, *mc, *field);
+					secondaries.push_back(e);
+				}
+			}
+		}
+*/		return false;
+	};
+
+
+	/**
+	 * Electron decay (not used)
+	 */
+	void Decay(){
+
+	}
 };
 
 
@@ -798,9 +1071,13 @@ protected:
 
 
 	/**
-	 * Checks for absorption in solids using Fermi-potential formalism
+	 * Checks for absorption in solids using Fermi-potential formalism and does some additional calculations for neutrons
 	 *
 	 * If ::currentsolids contains more than one solid, it uses the one with highest absorption probability
+	 * Caclulates adiabacity condition (::frac).
+	 * Estimates spin flip probability according to Vladimirskii (::vlad)
+	 * and by doing a bruteforce integration of the Bloch equation describing spin precession.
+	 * Additionally it can print out a spatial neutron distribution matrix.
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -809,6 +1086,7 @@ protected:
 	 * @return Returns true if particle was absorbed
 	 */
 	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
+		bool result = false;
 /*		long double l = sqrt(pow(y2[0] - y1[0],2) + pow(y2[1] - y1[1],2) + pow(y2[2] - y1[2],2));
 		long double v = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 		long double E = 0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5])*1e9;
@@ -827,36 +1105,18 @@ protected:
 			for (int i = 0; i < 6; i++)
 				y2[i] = stepper->dense_out(i, x1 + s*(x2 - x1), stepper->hdid);
 			kennz = sld->kennz;
-			return true;
+			result = true;
 		}*/
 		for (list<solid*>::iterator i = currentsolids.begin(); i != currentsolids.end(); i++){
 			if ((*i)->mat.FermiReal != 0 || (*i)->mat.FermiImag != 0){
 				x2 = x1;
 				y2 = y1;
 				kennz = (*i)->kennz;
-				return true;
+				result = true;
 			}
 		}
-		return false;
-	};
 
-
-	/**
-	 * Do some additional calculations for neutrons.
-	 *
-	 * Caclulates adiabacity condition (::frac).
-	 * Estimates spin flip probability according to Vladimirskii (::vlad)
-	 * and by doing a bruteforce integration of the Bloch equation describing spin precession.
-	 * Additionally it can print out a spatial neutron distribution matrix.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment
-	 * @param y2 End point of line segment
-	 */
-	bool ForEachStep(long double x1, VecDoub_I &y1, long double x2, VecDoub_I &y2){
 		// do special calculations for neutrons (spinflipcheck, snapshots, etc)
-		bool result = false;
 		long double B[4][4];
 		field->BFeld(y1[0],y1[1],y1[2],x1,B);
 		if (B[3][0] > 0){
@@ -894,269 +1154,21 @@ protected:
 
 		return result;
 	};
-};
-
-
-/**
- * Proton particle class.
- *
- * Simulates a proton including gravitation and Lorentz-force
- */
-struct TProton: TParticle{
-public:
-	/**
-	 * Constructor, pass inital values directly.
-	 *
-		 * @param number Particle number
-		 * @param t Start time
-		 * @param tend Life time
-		 * @param r Radial start coordinate
-		 * @param phi Start azimuth
-		 * @param z Start z coordinate
-		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
-		 * @param gamma Start angle between z axis and velocity vector
-		 * @param pol Start polarisation
-		 * @param afield Electric and magnetic fields (needed to determine total energy)
-	 */
-	TProton(int number, long double t, long double tend, long double r, long double phi, long double z,
-				long double Ekin, long double alpha, long double gamma, int pol, TField &afield): TParticle(PROTON, ele_e, m_p, 0){
-		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
-	};
 
 
 	/**
-	 * Constructor, create particle, set start values randomly according to all3inone.in.
+	 * Neutron decay.
 	 *
-	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
-	 * Sets kinetic start energy according to TMCGenerator::ProtonSpectrum.
-	 * Then tries to find a position according to [SOURCE] in geometry.in.
-	 *
-	 * @param number Particle number
-	 * @param src TSource in which particle should be generated
-	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TField used to calculate energies
+	 * Create decay proton and electron and add them to secondaries list
 	 */
-	TProton(int number, TSource &src, TMCGenerator &mcgen, TField &afield): TParticle(PROTON, ele_e, m_p, 0){
-		xstart = mcgen.UniformDist(0,src.ActiveTime);
-
-		Estart = mcgen.ProtonSpectrum();
-		src.RandomPointInSourceVolume(mcgen, xstart, Estart, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
-
-		long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
-		long double phi = atan2(ystart[1],ystart[0]);
-
-		Init(number, xstart, mcgen.LifeTime(PROTON), r, phi, ystart[2],
-			Estart, alphastart, gammastart, polarisation, afield);
-	};
-
-
-	/**
-	 * Constructor, create proton from neutron decay
-	 *
-	 * Sets start position and time to position and time where neutron decayed.
-	 * Get velocity from TMCGenerator decay simulation.
-	 *
-	 * @param neutron Decayed neutron
-	 * @param v Proton velocity vector determined by TMCGenerator::MCZerfallsstartwerte
-	 * @param mcgen TMCGenerator used to get lifetime from
-	 * @param afield TField used to calculate energies
-	 */
-	TProton(TNeutron *neutron, long double v[3], TMCGenerator &mcgen, TField &afield): TParticle(PROTON,ele_e,m_p,0){
-		vstart = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-		alphastart = fmod(atan2(v[1],v[0]) - neutron->phiend + 4*pi,2*pi);
-		gammastart = acos(v[2]/vstart);
-		Estart = 0.5*m*vstart*vstart;
-		Init(neutron->particlenumber, neutron->xstart + neutron->dt, mcgen.LifeTime(PROTON),
-			neutron->rend, neutron->phiend, neutron->yend[2],
-			Estart, alphastart, gammastart, neutron->polarisation, afield);
-	};
-
-protected:
-	/**
-	 * Check for reflection on surfaces.
-	 *
-	 * Proton is never reflected
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, set to x1 if reflection happened
-	 * @param y2 End point of line segment, returns reflected velocity
-	 * @param normal Normal vector of hit surface
-	 * @param ID Index of solid in the TGeometry::solids vector
-	 * @return Returns true if particle was reflected
-	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID){
-		return false;
-	};
-
-
-	/**
-	 * Checks for absorption
-	 *
-	 * Protons are immediately absorbed in solids other than ::defaultsolid
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @return Returns true if particle was absorbed
-	 */
-	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
-		if (currentsolids.size() > 1){
-			x2 = x1;
-			y2 = y1;
-			kennz = currentsolids.back()->kennz;
-			return true;
-		}
-		return false;
-	};
-
-
-	/**
-	 * Do some additional calculations for protons.
-	 *
-	 * Not used right now.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment
-	 * @param y2 End point of line segment
-	 */
-	bool ForEachStep(long double x1, VecDoub_I &y1, long double x2, VecDoub_I &y2){
-		return false;
-	};
-};
-
-
-/**
- * Electron particle class.
- *
- * Simulates an electron including gravitation and Lorentz-force
- */
-struct TElectron: TParticle{
-public:
-	/**
-	 * Constructor, pass inital values directly.
-	 *
-		 * @param number Particle number
-		 * @param t Start time
-		 * @param tend Life time
-		 * @param r Radial start coordinate
-		 * @param phi Start azimuth
-		 * @param z Start z coordinate
-		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
-		 * @param gamma Start angle between z axis and velocity vector
-		 * @param pol Start polarisation
-		 * @param afield Electric and magnetic fields (needed to determine total energy)
-	 */
-	TElectron(int number, long double t, long double tend, long double r, long double phi, long double z,
-				long double Ekin, long double alpha, long double gamma, int pol, TField &afield): TParticle(ELECTRON, -ele_e, m_e, 0){
-		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
-	};
-
-
-	/**
-	 * Constructor, create particle, set start values randomly according to all3inone.in.
-	 *
-	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
-	 * Sets kinetic start energy according to TMCGenerator::ProtonSpectrum.
-	 * Then tries to find a position according to [SOURCE] in geometry.in.
-	 *
-	 * @param number Particle number
-	 * @param src TSource in which particle should be generated
-	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TField used to calculate energies
-	 */
-	TElectron(int number, TSource &src, TMCGenerator &mcgen, TField &afield): TParticle(ELECTRON, -ele_e, m_e, 0){
-		xstart = mcgen.UniformDist(0,src.ActiveTime);
-
-		Estart = mcgen.ElectronSpectrum();
-		src.RandomPointInSourceVolume(mcgen, xstart, Estart, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
-
-		long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
-		long double phi = atan2(ystart[1],ystart[0]);
-
-		Init(number, xstart, mcgen.LifeTime(ELECTRON), r, phi, ystart[2],
-			Estart, alphastart, gammastart, polarisation, afield);
-	};
-
-
-	/**
-	 * Constructor, create electron from neutron decay
-	 *
-	 * Sets start position and time to position and time where neutron decayed.
-	 * Get velocity from TMCGenerator decay simulation.
-	 *
-	 * @param neutron Decayed neutron
-	 * @param v Electron velocity vector determined by TMCGenerator::MCZerfallsstartwerte
-	 * @param mcgen TMCGenerator used to get lifetime from
-	 * @param afield TField used to calculate energies
-	 */
-	TElectron(TNeutron *neutron, long double v[3], TMCGenerator &mcgen, TField &afield): TParticle(ELECTRON,-ele_e,m_e,0){
-		vstart = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-		alphastart = fmod(atan2(v[1],v[0]) - neutron->phiend + 4*pi,2*pi);
-		gammastart = acos(v[2]/vstart);
-		Estart = (1/sqrt(1 - vstart*vstart/c_0/c_0) - 1)*m_e*c_0*c_0;
-		Init(neutron->particlenumber, neutron->xstart + neutron->dt, mcgen.LifeTime(ELECTRON),
-			neutron->rend, neutron->phiend, neutron->yend[2],
-			Estart, alphastart, gammastart, neutron->polarisation, afield);
-	};
-
-protected:
-	/**
-	 * Check for reflection on surfaces.
-	 *
-	 * Electron is never reflected
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, set to x1 if reflection happened
-	 * @param y2 End point of line segment, returns reflected velocity
-	 * @param normal Normal vector of hit surface
-	 * @param ID Index of solid in the TGeometry::solids vector
-	 * @return Returns true if particle was reflected
-	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID){
-		return false;
-	};
-
-
-	/**
-	 * Checks for absorption
-	 *
-	 * Electrons are immediately absorbed in solids other than ::defaultsolid
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @return Returns true if particle was absorbed
-	 */
-	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2){
-		if (currentsolids.size() > 1){
-			x2 = x1;
-			y2 = y1;
-			kennz = currentsolids.back()->kennz;
-			return true;
-		}
-		return false;
-	};
-
-
-	/**
-	 * Do some additional calculations for electrons.
-	 *
-	 * Not used right now.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment
-	 * @param y2 End point of line segment
-	 */
-	bool ForEachStep(long double x1, VecDoub_I &y1, long double x2, VecDoub_I &y2){
-		return false;
+	void Decay(){
+		long double v_p[3], v_e[3];
+		TParticle *p;
+		mc->MCZerfallsstartwerte(&yend[3], v_p, v_e);
+		p = new TProton(particlenumber, xstart + dt, yend, v_p, polarisation, *mc, *field);
+		secondaries.push_back(p);
+		p = new TElectron(particlenumber, xstart + dt, yend, v_e, polarisation, *mc, *field);
+		secondaries.push_back(p);
 	};
 };
 
