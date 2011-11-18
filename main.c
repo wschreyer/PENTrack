@@ -181,16 +181,16 @@ int main(int argc, char **argv){
 		if (protneut == NEUTRON || protneut == PROTON || protneut == ELECTRON){ // if proton or neutron shall be simulated
 			TParticle *p;
 			if (protneut == NEUTRON) // create particle according to protneut
-				p = new TNeutron(iMC, source, mc, field);
+				p = new TNeutron(iMC, source, mc, &field);
 			else if (protneut == PROTON)
-				p = new TProton(iMC, source, mc, field);
+				p = new TProton(iMC, source, mc, &field);
 			else if (protneut == ELECTRON)
-				p = new TElectron(iMC, source, mc, field);
+				p = new TElectron(iMC, source, mc, &field);
 			else{
 				printf("\nDon't know protneut==%i! Exiting...\n",protneut);
 				exit(-1);
 			}
-			p->Integrate(geom, mc, field, endlog, tracklog); // integrate particle
+			p->Integrate(geom, mc, &field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog); // integrate particle
 			kennz_counter[p->protneut % 3][p->kennz]++; // increment counters
 			ntotalsteps += p->nsteps;
 			IntegratorTime += p->comptime;
@@ -198,7 +198,7 @@ int main(int argc, char **argv){
 
 			if (decay == 2){
 				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
-					(*i)->Integrate(geom, mc, field, endlog, tracklog); // integrate secondary particles
+					(*i)->Integrate(geom, mc, &field, endlog, tracklog); // integrate secondary particles
 					kennz_counter[(*i)->protneut % 3][(*i)->kennz]++;
 					ntotalsteps += (*i)->nsteps;
 					IntegratorTime += (*i)->comptime;

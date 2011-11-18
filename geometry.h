@@ -18,7 +18,7 @@
 using namespace std;
 
 #define MAX_DICE_ROLL 42000000 ///< number of tries to find start point
-#define REFLECT_TOLERANCE 1e-8 	///< max distance of reflection point to actual surface collision point
+#define REFLECT_TOLERANCE 1e-8  ///< max distance of reflection point to actual surface collision point
 
 
 /// Struct to store material properties (read from geometry.in, right now only for neutrons)
@@ -120,8 +120,8 @@ struct TGeometry{
 		 *
 		 * @return Returns true if point is inside the bounding box
 		 */
-		bool CheckPoint(const long double x, const long double y[3]){
-			return kdtree->PointInBox(y);
+		bool CheckSegment(const long double y1[3], const long double y2[3]){
+			return kdtree->SegmentInBox(y1,y2) ;
 		};
 		
 		/**

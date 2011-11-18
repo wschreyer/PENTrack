@@ -280,6 +280,16 @@ struct TMCGenerator{
 		}
 */
 /*
+		//spectrum leaving horizontal guide
+		long double x,y;
+		for(;;){
+			x = UniformDist(100,300);
+			y = 1.96616e-6*pow(x,5) - 0.00204264*pow(x,4) + 0.834378*pow(x,3) - 167.958*pow(x,2) + 16674.8*x - 639317;
+			if (UniformDist(0,14000) < y)
+				return x*1e-9;
+		}
+*/
+/*
 		//lfs spectrum after ramping with 0.5B and absorber 34cm above storage bottom
 		long double x,y;
 		for(;;){

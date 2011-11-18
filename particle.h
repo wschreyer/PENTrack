@@ -118,7 +118,7 @@ struct TParticle{
 		 *
 		 * @param geometry Integrator checks for collisions with walls defined in this TGeometry structure
 		 * @param mcgen Random number generator (e.g. used for reflection probability dicing)
-		 * @param afield Field which acts on particle
+		 * @param afield Pointer to field which acts on particle (can be NULL)
 		 * @param ENDLOG FILE-pointer into which particle is logged after integration
 		 * @param trackfile FILE-pointer into which particle trajectory is logged
 		 * @param SNAP FILE-pointer into which snapshots are logged
@@ -126,11 +126,11 @@ struct TParticle{
 		 * @param areflectlog Should reflections (1) or transmissions (2) or both (3) be logged?
 		 * @param aREFLECTLOG FILE-pointer into which reflection and transmission are logged
 		 */
-		void Integrate(TGeometry &geometry, TMCGenerator &mcgen, TField &afield, FILE *ENDLOG, FILE *trackfile, 
+		void Integrate(TGeometry &geometry, TMCGenerator &mcgen, TField *afield, FILE *ENDLOG, FILE *trackfile,
 						FILE *SNAP = NULL, vector<float> *snapshots = NULL, int areflectlog = 0, FILE *aREFLECTLOG = NULL){
 			geom = &geometry;
 			mc = &mcgen;
-			field = &afield;
+			field = afield;
 			reflectlog = areflectlog;
 			REFLECTLOG = aREFLECTLOG;
 			timeval clock_start, clock_end, refl_start, refl_end;
@@ -140,13 +140,15 @@ struct TParticle{
 				nextsnapshot++;
 			int perc = 0;
 			printf("Teilchennummer: %i, Teilchensorte: %i\n",particlenumber,protneut);
-			printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG l: %LG\n",
-				rstart, phistart/conv, ystart[2], vstart, alphastart/conv,gammastart/conv, Estart, xend, mc->MaxTrajLength(protneut));
+			printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG tau: %LG l: %LG\n",
+				rstart, phistart/conv, ystart[2], vstart, alphastart/conv,gammastart/conv, Estart, xstart, xend, mc->MaxTrajLength(protneut));
 		
 			// set initial values for integrator
 			long double x = xstart, x1, x2;
 			VecDoub y(6,ystart), dydx(6), y1(6), y2(6);
-			long double B[4][4], E[3], V;	
+			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+			long double E[3] = {0,0,0};
+			long double V = 0;
 			long double h = 0.001/vstart; // first guess for stepsize
 			derivs(x,y,dydx);
 			if (trackfile)
@@ -202,8 +204,10 @@ struct TParticle{
 							for (int i = 0; i < 6; i++)
 								ysnap[i] = stepper->dense_out(i, xsnap, stepper->hdid);
 							printf("\n Snapshot at %LG s \n", xsnap);
-							field->BFeld(ysnap[0],ysnap[1],ysnap[2],xsnap,B);
-							field->EFeld(ysnap[0],ysnap[1],ysnap[2],V,E);
+							if (field){
+								field->BFeld(ysnap[0],ysnap[1],ysnap[2],xsnap,B);
+								field->EFeld(ysnap[0],ysnap[1],ysnap[2],V,E);
+							}
 							SetEndValues(xsnap,ysnap,B,E,V);
 							Print(SNAP);
 							nextsnapshot++;
@@ -238,16 +242,18 @@ struct TParticle{
 			delete stepper;
 			
 			// Endwerte schreiben
-			field->BFeld(y[0],y[1],y[2],x,B);
-			field->EFeld(y[0],y[1],y[2],V,E);
+			if (field){
+				field->BFeld(y[0],y[1],y[2],x,B);
+				field->EFeld(y[0],y[1],y[2],V,E);
+			}
 			SetEndValues(x,y,B,E,V);
 			Print(ENDLOG);
 
 			if (kennz == KENNZAHL_DECAYED)
 				Decay();
 
-			printf("Done!!\nBFFlipProb: %LG rend: %LG zend: %LG Eend: %LG Code: %i t: %LG l: %LG\n\n",
-				(1 - BFsurvprob), rend, yend[2], Eend, kennz, dt, trajlength);
+			printf("Done!!\nBFFlipProb: %LG r: %LG z: %LG E: %LG Code: %i t: %LG tau: %LG l: %LG\n\n",
+				(1 - BFsurvprob), rend, yend[2], Eend, kennz, xstart + dt, dt, trajlength);
 		};
 	
 	protected:
@@ -278,7 +284,7 @@ struct TParticle{
 		 * @param afield Electric and magnetic fields (needed to determine total energy)
 		 */
 		void Init(int number, long double t, long double tend, long double r, long double phi, long double z,
-					long double Ekin, long double alpha, long double gamma, int pol, TField &afield){
+					long double Ekin, long double alpha, long double gamma, int pol, TField *afield){
 			kennz = KENNZAHL_UNKNOWN;
 			trajlength = comptime = refltime = 0;
 			BFsurvprob = vladtotal = 1; vladmax = thumbmax = logBF = -9e99;
@@ -299,10 +305,13 @@ struct TParticle{
 			ystart[1] = yend[1] = rstart * sin(phistart);
 			ystart[2] = yend[2] = z;
 
-			long double B[4][4], E[3], V;
-			afield.BFeld(ystart[0],ystart[1],ystart[2],xstart,B);
-			afield.EFeld(ystart[0],ystart[1],ystart[2],V,E);
-			Hstart = Estart + m*gravconst*ystart[2] + q/ele_e*V - polarisation*mu/ele_e*B[3][0];
+			Hstart = Estart + m*gravconst*ystart[2];
+			if (afield){
+				long double B[4][4], E[3], V;
+				afield->BFeld(ystart[0],ystart[1],ystart[2],xstart,B);
+				afield->EFeld(ystart[0],ystart[1],ystart[2],V,E);
+				Hstart += q/ele_e*V - polarisation*mu/ele_e*B[3][0];
+			}
 			long double gammarel = Estart/m/c_0/c_0 + 1;
 			if (gammarel < 1.0001)
 				vstart = vend = sqrt(2*Estart/m);
@@ -330,23 +339,25 @@ struct TParticle{
 			dydx[0] = y[3]; // time derivatives of position = velocity
 			dydx[1] = y[4];
 			dydx[2] = y[5];
-			long double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
 			long double F[3] = {0,0,0}; // Force in lab frame
-			if (q != 0 || (mu != 0 && polarisation != 0))
-				field->BFeld(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
-			if (q != 0)
-				field->EFeld(y[0],y[1],y[2], V, E); // if particle has charge caculate electric field+potential
 			if (m != 0)
 				F[2] += -gravconst*m*ele_e; // add gravitation to force
-			if (q != 0){
-				F[0] += q*(E[0] + y[4]*B[2][0] - y[5]*B[1][0]); // add Lorentz-force
-				F[1] += q*(E[1] + y[5]*B[0][0] - y[3]*B[2][0]);
-				F[2] += q*(E[2] + y[3]*B[1][0] - y[4]*B[0][0]);
-			}
-			if (mu != 0 && polarisation != 0){
-				F[0] += polarisation*mu*B[3][1]; // add force on magnetic dipole moment
-				F[1] += polarisation*mu*B[3][2];
-				F[2] += polarisation*mu*B[3][3];
+			if (field){
+				long double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
+				if (q != 0 || (mu != 0 && polarisation != 0))
+					field->BFeld(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
+				if (q != 0)
+					field->EFeld(y[0],y[1],y[2], V, E); // if particle has charge caculate electric field+potential
+				if (q != 0){
+					F[0] += q*(E[0] + y[4]*B[2][0] - y[5]*B[1][0]); // add Lorentz-force
+					F[1] += q*(E[1] + y[5]*B[0][0] - y[3]*B[2][0]);
+					F[2] += q*(E[2] + y[3]*B[1][0] - y[4]*B[0][0]);
+				}
+				if (mu != 0 && polarisation != 0){
+					F[0] += polarisation*mu*B[3][1]; // add force on magnetic dipole moment
+					F[1] += polarisation*mu*B[3][2];
+					F[2] += polarisation*mu*B[3][3];
+				}
 			}
 			long double rel = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0))/m/ele_e; // relativstic factor 1/gamma/m
 			dydx[3] = rel*(F[0] - (y[3]*y[3]*F[0] + y[3]*y[4]*F[1] + y[3]*y[5]*F[2])/c_0/c_0); // general relativstic equation of motion
@@ -371,9 +382,9 @@ struct TParticle{
 		 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 		 * @return Returns true if particle was reflected/absorbed
 		 */
-		bool ReflectOrAbsorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, int iteration = 1){
-			if (!geom->CheckPoint(x1,&y1[0])){ // check if start point is inside bounding box of the simulation geometry
-				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x1,y1[0],y1[1],y1[2]);
+		bool ReflectOrAbsorb(long double &x1, VecDoub_IO &y1, long double &x2, VecDoub_IO &y2, int iteration = 1){
+			if (!geom->CheckSegment(&y1[0],&y2[0])){ // check if start point is inside bounding box of the simulation geometry
+				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x2,y2[0],y2[1],y2[2]);
 				kennz = KENNZAHL_HIT_BOUNDARIES;
 				return true;
 			}
@@ -388,26 +399,29 @@ struct TParticle{
 					|| iteration > 99) // or if iteration counter reached a certain maximum value
 				{
 					solid *sld = &geom->solids[coll.ID];
-					if (distnormal > 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) == currentsolids.rend()){
-						// if particle is leaving solid and solid is not in currentsolids list something went wrong
-						printf("Particle inside '%s' which it did not enter before! Stopping it!\n", geom->solids[coll.ID].name.c_str());
+					if (colls.size() > 1 && coll.ID != (++colls.begin())->ID){
+						// if particle hits two or more different surfaces at once
+						printf("Reflection from two surfaces (%s & %s) at once!\n", sld->name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
+						printf("Check geometry for touching surfaces!");
 						x2 = x1;
 						y2 = y1;
 						kennz = KENNZAHL_NRERROR;
+						return true;
+					}
+					else if (distnormal > 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) == currentsolids.rend()){
+						// if particle is leaving solid and solid is not in currentsolids list something went wrong
+						printf("Particle inside '%s' which it did not enter before! t = %LG - Trying to reflect back!\n", geom->solids[coll.ID].name.c_str(),x1-xstart);
+						y1[3] = -y1[3];
+						y1[4] = -y1[4];
+						y1[5] = -y1[5];
+						x2 = x1;
+						y2 = y1;
+//						kennz = KENNZAHL_NRERROR;
 						return true;
 					}
 					else if (distnormal < 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) != currentsolids.rend()){
 						// if particle is entering solid and solid is in currentsolids list something went wrong
 						printf("Particle entering '%s' which it did enter before! Stopping it!\n", geom->solids[coll.ID].name.c_str());
-						x2 = x1;
-						y2 = y1;
-						kennz = KENNZAHL_NRERROR;
-						return true;
-					}
-					else if (colls.size() > 1 && coll.ID != (++colls.begin())->ID){
-						// if particle hits two or more different surfaces at once
-						printf("Reflection from two surfaces (%s & %s) at once!\n", sld->name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
-						printf("Check geometry for touching surfaces!");
 						x2 = x1;
 						y2 = y1;
 						kennz = KENNZAHL_NRERROR;
@@ -427,38 +441,36 @@ struct TParticle{
 					}
 				}
 				else{
-					// else cut integration step right before and after collision points
+					// else cut integration step right before and after first collision point
 					// and call ReflectOrAbsorb again for each smaller step (quite similar to bisection algorithm)
-					long double xbisect1 = x1;
-					long double xbisect2 = x2;
-					VecDoub ybisect1 = y1, ybisect2(6);
-					for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through collisions
-						xbisect2 = x1 + (x2 - x1)*it->s*(1 - 0.01*iteration); // cut integration right before collision point
-						if (xbisect2 > xbisect1){ // check that new line segment does not overlap with previous one
-							for (int i = 0; i < 6; i++)
-								ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
-							if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step before coll. point
-								x2 = xbisect2;
-								y2 = ybisect2;
-								return true;
-							}
-							xbisect1 = xbisect2;
-							ybisect1 = ybisect2;
-						}
+					TCollision *c = &colls.front();
+					long double xnew, xbisect1 = x1, xbisect2 = x1;
+					VecDoub ybisect1 = y1, ybisect2 = y1;
 
-						xbisect2 = x1 + (x2 - x1)*it->s*(1 + 0.01*iteration); // cut integration right after collision point
-						if (xbisect2 > xbisect1){ // check that new line segment does not overlap with previous one
-							for (int i = 0; i < 6; i++)
-								ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
-							if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step over coll. point
-								x2 = xbisect2;
-								y2 = ybisect2;
-								return true;
-							}
-							xbisect1 = xbisect2;
-							ybisect1 = ybisect2;
+					xnew = x1 + (x2 - x1)*c->s*(1 - 0.01*iteration); // cut integration right before collision point
+					if (xnew > x1 && xnew < x2){ // check that new line segment is in correct time interval
+						xbisect1 = xbisect2 = xnew;
+						for (int i = 0; i < 6; i++)
+							ybisect1[i] = ybisect2[i] = stepper->dense_out(i, xbisect1, stepper->hdid); // get point at cut time
+						if (ReflectOrAbsorb(x1, y1, xbisect1, ybisect1, iteration+1)){ // recursive call for step before coll. point
+							x2 = xbisect1;
+							y2 = ybisect1;
+							return true;
 						}
 					}
+
+					xnew = x1 + (x2 - x1)*c->s*(1 + 0.01*iteration); // cut integration right after collision point
+					if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
+						xbisect2 = xnew;
+						for (int i = 0; i < 6; i++)
+							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
+						if (ReflectOrAbsorb(xbisect1, ybisect1, xbisect2, ybisect2, iteration+1)){ // recursive call for step over coll. point
+							x2 = xbisect2;
+							y2 = ybisect2;
+							return true;
+						}
+					}
+
 					if (ReflectOrAbsorb(xbisect2, ybisect2, x2, y2, iteration+1)) // recursive call for step after coll. point
 						return true;
 				}
@@ -578,11 +590,15 @@ struct TParticle{
 		 * @param h Last time step of ODE integrator
 		 */
 		void PrintIntegrationStep(FILE *trackfile, long double x, VecDoub_I &y, long double h){
-			long double B[4][4], E[3], V;
+			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+			long double E[3] = {0,0,0};
+			long double V = 0;
 			long double logvlad = 0.0, logfrac = 0.0;
 			printf("-");
-			field->BFeld(y[0],y[1],y[2],x,B);
-			field->EFeld(y[0],y[1],y[2],V,E);
+			if (field){
+				field->BFeld(y[0],y[1],y[2],x,B);
+				field->EFeld(y[0],y[1],y[2],V,E);
+			}
 			SetEndValues(x,y,B,E,V);
 			
 			if (vlad > 1e-99) 
@@ -630,10 +646,10 @@ public:
 		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
 		 * @param gamma Start angle between z axis and velocity vector
 		 * @param pol Start polarisation
-		 * @param afield Electric and magnetic fields (needed to determine total energy)
+		 * @param afield Electric and magnetic fields, needed to determine total energy, can be NULL
 	 */
 	TProton(int number, long double t, long double tend, long double r, long double phi, long double z,
-				long double Ekin, long double alpha, long double gamma, int pol, TField &afield): TParticle(PROTON, ele_e, m_p, 0){
+				long double Ekin, long double alpha, long double gamma, int pol, TField *afield): TParticle(PROTON, ele_e, m_p, 0){
 		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
 	};
 
@@ -648,9 +664,9 @@ public:
 	 * @param number Particle number
 	 * @param src TSource in which particle should be generated
 	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TField used to calculate energies
+	 * @param afield TField used to calculate energies (can be NULL)
 	 */
-	TProton(int number, TSource &src, TMCGenerator &mcgen, TField &afield): TParticle(PROTON, ele_e, m_p, 0){
+	TProton(int number, TSource &src, TMCGenerator &mcgen, TField *afield): TParticle(PROTON, ele_e, m_p, 0){
 		xstart = mcgen.UniformDist(0,src.ActiveTime);
 
 		Estart = mcgen.ProtonSpectrum();
@@ -673,10 +689,10 @@ public:
 	 * @param v Start velocity in cartesian coordinates
 	 * @param pol Polarisation
 	 * @param mcgen TMCGenerator used to get lifetime from
-	 * @param afield TField used to calculate energies
+	 * @param afield TField used to calculate energies (can be NULL)
 	 */
 	TProton(int number, long double t, long double pos[3], long double v[3], int pol,
-			TMCGenerator &mcgen, TField &afield): TParticle(PROTON,ele_e,m_p,0){
+			TMCGenerator &mcgen, TField *afield): TParticle(PROTON,ele_e,m_p,0){
 		vstart = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 		phistart = atan2(pos[1],pos[0]);
 		alphastart = fmod(atan2(v[1],v[0]) - phistart + 4*pi,2*pi);
@@ -760,7 +776,7 @@ public:
 	 * @param afield Electric and magnetic fields (needed to determine total energy)
 	 */
 	TElectron(int number, long double t, long double tend, long double r, long double phi, long double z,
-				long double Ekin, long double alpha, long double gamma, int pol, TField &afield): TParticle(ELECTRON, -ele_e, m_e, 0){
+				long double Ekin, long double alpha, long double gamma, int pol, TField *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
 		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
 	};
 
@@ -777,7 +793,7 @@ public:
 	 * @param mcgen TMCGenerator used to dice inital values
 	 * @param afield TField used to calculate energies
 	 */
-	TElectron(int number, TSource &src, TMCGenerator &mcgen, TField &afield): TParticle(ELECTRON, -ele_e, m_e, 0){
+	TElectron(int number, TSource &src, TMCGenerator &mcgen, TField *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
 		xstart = mcgen.UniformDist(0,src.ActiveTime);
 
 		Estart = mcgen.ElectronSpectrum();
@@ -800,10 +816,10 @@ public:
 	 * @param v Start velocity in cartesian coordinates
 	 * @param pol Polarisation
 	 * @param mcgen TMCGenerator used to get lifetime from
-	 * @param afield TField used to calculate energies
+	 * @param afield TField used to calculate energies (can be NULL)
 	 */
 	TElectron(int number, long double t, long double pos[3], long double v[3], int pol,
-			TMCGenerator &mcgen, TField &afield): TParticle(ELECTRON,-ele_e,m_e,0){
+			TMCGenerator &mcgen, TField *afield): TParticle(ELECTRON,-ele_e,m_e,0){
 		vstart = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 		phistart = atan2(pos[1],pos[0]);
 		alphastart = fmod(atan2(v[1],v[0]) - phistart + 4*pi,2*pi);
@@ -906,7 +922,7 @@ public:
 		 * @param afield Electric and magnetic fields (needed to determine total energy)
 	 */
 	TNeutron(int number, long double t, long double tend, long double r, long double phi, long double z,
-				long double Ekin, long double alpha, long double gamma, int pol, TField &afield): TParticle(NEUTRON, 0, m_n, mu_nSI){
+				long double Ekin, long double alpha, long double gamma, int pol, TField *afield): TParticle(NEUTRON, 0, m_n, mu_nSI){
 		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, afield);
 	};
 
@@ -928,7 +944,7 @@ public:
 	 * @param mcgen TMCGenerator used to dice inital values
 	 * @param afield TField used to calculate energies
 	 */
-	TNeutron(int number, TSource &src, TMCGenerator &mcgen, TField &afield): TParticle(NEUTRON, 0, m_n, mu_nSI){
+	TNeutron(int number, TSource &src, TMCGenerator &mcgen, TField *afield): TParticle(NEUTRON, 0, m_n, mu_nSI){
 		xstart = mcgen.UniformDist(0,src.ActiveTime);
 
 		polarisation = mcgen.DicePolarisation();
@@ -936,7 +952,7 @@ public:
 
 		printf("Dice starting position for E_neutron = %LG neV ",Hstart*1e9);
 		fflush(stdout);
-		long double B[4][4];
+		long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
 		for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
 			if (nroll % 1000000 == 0){
 				printf("."); // print progress
@@ -944,7 +960,9 @@ public:
 			}
 
 			src.RandomPointInSourceVolume(mcgen, xstart, Hstart, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
-			afield.BFeld(ystart[0], ystart[1], ystart[2], xstart, B);
+			if (afield){
+				afield->BFeld(ystart[0], ystart[1], ystart[2], xstart, B);
+			}
 			if (src.sourcemode == "volume" || src.sourcemode == "customvol"){ // dice H for volume source
 				Estart = Hstart - m*gravconst*ystart[2] + polarisation*mu/ele_e*B[3][0];
 				if (mcgen.UniformDist(0,1) > sqrt(Estart/Hstart))
@@ -1049,9 +1067,12 @@ protected:
 			}
 		}
 		if (log){
-			long double B[4][4];
-			field->BFeld(y1[0], y1[1], y1[2], x1, B);
-			long double H = 0.5*m_n*vabs*vabs + m_n*gravconst*y1[2] - polarisation*mu_nSI/ele_e*B[3][0];
+			long double H = 0.5*m_n*vabs*vabs + m_n*gravconst*y1[2];
+			if (field){
+				long double B[4][4];
+				field->BFeld(y1[0], y1[1], y1[2], x1, B);
+				H += -polarisation*mu_nSI/ele_e*B[3][0];
+			}
 			int pol = 3;
 			if (polarisation == -1) pol = POLARISATION_BAD;
 			else if (polarisation == 1) pol = POLARISATION_GOOD;
@@ -1117,39 +1138,41 @@ protected:
 		}
 
 		// do special calculations for neutrons (spinflipcheck, snapshots, etc)
-		long double B[4][4];
-		field->BFeld(y1[0],y1[1],y1[2],x1,B);
-		if (B[3][0] > 0){
-			// spin flip properties according to Vladimirsky and thumbrule
-			vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
-							   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
-							   y1[3], y1[4], y1[5]);
-			frac = thumbrule(B[0][0], B[1][0], B[2][0],
-							   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
-							   y1[3], y1[4], y1[5]);
-			vladtotal *= 1-vlad;
-			if (vlad > 1e-99)
-				vladmax = max(vladmax,log10(vlad));
-			if (frac > 1e-99)
-				thumbmax = max(thumbmax,log10(frac));
-		}
-
 		if (neutdist == 1)
 			fillndist(x1, y1, x2, y2); // write spatial neutron distribution
 
-		long double B2[4][4];
-		field->BFeld(y2[0],y2[1],y2[2],x2,B2);
-		long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2,min(xstart+xend,StorageTime)); // integrate spinflip probability
-		if (1-sp > 1e-30) logBF = log10(1-sp);
-		else logBF = -99;
-		BFsurvprob *= sp;
-		// flip the spin with a probability of 1-BFsurvprob
-		if (flipspin && mc->UniformDist(0,1) < 1-sp)
-		{
-			polarisation *= -1;
-			NSF++;
-			printf("\n The spin has flipped! Number of flips: %i\n",NSF);
-			result = true;
+		if (field){
+			long double B[4][4];
+			field->BFeld(y1[0],y1[1],y1[2],x1,B);
+			if (B[3][0] > 0){
+				// spin flip properties according to Vladimirsky and thumbrule
+				vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
+								   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
+								   y1[3], y1[4], y1[5]);
+				frac = thumbrule(B[0][0], B[1][0], B[2][0],
+								   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
+								   y1[3], y1[4], y1[5]);
+				vladtotal *= 1-vlad;
+				if (vlad > 1e-99)
+					vladmax = max(vladmax,log10(vlad));
+				if (frac > 1e-99)
+					thumbmax = max(thumbmax,log10(frac));
+			}
+
+			long double B2[4][4];
+			field->BFeld(y2[0],y2[1],y2[2],x2,B2);
+			long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2,min(xstart+xend,StorageTime)); // integrate spinflip probability
+			if (1-sp > 1e-30) logBF = log10(1-sp);
+			else logBF = -99;
+			BFsurvprob *= sp;
+			// flip the spin with a probability of 1-BFsurvprob
+			if (flipspin && mc->UniformDist(0,1) < 1-sp)
+			{
+				polarisation *= -1;
+				NSF++;
+				printf("\n The spin has flipped! Number of flips: %i\n",NSF);
+				result = true;
+			}
 		}
 
 		return result;
@@ -1165,9 +1188,9 @@ protected:
 		long double v_p[3], v_e[3];
 		TParticle *p;
 		mc->MCZerfallsstartwerte(&yend[3], v_p, v_e);
-		p = new TProton(particlenumber, xstart + dt, yend, v_p, polarisation, *mc, *field);
+		p = new TProton(particlenumber, xstart + dt, yend, v_p, polarisation, *mc, field);
 		secondaries.push_back(p);
-		p = new TElectron(particlenumber, xstart + dt, yend, v_e, polarisation, *mc, *field);
+		p = new TElectron(particlenumber, xstart + dt, yend, v_e, polarisation, *mc, field);
 		secondaries.push_back(p);
 	};
 };
