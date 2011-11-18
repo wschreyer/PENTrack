@@ -125,16 +125,6 @@ class KDTree{
                 vector<Triangle*> tris; ///< List of triangles stored in this node
 
                 /**
-                 *  Test if line segment p1->p2 intersects this node.
-                 *
-                 *  @param p1 Line start point
-                 *  @param p2 Line end point
-                 *
-                 *  @return Returns true if line intersects this node
-                 */
-                template <typename coord> bool SegmentInBox(const coord p1[3], const coord p2[3]);
-
-                /**
                  * Test if triangle intersects with this node.
                  *
                  * @param tri Triangle that shall be tested for intersection.
@@ -201,6 +191,17 @@ class KDTree{
                 template <typename coord> bool PointInBox(const coord p[3]) {
                 	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) && (p[1] <= hi[1]) && (p[1] >= lo[1]) && (p[2] <= hi[2]) && (p[2] >= lo[2]));
                 };
+
+                /**
+                 *  Test if line segment p1->p2 intersects this node.
+                 *
+                 *  @param p1 Line start point
+                 *  @param p2 Line end point
+                 *
+                 *  @return Returns true if line intersects this node
+                 */
+                template <typename coord> bool SegmentInBox(const coord p1[3], const coord p2[3]);
+
         };
 
         set<TVertex> allvertices; ///< list of all triangle vertices
@@ -238,5 +239,5 @@ class KDTree{
          *
          * @param p Point
          */
-        bool PointInBox(const long double p[3]){ return (root && root->PointInBox(p)); };
+        bool SegmentInBox(const long double p1[3], const long double p2[3]){ return (root && root->SegmentInBox(p1,p2)); };
 };
