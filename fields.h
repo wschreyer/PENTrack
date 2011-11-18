@@ -69,10 +69,10 @@ struct TField{
 		 *
 		 * Chooses the right map for this position and adds racetrack fields.
 		 * field matrix B:
-		 *	Bx		dBxdx	dBxdy	dBxdz
-		 *	By		dBydx	dBydy	dBydz
-		 *	Bz		dBzdx	dBzdy	dBzdz
-		 *	Babs	dBdx	dBdy	dBdz
+		 *	Bx,		dBxdx,	dBxdy,	dBxdz;
+		 *	By,		dBydx,	dBydy,	dBydz;
+		 *	Bz,		dBzdx,	dBzdy,	dBzdz;
+		 *	Babs,	dBdx,	dBdy,	dBdz;
 		 *
 		 * @param x Cartesian x coordinate
 		 * @param y Cartesian y coordinate
