@@ -40,7 +40,7 @@ using namespace std;
 struct TParticle{
 	public:
 		int protneut; ///< particle type (neutron: 1; proton: 2; electron: 6)
-		int kennz; ///< particle fate (0: not classified; 1: survived until end of simulation; 2: hit outer boundaries; 3: numerical error; 4: decayed; 5: did not find initial position; >=6: Absorption in solid with according ID)
+		int ID; ///< particle fate (0: not classified; 1: survived until end of simulation; 2: hit outer boundaries; 3: numerical error; 4: decayed; 5: did not find initial position; >=6: Absorption in solid with according ID)
 		int particlenumber; ///< particle number
 		const long double q; ///< charge [C]
 		const long double m; ///< mass [eV/c^2]
@@ -157,7 +157,7 @@ struct TParticle{
 			// create integrator class (stepperdopr853 = 8th order Runge Kutta)
 			stepper = new StepperDopr853<TParticle>(y, dydx, x, 1e-13, 0, true);// y, dydx, x, atol, rtol, dense output
 			
-			while (kennz == KENNZAHL_UNKNOWN){ // integrate as long as nothing happened to particle
+			while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 				x1 = x; // save point before next step
 				y1 = y;
 				
@@ -171,7 +171,7 @@ struct TParticle{
 					nsteps++;
 				}
 				catch(...){ // catch Exceptions thrown by numerical recipes routines
-					kennz = KENNZAHL_NRERROR;
+					ID = ID_NRERROR;
 				}
 				
 				while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) with spatial length SAMPLE_DIST, go through all pieces
@@ -229,10 +229,10 @@ struct TParticle{
 					percent(trajlength, 0, mc->MaxTrajLength(protneut), perc); // print percent of calculation
 
 				// x >= xstart + xend?
-				if (kennz == KENNZAHL_UNKNOWN && x >= xstart + xend)
-					kennz = KENNZAHL_DECAYED;
-				else if (kennz == KENNZAHL_UNKNOWN && (x >= StorageTime || trajlength >= mc->MaxTrajLength(protneut)))
-					kennz = KENNZAHL_NOT_FINISH;
+				if (ID == ID_UNKNOWN && x >= xstart + xend)
+					ID = ID_DECAYED;
+				else if (ID == ID_UNKNOWN && (x >= StorageTime || trajlength >= mc->MaxTrajLength(protneut)))
+					ID = ID_NOT_FINISH;
 			
 				h = stepper->hnext; // set suggested stepsize for next step
 			}
@@ -249,11 +249,11 @@ struct TParticle{
 			SetEndValues(x,y,B,E,V);
 			Print(ENDLOG);
 
-			if (kennz == KENNZAHL_DECAYED)
+			if (ID == ID_DECAYED)
 				Decay();
 
 			printf("Done!!\nBFFlipProb: %LG r: %LG z: %LG E: %LG Code: %i t: %LG tau: %LG l: %LG\n\n",
-				(1 - BFsurvprob), rend, yend[2], Eend, kennz, xstart + dt, dt, trajlength);
+				(1 - BFsurvprob), rend, yend[2], Eend, ID, xstart + dt, dt, trajlength);
 		};
 	
 	protected:
@@ -285,11 +285,16 @@ struct TParticle{
 		 */
 		void Init(int number, long double t, long double tend, long double r, long double phi, long double z,
 					long double Ekin, long double alpha, long double gamma, int pol, TField *afield){
-			kennz = KENNZAHL_UNKNOWN;
+			ID = ID_UNKNOWN;
 			trajlength = comptime = refltime = 0;
 			BFsurvprob = vladtotal = 1; vladmax = thumbmax = logBF = -9e99;
 			nrefl = NSF = nsteps = 0;
 			currentsolids.push_back(&defaultsolid);
+			geom = NULL;
+			mc = NULL;
+			field = NULL;
+			stepper = NULL;
+			REFLECTLOG = NULL;
 
 			particlenumber = number;
 			polarisation = pol;
@@ -385,7 +390,7 @@ struct TParticle{
 		bool ReflectOrAbsorb(long double &x1, VecDoub_IO &y1, long double &x2, VecDoub_IO &y2, int iteration = 1){
 			if (!geom->CheckSegment(&y1[0],&y2[0])){ // check if start point is inside bounding box of the simulation geometry
 				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x2,y2[0],y2[1],y2[2]);
-				kennz = KENNZAHL_HIT_BOUNDARIES;
+				ID = ID_HIT_BOUNDARIES;
 				return true;
 			}
 			list<TCollision> colls;
@@ -405,7 +410,7 @@ struct TParticle{
 						printf("Check geometry for touching surfaces!");
 						x2 = x1;
 						y2 = y1;
-						kennz = KENNZAHL_NRERROR;
+						ID = ID_NRERROR;
 						return true;
 					}
 					else if (distnormal > 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) == currentsolids.rend()){
@@ -416,7 +421,7 @@ struct TParticle{
 						y1[5] = -y1[5];
 						x2 = x1;
 						y2 = y1;
-//						kennz = KENNZAHL_NRERROR;
+//						ID = ID_NRERROR;
 						return true;
 					}
 					else if (distnormal < 0 && find(currentsolids.rbegin(), currentsolids.rend(), sld) != currentsolids.rend()){
@@ -424,7 +429,7 @@ struct TParticle{
 						printf("Particle entering '%s' which it did enter before! Stopping it!\n", geom->solids[coll.ID].name.c_str());
 						x2 = x1;
 						y2 = y1;
-						kennz = KENNZAHL_NRERROR;
+						ID = ID_NRERROR;
 						return true;
 					}
 					if (Reflect(x1, y1, x2, y2, coll.normal, coll.ID)) // check if particle should be reflected
@@ -491,10 +496,10 @@ struct TParticle{
 		 * @param x2 End time of line segment, may be altered
 		 * @param y2 End point of line segment, may be altered
 		 * @param normal Normal vector of hit surface
-		 * @param ID Index of solid in the TGeometry::solids vector
+		 * @param solid Index of solid in the TGeometry::solids vector
 		 * @return Returns true if particle was reflected
 		 */
-		virtual bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID) = 0;
+		virtual bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned solid) = 0;
 
 
 		/**
@@ -573,7 +578,7 @@ struct TParticle{
 			               Hstart, Estart,
 			               xstart + dt, yend[0], yend[1], yend[2],
 			               rend, phiend, vend, alphaend, gammaend, dt,
-			               Hend, Eend, kennz, NSF, comptime, 1 - BFsurvprob,
+			               Hend, Eend, ID, NSF, comptime, 1 - BFsurvprob,
 			               nrefl, vladmax, vladtotal, thumbmax, trajlength,
 			               Hmax, tauSF, dtau);
 			               
@@ -714,10 +719,10 @@ protected:
 	 * @param x2 End time of line segment, set to x1 if reflection happened
 	 * @param y2 End point of line segment, returns reflected velocity
 	 * @param normal Normal vector of hit surface
-	 * @param ID Index of solid in the TGeometry::solids vector
+	 * @param solid Index of solid in the TGeometry::solids vector
 	 * @return Returns true if particle was reflected
 	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID){
+	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned solid){
 		return false;
 	};
 
@@ -737,7 +742,7 @@ protected:
 		if (currentsolids.size() > 1){
 			x2 = x1;
 			y2 = y1;
-			kennz = currentsolids.back()->kennz;
+			ID = currentsolids.back()->ID;
 			return true;
 		}
 		return false;
@@ -841,10 +846,10 @@ protected:
 	 * @param x2 End time of line segment, set to x1 if reflection happened
 	 * @param y2 End point of line segment, returns reflected velocity
 	 * @param normal Normal vector of hit surface
-	 * @param ID Index of solid in the TGeometry::solids vector
+	 * @param solid Index of solid in the TGeometry::solids vector
 	 * @return Returns true if particle was reflected
 	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID){
+	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned solid){
 		return false;
 	};
 
@@ -864,7 +869,7 @@ protected:
 		if (currentsolids.size() > 1){
 			x2 = x1;
 			y2 = y1;
-			kennz = currentsolids.back()->kennz;
+			ID = currentsolids.back()->ID;
 			return true;
 		}
 /*		else{
@@ -977,7 +982,7 @@ public:
 				break;
 			}
 			else if (nroll >= MAX_DICE_ROLL){
-				kennz = KENNZAHL_INITIAL_NOT_FOUND;
+				ID = ID_INITIAL_NOT_FOUND;
 				printf(" ABORT: Failed %i times to find a compatible spot!! NO particle will be simulated!!\n\n", MAX_DICE_ROLL);
 				return;
 			}
@@ -1006,8 +1011,8 @@ protected:
 	 * @param ID Index of solid in the TGeometry::solids vector
 	 * @return Returns true if particle was reflected
 	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned ID){
-		material *mat = &geom->solids[ID].mat; // get material
+	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], unsigned solid){
+		material *mat = &geom->solids[solid].mat; // get material
 		//long double r = sqrt(y1[0]*y1[0] + y1[1]*y1[1]);
 		//printf("\nParticle hit %s (material %s) at t=%LG r=%LG z=%LG: ",geom->solids[ID].name.c_str(),mat->name.c_str(),x1,r,y1[2]);
 
@@ -1080,7 +1085,7 @@ protected:
 								"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
 								"%.10LG %.10LG %.10LG %.10LG "
 								"%.10LG %.10LG %.10LG\n",
-								jobnumber, particlenumber, protneut, pol, refl, geom->solids[ID].kennz,
+								jobnumber, particlenumber, protneut, pol, refl, geom->solids[solid].ID,
 								x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
 								normal[0],normal[1],normal[2],H,
 								winkeben,winksenkr,Trans);
@@ -1125,14 +1130,14 @@ protected:
 			x2 = x1 + s*(x2 - x1);
 			for (int i = 0; i < 6; i++)
 				y2[i] = stepper->dense_out(i, x1 + s*(x2 - x1), stepper->hdid);
-			kennz = sld->kennz;
+			ID = sld->ID;
 			result = true;
 		}*/
 		for (list<solid*>::iterator i = currentsolids.begin(); i != currentsolids.end(); i++){
 			if ((*i)->mat.FermiReal != 0 || (*i)->mat.FermiImag != 0){
 				x2 = x1;
 				y2 = y1;
-				kennz = (*i)->kennz;
+				ID = (*i)->ID;
 				result = true;
 			}
 		}

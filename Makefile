@@ -6,7 +6,7 @@ CC=g++
 CFLAGS=-O3 -Wall #`root-config --cflags` # -O3: optimize -g: debug switch -std=c99 -pedantic
 LDFLAGS=#-lc `root-config --libs` # -lm #/lib/mingw/libmingwex.a /lib/mingw/libmsvcrt.a
 RM=rm
-EXE=Track2011
+EXE=Track2013
 
 #%.o: %.c   		 # combined w/ next line will compile recently changed .c files
 #	$(CC) $(CFLAGS) -o $@ -c $<

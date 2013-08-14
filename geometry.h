@@ -34,7 +34,7 @@ struct material{
 struct solid{
 	string name;
 	material mat;
-	unsigned kennz;
+	unsigned ID;
 	vector<long double> ignoretimes;
 };
 
@@ -199,7 +199,7 @@ struct TGeometry{
 				if (c == '#') continue;	// skip comments
 				else if (!infile.good() || c == '[') break;	// next section found
 				solid model;
-				infile >> model.kennz;
+				infile >> model.ID;
 				infile >> STLfile;
 				infile >> matname;
 				for (unsigned i = 0; i < materials.size(); i++){
@@ -313,7 +313,7 @@ struct TSource{
 				}
 			}
 			else Hmin_lfs = Hmin_hfs = 0;
-			printf("min. total energy a lfs/hfs neutron must have: %LG / %LG neV\n\n", Hmin_lfs, Hmin_hfs);
+			printf("min. total energy a lfs/hfs neutron must have: %LG / %LG eV\n\n", Hmin_lfs, Hmin_hfs);
 		};
 	
 
@@ -466,7 +466,7 @@ struct TSource{
 						sourcearea += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 					}
 				}
-				printf("Source Area: %LG m²\n",sourcearea);
+				printf("Source Area: %LG m^2\n",sourcearea);
 			}	
 		};
 		

@@ -1,12 +1,12 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-#define KENNZAHL_UNKNOWN 0 ///< standard kennz flag for particles
-#define KENNZAHL_NOT_FINISH 1 ///< kennz flag for particles which reached ::StorageTime
-#define KENNZAHL_HIT_BOUNDARIES 2 ///< kennz flag for particles which left bounding box of TParticle::geom
-#define KENNZAHL_NRERROR 3 ///< kennz flag for particles which produces a serious numerical error (step size underflow, missed reflection, ...)
-#define KENNZAHL_DECAYED 4 ///< kennz flag for particles which reached TParticle::xend
-#define KENNZAHL_INITIAL_NOT_FOUND 5 ///< kennz flag for particles which had a too low total energy to find a initial spot in the source volume
+#define ID_UNKNOWN 0 ///< standard kennz flag for particles
+#define ID_NOT_FINISH 1 ///< kennz flag for particles which reached ::StorageTime
+#define ID_HIT_BOUNDARIES 2 ///< kennz flag for particles which left bounding box of TParticle::geom
+#define ID_NRERROR 3 ///< kennz flag for particles which produces a serious numerical error (step size underflow, missed reflection, ...)
+#define ID_DECAYED 4 ///< kennz flag for particles which reached TParticle::xend
+#define ID_INITIAL_NOT_FOUND 5 ///< kennz flag for particles which had a too low total energy to find a initial spot in the source volume
 
 #define NEUTRON 1 ///< TParticle::protneut of neutrons
 #define PROTON 2 ///< TParticle::protneut of protons

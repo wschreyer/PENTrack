@@ -262,10 +262,10 @@ struct TMCGenerator{
 		long double x,y;
 		for(;;){
 			x = UniformDist(-200,50);
-			y = UniformDist(0,750);
+			y = UniformDist(0,751);
 			// two gaussians
-			if ((x < -35 && y < 554*exp(-(x - 40.28)*(x - 40.28)/2/43.15/43.15))
-			|| (x >= -35 && y < 751*exp(-(x - 38.47)*(x - 38.47)/2/19.69/19.69)))
+			if ((x < -35 && y < 561*exp(-(x + 39.30)*(x + 39.30)/2/43.50/43.50))
+			|| (x >= -35 && y < 751*exp(-(x + 17.60)*(x + 17.60)/2/19.69/19.69)))
 				return x*1e-9;
 		}
 */
