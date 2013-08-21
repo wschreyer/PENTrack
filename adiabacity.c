@@ -4,7 +4,7 @@
 #include "adiabacity.h"
 #include "globals.h"
 
-// Wahrscheinlichkeit f�r keinen Spinflip nach Rabi (im Matora Paper)
+// Probability for spin flip according to Rabi (in Matora Paper)
 long double rabiplus(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,double dBzdz,double vr_n,double vz_n,double t)
 {
         long double t3,t5,t6,t9,t11,t12,t13,t14,t16,t17,t22,t23,t27,t33,t34,rabiplus;
@@ -31,7 +31,7 @@ long double rabiplus(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,
    return rabiplus;
       }
 
-// Wahrscheinlichkeit f�r einen Spinflip nach Rabi (im Matora Paper)
+// Probability for spin flip according to Rabi (im Matora Paper)
 long double rabimin(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,double dBzdz,double vr_n,double vz_n,double t)
 {
         long double t3,t6,t8,t11,t13,t14,t15,t16,t19,t20,t22,t23,t27,t31,t33,rabimin;
@@ -60,7 +60,7 @@ long double rabimin(double Br,double Bz,double dBrdr,double dBrdz,double dBzdr,d
 	return rabimin;
 }
 
-// Wahrscheinlichkeit f�r einen Spinflip nach Vladimirsky (Soviet Physics JETP, Volume 12, Number 4, April 1961)
+// Probability for spin flip according to Vladimirsky (Soviet Physics JETP, Volume 12, Number 4, April 1961)
 long double vladimirsky(long double Bx,long double By, long double Bz,long double dBxdx, long double dBxdy, long double dBxdz, long double dBydx, long double dBydy, long double dBydz, long double dBzdx, long double dBzdy, long double dBzdz, long double Bws, long double vx, long double vy, long double vz){
 	long double vabs, dBdt_par, dBdt_perp, dBdt_x, dBdt_y, dBdt_z, dBdt_square, W;
 
@@ -76,7 +76,7 @@ long double vladimirsky(long double Bx,long double By, long double Bz,long doubl
 	dBdt_perp = sqrtl(dBdt_square-dBdt_par*dBdt_par);
 
 	// spin flip probability according to Vladimirsky
-	W = exp(pi*mu_nSI*Bws*Bws/(hquer*dBdt_perp));
+	W = exp(pi*mu_nSI*Bws*Bws/(hbar*dBdt_perp));
 	
 	if (W>1){
 		printf("Scheisse!!!\n");
@@ -97,6 +97,6 @@ long double thumbrule(long double Bx, long double By, long double Bz,long double
 
 	// Adiabacity mit Daumenformel
 
-    if(Bws!=0) return (dBdt*hquer)/(-2*mu_nSI*Bws*Bws);
+    if(Bws!=0) return (dBdt*hbar)/(-2*mu_nSI*Bws*Bws);
     else return 1e31;
 }

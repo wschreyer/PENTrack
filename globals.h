@@ -2,11 +2,11 @@
 #define GLOBALS_H_
 
 #define ID_UNKNOWN 0 ///< standard kennz flag for particles
-#define ID_NOT_FINISH 1 ///< kennz flag for particles which reached ::StorageTime
-#define ID_HIT_BOUNDARIES 2 ///< kennz flag for particles which left bounding box of TParticle::geom
-#define ID_NRERROR 3 ///< kennz flag for particles which produces a serious numerical error (step size underflow, missed reflection, ...)
-#define ID_DECAYED 4 ///< kennz flag for particles which reached TParticle::xend
-#define ID_INITIAL_NOT_FOUND 5 ///< kennz flag for particles which had a too low total energy to find a initial spot in the source volume
+#define ID_NOT_FINISH -1 ///< kennz flag for particles which reached ::StorageTime
+#define ID_HIT_BOUNDARIES -2 ///< kennz flag for particles which left bounding box of TParticle::geom
+#define ID_NRERROR -3 ///< kennz flag for particles which produces a serious numerical error (step size underflow, missed reflection, ...)
+#define ID_DECAYED -4 ///< kennz flag for particles which reached TParticle::xend
+#define ID_INITIAL_NOT_FOUND -5 ///< kennz flag for particles which had a too low total energy to find a initial spot in the source volume
 
 #define NEUTRON 1 ///< TParticle::protneut of neutrons
 #define PROTON 2 ///< TParticle::protneut of protons
@@ -48,7 +48,7 @@ const long double m_n = 1.674927211E-27/ele_e; ///< neutron mass [eV/c^2]
 const long double m_p = 1.672621637E-27/ele_e; ///< proton mass [eV/c^2]
 const long double m_e = 9.10938215e-31/ele_e; ///< electron mass [eV/c^2]
 const long double c_0 = 299792458; ///< light speed [m/s]
-const long double hquer = 1.05457266e-34; ///< planck constant [Js]
+const long double hbar = 1.05457266e-34; ///< planck constant [Js]
 const long double mu_nSI = -0.96623641e-26;	///< Neutron magnetic moment [J/T]
 const long double gamma_n = -1.83247185e8; ///< 2*::mu_nSI/::hquer gyromagnetic ratio of neutron [1/Ts]
 
@@ -61,7 +61,7 @@ extern long double StorageTime; ///< max. simulation time
 extern int jobnumber; ///< job number, read from command line paramters, used for parallel calculations
 extern string inpath; ///< path to configuration files, read from command line paramters
 extern string outpath; ///< path where the log file should be saved to, read from command line parameters
-extern int ausgabewunsch; ///< user choice for ausgabewunsch
+extern int outputopt; ///< output options chosen by user
 
 
 #endif /*GLOBALS_H_*/

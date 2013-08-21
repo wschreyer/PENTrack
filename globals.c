@@ -8,8 +8,9 @@
 
 int jobnumber = 0;
 string inpath = ".", outpath = ".";
-int ausgabewunsch=5; // Ausgabewunsch
+int outputopt = 5; // Output options
 long double StorageTime = 1500.0; // max. simulation time
+
 
 // print percent of (x-x1)/len
 void percent(long double x, long double x1, long double len, int &perc){
