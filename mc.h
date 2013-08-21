@@ -314,13 +314,13 @@ struct TMCGenerator{
 		// neutron energy distribution for AbEx@ILL
 		long double p1 = -77.6138, p2 = -1.34704, p3 = 0.00739579, p4 = 0.00012494, p5 = -1.88103e-6 , p6 = 8.52798e-9;
 		do
-		{	cout << "above distribution... dicing on..." << endl;
+		{	cout << "above distribution... dicing on..." << '\n';
 			x = EnergieS*1e9 + mt_get_double(v_mt_state) * (EnergieE*1e9 - EnergieS*1e9);
 			WktTMP = mt_get_double(v_mt_state)*140;
-			cout << "AbEx energy dist: E = " << x << " Wkt = " << WktTMP << endl; 
+			cout << "AbEx energy dist: E = " << x << " Wkt = " << WktTMP << '\n';
 		}while(WktTMP > (-1*(p1 + 2*p2 * x+ 3*p3 * pow(x,2) + 4*p4 * pow(x,3) + 5*p5 * pow(x,4) + 6*p6 * pow(x,5))));
 	
-		cout << "below! Take this value E = " << x <<  endl;
+		cout << "below! Take this value E = " << x <<  '\n';
 		Energie = NeutEnergie = x*1e-9;
 		// END AbEx@ILL
 		*/
@@ -336,7 +336,7 @@ struct TMCGenerator{
 		long double Wahrschl, WktTMP, Energie;
 		// dice as long as point is above curve
 		do
-		{	//cout << "above distribution... dicing on..." << endl;
+		{	//cout << "above distribution... dicing on..." << '\n';
 			Energie = UniformDist(0, 751); // constant distribution between 0 and 751 eV // [eV]
 			WktTMP = UniformDist(0, 2);
 			
@@ -347,7 +347,7 @@ struct TMCGenerator{
 			long double g2 = powl(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma - 2 * Sigma) - 4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
 			long double littlea = -0.1017;
 			Wahrschl = g1 + littlea * g2;
-			//cout << "Proton energy dist: E = " << Energie << " decay rate: " << Wahrschl << " diced value = " << WktTMP << endl;
+			//cout << "Proton energy dist: E = " << Energie << " decay rate: " << Wahrschl << " diced value = " << WktTMP << '\n';
 	
 		}while(WktTMP > Wahrschl);
 		return Energie;
@@ -369,7 +369,7 @@ struct TMCGenerator{
 			WktTMP = UniformDist(0, 0.12);
 	
 			Elvert = sqrtl(Energie*1e-6 * Energie*1e-6 + 2*Energie*1e-6 * m_e * c_0 * c_0*1e-6) * pow(Qvalue*1e-6 - Energie*1e-6, 2) * (Energie*1e-6 + m_e * c_0 * c_0*1e-6);			
-	//		cout << "Electron energy dist: E = " << Energie << " decay rate: " << Elvert << " diced value = " << WktTMP << endl;
+	//		cout << "Electron energy dist: E = " << Energie << " decay rate: " << Elvert << " diced value = " << WktTMP << '\n';
 	 
 		}while(WktTMP > Elvert);
 		return Energie;
@@ -458,7 +458,7 @@ struct TMCGenerator{
 	 * @param v_p Returns proton velocity
 	 * @param v_e Returns electron velocity
 	 */
-	void MCZerfallsstartwerte(long double v_n[3], long double v_p[3], long double v_e[3])
+	void NeutronDecay(long double v_n[3], long double v_p[3], long double v_e[3])
 	{
 		long double m_nue = 1 / powl(c_0, 2); // [eV/c^2]
 
