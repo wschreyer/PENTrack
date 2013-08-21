@@ -145,14 +145,14 @@ long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[
 	
 			TBFderivs BFderivs(x1,y1,B1,x2,y2,B2); // create derivs-struct
 			int nsave = 0;
-			if (ausgabewunsch==OUTPUT_EVERYTHINGandSPIN || ausgabewunsch==OUTPUT_ENDPOINTSandSPIN)
+			if (outputopt == OUTPUT_EVERYTHINGandSPIN || outputopt == OUTPUT_ENDPOINTSandSPIN)
 				nsave = (int)((x2-x1)/BFdxsav); // save integrations steps in BFdxsav intervals
 			Output out(nsave); // create output object
 			// create integrator<stepper<derivobject> >, params: spin vector, start time, end time, atol, rtol, first step size, min step size, output object, derivobject
 			Odeint<StepperDopr853<TBFderivs> > ode(*I_n, x1, x2, 1e-13, 0, 1e-9, 0, out, BFderivs);
 			ode.integrate(); // integrate
 			intsteps += ode.nok + ode.nbad; // add up integration steps
-			if ((ausgabewunsch==OUTPUT_EVERYTHINGandSPIN)||(ausgabewunsch==OUTPUT_ENDPOINTSandSPIN))
+			if ((outputopt == OUTPUT_EVERYTHINGandSPIN)||(outputopt == OUTPUT_ENDPOINTSandSPIN))
 				PrintBFStep(out,BFderivs); // print integrations steps
 			
 			if (B2[3][0] > BFTargetB || !BruteForce2){

@@ -36,39 +36,8 @@ struct solid{
 	material mat;
 	unsigned ID;
 	vector<long double> ignoretimes;
+	bool operator< (const solid s) const { return ID < s.ID; }; /// used to sort solids by ID
 };
-
-
-extern solid defaultsolid; ///< Solid which is used when particle is not inside an actual solid.
-
-
-/**
- * Neutron transmission probability.
- *
- * Transmission probability of a neutron hitting a surface with Fermi Potential Mf + i*Pf (all in neV)
- *
- * @param Er Kinetic energy of neutron perpendicular to the surface [neV].
- * @param Mf Real part of Fermi potential [neV].
- * @param Pf Imaginary part of Fermi potential [neV].
- *
- * @return Returns transmission probability
- */
-long double Transmission(const long double Er, const long double Mf, const long double Pf);
-
-
-/**
- * Neutron absorption probability.
- *
- * Absorption probability of neutron flying distance l (in m) through Fermi potential Mf + i*Pf (all in neV)
- *
- * @param E Kinetic energy of neutron [neV]
- * @param Mf Real part of Fermi potential [neV]
- * @param Pf Imaginary part of Fermi potential [neV]
- * @param l Path length of neutron
- *
- * @return Returns absorption probability
- */
-long double Absorption(const long double E, const long double Mf, const long double Pf, const long double l);
 
 
 /**
@@ -80,6 +49,7 @@ struct TGeometry{
 	public:
 		KDTree *kdtree; ///< kd-tree structure containing triangle meshes from STL-files
 		vector<solid> solids; ///< solids list
+		solid defaultsolid;
 		
 		/**
 		 * Constructor, reads geometry configuration file, loads triangle meshes.
@@ -115,8 +85,8 @@ struct TGeometry{
 		/**
 		 * Check if point is inside geometry bounding box.
 		 *
-		 * @param x Time
-		 * @param y Position vector
+		 * @param y1 Position vector of segment start
+		 * @param y2 Position vector of segment end
 		 *
 		 * @return Returns true if point is inside the bounding box
 		 */
@@ -158,6 +128,28 @@ struct TGeometry{
 			return false;		
 		};
 			
+		/**
+		 * Get solids in which the point p lies
+		 *
+		 * @param p Point to test
+		 * @param currentsolids Set of solids in which the point is inside
+		 */
+		void GetSolids(const long double t, const long double p[3], set<solid> &currentsolids){
+			long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
+			list<TCollision> c;
+			currentsolids.clear();
+			currentsolids.insert(defaultsolid);
+			if (GetCollisions(t,p,0,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
+				for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+					solid sld = solids[i->ID];
+					if (currentsolids.count(sld) > 0) // if there is a collision with a solid already in the list, remove it from list
+						currentsolids.erase(sld);
+					else
+						currentsolids.insert(sld); // else add solid to list
+				}
+			}
+		}
+
 	private:	
 		/**
 		 * Read [MATERIALS] section in geometry configuration file.
@@ -205,7 +197,8 @@ struct TGeometry{
 				for (unsigned i = 0; i < materials.size(); i++){
 					if (matname == materials[i].name){
 						model.mat = materials[i];
-						kdtree->ReadFile(STLfile.c_str(),solids.size(),name);
+						if (model.ID > 1)
+							kdtree->ReadFile(STLfile.c_str(),solids.size(),name);
 						model.name = name;
 						break;
 					}
@@ -221,7 +214,7 @@ struct TGeometry{
 					if (infile.peek() == '-') infile.ignore();
 					infile >> ignoreend;
 					if (!infile.good()){
-						cout << "Invalid ignoretimes in geometry.in" << endl;
+						cout << "Invalid ignoretimes in geometry.in" << '\n';
 						exit(-1);
 					}
 					model.ignoretimes.push_back(ignorestart);
@@ -229,7 +222,10 @@ struct TGeometry{
 					while ((c = infile.peek()) == '\t' || c == ' ')
 						infile.ignore();
 				}
-				solids.push_back(model);
+				if (model.ID == 1)
+					defaultsolid = model;
+				else
+					solids.push_back(model);
 			}while(infile.good() && getline(infile,line).good());
 			kdtree->Init();
 		};
@@ -342,10 +338,10 @@ struct TSource{
 		 * @param z Returns starting z coordinate of particle
 		 * @param alpha Returns starting angle between position vector and velocity vector, projected onto xy-plane
 		 * @param gamma Returns starting angle between z axis and velocity vector
+		 * @param currentsolids Returns solids in which the particle is created
 		 */
 		void RandomPointInSourceVolume(TMCGenerator &mc, long double t, long double &Ekin, long double &x, long double &y, long double &z, long double &alpha, long double &gamma){
 			long double p1[3];
-			int count = 0;
 			for(;;){
 				if (sourcemode == "volume"){ // random point inside a STL-volume
 					p1[0] = mc.UniformDist(kdtree->lo[0],kdtree->hi[0]); // random point
@@ -398,7 +394,7 @@ struct TSource{
 					}
 					long double v[3] = {cos(winkeben)*sin(winksenkr), sin(winkeben)*sin(winksenkr), cos(winksenkr)};
 					RotateVector(v,n);
-					
+
 					alpha = atan2(v[1],v[0]) - atan2(p1[1],p1[0]);
 					gamma = acos(v[2]);
 				}
@@ -407,16 +403,7 @@ struct TSource{
 					exit(-1);
 				}
 				
-				long double p2[3] = {p1[0], p1[1], geometry->kdtree->lo[2] - REFLECT_TOLERANCE};
-				list<TCollision> c;
-				count = 0;
-				if (geometry->GetCollisions(t,p1,0,p2,c)){	// test if random point is inside solid
-					for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
-						if (i->normal[2] > 0) count++; // count surfaces whose normals point to random point
-						else count--; // count surfaces whose normals point away from random point
-					}
-				}
-				if (count == 0) break;
+				break;
 			}
 			x = p1[0];
 			y = p1[1];
@@ -514,25 +501,17 @@ struct TSource{
 		 * @param p Point to calculate energy at
 		 */
 		void CalcHmin(TField &field, long double p[3]){
-			long double p2[3] = {p[0], p[1], geometry->kdtree->lo[2] - REFLECT_TOLERANCE};
-			list<TCollision> c;
-			int count = 0;
-			if (geometry->GetCollisions(0,p,0,p2,c)){	// test if random point is inside solid
-				for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
-					if (i->normal[2] > 0) count++; // count surfaces whose normals point to random point
-					else count--; // count surfaces whose normals point away from random point
-				}
-			}
-			if (count == 0){
-				long double B[4][4];
-				field.BFeld(p[0],p[1],p[2],0,B);
-				long double Epot = m_n*gravconst*p[2];
-				long double Emag = -(mu_nSI/ele_e)*B[3][0];
-				long double Hlfs = Epot + Emag;
-				long double Hhfs = Epot - Emag;
-				Hmin_lfs = min(Hmin_lfs,Hlfs);
-				Hmin_hfs = min(Hmin_hfs,Hhfs);
-			}
+			set<solid> solids;
+			geometry->GetSolids(0, p, solids);
+
+			long double B[4][4];
+			field.BFeld(p[0],p[1],p[2],0,B);
+			long double Epot = m_n*gravconst*p[2] + solids.rbegin()->mat.FermiReal*1e-9;
+			long double Emag = -(mu_nSI/ele_e)*B[3][0];
+			long double Hlfs = Epot + Emag;
+			long double Hhfs = Epot - Emag;
+			Hmin_lfs = min(Hmin_lfs,Hlfs);
+			Hmin_hfs = min(Hmin_hfs,Hhfs);
 		}
 };
 

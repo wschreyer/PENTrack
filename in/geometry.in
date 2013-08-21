@@ -1,5 +1,6 @@
 [MATERIALS]
 #name	FermiReal	FermiImag	DiffuseReflectionProbability
+default	0			0			0
 Nocado	183.04		0.018985481	0.16
 PE		-8.56		0.001912531	0.16
 Ti		-50.76		0.024983971	0.16
@@ -9,16 +10,19 @@ DLC		256			0.00182		0.16
 UCNdet	0.1			1			0		# high efficiency assumed
 
 [GEOMETRY]
-#models the program will load, particle absorbed at the surface will be flagged with the kennzahl of the surface
-#kennzahlen 0-5 are reserved for special events
-#kennzahl	STLfile							material name		ignore times (pairs of times [s] in between the part will be ignored, e.g. 100-200)
-7			in/heliumtank+buffernew.STL		Nocado
-6			in/protdet.STL					CsI
-7			in/protdet_support.STL			PE
-7			in/lightguide.STL				PE
-7			in/detelektrode.STL				Cu
-9			in/absorber.STL					PE
-12			in/UCNdet.STL					UCNdet
+#solids the program will load, particle absorbed in the solid will be flagged with the ID of the solid
+#IDs have to be larger than 0 and unique, ID 1 will be assumed to be the default medium which is always present
+#the ID also defines the order in which overlapping solids are handled (highest ID will be considered first)
+#ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000
+#ID			STLfile							material_name	ignore_times
+1			ignored							default
+2			in/heliumtank+buffernew.STL		Nocado
+3			in/protdet.STL					CsI
+4			in/protdet_support.STL			PE
+5			in/lightguide.STL				PE
+6			in/detelektrode.STL				Cu
+7			in/absorber.STL					PE
+8			in/UCNdet.STL					UCNdet
 
 [SOURCE]
 ############ sourcemodes ###############
@@ -58,9 +62,9 @@ FiniteWireZCenter		10000	-1			2
 # Note the "Optionen..." button in the Save dialog, there you can change format (only binary supported), resolution, coordinate system etc.
 # If you want to export several parts of an Solidworks assembly you can do the following (if you know a nicer/easier way, please add it here)
 # - select the part(s) to be exported and rightclick
-# - select "Auswahl invertieren" and then use "Unterdrücken" on all other parts
-# - WARNING! You might not be able to undo the "Unterdrücken"-command but have to reload the assembly, so save any changes before that!
-# - now you can save that single part as STL (make sure the option "STL-Ausgabedaten nicht auf positiven Raum übertragen" is checked
+# - select "Auswahl invertieren" and then use "Unterdruecken" on all other parts
+# - WARNING! You might not be able to undo the "Unterdruecken"-command but have to reload the assembly, so save any changes before that!
+# - now you can save that single part as STL (make sure the option "STL-Ausgabedaten nicht auf positiven Raum uebertragen" is checked
 #		and to use the same coordinate system for every part or else the different parts will not fit together)
 # You can check the positioning of the parts with several tools: MeshLab, SolidView, Minimagics, Solidworks...
 # Solidworks makes sure that the surface normals always point outside a solid body. This is used to check if the source volume overlaps

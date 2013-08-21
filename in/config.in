@@ -1,15 +1,15 @@
 # config file for PENeLOPE Tracker program
 # put comments after #
 [global]
-# protneut: 1 => neutron, 2 => proton, 3 => Bfeld, 4 => cut through BField, 5 => enter particle interactively, 6 => electrons, 7 => print geometry
-protneut 1
+# particletype: 1 => neutron, 2 => proton, 3 => Bfeld, 4 => cut through BField, 5 => enter particle interactively, 6 => electrons, 7 => print geometry
+particletype 1
 # polarisation: 1 => low field seekers, 2 => high field seekers, 3 => no polarisation, 4 => dice (MC)
 polarisation 4
 # output neutron spatial distribution?
 neutdist 0
-# ausgabewunsch: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
+# outputopt: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
 # 4 => only endpoints, but BFspin track, 5 => nothing
-ausgabewunsch 2
+outputopt 2
 # make snapshots at certain times during the simulation
 snapshot 0
 # times from start of simulation to take snapshots

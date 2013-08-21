@@ -1,4 +1,4 @@
-SRC = main.c geometry.c 2dinterpolfeld.c racetrack.c globals.c bruteforce.c adiabacity.c ndist.c mersenne/mt.c nr/stepperdopr853.c kdtree.c libtricubic/*.cpp #BForbes.c
+SRC = main.c 2dinterpolfeld.c racetrack.c globals.c bruteforce.c adiabacity.c ndist.c mersenne/mt.c nr/stepperdopr853.c kdtree.c libtricubic/*.cpp #BForbes.c
 OBJ=$(SRC:.c=.o)
 
 
