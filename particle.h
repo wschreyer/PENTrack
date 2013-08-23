@@ -1192,13 +1192,15 @@ protected:
 		bool result = false;
 		if (currentsolid->mat.FermiImag > 0){
 			long double prob = mc->UniformDist(0,1);
-			long double k = 2*currentsolid->mat.FermiImag*1e-9*ele_e/hbar;
-			if (prob > exp(-k*(x2 - x1))){
-				x2 = x1 + mc->UniformDist(0,1)*(x2 - x1);
+			complex<long double> E(0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid->mat.FermiImag*1e-9); // E + i*W
+			complex<long double> k = sqrt(2*m_n*E)*ele_e/hbar; // wave vector
+			long double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
+			if (prob > exp(-imag(k)*l)){ // exponential probability decay
+				x2 = x1 + mc->UniformDist(0,1)*(x2 - x1); // if absorbed, chose a random time between x1 and x2
 				for (int i = 0; i < 6; i++)
-					y2[i] = stepper->dense_out(i, x2, stepper->hdid);
+					y2[i] = stepper->dense_out(i, x2, stepper->hdid); // set y2 to position at random time
 				ID = currentsolid->ID;
-				result = true;
+				result = true; // stop integration
 			}
 		}
 
