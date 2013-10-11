@@ -7,6 +7,7 @@
 #define MC_H_
 
 #include <cstdlib>
+#include <cmath>
 #include <sys/time.h>
 #include <string>
 
@@ -76,11 +77,11 @@ struct TMCGenerator{
 		mt_set (&v_mt_state, monthinmilliseconds);
 		
 		int i = 0, ncont;
-	    string cline;
-		string path;
+	    std::string cline;
+	    std::string path;
 	
 		// creating 'inistream' to all3inone.in
-		ifstream inistream(infile);
+	    std::ifstream inistream(infile);
 		if(!inistream.is_open())
 		{	
 			printf("Can't open %s\n", infile);
@@ -205,7 +206,7 @@ struct TMCGenerator{
 
 	/// energy distribution of UCNs (usually in [nini::EnergieS..nini::EnergieE])
 	long double NeutronSpectrum(){
-		return SqrtDist(nini.EnergieS*1e-9, nini.EnergieE*1e-9);
+//		return SqrtDist(nini.EnergieS*1e-9, nini.EnergieE*1e-9);
 
 /*
 		//neutron energy spectrum for PENeLOPE (storage only) 180cm above source and 10cm absorber
@@ -276,7 +277,7 @@ struct TMCGenerator{
 				return x*1e-9;
 		}
 */
-/*
+
 		//spectrum leaving horizontal guide
 		long double x,y;
 		for(;;){
@@ -285,7 +286,7 @@ struct TMCGenerator{
 			if (UniformDist(0,14000) < y)
 				return x*1e-9;
 		}
-*/
+
 /*
 		//lfs spectrum after ramping with 0.5B and absorber 34cm above storage bottom
 		long double x,y;
