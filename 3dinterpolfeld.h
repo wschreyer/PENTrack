@@ -6,13 +6,7 @@
 #ifndef DINTERPOLFELD3_H_
 #define DINTERPOLFELD3_H_
 
-#include <vector>
-
-#include "nr/nr3.h"
-#include "nr/interp_1d.h"
 #include "libtricubic/tricubic.h"
-
-using namespace std;
 
 /**
  * Class for tricubic field interpolation, create one for every table file you want to use.

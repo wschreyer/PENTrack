@@ -8,14 +8,12 @@
 
 #include <string>
 #include <fstream>
-#include <list>
 #include <vector>
+#include <set>
 
 #include "mc.h"
 #include "kdtree.h"
 #include "fields.h"
-
-using namespace std;
 
 #define MAX_DICE_ROLL 42000000 ///< number of tries to find start point
 #define REFLECT_TOLERANCE 1e-8  ///< max distance of reflection point to actual surface collision point
@@ -48,7 +46,7 @@ struct solid{
 struct TGeometry{
 	public:
 		KDTree *kdtree; ///< kd-tree structure containing triangle meshes from STL-files
-		vector<solid> solids; ///< solids list
+		std::vector<solid> solids; ///< solids list
 		solid defaultsolid;
 		
 		/**
@@ -57,14 +55,12 @@ struct TGeometry{
 		 * @param geometryin Path to geometry configuration file
 		 */
 		TGeometry(const char *geometryin){
-			ifstream infile(geometryin);
+			std::ifstream infile(geometryin);
 			string line;
-			vector<material> materials;	// dynamic array to store material properties
-			char c;
+			std::vector<material> materials;	// dynamic array to store material properties
 			printf("\n");
 			while (infile.good()){
 				infile >> ws; // ignore whitespaces
-				c = infile.peek();
 				if ((infile.peek() == '[') && getline(infile,line).good()){	// parse geometry.in for section header
 					if (line.compare(0,11,"[MATERIALS]") == 0){
 						LoadMaterialsSection(infile, materials);
@@ -108,15 +104,17 @@ struct TGeometry{
 		 *
 		 * @return Returns true if line segment collides with a surface
 		 */
-		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], list<TCollision> &colls){
+		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], std::set<TCollision> &colls){
 			if (kdtree->Collision(p1,p2,colls)){ // search in the kdtree for collisions
-				for (list<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
+				for (std::set<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
 					vector<long double> *times = &solids[(*it).ID].ignoretimes;
 					if (!times->empty()){
 						long double x = x1 + (*it).s*h;
 						for (unsigned int i = 0; i < times->size(); i += 2){
 							if (x >= (*times)[i] && x < (*times)[i+1]){
-								it = --colls.erase(it); // delete collision if it should be ignored according to geometry.in
+								std::set<TCollision>::iterator del = it;
+								it--;
+								colls.erase(del); // delete collision if it should be ignored according to geometry.in
 								break;
 							}
 						}
@@ -134,13 +132,13 @@ struct TGeometry{
 		 * @param p Point to test
 		 * @param currentsolids Set of solids in which the point is inside
 		 */
-		void GetSolids(const long double t, const long double p[3], set<solid> &currentsolids){
+		void GetSolids(const long double t, const long double p[3], std::set<solid> &currentsolids){
 			long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
-			list<TCollision> c;
+			std::set<TCollision> c;
 			currentsolids.clear();
 			currentsolids.insert(defaultsolid);
 			if (GetCollisions(t,p,0,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
-				for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+				for (std::set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 					solid sld = solids[i->ID];
 					if (currentsolids.count(sld) > 0) // if there is a collision with a solid already in the list, remove it from list
 						currentsolids.erase(sld);
@@ -157,7 +155,7 @@ struct TGeometry{
 		 * @param infile File stream to geometry configuration file
 		 * @param materials Vector of material structs, returns list of materials in the configuration file
 		 */
-		void LoadMaterialsSection(ifstream &infile, vector<material> &materials){
+		void LoadMaterialsSection(std::ifstream &infile, std::vector<material> &materials){
 			char c;
 			string line;
 			do{	// parse material list
@@ -177,7 +175,7 @@ struct TGeometry{
 		 * @param infile File stream to geometry configuration file
 		 * @param materials Vector of material structs given by LoadMaterialsSection
 		 */
-		void LoadGeometrySection(ifstream &infile, vector<material> &materials){
+		void LoadGeometrySection(std::ifstream &infile, std::vector<material> &materials){
 			char c;
 			string line;
 			string STLfile;
@@ -274,10 +272,8 @@ struct TSource{
 			E_normal = 0;
 			ifstream infile(geometryin);
 			string line;
-			char c;
 			while (infile.good()){
 				infile >> ws; // ignore whitespaces
-				c = infile.peek();
 				if ((infile.peek() == '[') && getline(infile,line).good()){	// parse geometry.in for section header
 					if (line.compare(0,8,"[SOURCE]") == 0){
 						LoadSourceSection(infile);
@@ -480,10 +476,10 @@ struct TSource{
 			else{ // shoot a ray to the bottom of the sourcevol bounding box and check for intersection with the sourcevol surface
 				long double p1[3] = {p[0], p[1], p[2]};
 				long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
-				list<TCollision> c;
+				std::set<TCollision> c;
 				if (kdtree->Collision(p1,p2,c)){
 					int count = 0;
-					for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+					for (std::set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 						if (i->normal[2] > 0) count++;  // surface normal pointing towards point?
 						else count--;					// or away from point?
 					}

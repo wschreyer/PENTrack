@@ -1,2 +1,3 @@
 PENTrack
-nr/
+nr/*.h
+out/*.out
