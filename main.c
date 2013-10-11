@@ -15,6 +15,14 @@
 #include <numeric>
 #include <sys/time.h>
 
+#include "nr/nr3.h"
+#include "nr/interp_1d.h"
+#include "nr/interp_linear.h"
+#include "nr/interp_2d.h"
+#include "nr/odeint.h"
+#include "nr/stepper.h"
+#include "nr/stepperdopr853.h"
+
 #include "particle.h"
 #include "globals.h"
 #include "fields.h"
@@ -22,8 +30,6 @@
 #include "mc.h" 
 #include "bruteforce.h"
 #include "ndist.h"
-
-using namespace std;
 
 void ConfigInit(); // read config.in
 void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog);
@@ -36,7 +42,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom); // do many random coll
 int MonteCarloAnzahl=1; ///< number of particles for MC simulation (read from config)
 int particletype; ///< type of particle which shall be simulated (read from config)
 int reflektlog = 0; ///< write reflections (1), transmissions (2) or both (3) to file? (read from config)
-vector<float> snapshots; ///< times when to take snapshots (read from config)
+std::vector<float> snapshots; ///< times when to take snapshots (read from config)
 int polarisation = POLARISATION_GOOD; ///< polarisation of neutrons (read from config)
 int decay = 2; ///< should neutrons decay? (no: 0; yes: 1; yes, with simulation of decay particles: 2) (read from config)
 long double decayoffset = 0; ///< start neutron decay timer after decayoffset seconds (read from config)
@@ -550,7 +556,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
     ofstream f(outfile);
     f << "x y z" << '\n'; // print file header
 
-    list<TCollision> c;
+    std::set<TCollision> c;
     srand(time(NULL));
     float timer = clock(), colltimer = 0;
     for (unsigned i = 0; i < count; i++){
@@ -570,7 +576,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 		gettimeofday(&collstart,NULL);
 		if (geom.kdtree->Collision(p1,p2,c)){ // check if segment intersected with surfaces
 			collcount++;
-			for (list<TCollision>::iterator i = c.begin(); i != c.end(); i++){ // print all intersection points into file
+			for (std::set<TCollision>::iterator i = c.begin(); i != c.end(); i++){ // print all intersection points into file
 				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << '\n';
 			}
 		}

@@ -13,9 +13,6 @@
 #include "mersenne/mt.h"
 #include "globals.h"
 
-using namespace std;
-
-
 /**
  * Class to generate random numbers in several distributions.
  */

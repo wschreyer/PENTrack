@@ -2,14 +2,9 @@
 #define FIELDS_H_
 
 
-#include <vector>
-#include <string>
-
 #include "2dinterpolfeld.h"
 #include "3dinterpolfeld.h"
 #include "racetrack.h"
-
-using namespace std;
 
 /**
  * Contains list of all fields (2D/3D-maps, racetracks).
@@ -39,10 +34,8 @@ struct TField{
 			OscillationFrequency = aOscillationFrequency;
 			ifstream infile(infilename);
 			string line;
-			char c;
 			while (infile.good()){ // read field table filenames
 				infile >> ws; // ignore whitespaces
-				c = infile.peek();
 				if ((infile.peek() == '[') && getline(infile,line).good()){	// parse infile for section header
 					if (line.compare(0,8,"[FIELDS]") == 0)
 						LoadFieldsSection(infile);

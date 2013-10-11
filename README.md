@@ -7,12 +7,18 @@ Compilation
 -----------
 
 To compile the code, you need to copy some files from Numerical Recipes (http://www.nr.com, only used v3.02 so far) into the /nr/ directory:
-* nr3.h (main header, for best compatibility define the "Doub" type as "long double" instead of "double")
+* nr3.h (main header, one minor modification needed, patch file is provided)
 * interp_1d.h (cubic spline interpolation)
+* interp_linear.h (linear interpolation)
+* interp_2d.h (bicubic interpolation, some modifications needed, patch file is provided)
 * odeint.h (ODE integration main header)
-* stepper.h (ODE stepper)
-* stepperdopr853.h (8th order Runge-Kutta method)
-* stepperdopr853.c (8th order Runge-Kutta method)
+* stepper.h (ODE integration step control
+* nr/stepperdopr853.h (8th order Runge Kutta method)
+
+Patch files can be applied by executing:  
+`patch originalheader.h patchfile.diff`
+
+Numerical Recipes forces us to put almost all code into header files, which makes it less easy to read but it also avoids duplicate work in code- and header-files.
 
 Writing your own simulation
 ---------------------------
@@ -20,7 +26,7 @@ Writing your own simulation
 You can modify the simulation on four different levels:
 
 1. Modify the /in/* configuration files and use the implemented particles, sources, spectra, etc. (more info in the corresponding *.in files)
-2. Modify the code in main.c and combine TParticle-, TGeometry-, TField-, TSource-classes etc. into your own simulation (you can generate a Doxygen documentation)
+2. Modify the code in main.c and combine TParticle-, TGeometry-, TField-, TSource-classes etc. into your own simulation (you can generate a Doxygen documentation by typing `doxygen doxygen.config`)
 3. Implement your own particles by inheriting from the TParticle class and fill the Reflect-, Absorb- and Decay-Routines with the corresponding physics
 4. Make low level changes to the existing classes
 

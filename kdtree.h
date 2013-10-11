@@ -19,12 +19,13 @@
  *
  */
 
+#ifndef KDTREE_H_
+#define KDTREE_H_
+
 #include <cmath>
 #include <vector>
 #include <set>
-#include <list>
 
-using namespace std;
 
 /**
  * Triangle class.
@@ -106,7 +107,15 @@ class KDTree{
              *
              * @param v Vertex to which shall be compared
              */
-        	inline bool operator < (const TVertex v) const { return !(*this == v); };
+        	inline bool operator < (const TVertex v) const {
+        		if (vertex[0] == v.vertex[0]){
+        			if (vertex[1] == v.vertex[1])
+        				return vertex[2] < v.vertex[2];
+        			else
+        				return vertex[1] < v.vertex[1];
+        		}
+        		else return vertex[0] < v.vertex[0];
+        	};
         };
 
         /**
@@ -122,7 +131,7 @@ class KDTree{
                 short splitdir; ///< Direction in which this node is split (0=x, 1=y, 2=z)
                 short depth; ///< Depth of the node in the tree
                 unsigned tricount; ///< Count of triangles stored in this node
-                vector<Triangle*> tris; ///< List of triangles stored in this node
+                std::vector<Triangle*> tris; ///< List of triangles stored in this node
 
                 /**
                  * Test if triangle intersects with this node.
@@ -142,7 +151,7 @@ class KDTree{
                  *
                  * @return Returns true if at least one intersection was found
                  */
-                bool TestCollision(const long double p1[3], const long double p2[3], list<TCollision> &colls);
+                bool TestCollision(const long double p1[3], const long double p2[3], std::set<TCollision> &colls);
             public:
                 /**
                  * Constructor.
@@ -179,7 +188,7 @@ class KDTree{
                  *
                  * @return Returns true if at least one collision was found
                  */
-                bool Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls);
+                bool Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, std::set<TCollision> &colls);
 
                 /**
                  * Check if point is inside this node
@@ -190,7 +199,7 @@ class KDTree{
                  */
                 template <typename coord> bool PointInBox(const coord p[3]) {
                 	return ((p[0] <= hi[0]) && (p[0] >= lo[0]) && (p[1] <= hi[1]) && (p[1] >= lo[1]) && (p[2] <= hi[2]) && (p[2] >= lo[2]));
-                };
+                }
 
                 /**
                  *  Test if line segment p1->p2 intersects this node.
@@ -204,14 +213,14 @@ class KDTree{
 
         };
 
-        set<TVertex> allvertices; ///< list of all triangle vertices
+        std::set<TVertex> allvertices; ///< list of all triangle vertices
         KDNode *root; ///< root node
         KDNode *lastnode; ///< remember last collision-tested node to speed up search when segments are adjacent
     public:
         KDTree(); ///< constructor
         ~KDTree(); ///< destructor
         float lo[3],hi[3]; ///< bounding box of root node
-        vector<Triangle> alltris; ///< list of all triangles in the tree
+        std::vector<Triangle> alltris; ///< list of all triangles in the tree
 
         /**
          * Read STL-file.
@@ -232,7 +241,7 @@ class KDTree{
          *
          * @return Returns true if at least one collision was found
          */
-        bool Collision(const long double p1[3], const long double p2[3], list<TCollision> &colls);
+        bool Collision(const long double p1[3], const long double p2[3], std::set<TCollision> &colls);
 
         /**
          * Test if point is inside root node.
@@ -241,3 +250,5 @@ class KDTree{
          */
         bool SegmentInBox(const long double p1[3], const long double p2[3]){ return (root && root->SegmentInBox(p1,p2)); };
 };
+
+#endif // KDTREE_H_

@@ -134,8 +134,8 @@ template <typename coord> bool KDTree::KDNode::SegmentInBox(const coord p1[3], c
 bool KDTree::KDNode::TriangleInBox(Triangle *tri){
     float trilo[3], trihi[3];
     for (short i = 0; i < 3; i++){
-        trilo[i] = min(min(tri->vertex[0][i], tri->vertex[1][i]), tri->vertex[2][i]);
-        trihi[i] = max(max(tri->vertex[0][i], tri->vertex[1][i]), tri->vertex[2][i]);
+        trilo[i] = std::min(std::min(tri->vertex[0][i], tri->vertex[1][i]), tri->vertex[2][i]);
+        trihi[i] = std::max(std::max(tri->vertex[0][i], tri->vertex[1][i]), tri->vertex[2][i]);
     }
     if ((trilo[0] <= hi[0]) && (trilo[1] <= hi[1]) && (trilo[2] <= hi[2]) && // do the bounding boxes intersect?
         (trihi[0] >= lo[0]) && (trihi[1] >= lo[1]) && (trihi[2] >= lo[2])){
@@ -228,8 +228,8 @@ void KDTree::KDNode::Split(){
 		newlo[splitdir] = lo[splitdir];
 		lochild = new KDNode(newlo,newhi,newdepth,this);
 
-		vector<Triangle*> lotris, hitris;
-		vector<Triangle*>::iterator i;
+		std::vector<Triangle*> lotris, hitris;
+		std::vector<Triangle*>::iterator i;
 		for (i = tris.begin(); i != tris.end(); i++){
 			bool inhi = hichild->TriangleInBox(*i); // check for each triangle in which leaf it is contained
 			bool inlo = lochild->TriangleInBox(*i);
@@ -268,11 +268,11 @@ void KDTree::KDNode::Split(){
 }
 
 // test all triangles in this node and his leaves for intersection with segment p1->p2
-bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2[3], list<TCollision> &colls){
+bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2[3], std::set<TCollision> &colls){
 	if (tricount == 0) return false;
 	bool result = false;
 	long double s_loc;
-	for (vector<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
+	for (std::vector<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
 		if ((*i)->intersect(p1,p2,s_loc)){
 			long double n = sqrt(DotProduct((*i)->normal,(*i)->normal));
 			TCollision c;
@@ -282,7 +282,7 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
 			c.normal[2] = (*i)->normal[2]/n;
 			c.ID = (*i)->ID;
 			c.tri = *i;
-			colls.push_back(c);
+			colls.insert(c);
 			result = true;
 		}
 	}
@@ -297,7 +297,7 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
 }
 
 // find smallest box which contains segment and call TestCollision there
-bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, list<TCollision> &colls){
+bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3], KDNode* &lastnode, std::set<TCollision> &colls){
 	colls.clear();
 	if (hichild && hichild->PointInBox(p1) && hichild->PointInBox(p2))    // if both segment points are contained in the first leave, test collision there
 		return hichild->Collision(p1,p2,lastnode,colls);
@@ -332,7 +332,7 @@ KDTree::~KDTree(){
 // read triangles from STL-file
 void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 	if (root) return; // stop if Init was called already
-    ifstream f(filename, fstream::binary);
+	std::ifstream f(filename, std::fstream::binary);
     if (f.is_open()){
         char header[80];
         unsigned int filefacecount, i;
@@ -347,7 +347,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 		fflush(stdout);
 
         for (i = 0; i < filefacecount && !f.eof(); i++){
-            f.seekg(3*4,fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
+            f.seekg(3*4,std::fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
             TVertex v;
             const float *vertices[3];
             for (short j = 0; j < 3; j++){
@@ -356,13 +356,13 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
                 f.read((char*)&v.vertex[2],4);
                 vertices[j] = allvertices.insert(v).first->vertex; // insert vertex into vertex list and save pointer to inserted vertex into triangle
             }
-            f.seekg(2,fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
+            f.seekg(2,std::fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
 
             Triangle tri(vertices);
             tri.ID = ID;
             for (short j = 0; j < 3; j++){
-                lo[j] = min(lo[j], min(min(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));  // save lowest and highest vertices to get the size for the root node
-                hi[j] = max(hi[j], max(max(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));
+                lo[j] = std::min(lo[j], std::min(std::min(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));  // save lowest and highest vertices to get the size for the root node
+                hi[j] = std::max(hi[j], std::max(std::max(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));
             }
             alltris.push_back(tri); // add triangle to list
         }
@@ -386,7 +386,7 @@ void KDTree::Init(){
 
 	printf("Building KD-tree ... ");
 	fflush(stdout);
-	for (vector<Triangle>::iterator it = alltris.begin(); it != alltris.end(); it++)
+	for (std::vector<Triangle>::iterator it = alltris.begin(); it != alltris.end(); it++)
 		root->AddTriangle(&(*it)); // add triangles to root node
 	root->Split();  // split root node
 	printf("Wrote %u triangles in %u nodes (%u empty)\n\n",facecount,nodecount,emptynodecount);   // print number of triangles contained in tree
@@ -394,12 +394,10 @@ void KDTree::Init(){
 }
 
 // test segment p1->p2 for collision with a triangle and return a list of all found collisions
-bool KDTree::Collision(const long double p1[3], const long double p2[3], list<TCollision> &colls){
+bool KDTree::Collision(const long double p1[3], const long double p2[3], std::set<TCollision> &colls){
     if (!root) return false; // stop if Init was not called yet
     if (!lastnode) lastnode = root; // start search in last tested node, when last node is not known start in root node
     if (lastnode->Collision(p1,p2,lastnode,colls)){
-    	colls.sort();
-    	colls.unique();
     	return true;
     }
     else return false;

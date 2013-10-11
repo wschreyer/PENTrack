@@ -1,0 +1,4 @@
+484c484
+< typedef double Doub; // default floating type
+---
+> typedef long double Doub; // default floating type

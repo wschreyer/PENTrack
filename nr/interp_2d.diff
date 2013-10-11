@@ -1,0 +1,13 @@
+67c67
+< 	const Doub d1, const Doub d2, MatDoub_O &c) {
+---
+> 	const Doub d1, const Doub d2, Doub c[4][4]) {
+104c104
+< void bcuint(VecDoub_I &y, VecDoub_I &y1, VecDoub_I &y2, VecDoub_I &y12,
+---
+> void bcuint(Doub c[4][4],
+109,110c109
+< 	MatDoub c(4,4);
+< 	bcucof(y,y1,y2,y12,d1,d2,c);
+---
+> 
