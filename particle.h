@@ -12,14 +12,8 @@
 #include <algorithm>
 #include <sys/time.h>
 
-using namespace std;
-
 #define MAX_SAMPLE_DIST 0.01 ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
 #define MIN_SAMPLE_DIST 0.005 ///< min spatial distance of track-entries
-
-#include "nr/nr3.h"
-#include "nr/stepper.h"
-#include "nr/stepperdopr853.h"
 
 #include "globals.h"
 #include "fields.h"
@@ -79,7 +73,7 @@ struct TParticle{
 		int nrefl; ///< number of reflection from wall
 		int NSF; ///< number of spin flips
 		int nsteps; ///< number of integration steps
-		vector<TParticle*> secondaries; ///< list of secondary particles
+		std::vector<TParticle*> secondaries; ///< list of secondary particles
 
 		/**
 		 * Generic constructor (empty), has to be implemented by each derived particle
@@ -89,7 +83,7 @@ struct TParticle{
 		/**
 		 * Destructor, deletes secondaries
 		 */
-		~TParticle(){
+		virtual ~TParticle(){
 			for (vector<TParticle*>::reverse_iterator i = secondaries.rbegin(); i != secondaries.rend(); i++)
 				delete *i;
 		};
@@ -397,7 +391,7 @@ struct TParticle{
 				ID = ID_HIT_BOUNDARIES;
 				return true;
 			}
-			list<TCollision> colls;
+			std::set<TCollision> colls;
 			if (geom->GetCollisions(x1, &y1[0], stepper->hdid, &y2[0], colls)){	// if there is a collision with a wall
 				TCollision coll = *colls.begin();
 				long double u[3] = {y2[0] - y1[0], y2[1] - y1[1], y2[2] - y1[2]};
@@ -460,7 +454,7 @@ struct TParticle{
 				else{
 					// else cut integration step right before and after first collision point
 					// and call ReflectOrAbsorb again for each smaller step (quite similar to bisection algorithm)
-					TCollision *c = &colls.front();
+					const TCollision *c = &*colls.begin();
 					long double xnew, xbisect1 = x1, xbisect2 = x1;
 					VecDoub ybisect1 = y1, ybisect2 = y1;
 

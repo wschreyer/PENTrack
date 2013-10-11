@@ -6,45 +6,6 @@
 #ifndef DINTERPOLFELD2_H_
 #define DINTERPOLFELD2_H_
 
-#include <vector>
-
-#include "globals.h"
-
-#include "nr/nr3.h"
-#include "nr/interp_1d.h"
-
-/**
- * Calculate interpolation coefficients for a grid cell.
- *
- * @param y Field value on the four grid cell vertices
- * @param y1 Derivative of the field with respect to r (x) on the four grid cell vertices
- * @param y2 Derivative of the field with respect to z on the four grid cell vertices
- * @param y12 Second derivative of the field with respect to r and z on the four grid cell vertices
- * @param d1 Width of grid cell in r-direction
- * @param d2 Width of grid cell in z-direction
- * @param c Returns 4x4 matrix of interpolation coefficients
- */
-void bcucof(VecDoub_I &y, VecDoub_I &y1, VecDoub_I &y2, VecDoub_I &y12,
-	const Doub d1, const Doub d2, Doub c[4][4]);
-
-/**
- * Interpolate value inside a grid cell from predetermined coefficients.
- *
- * @param c 4x4 matrix of interpolation coeffecients in the grid cell, given by bcucof
- * @param x1l Lower r-edge of cell
- * @param x1u Upper r-edge of cell
- * @param x2l Lower z-edge of cell
- * @param x2u Upper z-edge of cell
- * @param x1 R-coordinate to evuluate field at
- * @param x2 Z-coordinate to evaluate field at
- * @param ansy Field value at (r,z)
- * @param ansy1 Derivative of field with respect to r at (r,z)
- * @param ansy2 Derivative of field with respect to z at (r,z)
- */
-void bcuint_new(Doub c[4][4],
-	const Doub x1l, const Doub x1u, const Doub x2l, const Doub x2u,
-	const Doub x1, const Doub x2, Doub &ansy, Doub &ansy1, Doub &ansy2);
-
 /**
  * Translate VECTOR (not point) components from cylindrical to cartesian coordinates.
  *
@@ -54,9 +15,10 @@ void bcuint_new(Doub c[4][4],
  * @param v_x Returns x component of vector
  * @param v_y Returns y component of vector
  */
-void CylToCart(long double v_r, long double v_phi, long double phi, long double &v_x, long double &v_y);
-
-using namespace std;
+void CylToCart(long double v_r, long double v_phi, long double phi, long double &v_x, long double &v_y){
+	v_x = v_r*cos(phi) - v_phi*sin(phi);
+	v_y = v_r*sin(phi) + v_phi*cos(phi);
+}
 
 /**
  * Class for bicubic field interpolation, create one for every table file you want to use.
@@ -486,7 +448,7 @@ class TabField{
 		 * Get magnetic field at a specific point.
 		 *
 		 * Searches the right interpolation coefficients by determining the indices from ::r_mi, ::rdist, ::z_mi, ::zdist
-		 * and evaluates the interpolation polynom ::bcuint_new.
+		 * and evaluates the interpolation polynom ::bcuint.
 		 * These radial, axial und azimuthal components have to be rotated into cartesian coordinate system.
 		 *
 		 * @param t Time
@@ -508,8 +470,8 @@ class TabField{
 				long double zl = z_mi + indz*zdist;
 				long double Br = 0, dBrdr = 0, dBrdz = 0, Bphi = 0, dBphidr = 0, dBphidz = 0, dBzdr = 0;
 				long double phi = atan2(y,x);
-				if (Brc.nrows() > 0)   bcuint_new(Brc[indr][indz], 	 rl, rl+rdist, zl, zl+zdist, r, z, Br, dBrdr, dBrdz);
-				if (Bphic.nrows() > 0) bcuint_new(Bphic[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, Bphi, dBphidr, dBphidz);
+				if (Brc.nrows() > 0)   bcuint(Brc[indr][indz], 	 rl, rl+rdist, zl, zl+zdist, r, z, Br, dBrdr, dBrdz);
+				if (Bphic.nrows() > 0) bcuint(Bphic[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, Bphi, dBphidr, dBphidz);
 				CylToCart(Br,Bphi,phi,B[0][0],B[1][0]);
 				if (r > 0){
 					B[0][1] = dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r;
@@ -518,7 +480,7 @@ class TabField{
 					B[1][2] = dBrdr*sin(phi)*sin(phi) + dBphidr*cos(phi)*sin(phi) + (Br*cos(phi)*cos(phi) - Bphi*cos(phi)*sin(phi))/r;
 				}
 				CylToCart(dBrdz,dBphidz,phi,B[0][3],B[1][3]);
-				if (Bzc.nrows() > 0)   bcuint_new(Bzc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, B[2][0], dBzdr, B[2][3]);
+				if (Bzc.nrows() > 0)   bcuint(Bzc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, B[2][0], dBzdr, B[2][3]);
 				B[2][1] = dBzdr*cos(phi);
 				B[2][2] = dBzdr*sin(phi);
 				for (int i = 0; i < 4; i++)
@@ -534,7 +496,7 @@ class TabField{
 		 * Get electric field at a specific point.
 		 *
 		 * Searches the right interpolation coefficients by determining the indices from ::r_mi, ::rdist, ::z_mi, ::zdist
-		 * and evaluates the interpolation polynom ::bcuint_new.
+		 * and evaluates the interpolation polynom ::bcuint.
 		 * These radial, axial und azimuthal components have to be rotated into cartesian coordinate system.
 		 *
 		 * @param x X coordinate where the field shall be evaluated
@@ -556,7 +518,7 @@ class TabField{
 					int indz = (int)((z - z_mi)/zdist);
 					long double rl = r_mi + indr*rdist;
 					long double zl = z_mi + indz*zdist;
-					bcuint_new(Vc[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, V, dVdrj[0], dVdrj[2]);
+					bcuint(Vc[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, V, dVdrj[0], dVdrj[2]);
 					long double phi = atan2(y,x);
 					Ei[0] = -dVdrj[0]*cos(phi);
 					Ei[1] = -dVdrj[0]*sin(phi);
@@ -574,9 +536,9 @@ class TabField{
 					long double zl = z_mi + indz*zdist;
 					long double Er = 0, Ephi = 0;
 					long double phi = atan2(y,x);
-					if (Erc.nrows() > 0)   bcuint_new(Erc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, Er, dummy, dummy);
-					if (Ephic.nrows() > 0) bcuint_new(Ephic[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, Ephi, dummy, dummy);
-					if (Ezc.nrows() > 0)   bcuint_new(Ezc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, Ei[2], dummy, dummy);
+					if (Erc.nrows() > 0)   bcuint(Erc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, Er, dummy, dummy);
+					if (Ephic.nrows() > 0) bcuint(Ephic[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, Ephi, dummy, dummy);
+					if (Ezc.nrows() > 0)   bcuint(Ezc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, Ei[2], dummy, dummy);
 					CylToCart(Er,Ephi,phi,Ei[0],Ei[1]);
 					return true;
 				}
