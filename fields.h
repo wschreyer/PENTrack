@@ -1,19 +1,24 @@
+/**
+ * \file
+ * Manage all the fields.
+ */
+
 #ifndef FIELDS_H_
 #define FIELDS_H_
 
 
-#include "2dinterpolfeld.h"
-#include "3dinterpolfeld.h"
-#include "racetrack.h"
+#include "field_2d.h"
+#include "field_3d.h"
+#include "conductor.h"
 
 /**
- * Contains list of all fields (2D/3D-maps, racetracks).
+ * Contains list of all fields (2D/3D-maps, conductors).
  */
 struct TField{
 	public:
 		vector<TabField*> tables2; ///< list of 2D-maps
 		vector<TabField3*> tables3; ///< list of 3D-maps
-		vector<TRacetrack*> racetracks; ///< list of racetracks
+		vector<TConductorField*> conductorfields; ///< list of conductor-created fields
 		int FieldOscillation; ///< If =1 field oscillation is turned on
 		long double OscillationFraction; ///< Field oscillation amplitude
 		long double OscillationFrequency; ///< Field oscillation frequency
@@ -21,7 +26,7 @@ struct TField{
 		/**
 		 * Constructor.
 		 *
-		 * Reads [FIELDS] section of configuration file and loads all field maps/racetracks given there
+		 * Reads [FIELDS] section of configuration file and loads all field maps/conductors given there
 		 *
 		 * @param infilename File name of configuration file
 		 * @param aFieldOscillation Turn on field oscillations
@@ -53,7 +58,7 @@ struct TField{
 				delete (*i);
 			for (vector<TabField3*>::iterator i = tables3.begin(); i != tables3.end(); i++)
 				delete (*i);	
-			for (vector<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
+			for (vector<TConductorField*>::iterator i = conductorfields.begin(); i != conductorfields.end(); i++)
 				delete (*i);
 		};
 	
@@ -88,7 +93,7 @@ struct TField{
 					if ((*i)->BInterpol(t, x, y, z, B))
 						break;
 				}
-				for (vector<TRacetrack*>::iterator i = racetracks.begin(); i != racetracks.end(); i++)
+				for (vector<TConductorField*>::iterator i = conductorfields.begin(); i != conductorfields.end(); i++)
 					(*i)->BFeld(x,y,z,B);
 
 				if (BFeldSkal != 1)
@@ -147,7 +152,7 @@ struct TField{
 				string ft;
 				long double Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime;
 				long double Ibar, p1, p2, p3, p4, p5, p6;
-				TRacetrack *rt = NULL;
+				TConductorField *cf = NULL;
 				infile >> type;
 				if (type == "2Dtable"){
 					infile >> ft >> Bscale >> Escale >> NullFieldTime >> RampUpTime >> FullFieldTime >> RampDownTime;
@@ -163,38 +168,38 @@ struct TField{
 				}
 				else if (type == "InfiniteWireZ"){
 					infile >> Ibar >> p1 >> p2;
-					rt = new TInfiniteWireZ(p1, p2, Ibar);
+					cf = new TInfiniteWireZ(p1, p2, Ibar);
 				}
 				else if (type == "InfiniteWireZCenter"){
 					infile >> Ibar;
-					rt = new TInfiniteWireZCenter(Ibar);
+					cf = new TInfiniteWireZCenter(Ibar);
 				}
 				else if (type == "FiniteWire"){
 					infile >> Ibar >> p1 >> p2 >> p3 >> p4 >> p5 >> p6;
-					rt = new TFiniteWire(p1, p2, p3, p4, p5, p6, Ibar);
+					cf = new TFiniteWire(p1, p2, p3, p4, p5, p6, Ibar);
 				}
 				else if (type == "FiniteWireX"){
 					infile >> Ibar >> p1 >> p2 >> p3;
-					rt = new TFiniteWireX(p1, p2, p3, Ibar);
+					cf = new TFiniteWireX(p1, p2, p3, Ibar);
 				}
 				else if (type == "FiniteWireY"){
 					infile >> Ibar >> p1 >> p2 >> p3;
-					rt = new TFiniteWireY(p1, p2, p3, Ibar);
+					cf = new TFiniteWireY(p1, p2, p3, Ibar);
 				}
 				else if (type == "FiniteWireZ"){
 					infile >> Ibar >> p1 >> p2 >> p3 >> p4;
-					rt = new TFiniteWireZ(p1, p2, p3, p4, Ibar);
+					cf = new TFiniteWireZ(p1, p2, p3, p4, Ibar);
 				}
 				else if (type == "FiniteWireZCenter"){
 					infile >> Ibar >> p1 >> p2;
-					rt = new TFiniteWireZCenter(p1, p2, Ibar);
+					cf = new TFiniteWireZCenter(p1, p2, Ibar);
 				}
 				else if (type == "FullRacetrack"){
 					infile >> Ibar >> p1 >> p2 >> p3;
-					rt = new TFullRacetrack(p1, p2, p3, Ibar);
+					cf = new TFullRacetrack(p1, p2, p3, Ibar);
 				}
-				if (rt)
-					racetracks.push_back(rt);
+				if (cf)
+					conductorfields.push_back(cf);
 			}while(infile.good() && getline(infile,line).good());
 		};
 

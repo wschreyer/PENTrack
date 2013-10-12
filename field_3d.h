@@ -3,8 +3,8 @@
  * Tricubic interpolation of 3D field tables.
  */
 
-#ifndef DINTERPOLFELD3_H_
-#define DINTERPOLFELD3_H_
+#ifndef FIELD_3D_H_
+#define FIELD_3D_H_
 
 #include "libtricubic/tricubic.h"
 
@@ -674,4 +674,4 @@ class TabField3{
 };
 
 
-#endif // DINTERPOLFELD3_H_
+#endif // FIELD_3D_H_

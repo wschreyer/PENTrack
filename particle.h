@@ -73,7 +73,7 @@ struct TParticle{
 		int nrefl; ///< number of reflection from wall
 		int NSF; ///< number of spin flips
 		int nsteps; ///< number of integration steps
-		std::vector<TParticle*> secondaries; ///< list of secondary particles
+		vector<TParticle*> secondaries; ///< list of secondary particles
 
 		/**
 		 * Generic constructor (empty), has to be implemented by each derived particle
@@ -391,7 +391,7 @@ struct TParticle{
 				ID = ID_HIT_BOUNDARIES;
 				return true;
 			}
-			std::set<TCollision> colls;
+			set<TCollision> colls;
 			if (geom->GetCollisions(x1, &y1[0], stepper->hdid, &y2[0], colls)){	// if there is a collision with a wall
 				TCollision coll = *colls.begin();
 				long double u[3] = {y2[0] - y1[0], y2[1] - y1[1], y2[2] - y1[2]};

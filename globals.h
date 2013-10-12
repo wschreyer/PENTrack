@@ -49,8 +49,8 @@ const long double Econv = 1e2; ///< electric field conversion factor cgs -> SI [
 long double StorageTime = 1500.; ///< max. simulation time
 
 int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
-std::string inpath = "."; ///< path to configuration files, read from command line paramters
-std::string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
+string inpath = "."; ///< path to configuration files, read from command line paramters
+string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
 int outputopt = 5; ///< output options chosen by user
 
 // print percent of (x-x1)/len
