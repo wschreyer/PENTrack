@@ -5,10 +5,16 @@
  * Create particles to your liking...
  */
 
-#include <iostream>
+#include <cstdlib>
+#include <cstdio>
 #include <csignal>
-#include <map>
+#include <cmath>
+#include <ctime>
+#include <iostream>
 #include <string>
+#include <vector>
+#include <map>
+#include <set>
 #include <sstream>
 #include <fstream>
 #include <iomanip>
@@ -42,7 +48,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom); // do many random coll
 int MonteCarloAnzahl=1; ///< number of particles for MC simulation (read from config)
 int particletype; ///< type of particle which shall be simulated (read from config)
 int reflektlog = 0; ///< write reflections (1), transmissions (2) or both (3) to file? (read from config)
-std::vector<float> snapshots; ///< times when to take snapshots (read from config)
+vector<float> snapshots; ///< times when to take snapshots (read from config)
 int polarisation = POLARISATION_GOOD; ///< polarisation of neutrons (read from config)
 int decay = 2; ///< should neutrons decay? (no: 0; yes: 1; yes, with simulation of decay particles: 2) (read from config)
 long double decayoffset = 0; ///< start neutron decay timer after decayoffset seconds (read from config)
@@ -102,34 +108,34 @@ int main(int argc, char **argv){
 	
 	cout << "Loading fields..." << '\n';
 	// load field configuration from geometry.in
-	TField field((inpath + "/geometry.in").c_str());
+	TField field(string(inpath + "/geometry.in").c_str());
 
 	switch(particletype)
 	{
-		case BF_ONLY:	PrintBField((outpath+"/BF.out").c_str(), field); // estimate ramp heating
+		case BF_ONLY:	PrintBField(string(outpath+"/BF.out").c_str(), field); // estimate ramp heating
 						return 0;
-		case BF_CUT:	PrintBFieldCut((outpath+"/BFCut.out").c_str(), field); // print cut through B field
+		case BF_CUT:	PrintBFieldCut(string(outpath+"/BFCut.out").c_str(), field); // print cut through B field
 						return 0;
 	}
 
 
 	cout << "Loading geometry..." << '\n';
 	//load geometry configuration from geometry.in
-	TGeometry geom((inpath + "/geometry.in").c_str());
+	TGeometry geom(string(inpath + "/geometry.in").c_str());
 	
 	if (particletype == GEOMETRY){
 		// print random points on walls in file to visualize geometry
-		PrintGeometry((outpath+"/geometry.out").c_str(), geom);
+		PrintGeometry(string(outpath+"/geometry.out").c_str(), geom);
 		return 0;
 	}
 	
 	cout << "Loading source..." << '\n';
 	// load source configuration from geometry.in
-	TSource source((inpath + "/geometry.in").c_str(), geom, field);
+	TSource source(string(inpath + "/geometry.in").c_str(), geom, field);
 	
 	cout << "Loading random number generator..." << '\n';
 	// load random number generator from all3inone.in
-	TMCGenerator mc((inpath + "/all3inone.in").c_str(), polarisation, decay, decayoffset, tau_n);
+	TMCGenerator mc(string(inpath + "/all3inone.in").c_str(), polarisation, decay, decayoffset, tau_n);
 	
 	FILE *endlog = NULL, *tracklog = NULL, *snap = NULL, *reflectlog = NULL;
 	// open output files according to config
@@ -251,7 +257,7 @@ void ConfigInit(void){
 	/*end default values*/
 	
 	/* read lines in config.in into map */
-	ifstream infile((inpath+"/config.in").c_str());
+	ifstream infile(string(inpath+"/config.in").c_str());
 	map<string, map<string, string> > config;
 	char c;
 	string rest,section,key;
@@ -533,7 +539,7 @@ void PrintBField(const char *outfile, TField &field){
 	{
 		Volume = ((E * 1.0e-9 / (m_n * gravconst))) * pi * (rmax*rmax-rmin*rmin);
 		// isentropische zustandsnderung, kappa=5/3
-		printf("\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * powl((Volume/VolumeB[E]),(2.0/3.0)) - E);
+		printf("\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * pow((Volume/VolumeB[E]),(2.0L/3.0)) - E);
 	}
 }
 
@@ -556,7 +562,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
     ofstream f(outfile);
     f << "x y z" << '\n'; // print file header
 
-    std::set<TCollision> c;
+    set<TCollision> c;
     srand(time(NULL));
     float timer = clock(), colltimer = 0;
     for (unsigned i = 0; i < count; i++){
@@ -576,7 +582,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 		gettimeofday(&collstart,NULL);
 		if (geom.kdtree->Collision(p1,p2,c)){ // check if segment intersected with surfaces
 			collcount++;
-			for (std::set<TCollision>::iterator i = c.begin(); i != c.end(); i++){ // print all intersection points into file
+			for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){ // print all intersection points into file
 				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << '\n';
 			}
 		}

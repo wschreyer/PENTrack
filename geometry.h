@@ -46,7 +46,7 @@ struct solid{
 struct TGeometry{
 	public:
 		KDTree *kdtree; ///< kd-tree structure containing triangle meshes from STL-files
-		std::vector<solid> solids; ///< solids list
+		vector<solid> solids; ///< solids list
 		solid defaultsolid;
 		
 		/**
@@ -55,9 +55,9 @@ struct TGeometry{
 		 * @param geometryin Path to geometry configuration file
 		 */
 		TGeometry(const char *geometryin){
-			std::ifstream infile(geometryin);
+			ifstream infile(geometryin);
 			string line;
-			std::vector<material> materials;	// dynamic array to store material properties
+			vector<material> materials;	// dynamic array to store material properties
 			printf("\n");
 			while (infile.good()){
 				infile >> ws; // ignore whitespaces
@@ -104,15 +104,15 @@ struct TGeometry{
 		 *
 		 * @return Returns true if line segment collides with a surface
 		 */
-		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], std::set<TCollision> &colls){
+		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], set<TCollision> &colls){
 			if (kdtree->Collision(p1,p2,colls)){ // search in the kdtree for collisions
-				for (std::set<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
+				for (set<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
 					vector<long double> *times = &solids[(*it).ID].ignoretimes;
 					if (!times->empty()){
 						long double x = x1 + (*it).s*h;
 						for (unsigned int i = 0; i < times->size(); i += 2){
 							if (x >= (*times)[i] && x < (*times)[i+1]){
-								std::set<TCollision>::iterator del = it;
+								set<TCollision>::iterator del = it;
 								it--;
 								colls.erase(del); // delete collision if it should be ignored according to geometry.in
 								break;
@@ -132,13 +132,13 @@ struct TGeometry{
 		 * @param p Point to test
 		 * @param currentsolids Set of solids in which the point is inside
 		 */
-		void GetSolids(const long double t, const long double p[3], std::set<solid> &currentsolids){
+		void GetSolids(const long double t, const long double p[3], set<solid> &currentsolids){
 			long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
-			std::set<TCollision> c;
+			set<TCollision> c;
 			currentsolids.clear();
 			currentsolids.insert(defaultsolid);
 			if (GetCollisions(t,p,0,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
-				for (std::set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+				for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 					solid sld = solids[i->ID];
 					if (currentsolids.count(sld) > 0) // if there is a collision with a solid already in the list, remove it from list
 						currentsolids.erase(sld);
@@ -155,7 +155,7 @@ struct TGeometry{
 		 * @param infile File stream to geometry configuration file
 		 * @param materials Vector of material structs, returns list of materials in the configuration file
 		 */
-		void LoadMaterialsSection(std::ifstream &infile, std::vector<material> &materials){
+		void LoadMaterialsSection(ifstream &infile, vector<material> &materials){
 			char c;
 			string line;
 			do{	// parse material list
@@ -175,7 +175,7 @@ struct TGeometry{
 		 * @param infile File stream to geometry configuration file
 		 * @param materials Vector of material structs given by LoadMaterialsSection
 		 */
-		void LoadGeometrySection(std::ifstream &infile, std::vector<material> &materials){
+		void LoadGeometrySection(ifstream &infile, vector<material> &materials){
 			char c;
 			string line;
 			string STLfile;
@@ -476,10 +476,10 @@ struct TSource{
 			else{ // shoot a ray to the bottom of the sourcevol bounding box and check for intersection with the sourcevol surface
 				long double p1[3] = {p[0], p[1], p[2]};
 				long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
-				std::set<TCollision> c;
+				set<TCollision> c;
 				if (kdtree->Collision(p1,p2,c)){
 					int count = 0;
-					for (std::set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
+					for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
 						if (i->normal[2] > 0) count++;  // surface normal pointing towards point?
 						else count--;					// or away from point?
 					}

@@ -77,11 +77,11 @@ struct TMCGenerator{
 		mt_set (&v_mt_state, monthinmilliseconds);
 		
 		int i = 0, ncont;
-	    std::string cline;
-	    std::string path;
+	    string cline;
+	    string path;
 	
 		// creating 'inistream' to all3inone.in
-	    std::ifstream inistream(infile);
+	    ifstream inistream(infile);
 		if(!inistream.is_open())
 		{	
 			printf("Can't open %s\n", infile);
@@ -176,7 +176,7 @@ struct TMCGenerator{
 
 	/// return x^2 distributed random number in [min..max]
 	long double SquareDist(long double min, long double max){
-		return powl(mt_get_double(&v_mt_state) * (pow(max,3) - pow(min,3)) + pow(min,3),1.0/3.0);
+		return pow(mt_get_double(&v_mt_state) * (pow(max,3) - pow(min,3)) + pow(min,3),1.0L/3.0);
 	};
 	
 
@@ -188,7 +188,7 @@ struct TMCGenerator{
 
 	/// return sqrt(x) distributed random number in [min..max]
 	long double SqrtDist(long double min, long double max){
-		return powl((powl(max, 1.5) - powl(min, 1.5)) * mt_get_double(&v_mt_state) + powl(min, 1.5), 2.0/3.0);
+		return pow((pow(max, 1.5L) - pow(min, 1.5L)) * mt_get_double(&v_mt_state) + pow(min, 1.5L), 2.0L/3.0);
 	};
 	
 
@@ -322,6 +322,8 @@ struct TMCGenerator{
 		Energie = NeutEnergie = x*1e-9;
 		// END AbEx@ILL
 		*/
+
+		return 0;
 	};
 	
 
@@ -340,9 +342,9 @@ struct TMCGenerator{
 			
 			long double DeltaM = m_n - m_p;
 			long double Xi = m_e / DeltaM;
-			long double Sigma = 1 - 2*Energie * m_n / powl(DeltaM, 2) / powl(c_0, 2);
-			long double g1 = powl(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma) - 4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
-			long double g2 = powl(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma - 2 * Sigma) - 4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
+			long double Sigma = 1 - 2*Energie * m_n / pow(DeltaM, 2) / pow(c_0, 2);
+			long double g1 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma) - 4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
+			long double g2 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma - 2 * Sigma) - 4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
 			long double littlea = -0.1017;
 			Wahrschl = g1 + littlea * g2;
 			//cout << "Proton energy dist: E = " << Energie << " decay rate: " << Wahrschl << " diced value = " << WktTMP << '\n';
@@ -366,7 +368,7 @@ struct TMCGenerator{
 			Energie = UniformDist(0, 782e3); // constant distribution between 0 and 800 keV
 			WktTMP = UniformDist(0, 0.12);
 	
-			Elvert = sqrtl(Energie*1e-6 * Energie*1e-6 + 2*Energie*1e-6 * m_e * c_0 * c_0*1e-6) * pow(Qvalue*1e-6 - Energie*1e-6, 2) * (Energie*1e-6 + m_e * c_0 * c_0*1e-6);			
+			Elvert = sqrt(Energie*1e-6 * Energie*1e-6 + 2*Energie*1e-6 * m_e * c_0 * c_0*1e-6) * pow(Qvalue*1e-6 - Energie*1e-6, 2) * (Energie*1e-6 + m_e * c_0 * c_0*1e-6);
 	//		cout << "Electron energy dist: E = " << Energie << " decay rate: " << Elvert << " diced value = " << WktTMP << '\n';
 	 
 		}while(WktTMP > Elvert);
@@ -458,7 +460,7 @@ struct TMCGenerator{
 	 */
 	void NeutronDecay(long double v_n[3], long double v_p[3], long double v_e[3])
 	{
-		long double m_nue = 1 / powl(c_0, 2); // [eV/c^2]
+		long double m_nue = 1 / pow(c_0, 2); // [eV/c^2]
 
 	 	long double pabs, beta1, beta2, delta1, delta2; // 3-momentums (abs+directions)
 	 	long double p[4], e[4];
