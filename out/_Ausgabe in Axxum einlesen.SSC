@@ -1,3 +1,0 @@
-# import.data(FileName="Y:/ucn/Penelope/rpicker/pbsoutfiles/FillingLFS/end.log", DataFrame="end", FileType= "ASCII");
- import.data(FileName="Y:/ucn/Penelope/rpicker/checked/SpinTrack/out/0track1.out", DataFrame="track", FileType= "ASCII");
- import.data(FileName="Y:/ucn/Penelope/rpicker/checked/SpinTrack/out/0BF1.out", DataFrame="BF", FileType= "ASCII");

@@ -4,7 +4,7 @@
 FILE *BFLOG = NULL;
 //parameters for different experiment phases
 int flipspin = 0;
-std::vector<long double> BFtimes;
+vector<long double> BFtimes;
 
 const long double BFdxsav=5e-7;  // timestep for intermediate output
 long double BFBminmem=10.0;
@@ -91,11 +91,11 @@ void PrintBFStep(Output &out, TBFderivs &BFderivs){
 
 		long double B[3];
 		BFderivs.Binterp(out.xsave[i],B);
-		long double BFBws =  sqrtl(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
+		long double BFBws =  sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
 		long double BFpol = (out.ysave[0][i]*B[0] + out.ysave[1][i]*B[1] + out.ysave[2][i]*B[2])/BFBws;
 		long double BFlogpol = 0;
 		if (BFpol<0.5)
-			BFlogpol = log10l(0.5-BFpol);
+			BFlogpol = log10(0.5-BFpol);
 		else if (BFpol==0.5)
 			BFlogpol = 0.0;
 		fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",

@@ -122,7 +122,7 @@ long double vladimirsky(long double Bx,long double By, long double Bz,long doubl
 	// component of dBdt parallel to B
 	dBdt_par = (1.0/vabs) * (dBdt_x*vx + dBdt_y*vy + dBdt_z*vz);
 	// component of dBdt perpendicular to B
-	dBdt_perp = sqrtl(dBdt_square-dBdt_par*dBdt_par);
+	dBdt_perp = sqrt(dBdt_square-dBdt_par*dBdt_par);
 
 	// spin flip probability according to Vladimirsky
 	W = exp(pi*mu_nSI*Bws*Bws/(hbar*dBdt_perp));

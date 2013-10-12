@@ -3,8 +3,9 @@
  * Bicubic interpolation of axisymmetric field tables.
  */
 
-#ifndef DINTERPOLFELD2_H_
-#define DINTERPOLFELD2_H_
+#ifndef FIELD_2D_H_
+#define FIELD_2D_H_
+
 
 /**
  * Translate VECTOR (not point) components from cylindrical to cartesian coordinates.
@@ -548,4 +549,4 @@ class TabField{
 };
 
 
-#endif // DINTERPOLFELD2_H_
+#endif // FIELD_2D_H_

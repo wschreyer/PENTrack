@@ -1,4 +1,4 @@
-SRC = main.c mersenne/mt.c kdtree.c libtricubic/*.cpp #BForbes.c
+SRC = main.c mersenne/mt.c kdtree.c libtricubic/*.cpp
 OBJ=$(SRC:.c=.o)
 
 
