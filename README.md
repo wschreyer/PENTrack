@@ -35,7 +35,7 @@ You can modify the simulation on four different levels:
 Defining your experiment
 ------------------------
 
-* Geometry can be imported using [binary STL files] (http://en.wikipedia.org/wiki/STL_(file_format)) which describe surfaces as triangle meshes (Check your coordinate system! "Up" with respect to gravity is the z direction).
+* Geometry can be imported using [binary STL files] (http://en.wikipedia.org/wiki/STL_%28file_format%29) which describe surfaces as triangle meshes (Check your coordinate system! "Up" with respect to gravity is the z direction).
 * Magnetic and electric fields (axisymmetric 2D and 3D) can be included from text-based field maps (right now, only "Vectorfields OPERA" maps in cgs units are supported). You can also define analytic fields from straight, finite conductors.
 * Particle sources can be defined using STL files or manual parameter ranges, however source spectra and velocity distributions are hardcoded into the TMCGenerator class at the moment
 
