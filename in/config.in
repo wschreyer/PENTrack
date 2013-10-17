@@ -22,9 +22,9 @@ MonteCarloAnzahl 1000
 storagetime 1000
 
 # do bruteforce integration between these times
-BruteForce 0 0
+BruteForce 500 700
 # flux density below which the spin will also be tracked, when BF is turned on
-BFTargetB 0.2
+BFTargetB 0.1
 
 # decay: 0 => NO neutron decay, neutrons stop after xend 1 => neutrons will decay (and xend will not be regarded),
 #								2 => neutrons will decay (and xend will not be regarded) and a proton and electron will be simulated
