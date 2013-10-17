@@ -106,19 +106,23 @@ struct TGeometry{
 		 */
 		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], set<TCollision> &colls){
 			if (kdtree->Collision(p1,p2,colls)){ // search in the kdtree for collisions
-				for (set<TCollision>::iterator it = colls.begin(); it != colls.end(); it++){ // go through all collisions
+				set<TCollision>::iterator it = colls.begin();
+				while (it != colls.end()){ // go through all collisions
 					vector<long double> *times = &solids[(*it).ID].ignoretimes;
 					if (!times->empty()){
 						long double x = x1 + (*it).s*h;
 						for (unsigned int i = 0; i < times->size(); i += 2){
 							if (x >= (*times)[i] && x < (*times)[i+1]){
 								set<TCollision>::iterator del = it;
-								it--;
+								it++;
 								colls.erase(del); // delete collision if it should be ignored according to geometry.in
 								break;
 							}
+							else if (i == times->size() - 2)
+								it++;
 						}
 					}
+					else it++;
 				}
 				if (!colls.empty())
 					return true; // return true if there is a collision
