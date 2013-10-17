@@ -3,7 +3,7 @@ OBJ=$(SRC:.c=.o)
 
 
 CC=g++
-CFLAGS=-O3 #-Wall #-pedantic #-g # -O3: optimize -g: debug switch
+CFLAGS=-O2 #-Wall #-pedantic #-g # -O3: optimize -g: debug switch
 LDFLAGS=
 RM=rm
 EXE=PENTrack
