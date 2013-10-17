@@ -11,7 +11,7 @@ To compile the code, you need to copy some files from Numerical Recipes (http://
 * interp_1d.h (cubic spline interpolation)
 * interp_linear.h (linear interpolation)
 * interp_2d.h (bicubic interpolation, some modifications needed, patch file is provided)
-* odeint.h (ODE integration main header)
+* odeint.h (ODE integration main header, one minor midification needed, patch file is provided)
 * stepper.h (ODE integration step control
 * nr/stepperdopr853.h (8th order Runge Kutta method)
 
