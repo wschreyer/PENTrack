@@ -512,11 +512,11 @@ class TabField{
 			long double dummy, dVdrj[3];
 			if (Vc.nrows() > 0){ // prefer E-field from potential over pure E-field interpolation
 				long double r = sqrt(x*x+y*y);
-				if ((r - r_mi)/rdist > 0 && (r - r_mi - m*rdist)/rdist < 0
-				 && (z - z_mi)/zdist > 0 && (z - z_mi - n*zdist)/zdist < 0){
+				int indr = (int)((r - r_mi)/rdist);
+				int indz = (int)((z - z_mi)/zdist);
+				if (indr > 0 && indr < m - 1
+				 && indz > 0 && indz < n - 1){
 					// bicubic interpolation
-					int indr = (int)((r - r_mi)/rdist);
-					int indz = (int)((z - z_mi)/zdist);
 					long double rl = r_mi + indr*rdist;
 					long double zl = z_mi + indz*zdist;
 					bcuint(Vc[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, V, dVdrj[0], dVdrj[2]);
