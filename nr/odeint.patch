@@ -1,0 +1,4 @@
+69c69
+< 	static const Int MAXSTP=50000;
+---
+> 	static const Int MAXSTP=9e99;
