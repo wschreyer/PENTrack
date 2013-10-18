@@ -10,6 +10,7 @@
 #include <cmath>
 #include <sys/time.h>
 #include <string>
+#include <map>
 
 #include "mersenne/mt.h"
 #include "globals.h"
@@ -18,28 +19,9 @@
  * Class to generate random numbers in several distributions.
  */
 struct TMCGenerator{
-	/// struct to store limits for initial conditions read from all3inone.in
-	struct initial{
-		long double EnergieS; ///< minimum of energy spectrum
-		long double EnergieE; ///< maximum of energy spectrum
-		long double alphas; ///< minimum of starting angle between position vector and velocity vector projected onto xy-plane
-		long double alphae; ///< maximum of starting angle between position vector and velocity vector projected onto xy-plane
-		long double gammas; ///< minimum of starting angle between z axis and velocity vector
-		long double gammae; ///< maximum of starting angle between z axis and velocity vector
-		long double trajend; ///< max trajectory length
-		long double xend; ///< max. lifetime
-	};
-	initial nini; ///< Initial condition limits for neutrons
-	initial pini; ///< Initial condition limits for protons
-	initial eini; ///< Initial condition limits for electrons
-	unsigned long int monthinmilliseconds; ///< Random seed, derived from program start time
-	int decay; ///< decay on (1/2) or off (0)
-	int polarisation; ///< Polarisation parallel (1), antiparallel (2) or random (4)
-	long double tau_n; ///< neutron lifetime
-	long double decayoffset; ///< start decay timer after this time
-
 	mt_state_t v_mt_state; ///< mersenne twister random number generator
 	
+	map<string, map<string, string> > invars; ///< contains variables from *.in file
 
 	/**
 	 * Constructor.
@@ -47,16 +29,8 @@ struct TMCGenerator{
 	 * Create random seed and read all3inone.in.
 	 *
 	 * @param infile Path to configuration file
-	 * @param apolarisation Polarisation parallel (1), antiparallel (2) or random (4)
-	 * @param adecay decay on (1/2) or off (0)
-	 * @param adecayoffset Start decay timer after this time
-	 * @param NeutLifetime Neutron lifetime
 	 */
-	TMCGenerator(const char *infile, int apolarisation, int adecay, long double adecayoffset, long double NeutLifetime){
-		decay = adecay;
-		polarisation = apolarisation;
-		decayoffset = adecayoffset;
-		tau_n = NeutLifetime;
+	TMCGenerator(const char *infile){
 		time_t mytime;
 		tm *monthday;
 		timeval daysec;
@@ -65,94 +39,18 @@ struct TMCGenerator{
 		mytime = time(NULL);
 		
 		monthday = localtime(&mytime);
-		monthinmilliseconds = (unsigned long int)(monthday->tm_mday)*24*60*60*1000; // add day in ms
-		monthinmilliseconds = monthinmilliseconds + (unsigned long int)(monthday->tm_hour)*60*60*1000; // add hour in ms
-		monthinmilliseconds = monthinmilliseconds + (unsigned long int)(monthday->tm_min)*60*1000; // add minute in ms 
-		monthinmilliseconds = monthinmilliseconds + (unsigned long int)(monthday->tm_sec)*1000;  // add second in ms	
+		unsigned long int seed = (unsigned long int)(monthday->tm_mday)*24*60*60*1000; // add day in ms
+		seed = seed + (unsigned long int)(monthday->tm_hour)*60*60*1000; // add hour in ms
+		seed = seed + (unsigned long int)(monthday->tm_min)*60*1000; // add minute in ms
+		seed = seed + (unsigned long int)(monthday->tm_sec)*1000;  // add second in ms
 		gettimeofday(&daysec, NULL);
-		monthinmilliseconds = monthinmilliseconds + daysec.tv_usec/1000; // add milliseconds
+		seed = seed + daysec.tv_usec/1000; // add milliseconds
 
-		printf("Random Seed: %lu\n\n", monthinmilliseconds);
+		printf("Random Seed: %lu\n\n", seed);
 	
-		mt_set (&v_mt_state, monthinmilliseconds);
-		
-		int i = 0, ncont;
-	    string cline;
-	    string path;
-	
-		// creating 'inistream' to all3inone.in
-	    ifstream inistream(infile);
-		if(!inistream.is_open())
-		{	
-			printf("Can't open %s\n", infile);
-			exit(-1);
-		}
-		
-		// looping  over the lines of all3inone.in and reading them in
-		for(i = 1; i < 31; i++)
-		{
-			getline(inistream, cline);
-			ncont = 42;
-			switch (i)
-			{
-				case  2:	ncont = sscanf(cline.c_str(), "%LG %LG ", &nini.EnergieS, &nini.EnergieE);
-							break;
-				case  3:	ncont = sscanf(cline.c_str(), "%LG %LG ", &nini.alphas, &nini.alphae);
-							nini.alphas *= conv;
-							nini.alphae *= conv;
-							break;
-				case  4:	ncont = sscanf(cline.c_str(), "%LG %LG ", &nini.gammas, &nini.gammae);
-							nini.gammas *= conv;
-							nini.gammae *= conv;
-							break;
-				case 5:		ncont = sscanf(cline.c_str(), "%LG %LG ", &nini.trajend, &nini.xend);
-							break;
-				case 7:		ncont = sscanf(cline.c_str(), "%LG %LG ", &pini.EnergieS, &pini.EnergieE);
-							break;
-				case 8:		ncont = sscanf(cline.c_str(), "%LG %LG ", &pini.alphas, &pini.alphae);
-							pini.alphas *= conv;
-							pini.alphae *= conv;
-							break;
-				case 9:		ncont = sscanf(cline.c_str(), "%LG %LG ", &pini.gammas, &pini.gammae);
-							pini.gammas *= conv;
-							pini.gammae *= conv;
-							break;
-				case 10:	ncont = sscanf(cline.c_str(), "%LG %LG ", &pini.trajend, &pini.xend);
-							break;
-				case 12:	ncont = sscanf(cline.c_str(), "%LG %LG ", &eini.EnergieS, &eini.EnergieE);
-							break;
-				case 13:	ncont = sscanf(cline.c_str(), "%LG %LG ", &eini.alphas, &eini.alphae);
-							eini.alphas *= conv;
-							eini.alphae *= conv;
-							break;
-				case 14:	ncont = sscanf(cline.c_str(), "%LG %LG ", &eini.gammas, &eini.gammae);
-							eini.gammas *= conv;
-							eini.gammae *= conv;
-							break;
-				case 15:	ncont = sscanf(cline.c_str(), "%LG %LG ", &eini.trajend, &eini.xend);
-							break;
-			}
-			if(ncont < 1) printf("an error occured while reading the %i. item in line %i of all3inone.in", ncont, i);
-	    }
-	    
-		// starting value (S) > final value (E)?? EXIT!!
-		for(int i = 1; i < 4; i++)
-		{	struct initial particleini;
-			switch(i)
-			{	case 1:	particleini = nini;
-						break;	
-				case 2:	particleini = pini;
-						break;
-				case 3:	particleini = eini;
-						break;
-			}
-			if((particleini.EnergieS > particleini.EnergieE) || (particleini.alphas > particleini.alphae) || (particleini.gammas > particleini.gammae))
-			{	printf("\n\n\nERROR: Two or more initial values are inconsistent.\n"
-				             "       Check ALL starting and final values in all3inone.in!\n\n"
-				             "EXIT!!\n");
-				exit(-1);
-			}
-		}
+		mt_set (&v_mt_state, seed);
+
+		ReadInFile(infile, invars);
 	};
 
 
@@ -204,9 +102,9 @@ struct TMCGenerator{
 	};
 	
 
-	/// energy distribution of UCNs (usually in [nini::EnergieS..nini::EnergieE])
+	/// energy distribution of UCNs
 	long double NeutronSpectrum(){
-//		return SqrtDist(nini.EnergieS*1e-9, nini.EnergieE*1e-9);
+//		return SqrtDist(0, 300e-9);
 
 /*
 		//neutron energy spectrum for PENeLOPE (storage only) 180cm above source and 10cm absorber
@@ -313,7 +211,7 @@ struct TMCGenerator{
 		long double p1 = -77.6138, p2 = -1.34704, p3 = 0.00739579, p4 = 0.00012494, p5 = -1.88103e-6 , p6 = 8.52798e-9;
 		do
 		{	cout << "above distribution... dicing on..." << '\n';
-			x = EnergieS*1e9 + mt_get_double(v_mt_state) * (EnergieE*1e9 - EnergieS*1e9);
+			x = mt_get_double(v_mt_state) * 300e-9;
 			WktTMP = mt_get_double(v_mt_state)*140;
 			cout << "AbEx energy dist: E = " << x << " Wkt = " << WktTMP << '\n';
 		}while(WktTMP > (-1*(p1 + 2*p2 * x+ 3*p3 * pow(x,2) + 4*p4 * pow(x,3) + 5*p5 * pow(x,4) + 6*p6 * pow(x,5))));
@@ -376,56 +274,57 @@ struct TMCGenerator{
 	};
 	
 
+	/// select right variables from infile for each particle type
+	string SelectVarsSection(int particletype){
+		switch (particletype){
+			case NEUTRON:
+				return "neutron";
+			case PROTON:
+				return "proton";
+			case ELECTRON:
+				return "electron";
+		}
+	};
+
 	/**
 	 * Lifetime of different particles
 	 *
 	 * For neutrons it either returns nini::xend (from all3inone.in, if #decay=0) or a random exponential decay lifetime (if #decay =1 or =2 in config.in) with decay time #tau_n plus #decayoffset.
 	 * For electrons and protons it always returns eini::xend and pini::xend.
 	 */
-	long double LifeTime(int protneut){
-		switch (protneut){
-			case NEUTRON:
-				if (decay != 0)
-					return decayoffset - tau_n * log(mt_get_double(&v_mt_state));
-				else
-					return nini.xend;
-			case PROTON:
-				return pini.xend;
-			case ELECTRON:
-				return eini.xend;
-		}
-		return 0;
+	long double LifeTime(int particletype){
+		string section = SelectVarsSection(particletype);
+		long double tau, tmax;
+		istringstream(invars[section]["tau"]) >> tau;
+		istringstream(invars[section]["tmax"]) >> tmax;
+		if (tau != 0)
+			return -tau * log(mt_get_double(&v_mt_state));
+		else
+			return tmax;
 	};
 	
 
 	/// max. trajectory length for different particles
-	long double MaxTrajLength(int protneut){
-		switch (protneut){
-			case NEUTRON:
-				return nini.trajend;
-			case PROTON:
-				return pini.trajend;
-			case ELECTRON:
-				return eini.trajend;
-		}
-		return 9e99;
+	long double MaxTrajLength(int particletype){
+		string section = SelectVarsSection(particletype);
+		long double lmax;
+		istringstream(invars[section]["lmax"]) >> lmax;
+		return lmax;
 	};
 	
 
 	/// get neutron polarisation, either diced (#polarisation==4) or fixed (#polarisation==1/2)
-	int DicePolarisation(){
-		if (polarisation == 4)
-		{
+	int DicePolarisation(int particletype){
+		string section = SelectVarsSection(particletype);
+		int p;
+		istringstream(invars[section]["polarization"]) >> p;
+		if (p == 0){
 			if(UniformDist(0,1) < 0.5)
 				return -1;
 			else 
 				return 1;
 		}
-		else if (polarisation == POLARISATION_GOOD)
-			return 1;
-		else if (polarisation == POLARISATION_BAD)
-			return -1;
-		return 0;	
+		return p;
 	};
 
 

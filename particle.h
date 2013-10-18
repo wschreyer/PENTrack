@@ -110,6 +110,7 @@ struct TParticle{
 		 * On each step it checks for reflection or absorption by solids, prints snapshots and track into files and calls "OnEachStep".
 		 * The Integration stops if xend or SimulationTime are reached; or if something happens to the particle (absorption, numerical error)
 		 *
+		 * @param tmax Max. absolute time at which integration will be stopped
 		 * @param geometry Integrator checks for collisions with walls defined in this TGeometry structure
 		 * @param mcgen Random number generator (e.g. used for reflection probability dicing)
 		 * @param afield Pointer to field which acts on particle (can be NULL)
@@ -120,7 +121,7 @@ struct TParticle{
 		 * @param areflectlog Should reflections (1) or transmissions (2) or both (3) be logged?
 		 * @param aREFLECTLOG FILE-pointer into which reflection and transmission are logged
 		 */
-		void Integrate(TGeometry &geometry, TMCGenerator &mcgen, TField *afield, FILE *ENDLOG, FILE *trackfile,
+		void Integrate(long double tmax, TGeometry &geometry, TMCGenerator &mcgen, TField *afield, FILE *ENDLOG, FILE *trackfile,
 						FILE *SNAP = NULL, vector<float> *snapshots = NULL, int areflectlog = 0, FILE *aREFLECTLOG = NULL){
 			geom = &geometry;
 			if (currentsolids.empty())
@@ -159,8 +160,8 @@ struct TParticle{
 				
 				if (x + h > xstart + xend) 
 					h = xstart + xend - x;	//If stepsize can overshoot, decrease.
-				if (x + h > StorageTime)
-					h = StorageTime - x;
+				if (x + h > tmax)
+					h = tmax - x;
 				
 				try{
 					stepper->step(h, *this); // integrate one step
@@ -227,7 +228,7 @@ struct TParticle{
 				// x >= xstart + xend?
 				if (ID == ID_UNKNOWN && x >= xstart + xend)
 					ID = ID_DECAYED;
-				else if (ID == ID_UNKNOWN && (x >= StorageTime || trajlength >= mc->MaxTrajLength(type)))
+				else if (ID == ID_UNKNOWN && (x >= tmax || trajlength >= mc->MaxTrajLength(type)))
 					ID = ID_NOT_FINISH;
 			
 				h = stepper->hnext; // set suggested stepsize for next step
@@ -570,10 +571,6 @@ struct TParticle{
 		 * @param file FILE-pointer to print into
 		 */
 		void Print(FILE *file){
-			// calculate spin flip lifetime tauSF and influence on lifetime measurement 
-			long double tauSF = (1 - BFsurvprob != 0) ? (-dt/log(BFsurvprob)) : 9e99;
-			long double dtau = mc->tau_n - 1/(1/mc->tau_n + 1/tauSF) ;
-			 
 			int pol = 3;
 			if (polarisation == -1) pol = POLARISATION_BAD;
 			else if (polarisation == 1) pol = POLARISATION_GOOD;
@@ -586,7 +583,7 @@ struct TParticle{
 			               "%.20LG %.20LG %.20LG %.20LG %.20LG %.20LG "
 			               "%.20LG %.20LG %i %i %LG %.20LG "
 			               "%i %.20LG %.20LG %.20LG %.20LG "
-			               "%.20LG %.20LG %.20LG\n",
+			               "%.20LG\n",
 			               jobnumber, particlenumber, type, pol,
 			               xstart, ystart[0], ystart[1], ystart[2],
 			               rstart, phistart, vstart, alphastart, gammastart, 
@@ -595,7 +592,7 @@ struct TParticle{
 			               rend, phiend, vend, alphaend, gammaend, dt,
 			               Hend, Eend, ID, NSF, comptime, 1 - BFsurvprob,
 			               nrefl, vladmax, vladtotal, thumbmax, trajlength,
-			               Hmax, tauSF, dtau);
+			               Hmax);
 			               
 			fflush(file);
 		};
@@ -1001,7 +998,7 @@ public:
 	TNeutron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TField *afield): TParticle(NEUTRON, 0, m_n, mu_nSI){
 		xstart = mcgen.UniformDist(0,src.ActiveTime);
 
-		polarisation = mcgen.DicePolarisation();
+		polarisation = mcgen.DicePolarisation(type);
 		Hstart = mcgen.NeutronSpectrum();
 
 		printf("Dice starting position for E_neutron = %LG neV ",Hstart*1e9);
@@ -1222,7 +1219,7 @@ protected:
 
 			long double B2[4][4];
 			field->BFeld(y2[0],y2[1],y2[2],x2,B2);
-			long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2,min(xstart+xend,StorageTime)); // integrate spinflip probability
+			long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2); // integrate spinflip probability
 			if (1-sp > 1e-30) logBF = log10(1-sp);
 			else logBF = -99;
 			BFsurvprob *= sp;

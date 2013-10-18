@@ -3,8 +3,6 @@
 [global]
 # particletype: 1 => neutron, 2 => proton, 3 => Bfeld, 4 => cut through BField, 5 => enter particle interactively, 6 => electrons, 7 => print geometry
 particletype 1
-# polarisation: 1 => low field seekers, 2 => high field seekers, 3 => no polarisation, 4 => dice (MC)
-polarisation 4
 # output neutron spatial distribution?
 neutdist 0
 # outputopt: 1 => track and endpoints, 2 => only endpoints, 3 => everything (track, endpoints and BFspin track), 
@@ -18,21 +16,16 @@ snapshots 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900
 reflektlog 0
 # number of particles 
 MonteCarloAnzahl 1000
-#storagetime = max. simulation time
-storagetime 1000
+#simtime = max. simulation time
+simtime 1000
 
 # do bruteforce integration between these times
 BruteForce 500 700
 # flux density below which the spin will also be tracked, when BF is turned on
 BFTargetB 0.1
 
-# decay: 0 => NO neutron decay, neutrons stop after xend 1 => neutrons will decay (and xend will not be regarded),
-#								2 => neutrons will decay (and xend will not be regarded) and a proton and electron will be simulated
+# decay: 0: NO neutron decay, 1: neutrons will decay, 2: neutrons will decay and a proton and electron will be simulated
 decay 2
-# neutron lifetime
-tau 885.7
-# decay offset: time before decay timer should start
-decayoffset 0
 
 #cut through B-field (protneut == 4) *** (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2) 3 edges of cut plane, number of sample points in direction 1->2/1->3 ***
 BCutPlane 0.3 0 0.047  0.3 0 0.047  0.3 0 0.049  1 20000

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cstdio>
+#include <map>
 
 #define ID_UNKNOWN 0 ///< standard kennz flag for particles
 #define ID_NOT_FINISH -1 ///< kennz flag for particles which reached ::StorageTime
@@ -45,8 +46,6 @@ const long double gamma_n = -1.83247185e8; ///< 2*::mu_nSI/::hquer gyromagnetic 
 const long double lengthconv = 0.01; ///< length conversion factor cgs -> SI [cm -> m]
 const long double Bconv = 1e-4; ///< magnetic field conversion factor cgs -> SI [G -> T]
 const long double Econv = 1e2; ///< electric field conversion factor cgs -> SI [V/cm -> V/m]
-
-long double StorageTime = 1500.; ///< max. simulation time
 
 int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
 string inpath = "."; ///< path to configuration files, read from command line paramters
@@ -129,5 +128,33 @@ long double ElectronSpectrum(long double E){
 	return 8.2*sqrt(E*1e-6*E*1e-6 + 2*E*1e-6*m_e*c_0*c_0*1e-6) * pow(Qvalue - E*1e-6, 2) * (E*1e-6 + m_e*c_0*c_0*1e-6);
 }
 
+
+//read variables from *.in file into map
+void ReadInFile(const char *inpath, map<string, map<string, string> > &vars){
+	ifstream infile(inpath);
+	char c;
+	string rest,section,key;
+	while (infile.good() && (infile >> ws) && (c = infile.peek())){
+		if (c == '[' && infile.ignore()){
+			if (infile.peek() == '/'){
+				section = "";
+				printf("\n");
+			}
+			else{
+				getline(infile, section, ']');
+				printf("section : %s\n",section.c_str());
+			}
+			getline(infile,rest);
+		}
+		else if (c == '#')
+			getline(infile,rest);
+		else if (section != ""){
+			infile >> key;
+			getline(infile,vars[section][key]);
+		}
+		else
+			getline(infile,rest);
+	}
+}
 
 #endif /*GLOBALS_H_*/

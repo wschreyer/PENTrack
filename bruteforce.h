@@ -107,7 +107,7 @@ void PrintBFStep(Output &out, TBFderivs &BFderivs){
 
 
 // calculate spin flip probability by integrating Bloch equations
-long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[4][4], long double x2, VecDoub_I &y2, long double B2[4][4], long double xmax){
+long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[4][4], long double x2, VecDoub_I &y2, long double B2[4][4]){
 	bool BruteForce1 = false, BruteForce2 = false;;
 	for (unsigned int i = 0; i < BFtimes.size(); i += 2){
 		BruteForce1 |= (x1 >= BFtimes[i] && x1 < BFtimes[i+1]);
