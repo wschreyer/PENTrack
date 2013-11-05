@@ -284,6 +284,7 @@ struct TMCGenerator{
 			case ELECTRON:
 				return "electron";
 		}
+		return "";
 	};
 
 
@@ -299,6 +300,7 @@ struct TMCGenerator{
 			case ELECTRON:
 				return ElectronSpectrum();
 		}
+		return 0;
 	};
 
 	/**

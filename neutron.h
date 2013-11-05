@@ -50,7 +50,6 @@ public:
 		printf("Dice starting position for E_neutron = %LG neV ",Hstart*1e9);
 		fflush(stdout);
 		long double phi, theta;
-		long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
 		for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
 			if (nroll % 1000000 == 0){
 				printf("."); // print progress
@@ -186,7 +185,6 @@ protected:
 				field->BFeld(y1[0], y1[1], y1[2], x1, B);
 				H += -polarisation*mu_nSI/ele_e*B[3][0];
 			}
-			int pol = 3;
 			fprintf(REFLECTLOG, "%i %i %i %i %i %i "
 								"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
 								"%.10LG %.10LG %.10LG %.10LG "

@@ -128,9 +128,6 @@ struct TParticle{
 			// set initial values for integrator
 			long double x = tstart, x1, x2;
 			VecDoub y(6,ystart), dydx(6), y1(6), y2(6);
-			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-			long double E[3] = {0,0,0};
-			long double V = 0;
 			long double h = 0.001/sqrt(ystart[3]*ystart[3] + ystart[4]*ystart[4] + ystart[5]*ystart[5]); // first guess for stepsize
 			derivs(x,y,dydx);
 			if (trackfile)
@@ -637,7 +634,7 @@ struct TParticle{
 			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
 			long double E[3] = {0,0,0};
 			long double V = 0;
-			long double logvlad = 0.0, logfrac = 0.0;
+//			long double logvlad = 0.0, logfrac = 0.0;
 			printf("-");
 			if (field){
 				field->BFeld(y[0],y[1],y[2],x,B);
@@ -654,7 +651,7 @@ struct TParticle{
 			for (int i = 0; i < 4; i++)
 				for (int j = 0; j < 4; j++)
 					fprintf(trackfile,"%.17LG ",B[i][j]);
-			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG",E[0],E[1],E[2],V,h);
+			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %LG",E[0],E[1],E[2],V,h);
 
 			fprintf(trackfile,"\n");
 			fflush(trackfile);
