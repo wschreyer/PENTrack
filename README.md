@@ -19,7 +19,8 @@ To compile the code, you need to copy some files from [Numerical Recipes v3.00-v
 
 Patch files can be applied by executing:  
 `patch originalheader.h patchfile.diff`
-You may have to change the nr file format from DOS/MAC to UNIX text file format by executing:
+
+You may have to change the nr file format from DOS/MAC to UNIX text file format by executing:  
 `dos2unix originalheader.h`
 
 Numerical Recipes forces us to put almost all code into header files, which makes it less easy to read but it also avoids duplicate work in code- and header-files.
