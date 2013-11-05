@@ -93,12 +93,12 @@ struct TMCGenerator{
 	/**
 	 * Create isotropically distributed 3D angles.
 	 *
-	 * @param alpha Angle between vector and x-axis projected onto xy-plane
-	 * @param gamma Angle between vector and z-axis
+	 * @param phi Azimuth
+	 * @param theta Polar angle
 	 */
-	void IsotropicDist(long double &alpha, long double &gamma){
-		alpha = UniformDist(0,2*pi);
-		gamma = SinDist(0,pi);
+	void IsotropicDist(long double &phi, long double &theta){
+		phi = UniformDist(0,2*pi);
+		theta = SinDist(0,pi);
 	};
 	
 
@@ -286,6 +286,21 @@ struct TMCGenerator{
 		}
 	};
 
+
+	/**
+	 * Energy distribution for each particle type
+	 */
+	long double Spectrum(int particletype){
+		switch (particletype){
+			case NEUTRON:
+				return NeutronSpectrum();
+			case PROTON:
+				return ProtonSpectrum();
+			case ELECTRON:
+				return ElectronSpectrum();
+		}
+	};
+
 	/**
 	 * Lifetime of different particles
 	 *
@@ -313,7 +328,7 @@ struct TMCGenerator{
 	};
 	
 
-	/// get neutron polarisation, either diced (#polarisation==4) or fixed (#polarisation==1/2)
+	/// get neutron polarisation, either diced (polarisation == 0) or fixed (polarisation == +/-1)
 	int DicePolarisation(int particletype){
 		string section = SelectVarsSection(particletype);
 		int p;
@@ -423,8 +438,8 @@ struct TMCGenerator{
 	
 	//-------- Step 9 ----------------------------------------------------------------------------------------------------------
 		// use neutrino mass for check
-		long double decayerror = m_nue*c_0*c_0 - sqrt(nue[0]*nue[0] - nue[1]*nue[1] - nue[2]*nue[2] - nue[3]*nue[3])*c_0;
-		printf("\n   +++ decay error : %LG eV +++\n", decayerror);
+//		long double decayerror = m_nue*c_0*c_0 - sqrt(nue[0]*nue[0] - nue[1]*nue[1] - nue[2]*nue[2] - nue[3]*nue[3])*c_0;
+//		printf("\n   +++ decay error : %LG eV +++\n", decayerror);
 	
 	
 	//-------- Finished --------------------------------------------------------------------------------------------------------

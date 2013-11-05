@@ -1,6 +1,6 @@
 /**
  * \file
- * Particle class definitions.
+ * Particle base class definition.
  */
 
 #ifndef PARTICLE_H_
@@ -23,7 +23,6 @@
 #include "ndist.h"
 #include "adiabacity.h"
 
-//#include "f.glueck/eH2.c"
 
 /**
  * Basic particle class (virtual).
@@ -33,15 +32,15 @@
  */
 struct TParticle{
 	public:
-		int type; ///< particle type (neutron: 1; proton: 2; electron: 6)
-		int ID; ///< particle fate (0: not classified; >0: Absorption in solid with according ID; -1: survived until end of simulation; -2: hit outer boundaries; -3: numerical error; -4: decayed; -5: did not find initial position)
-		int particlenumber; ///< particle number
+		const int type; ///< particle type
 		const long double q; ///< charge [C]
 		const long double m; ///< mass [eV/c^2]
 		const long double mu; ///< magnetic moment [J/T]
-		long double xstart; ///< start time
-		long double xend; ///< max. simulation time (particle life time)
-		long double dt; ///< actual simulation time
+		int ID; ///< particle fate (0: not classified; >0: Absorption in solid with according ID; -1: survived until end of simulation; -2: hit outer boundaries; -3: numerical error; -4: decayed; -5: did not find initial position)
+		int particlenumber; ///< particle number
+		long double tstart; ///< start time
+		long double tend; ///< stop time
+		long double tau; ///< particle life time
 		long double ystart[6]; ///< state vector before integration
 		long double yend[6]; ///< state vector after integration
 		long double Hstart; ///< total start energy
@@ -49,34 +48,20 @@ struct TParticle{
 		long double Hmax; ///< max total energy
 		long double Estart; ///< kinetic start energy
 		long double Eend; ///< kinetic end energy
-		long double rstart; ///< radial start coordinate
-		long double rend; ///< radial end coordinate
-		long double phistart; ///< start azimuth
-		long double phiend; ///< end azimuth
-		long double alphastart; ///< start angle between position vector and velocity vector projected onto xy-plane
-		long double alphaend; ///< end angle between position vector and velocity vector projected onto xy-plane
-		long double gammastart; ///< start angle between z axis and velocity vector
-		long double gammaend; ///< end angle between z axis and velocity vector
-		long double vstart; ///< absolute start velocity
-		long double vend; ///< absolute end velocity
 		long double trajlength; ///< trajectory length
+		long double maxtraj; ///< max. simulated trajectory length
 		long double comptime; ///< computing time
 		long double refltime; ///< reflection computing time
-		long double vlad; ///< current spin flip probabilty by Vladimirskii
-		long double vladmax; ///< max spin flip probability by Vladimirskii
-		long double vladtotal; ///< product of all spin flip probabilities by Vladimirskii
-		long double frac; ///< current adiabacity criterion (<<1 for adiabacity)
-		long double thumbmax; ///< max adiabacity criterion
-		long double BFsurvprob; ///< no-spinflip-probability determined by Bloch integration
-		long double logBF; ///< log10(1-BFsurvprob)
 		int polarisation; ///< polarisation of particle (-1,0,1)
-		int nrefl; ///< number of reflection from wall
-		int NSF; ///< number of spin flips
-		int nsteps; ///< number of integration steps
-		vector<TParticle*> secondaries; ///< list of secondary particles
+		int Nhit; ///< number of material boundary hits
+		int Nspinflip; ///< number of spin flips
+		int Nsteps; ///< number of integration steps
+		std::vector<TParticle*> secondaries; ///< list of secondary particles
 
 		/**
-		 * Generic constructor (empty), has to be implemented by each derived particle
+		 * Constructor, initializes TParticle::type, TParticle::q, TParticle::m, TParticle::mu
+		 *
+		 * Has to be called by every derived class constructor with the respective values
 		 */
 		TParticle(int pp, long double qq, long double mm, long double mumu): type(pp), q(qq), m(mm), mu(mumu){ };
 
@@ -125,7 +110,7 @@ struct TParticle{
 						FILE *SNAP = NULL, vector<float> *snapshots = NULL, int areflectlog = 0, FILE *aREFLECTLOG = NULL){
 			geom = &geometry;
 			if (currentsolids.empty())
-				geom->GetSolids(xstart, ystart, currentsolids);
+				geom->GetSolids(tstart, ystart, currentsolids);
 			mc = &mcgen;
 			field = afield;
 			reflectlog = areflectlog;
@@ -133,20 +118,20 @@ struct TParticle{
 			timeval clock_start, clock_end, refl_start, refl_end;
 			gettimeofday(&clock_start, NULL); // start computing time measure
 			unsigned int nextsnapshot = 0;
-			while (snapshots && nextsnapshot < snapshots->size() && (*snapshots)[nextsnapshot] < xstart)
+			while (snapshots && nextsnapshot < snapshots->size() && (*snapshots)[nextsnapshot] < tstart)
 				nextsnapshot++;
 			int perc = 0;
 			printf("Particle no.: %i, particle type: %i\n",particlenumber,type);
-			printf("r: %LG phi: %LG z: %LG v: %LG alpha: %LG gamma: %LG E: %LG t: %LG tau: %LG l: %LG\n",
-				rstart, phistart/conv, ystart[2], vstart, alphastart/conv,gammastart/conv, Estart, xstart, xend, mc->MaxTrajLength(type));
+			printf("x: %LG y: %LG z: %LG E: %LG t: %LG tau: %LG lmax: %LG\n",
+				ystart[0], ystart[1], ystart[2], Estart, tstart, tau, maxtraj);
 		
 			// set initial values for integrator
-			long double x = xstart, x1, x2;
+			long double x = tstart, x1, x2;
 			VecDoub y(6,ystart), dydx(6), y1(6), y2(6);
 			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
 			long double E[3] = {0,0,0};
 			long double V = 0;
-			long double h = 0.001/vstart; // first guess for stepsize
+			long double h = 0.001/sqrt(ystart[3]*ystart[3] + ystart[4]*ystart[4] + ystart[5]*ystart[5]); // first guess for stepsize
 			derivs(x,y,dydx);
 			if (trackfile)
 				PrintIntegrationStep(trackfile, x, y, h); // print start into track file
@@ -158,14 +143,14 @@ struct TParticle{
 				x1 = x; // save point before next step
 				y1 = y;
 				
-				if (x + h > xstart + xend) 
-					h = xstart + xend - x;	//If stepsize can overshoot, decrease.
+				if (x + h > tstart + tau)
+					h = tstart + tend - x;	//If stepsize can overshoot, decrease.
 				if (x + h > tmax)
 					h = tmax - x;
 				
 				try{
 					stepper->step(h, *this); // integrate one step
-					nsteps++;
+					Nsteps++;
 				}
 				catch(...){ // catch Exceptions thrown by numerical recipes routines
 					ID = ID_NRERROR;
@@ -200,12 +185,8 @@ struct TParticle{
 							VecDoub ysnap(6);
 							for (int i = 0; i < 6; i++)
 								ysnap[i] = stepper->dense_out(i, xsnap, stepper->hdid);
-							printf("\n Snapshot at %LG s \n", xsnap);
-							if (field){
-								field->BFeld(ysnap[0],ysnap[1],ysnap[2],xsnap,B);
-								field->EFeld(ysnap[0],ysnap[1],ysnap[2],V,E);
-							}
-							SetEndValues(xsnap,ysnap,B,E,V);
+//							printf("\n Snapshot at %LG s \n", xsnap);
+							SetEndValues(xsnap,ysnap,field);
 							Print(SNAP);
 							nextsnapshot++;
 						}
@@ -220,15 +201,15 @@ struct TParticle{
 					y1 = y2;
 				}		
 				
-				if (trajlength/mc->MaxTrajLength(type) < (x - xstart)/xend)
-					percent(x, xstart, xend, perc); // print percent of calculation
+				if (trajlength/maxtraj < (x - tstart)/tau)
+					percent(x, tstart, tstart + tau, perc); // print percent of calculation
 				else
-					percent(trajlength, 0, mc->MaxTrajLength(type), perc); // print percent of calculation
+					percent(trajlength, 0, maxtraj, perc); // print percent of calculation
 
 				// x >= xstart + xend?
-				if (ID == ID_UNKNOWN && x >= xstart + xend)
+				if (ID == ID_UNKNOWN && x >= tstart + tau)
 					ID = ID_DECAYED;
-				else if (ID == ID_UNKNOWN && (x >= tmax || trajlength >= mc->MaxTrajLength(type)))
+				else if (ID == ID_UNKNOWN && (x >= tmax || trajlength >= maxtraj))
 					ID = ID_NOT_FINISH;
 			
 				h = stepper->hnext; // set suggested stepsize for next step
@@ -239,22 +220,18 @@ struct TParticle{
 			delete stepper;
 			
 			// Endwerte schreiben
-			if (field){
-				field->BFeld(y[0],y[1],y[2],x,B);
-				field->EFeld(y[0],y[1],y[2],V,E);
-			}
-			SetEndValues(x,y,B,E,V);
+			SetEndValues(x,y,field);
 			Print(ENDLOG);
 
 			if (ID == ID_DECAYED)
 				Decay();
 
-			printf("Done!!\nBFFlipProb: %LG r: %LG z: %LG E: %LG Code: %i t: %LG tau: %LG l: %LG\n\n",
-				(1 - BFsurvprob), rend, yend[2], Eend, ID, xstart + dt, dt, trajlength);
+			printf("Done!!\nx: %LG y: %LG z: %LG E: %LG Code: %i t: %LG l: %LG hits: %i steps: %i\n\n",
+				yend[0], yend[1], yend[2], Eend, ID, tend, trajlength, Nhit, Nsteps);
 		};
 	
 	protected:
-		set<solid> currentsolids; ///< solids in which particle is currently inside
+		std::set<solid> currentsolids; ///< solids in which particle is currently inside
 		TGeometry *geom; ///< TGeometry structure passed by "Integrate"
 		TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
 		TField *field; ///< TField structure passed by "Integrate"
@@ -264,29 +241,89 @@ struct TParticle{
 
 
 		/**
-		 * Set start values, should be called by every constructor.
+		 * Initialize particle, set start values randomly according to *.in files.
 		 *
-		 * Set start values in cylindrical coordinates
+		 * Sets start time TParticle::tstart according to [SOURCE] in geometry.in.
+		 * Sets start energy according to TMCGenerator::Spectrum.
+		 * Then tries to find a position according to [SOURCE] in geometry.in.
+		 *
+		 * @param number Particle number
+		 * @param ageometry TGeometry in which the particle will be simulated
+		 * @param src TSource in which particle should be generated
+		 * @param mcgen TMCGenerator used to dice inital values
+		 * @param afield TField used to calculate energies (can be NULL)
+		 */
+		void Init(int number, TGeometry &ageometry, TSource &src,
+					TMCGenerator &mcgen, TField *afield){
+			tstart = mcgen.UniformDist(0,src.ActiveTime);
+			polarisation = mcgen.DicePolarisation(type);
+			Estart = mcgen.Spectrum(type);
+			long double phi, theta;
+			src.RandomPointInSourceVolume(mcgen, tstart, Estart, ystart[0], ystart[1], ystart[2], phi, theta);
+
+			InitE(number, tstart, mcgen.LifeTime(type), ystart[0], ystart[1], ystart[2],
+				Estart, phi, theta, polarisation, mcgen.MaxTrajLength(type), ageometry, afield);
+		};
+
+
+		/**
+		 * Initialze all values
+		 *
+		 * Initialize particle using start energy, calls TParticle::InitV
 		 *
 		 * @param number Particle number
 		 * @param t Start time
-		 * @param tend Life time
-		 * @param r Radial start coordinate
-		 * @param phi Start azimuth
+		 * @param atau Life time
+		 * @param x Start x coordinate
+		 * @param y Start y coordinate
 		 * @param z Start z coordinate
 		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
-		 * @param gamma Start angle between z axis and velocity vector
+		 * @param phi Azimuth of velocity vector
+		 * @param theta Polar angle of velocity vector
 		 * @param pol Start polarisation
+		 * @param trajl Max. simulated trajectory length
 		 * @param ageometry TGeometry in which the particle will be simulated
 		 * @param afield Electric and magnetic fields (needed to determine total energy)
 		 */
-		void Init(int number, long double t, long double tend, long double r, long double phi, long double z,
-					long double Ekin, long double alpha, long double gamma, int pol, TGeometry &ageometry, TField *afield){
+		void InitE(int number, long double t, long double atau, long double x, long double y, long double z,
+				long double Ekin, long double phi, long double theta, int pol, long double trajl,
+				TGeometry &ageometry, TField *afield){
+			long double gammarel = Ekin/m/c_0/c_0 + 1;
+			long double vstart;
+			if (gammarel < 1.0001)
+				vstart = sqrt(2*Ekin/m);
+			else
+				vstart = c_0 * sqrt(1-(1/(gammarel*gammarel)));
+			InitV(number, t, atau, x, y, z,
+					vstart*cos(phi)*sin(theta), vstart*sin(phi)*sin(theta), vstart*cos(theta),
+					pol, trajl, ageometry, afield);
+		}
+
+		/**
+		 * Initialze all values
+		 *
+		 * This should be called by every constructor
+		 *
+		 * @param number Particle number
+		 * @param t Start time
+		 * @param atau Life time
+		 * @param x Start x coordinate
+		 * @param y Start y coordinate
+		 * @param z Start z coordinate
+		 * @param vx Velocity x component
+		 * @param vy Velocity y component
+		 * @param vz Velocity z component
+		 * @param pol Start polarisation
+		 * @param trajl Max. simulated trajectory length
+		 * @param ageometry TGeometry in which the particle will be simulated
+		 * @param afield Electric and magnetic fields (needed to determine total energy)
+		 */
+		void InitV(int number, long double t, long double atau, long double x, long double y, long double z,
+				long double vx, long double vy, long double vz, int pol, long double trajl,
+				TGeometry &ageometry, TField *afield){
 			ID = ID_UNKNOWN;
 			trajlength = comptime = refltime = 0;
-			BFsurvprob = vladtotal = 1; vladmax = thumbmax = logBF = -9e99;
-			nrefl = NSF = nsteps = 0;
+			Nhit = Nspinflip = Nsteps = 0;
 			geom = &ageometry;
 			mc = NULL;
 			field = afield;
@@ -295,39 +332,28 @@ struct TParticle{
 
 			particlenumber = number;
 			polarisation = pol;
-			xstart = t;
-			xend = tend;
-			dt = 0;
-			rstart = rend = r;
-			phistart = phiend = phi;
-			Estart = Eend = Ekin;
-			alphastart = alphaend = alpha;
-			gammastart = gammaend = gamma;
-			ystart[0] = yend[0] = rstart * cos(phistart);
-			ystart[1] = yend[1] = rstart * sin(phistart);
+			tstart = t;
+			tau = atau;
+			maxtraj = trajl;
+			ystart[0] = yend[0] = x;
+			ystart[1] = yend[1] = y;
 			ystart[2] = yend[2] = z;
+			ystart[3] = yend[3] = vx;
+			ystart[4] = yend[4] = vy;
+			ystart[5] = yend[5] = vz;
 
 			if (currentsolids.empty())
-				geom->GetSolids(xstart, ystart, currentsolids);
-			Hstart = Estart + m*gravconst*ystart[2] + AddPotential();
-			if (afield){
-				long double B[4][4], E[3], V;
-				afield->BFeld(ystart[0],ystart[1],ystart[2],xstart,B);
-				afield->EFeld(ystart[0],ystart[1],ystart[2],V,E);
-				Hstart += q/ele_e*V - polarisation*mu/ele_e*B[3][0];
-			}
-			long double gammarel = Estart/m/c_0/c_0 + 1;
+				geom->GetSolids(tstart, ystart, currentsolids);
+			long double vstart = sqrt(vx*vx + vy*vy + vz*vz);
+			long double gammarel = 1/sqrt(1 - vstart*vstart/c_0/c_0);
 			if (gammarel < 1.0001)
-				vstart = vend = sqrt(2*Estart/m);
+				Estart = 0.5*m*vstart*vstart;
 			else
-				vstart = vend = c_0 * sqrt(1-(1/(gammarel*gammarel)));
+				Estart = (gammarel - 1)*m*c_0*c_0;
+			Estart = Eend;
+			Hstart = Hend = Estart + Epot(t, ystart, afield);
 			Hmax = Hstart;
-
-			ystart[3] = yend[3] = vstart * cos(phistart + alphastart) * sin(gammastart);
-			ystart[4] = yend[4] = vstart * sin(phistart + alphastart) * sin(gammastart);
-			ystart[5] = yend[5] = vstart * cos(gammastart);
-		};
-
+		}
 
 		/**
 		 * Equations of motion dy/dx = f(x,y).
@@ -414,6 +440,7 @@ struct TParticle{
 					}
 //					cout << "Hit " << sld->ID << " - current solid " << currentsolids.rbegin()->ID << '\n';
 					set<solid>::iterator currentsolid = currentsolids.find(*sld);
+					Nhit++;
 					bool resetintegration = false;
 					if (distnormal < 0){ // particle is entering solid
 						if (currentsolid != currentsolids.end()){ // if solid already is in currentsolids list something went wrong
@@ -518,6 +545,7 @@ struct TParticle{
 		 * @param y1 Start point of line segment
 		 * @param x2 End time of line segment, may be altered
 		 * @param y2 End point of line segment, may be altered
+		 * @param currentsolid Solid through which the particle is moving
 		 * @return Returns true if particle was absorbed
 		 */
 		virtual bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid) = 0;
@@ -529,38 +557,43 @@ struct TParticle{
 		virtual void Decay() = 0;
 
 		/**
-		 * Potential energy, other than electromagnetic or gravitational, which is added to total energy of particle, has to be implemented for each derived particle
+		 * Calculate potential energy of particle
 		 *
-		 * @return Returns additional potential energy
+		 * @param t Time
+		 * @param y Coordinate vector
+		 * @param field Pointer to TField structure for electric and magnetic potential
+		 *
+		 * @return Returns potential energy
 		 */
-		virtual long double AddPotential() = 0;
+		virtual long double Epot(const long double t, const long double y[3], TField *field = NULL){
+			if ((q != 0 || mu != 0) &&field){
+				long double B[4][4], E[3], V;
+				field->BFeld(y[0],y[1],y[2],t,B);
+				field->EFeld(y[0],y[1],y[2],V,E);
+				return m*gravconst*y[2] + q/ele_e*V - polarisation*mu/ele_e*B[3][0];
+			}
+			return m*gravconst*y[2];
+		};
 
 		/**
 		 * Calculates *end variables of particle at time x, position/velocity y and fields B,E,V.
 		 *
 		 * @param x Time
 		 * @param y State vector (position+velocity)
-		 * @param B Magnetic field vector, absolute value and its spatial derivatives (see TField)
-		 * @param E Electric field vector
-		 * @param V Electric potential
+		 * @param field Electric and magnetic fields (needed to determine total energy)
 		 */
-		void SetEndValues(long double x, VecDoub_I &y, long double B[4][4], long double E[3], long double V){
-			dt = x - xstart;
+		void SetEndValues(long double x, VecDoub_I &y, TField *field){
+			tend = x;
 			for (int i = 0; i < 6; i++)
 				yend[i] = y[i];
-			rend = sqrt(y[0]*y[0] + y[1]*y[1]);
-			phiend = fmod(atan2(y[1],y[0]) + 2*pi, 2*pi);
-			vend = sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5]);
+			long double vend = sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5]);
 			if (vend/c_0 < 0.01)
 				Eend = 0.5*m*vend*vend;
 			else{
 				long double gammarel = 1/sqrt(1 - vend*vend/(c_0*c_0));
 				Eend = c_0*c_0*m*(gammarel - 1);
 			}
-			Hend = Eend + m*gravconst*yend[2] + q/ele_e*V - polarisation*mu/ele_e*B[3][0] + AddPotential();
-			if(vend > 0) gammaend = acos(y[5]/vend);
-			else gammaend = 0;
-			alphaend = fmod(atan2(y[4],y[3]) - phiend + 2*pi, 2*pi);	
+			Hend = Eend + Epot(x, &y[0], field);
 			if (Hend > Hmax) Hmax = Hend;
 		};
 
@@ -571,28 +604,22 @@ struct TParticle{
 		 * @param file FILE-pointer to print into
 		 */
 		void Print(FILE *file){
-			int pol = 3;
-			if (polarisation == -1) pol = POLARISATION_BAD;
-			else if (polarisation == 1) pol = POLARISATION_GOOD;
-
 			fprintf(file ,"%i %i %i %i "
 			               "%.20LG %.20LG %.20LG %.20LG "
-			               "%.20LG %.20LG %.20LG %.20LG %.20LG "
+			               "%.20LG %.20LG %.20LG "
 			               "%.20LG %.20LG "
 			               "%.20LG %.20LG %.20LG %.20LG "
-			               "%.20LG %.20LG %.20LG %.20LG %.20LG %.20LG "
-			               "%.20LG %.20LG %i %i %LG %.20LG "
-			               "%i %.20LG %.20LG %.20LG %.20LG "
-			               "%.20LG\n",
-			               jobnumber, particlenumber, type, pol,
-			               xstart, ystart[0], ystart[1], ystart[2],
-			               rstart, phistart, vstart, alphastart, gammastart, 
+			               "%.20LG %.20LG %.20LG "
+			               "%.20LG %.20LG %i %i %LG "
+			               "%i %.20LG %.20LG\n",
+			               jobnumber, particlenumber, type, polarisation,
+			               tstart, ystart[0], ystart[1], ystart[2],
+			               ystart[3], ystart[4], ystart[5],
 			               Hstart, Estart,
-			               xstart + dt, yend[0], yend[1], yend[2],
-			               rend, phiend, vend, alphaend, gammaend, dt,
-			               Hend, Eend, ID, NSF, comptime, 1 - BFsurvprob,
-			               nrefl, vladmax, vladtotal, thumbmax, trajlength,
-			               Hmax);
+			               tend, yend[0], yend[1], yend[2],
+			               yend[3], yend[4], yend[5],
+			               Hend, Eend, ID, Nspinflip, comptime,
+			               Nhit, trajlength, Hmax);
 			               
 			fflush(file);
 		};
@@ -616,654 +643,24 @@ struct TParticle{
 				field->BFeld(y[0],y[1],y[2],x,B);
 				field->EFeld(y[0],y[1],y[2],V,E);
 			}
-			SetEndValues(x,y,B,E,V);
+			SetEndValues(x,y,field);
 			
-			if (vlad > 1e-99) 
-				logvlad=log10(vlad);
-			if (frac > 1e-99) 
-				logfrac=log10(frac);
-			int pol = 3;
-			if (polarisation == -1) pol = POLARISATION_BAD;
-			else if (polarisation == 1) pol = POLARISATION_GOOD;
-	
 			fprintf(trackfile,"%d %d %d "
 							 "%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG "
-							 "%.17LG %.17LG %.17LG ",
-							 particlenumber,type,pol,
+							 "%.17LG %.17LG ",
+							 particlenumber,type,polarisation,
 							 x,y[0],y[1],y[2],y[3],y[4],y[5],
-							 vend,Hend,Eend);
+							 Hend,Eend);
 			for (int i = 0; i < 4; i++)
 				for (int j = 0; j < 4; j++)
 					fprintf(trackfile,"%.17LG ",B[i][j]);
-			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG",E[0],E[1],E[2],V,h,logvlad,logfrac,logBF);
+			fprintf(trackfile,"%.17LG %.17LG %.17LG %.17LG",E[0],E[1],E[2],V,h);
 
 			fprintf(trackfile,"\n");
 			fflush(trackfile);
 		};
 };
 
-
-/**
- * Proton particle class.
- *
- * Simulates a proton including gravitation and Lorentz-force
- */
-struct TProton: TParticle{
-public:
-	/**
-	 * Constructor, pass inital values directly.
-	 *
-	 * @param number Particle number
-	 * @param t Start time
-	 * @param tend Life time
-	 * @param r Radial start coordinate
-	 * @param phi Start azimuth
-	 * @param z Start z coordinate
-	 * @param Ekin Kinetic start energy
-	 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
-	 * @param gamma Start angle between z axis and velocity vector
-	 * @param pol Start polarisation
-	 * @param ageometry TGeometry in which the particle will be simulated
-	 * @param afield Electric and magnetic fields, needed to determine total energy, can be NULL
-	 */
-	TProton(int number, long double t, long double tend, long double r, long double phi, long double z,
-				long double Ekin, long double alpha, long double gamma, int pol, TGeometry &ageometry, TField *afield): TParticle(PROTON, ele_e, m_p, 0){
-		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, ageometry, afield);
-	};
-
-
-	/**
-	 * Constructor, create particle, set start values randomly according to all3inone.in.
-	 *
-	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
-	 * Sets kinetic start energy according to TMCGenerator::ProtonSpectrum.
-	 * Then tries to find a position according to [SOURCE] in geometry.in.
-	 *
-	 * @param number Particle number
-	 * @param ageometry TGeometry in which the particle will be simulated
-	 * @param src TSource in which particle should be generated
-	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TField used to calculate energies (can be NULL)
-	 */
-	TProton(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TField *afield): TParticle(PROTON, ele_e, m_p, 0){
-		xstart = mcgen.UniformDist(0,src.ActiveTime);
-
-		Estart = mcgen.ProtonSpectrum();
-		src.RandomPointInSourceVolume(mcgen, xstart, Estart, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
-
-		long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
-		long double phi = atan2(ystart[1],ystart[0]);
-
-		Init(number, xstart, mcgen.LifeTime(PROTON), r, phi, ystart[2],
-			Estart, alphastart, gammastart, polarisation, ageometry, afield);
-	};
-
-
-	/**
-	 * Constructor, pass initial values directly in cartesian coordinates
-	 *
-	 * @param number Particle number
-	 * @param t Start time
-	 * @param pos Start position in cartesian coordinates
-	 * @param v Start velocity in cartesian coordinates
-	 * @param pol Polarisation
-	 * @param ageometry TGeometry in which the particle will be simulated
-	 * @param mcgen TMCGenerator used to get lifetime from
-	 * @param afield TField used to calculate energies (can be NULL)
-	 */
-	TProton(int number, long double t, long double pos[3], long double v[3], int pol,
-			TGeometry &ageometry, TMCGenerator &mcgen, TField *afield): TParticle(PROTON,ele_e,m_p,0){
-		vstart = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-		phistart = atan2(pos[1],pos[0]);
-		alphastart = fmod(atan2(v[1],v[0]) - phistart + 4*pi,2*pi);
-		gammastart = acos(v[2]/vstart);
-		Estart = 0.5*m*vstart*vstart;
-		Init(number, t, mcgen.LifeTime(PROTON),
-			sqrt(pos[0]*pos[0] + pos[1]*pos[1]), phistart, pos[2],
-			Estart, alphastart, gammastart, pol, ageometry, afield);
-	};
-
-protected:
-	/**
-	 * Check for reflection on surfaces.
-	 *
-	 * Proton is never reflected
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, set to x1 if reflection happened
-	 * @param y2 End point of line segment, returns reflected velocity
-	 * @param normal Normal vector of hit surface
-	 * @param leaving Solid that the proton is leaving
-	 * @param entering Solid that the proton is entering
-	 * @param resetintegration Tell integrator to restart integration at x2 because e.g. y2 was changed.
-	 * @return Returns true if particle was reflected
-	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *entering, bool &resetintegration){
-		return false;
-	};
-
-
-	/**
-	 * Checks for absorption
-	 *
-	 * Protons are immediately absorbed in solids other than ::defaultsolid
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @param currentsolid Solid in which the proton is at the moment
-	 * @return Returns true if particle was absorbed
-	 */
-	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
-		if (currentsolid->ID != geom->defaultsolid.ID){
-			x2 = x1;
-			y2 = y1;
-			ID = currentsolid->ID;
-			return true;
-		}
-		return false;
-	};
-
-
-	/**
-	 * Proton decay (not used)
-	 */
-	void Decay(){
-
-	};
-
-
-	/**
-	 * Potential energy, other than electromagnetic or gravitational, which is added to total energy of proton
-	 *
-	 * @return Returns 0
-	 */
-	long double AddPotential(){
-		return 0;
-	}
-};
-
-
-/**
- * Electron particle class.
- *
- * Simulates an electron including gravitation and Lorentz-force
- */
-struct TElectron: TParticle{
-public:
-	/**
-	 * Constructor, pass inital values directly.
-	 *
-	 * @param number Particle number
-	 * @param t Start time
-	 * @param tend Life time
-	 * @param r Radial start coordinate
-	 * @param phi Start azimuth
-	 * @param z Start z coordinate
-	 * @param Ekin Kinetic start energy
-	 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
-	 * @param gamma Start angle between z axis and velocity vector
-	 * @param pol Start polarisation
-	 * @param ageometry TGeometry in which the particle will be simulated
-	 * @param afield Electric and magnetic fields (needed to determine total energy)
-	 */
-	TElectron(int number, long double t, long double tend, long double r, long double phi, long double z,
-				long double Ekin, long double alpha, long double gamma, int pol, TGeometry &ageometry, TField *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
-		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, ageometry, afield);
-	};
-
-
-	/**
-	 * Constructor, create particle, set start values randomly according to all3inone.in.
-	 *
-	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
-	 * Sets kinetic start energy according to TMCGenerator::ProtonSpectrum.
-	 * Then tries to find a position according to [SOURCE] in geometry.in.
-	 *
-	 * @param number Particle number
-	 * @param ageometry TGeometry in which the particle will be simulated
-	 * @param src TSource in which particle should be generated
-	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TField used to calculate energies
-	 */
-	TElectron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TField *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
-		xstart = mcgen.UniformDist(0,src.ActiveTime);
-
-		Estart = mcgen.ElectronSpectrum();
-		src.RandomPointInSourceVolume(mcgen, xstart, Estart, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
-
-		long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
-		long double phi = atan2(ystart[1],ystart[0]);
-
-		Init(number, xstart, mcgen.LifeTime(ELECTRON), r, phi, ystart[2],
-			Estart, alphastart, gammastart, polarisation, ageometry, afield);
-	};
-
-
-	/**
-	 * Constructor, pass initial values directly in cartesian coordinates
-	 *
-	 * @param number Particle number
-	 * @param t Start time
-	 * @param pos Start position in cartesian coordinates
-	 * @param v Start velocity in cartesian coordinates
-	 * @param pol Polarisation
-	 * @param ageometry Geometry in which the particle will be simulated
-	 * @param mcgen TMCGenerator used to get lifetime from
-	 * @param afield TField used to calculate energies (can be NULL)
-	 */
-	TElectron(int number, long double t, long double pos[3], long double v[3], int pol,
-			TGeometry &ageometry, TMCGenerator &mcgen, TField *afield): TParticle(ELECTRON,-ele_e,m_e,0){
-		vstart = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-		phistart = atan2(pos[1],pos[0]);
-		alphastart = fmod(atan2(v[1],v[0]) - phistart + 4*pi,2*pi);
-		gammastart = acos(v[2]/vstart);
-		Estart = (1/sqrt(1 - vstart*vstart/c_0/c_0) - 1)*m_e*c_0*c_0;
-		Init(number, t, mcgen.LifeTime(ELECTRON),
-			sqrt(pos[0]*pos[0] + pos[1]*pos[1]), phistart, pos[2],
-			Estart, alphastart, gammastart, pol, ageometry, afield);
-	};
-
-protected:
-	/**
-	 * Check for reflection on surfaces.
-	 *
-	 * Electron is never reflected
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, set to x1 if reflection happened
-	 * @param y2 End point of line segment, returns reflected velocity
-	 * @param normal Normal vector of hit surface
-	 * @param leaving Solid that the electron is leaving
-	 * @param entering Solid that the electron is entering
-	 * @param resetintegration Tell integrator to restart integration at x2 because e.g. y2 was changed.
-	 * @return Returns true if particle was reflected
-	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *entering, bool &resetintegration){
-		return false;
-	};
-
-
-	/**
-	 * Checks for absorption
-	 *
-	 * Electrons are immediately absorbed in solids other than ::defaultsolid
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @param currentsolid Solid in which the electron is at the moment
-	 * @return Returns true if particle was absorbed
-	 */
-	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
-		if (currentsolid->ID != geom->defaultsolid.ID){
-			x2 = x1;
-			y2 = y1;
-			ID = currentsolid->ID;
-			return true;
-		}
-/*		else{
-			long double v = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-			long double s = sqrt(pow(y2[0]- y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
-			long double Ekin = m*c_0*c_0*(1/sqrt(1 - v*v/c_0/c_0) - 1);
-			double Eloss, theta;
-			int index;
-			long double n = (1e-3*100)/(1.3806488e-23)/(77); // number density of rest gas (P [Pa])/(k [J/K])/(T [K])
-			eH2(Ekin, s, n, &Eloss, &theta, &index); // did scattering happen?
-			if (index != 0){
-				printf("\nScattering %d, Eloss = %f\n",index,Eloss);
-				double v_scat[3] = {y2[3], y2[4], y2[5]};
-				eH2velocity(Eloss, theta, v_scat); // change velocity accordingly
-				if (index == 3){ // on ionization create secondary electron
-					TElectron *e = new TElectron(particlenumber, x2, &y2[0], &y2[3], polarisation, *mc, *field);
-					secondaries.push_back(e);
-				}
-			}
-		}
-*/		return false;
-	};
-
-
-	/**
-	 * Electron decay (not used)
-	 */
-	void Decay(){
-
-	}
-
-
-	/**
-	 * Potential energy, other than electromagnetic or gravitational, which is added to total energy of electron
-	 *
-	 * @return Returns 0
-	 */
-	long double AddPotential(){
-		return 0;
-	}
-};
-
-
-/**
- * Neutron particle class.
- *
- * Simulates an ultra cold neutron including gravitation, magnetic forces on its magnetic dipole moment
- * and tries to estimate spin flip probability in magnetic fields.
- */
-struct TNeutron: TParticle{
-public:
-	/**
-	 * Constructor, pass inital values directly.
-	 *
-		 * @param number Particle number
-		 * @param t Start time
-		 * @param tend Life time
-		 * @param r Radial start coordinate
-		 * @param phi Start azimuth
-		 * @param z Start z coordinate
-		 * @param Ekin Kinetic start energy
-		 * @param alpha Start angle between position vector and velocity vector projected onto xy-plane
-		 * @param gamma Start angle between z axis and velocity vector
-		 * @param pol Start polarisation
-		 * @param ageometry Geometry
-		 * @param afield Electric and magnetic fields (needed to determine total energy)
-	 */
-	TNeutron(int number, long double t, long double tend, long double r, long double phi, long double z,
-				long double Ekin, long double alpha, long double gamma, int pol, TGeometry &ageometry, TField *afield): TParticle(NEUTRON, 0, m_n, mu_nSI){
-		Init(number, t, tend, r, phi, z, Ekin, alpha, gamma, pol, ageometry, afield);
-	};
-
-
-	/**
-	 * Constructor, create particle, set start values randomly according to all3inone.in.
-	 *
-	 * Sets start time ::xstart according to [SOURCE] in geometry.in.
-	 * Sets start ::polarisation according to config.in.
-	 * Sets start energy according to TMCGenerator::NeutronSpectrum.
-	 * Then tries to find a position according to [SOURCE] in geometry.in.
-	 * For volume sources the total energy ::Hstart is diced by TMCGenerator::NeutronSpectrum
-	 * and the position search is repeated until the kinetic energy ::Estart is >0.
-	 * Additionally the kinetic energy spectrum is weighted by sqrt(Estart) (see Golub/Richardson/Lamoreaux p. 82).
-	 * For surface sources the kinetic energy ::Estart is diced and all positions are allowed.
-	 *
-	 * @param number Particle number
-	 * @param ageometry Geomtry in which the particle will be simulated
-	 * @param src TSource in which particle should be generated
-	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TField used to calculate energies
-	 */
-	TNeutron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TField *afield): TParticle(NEUTRON, 0, m_n, mu_nSI){
-		xstart = mcgen.UniformDist(0,src.ActiveTime);
-
-		polarisation = mcgen.DicePolarisation(type);
-		Hstart = mcgen.NeutronSpectrum();
-
-		printf("Dice starting position for E_neutron = %LG neV ",Hstart*1e9);
-		fflush(stdout);
-		long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-		for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
-			if (nroll % 1000000 == 0){
-				printf("."); // print progress
-				fflush(stdout);
-			}
-
-			src.RandomPointInSourceVolume(mcgen, xstart, Hstart, ystart[0], ystart[1], ystart[2], alphastart, gammastart);
-			if (afield){
-				afield->BFeld(ystart[0], ystart[1], ystart[2], xstart, B);
-			}
-			ageometry.GetSolids(xstart, ystart, currentsolids);
-			if (src.sourcemode == "volume" || src.sourcemode == "customvol"){ // dice H for volume source
-				Estart = Hstart - m*gravconst*ystart[2] + polarisation*mu/ele_e*B[3][0] - AddPotential();
-				if (mcgen.UniformDist(0,1) > sqrt(Estart/Hstart))
-					Estart = -1; // correct weighting of phase space (see Golub/Richardson/Lamoreaux p. 82)
-			}
-			else{ // dice E for surface source
-				Estart = Hstart;
-				Hstart = Estart + m*gravconst*ystart[2] - polarisation*mu/ele_e*B[3][0] + AddPotential();
-			}
-			if (Estart >= 0){
-				printf(" Found! %i dice(s) rolled\n", nroll+1);
-				break;
-			}
-			else if (nroll >= MAX_DICE_ROLL){
-				ID = ID_INITIAL_NOT_FOUND;
-				printf(" ABORT: Failed %i times to find a compatible spot!! NO particle will be simulated!!\n\n", MAX_DICE_ROLL);
-				return;
-			}
-		}
-		long double r = sqrt(ystart[0]*ystart[0] + ystart[1]*ystart[1]);
-		long double phi = atan2(ystart[1],ystart[0]);
-
-		Init(number, xstart, mcgen.LifeTime(NEUTRON), r, phi, ystart[2],
-			Estart, alphastart, gammastart, polarisation, ageometry, afield);
-	};
-
-protected:
-	/**
-	 * Check for reflection on surfaces.
-	 *
-	 * Uses Fermi-potential formalism to calculate reflection/transmission probabilities.
-	 * Each reflection has a certain chance of being diffuse.
-	 * Diffuse reflection angles are cosine-distributed around the normal vector of the surface.
-	 * Prints surface hits into ::REFLECTLOG if reflectlog is set in config.in.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @param normal Normal vector of hit surface
-	 * @param leaving Solid that the particle is leaving
-	 * @param entering Solid that the particle is entering
-	 * @param resetintegration Tell integrator to restart integration at x2 because e.g. y2 was changed
-	 * @return Returns true if particle was reflected
-	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *entering, bool &resetintegration){
-		long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-		bool log = false, refl = false;
-		long double prob = mc->UniformDist(0,1);
-
-		long double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
-//		cout << "Leaving " << leaving->ID << " Entering " << entering->ID << " Enormal = " << Enormal << " Estep = " << Estep;
-		if (Enormal > Estep){ // transmission only possible if E > Estep
-			long double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-			long double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
-			long double transprob = 4*k1*k2/(k1 + k2)/(k1 + k2); // transmission probability
-//			cout << " TransProb = " << transprob << '\n';
-			if (prob < transprob){
-
-				for (int i = 0; i < 3; i++)
-					y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
-
-				resetintegration = true;
-				if (reflectlog & 2)
-					log = true;
-			}
-			else // no transmission -> reflection
-				refl = true;
-		}
-		else{
-			long double k1 = sqrt(Enormal); // wavenumber in first solid (only real part)
-			complex<long double> iEstep(Estep, -entering->mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
-			complex<long double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
-			long double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
-//			cout << " ReflProb = " << reflprob << '\n';
-			if (prob > reflprob){ // particle is not reflected
-				ID = entering->ID; // -> absorption on reflection
-				resetintegration = true;
-			}
-			else // no absorption -> reflection
-				refl = true;
-		}
-
-		long double phi_r = 0, theta_r = 0;
-		long double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-		if (refl){
-			//particle was neither transmitted nor absorbed, so it has to be reflected
-			prob = mc->UniformDist(0,1);
-			nrefl++;
-			if (prob >= entering->mat.DiffProb){
-				//************** specular reflection **************
-//				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
-				if(reflectlog & 1)
-					log = true;
-				x2 = x1;
-				y2 = y1;
-				y2[3] -= 2*vnormal*normal[0]; // reflect velocity
-				y2[4] -= 2*vnormal*normal[1];
-				y2[5] -= 2*vnormal*normal[2];
-			}
-			else{
-				//************** diffuse reflection ************
-				phi_r = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
-				theta_r = mc->SinCosDist(0, 0.5*pi);
-				if (vnormal > 0) theta_r += pi; // if normal points out of volume rotate by 180 degrees
-				if(reflectlog & 1)
-					log = true;
-				x2 = x1;
-				y2 = y1;
-				y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
-				y2[4] = vabs*sin(phi_r)*sin(theta_r);
-				y2[5] = vabs*cos(theta_r);
-				RotateVector(&y2[3],normal); // rotate coordinate system so that new z-axis lies on normal
-//				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
-			}
-		}
-
-		const solid *currentsolid;
-		if (refl)
-			currentsolid = leaving;
-		else
-			currentsolid = entering;
-
-		if (log){
-			long double H = 0.5*m_n*vabs*vabs + m_n*gravconst*y1[2] + currentsolid->mat.FermiReal; // total neutron energy
-			if (field){ // if there is a field, add magnetic potential to total neutron energy
-				long double B[4][4];
-				field->BFeld(y1[0], y1[1], y1[2], x1, B);
-				H += -polarisation*mu_nSI/ele_e*B[3][0];
-			}
-			int pol = 3;
-			if (polarisation == -1) pol = POLARISATION_BAD;
-			else if (polarisation == 1) pol = POLARISATION_GOOD;
-			fprintf(REFLECTLOG, "%i %i %i %i %i %i "
-								"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
-								"%.10LG %.10LG %.10LG %.10LG "
-								"%.10LG %.10LG\n",
-								jobnumber, particlenumber, type, pol, refl, currentsolid->ID,
-								x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
-								normal[0],normal[1],normal[2],H,
-								phi_r,theta_r);
-			fflush(REFLECTLOG);
-		}
-
-		return refl;
-	};
-
-
-	/**
-	 * Checks for absorption in solids using Fermi-potential formalism and does some additional calculations for neutrons
-	 *
-	 * Caclulates adiabacity condition (::frac).
-	 * Estimates spin flip probability according to Vladimirskii (::vlad)
-	 * and by doing a bruteforce integration of the Bloch equation describing spin precession.
-	 * Additionally it can print out a spatial neutron distribution matrix.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @param currentsolids Solid through which the particle is moving
-	 * @return Returns true if particle was absorbed
-	 */
-	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
-		bool result = false;
-		if (currentsolid->mat.FermiImag > 0){
-			long double prob = mc->UniformDist(0,1);
-			complex<long double> E(0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid->mat.FermiImag*1e-9); // E + i*W
-			complex<long double> k = sqrt(2*m_n*E)*ele_e/hbar; // wave vector
-			long double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
-			if (prob > exp(-imag(k)*l)){ // exponential probability decay
-				x2 = x1 + mc->UniformDist(0,1)*(x2 - x1); // if absorbed, chose a random time between x1 and x2
-				for (int i = 0; i < 6; i++)
-					y2[i] = stepper->dense_out(i, x2, stepper->hdid); // set y2 to position at random time
-				ID = currentsolid->ID;
-				result = true; // stop integration
-			}
-		}
-
-		// do special calculations for neutrons (spinflipcheck, snapshots, etc)
-		if (neutdist == 1)
-			fillndist(x1, y1, x2, y2); // write spatial neutron distribution
-
-		if (field){
-			long double B[4][4];
-			field->BFeld(y1[0],y1[1],y1[2],x1,B);
-			if (B[3][0] > 0){
-				// spin flip properties according to Vladimirsky and thumbrule
-				vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
-								   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
-								   y1[3], y1[4], y1[5]);
-				frac = thumbrule(B[0][0], B[1][0], B[2][0],
-								   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
-								   y1[3], y1[4], y1[5]);
-				vladtotal *= 1-vlad;
-				if (vlad > 1e-99)
-					vladmax = max(vladmax,log10(vlad));
-				if (frac > 1e-99)
-					thumbmax = max(thumbmax,log10(frac));
-			}
-
-			long double B2[4][4];
-			field->BFeld(y2[0],y2[1],y2[2],x2,B2);
-			long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2); // integrate spinflip probability
-			if (1-sp > 1e-30) logBF = log10(1-sp);
-			else logBF = -99;
-			BFsurvprob *= sp;
-			// flip the spin with a probability of 1-BFsurvprob
-			if (flipspin && mc->UniformDist(0,1) < 1-sp)
-			{
-				polarisation *= -1;
-				NSF++;
-				printf("\n The spin has flipped! Number of flips: %i\n",NSF);
-				result = true;
-			}
-		}
-
-		return result;
-	};
-
-
-	/**
-	 * Neutron decay.
-	 *
-	 * Create decay proton and electron and add them to secondaries list
-	 */
-	void Decay(){
-		long double v_p[3], v_e[3];
-		TParticle *p;
-		mc->NeutronDecay(&yend[3], v_p, v_e);
-		p = new TProton(particlenumber, xstart + dt, yend, v_p, polarisation, *geom, *mc, field);
-		secondaries.push_back(p);
-		p = new TElectron(particlenumber, xstart + dt, yend, v_e, polarisation, *geom, *mc, field);
-		secondaries.push_back(p);
-	};
-
-
-	/**
-	 * Potential energy, other than electromagnetic or gravitational, which is added to total energy of neutron
-	 *
-	 * @return Returns additional potential energy due to Fermi-Potential of solid
-	 */
-	long double AddPotential(){
-		return currentsolids.rbegin()->mat.FermiReal*1e-9;
-	}
-
-
-};
 
 
 #endif // PARTICLE_H_

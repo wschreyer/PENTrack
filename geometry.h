@@ -30,11 +30,11 @@ struct material{
 
 /// Struct to store solid information (read from geometry.in)
 struct solid{
-	string name;
-	material mat;
-	unsigned ID;
-	vector<long double> ignoretimes;
-	bool operator< (const solid s) const { return ID < s.ID; }; /// used to sort solids by ID
+	string name; ///< name of solid
+	material mat; ///< material of solid
+	unsigned ID; ///< ID of solid
+	vector<long double> ignoretimes; ///< pairs of times, between which the solid should be ignored
+	bool operator< (const solid s) const { return ID < s.ID; }; ///< used to sort solids by ID
 };
 
 
@@ -47,7 +47,7 @@ struct TGeometry{
 	public:
 		KDTree *kdtree; ///< kd-tree structure containing triangle meshes from STL-files
 		vector<solid> solids; ///< solids list
-		solid defaultsolid;
+		solid defaultsolid; ///< "vacuum", this solid's properties are used when the particle is not inside any other solid
 		
 		/**
 		 * Constructor, reads geometry configuration file, loads triangle meshes.
@@ -133,10 +133,11 @@ struct TGeometry{
 		/**
 		 * Get solids in which the point p lies
 		 *
+		 * @param t Time
 		 * @param p Point to test
 		 * @param currentsolids Set of solids in which the point is inside
 		 */
-		void GetSolids(const long double t, const long double p[3], set<solid> &currentsolids){
+		void GetSolids(const long double t, const long double p[3], std::set<solid> &currentsolids){
 			long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
 			set<TCollision> c;
 			currentsolids.clear();
@@ -238,10 +239,10 @@ struct TGeometry{
  * Class which can produce random particle starting points from different sources.
  *
  * There are four source modes which can be specified in the [SOURCE] section of the configuration file:
- * "volume" - random points inside a STL solid (::kdtree) are created;
- * "surface" - random points on triangles (part of ::geometry) COMPLETELY surrounded by a STL solid (::kdtree) are created;
- * "customvol" - random points inside a cylindrical coordinate range ([::r_min..::r_max]:[::phi_min..::phi_max]:[::z_min:::z_max]) are created;
- * "customsurf"	- random points on triangles (part of ::geometry) COMPLETELY inside a cylindrical coordinate range  ([::r_min..::r_max]:[::phi_min..::phi_max]:[::z_min:::z_max]) are created
+ * "volume" - random points inside a STL solid (TSource::kdtree) are created;
+ * "surface" - random points on triangles (part of TSource::geometry) COMPLETELY surrounded by a STL solid (TSource::kdtree) are created;
+ * "customvol" - random points inside a cylindrical coordinate range ([TSource::r_min..TSource::r_max]:[TSource::phi_min..TSource::phi_max]:[TSource::z_min..TSource::z_max]) are created;
+ * "customsurf"	- random points on triangles (part of TSource::geometry) COMPLETELY inside a cylindrical coordinate range  ([TSource::r_min..TSource::r_max]:[TSource::phi_min..TSource::phi_max]:[TSource::z_min..TSource::z_max]) are created
  */
 struct TSource{
 	public:
@@ -259,16 +260,16 @@ struct TSource{
 		long double Hmin_hfs; ///< Minimum total energy of high field seeking neutrons inside the source volume
 		long double ActiveTime; ///< the source produces particles in the time range [0..ActiveTime]
 		
-		vector<Triangle*> sourcetris; ///< list of triangles (part of ::geometry) inside the source volume (only relevant if source mode is "surface" or "customsurf")
-		long double sourcearea; ///< area of all triangles in ::sourcetris (needed for correct weighting)
+		vector<Triangle*> sourcetris; ///< list of triangles (part of TSource::geometry) inside the source volume (only relevant if source mode is "surface" or "customsurf")
+		long double sourcearea; ///< area of all triangles in TSource::sourcetris (needed for correct weighting)
 		
 
 		/**
-		 * Constructor, loads [SOURCE] section of configuration file, calculates ::Hmin_lfs and ::Hmin_hfs
+		 * Constructor, loads [SOURCE] section of configuration file, calculates TSource::Hmin_lfs and TSource::Hmin_hfs
 		 *
 		 * @param geometryin Configuration file containing [SOURCE] section
 		 * @param geom TGeometry class against which start points are checked and which contains source surfaces
-		 * @param field TField class to calculate ::Hmin_lfs and ::Hmin_hfs
+		 * @param field TField class to calculate TSource::Hmin_lfs and TSource::Hmin_hfs
 		 */
 		TSource(const char *geometryin, TGeometry &geom, TField &field){
 			geometry = &geom;
@@ -314,7 +315,7 @@ struct TSource{
 	
 
 		/**
-		 * Destructor, deletes ::kdtree
+		 * Destructor, deletes TSource::kdtree
 		 */
 		~TSource(){
 			if (kdtree) delete kdtree;
@@ -324,11 +325,11 @@ struct TSource{
 		/**
 		 * Create random point in source volume.
 		 *
-		 * "volume": Random points with isotropic velocity distribution inside the bounding box of ::kdtree are produced until ::InSourceVolume is true for a point.
-		 * "customvol": Random points with isotropic velocity deistribution in the coordinate range ([::r_min..::r_max]:[::phi_min..::phi_max]:[::z_min:::z_max]) are produced.
-		 * "surface/customsurf": A random point on a random triangle from the ::sourcetris list is chosen (weighted by triangle area).
-		 * 						Starting angles are cosine-distributed to the triangle normal and then angles and Ekin are modified according to ::E_normal.
-		 * This is repeated for all source modes until the point does not lie inside a solid in ::geometry.
+		 * "volume": Random points with isotropic velocity distribution inside the bounding box of TSource::kdtree are produced until TSource::InSourceVolume is true for a point.
+		 * "customvol": Random points with isotropic velocity deistribution in the coordinate range ([TSource::r_min..TSource::r_max]:[TSource::phi_min..TSource::phi_max]:[TSource::z_min..TSource::z_max]) are produced.
+		 * "surface/customsurf": A random point on a random triangle from the TSource::sourcetris list is chosen (weighted by triangle area).
+		 * 						Starting angles are cosine-distributed to the triangle normal and then angles and Ekin are modified according to TSource::E_normal.
+		 * This is repeated for all source modes until the point does not lie inside a solid in TSource::geometry.
 		 *
 		 * @param mc TMCGenerator to produce random number distributions
 		 * @param t Start time of particle
@@ -336,11 +337,10 @@ struct TSource{
 		 * @param x Returns starting x coordinate of particle
 		 * @param y Returns starting y coordinate of particle
 		 * @param z Returns starting z coordinate of particle
-		 * @param alpha Returns starting angle between position vector and velocity vector, projected onto xy-plane
-		 * @param gamma Returns starting angle between z axis and velocity vector
-		 * @param currentsolids Returns solids in which the particle is created
+		 * @param phi Returns azimuth of velocity vector
+		 * @param theta Returns polar angle of velocity vector
 		 */
-		void RandomPointInSourceVolume(TMCGenerator &mc, long double t, long double &Ekin, long double &x, long double &y, long double &z, long double &alpha, long double &gamma){
+		void RandomPointInSourceVolume(TMCGenerator &mc, long double t, long double &Ekin, long double &x, long double &y, long double &z, long double &phi, long double &theta){
 			long double p1[3];
 			for(;;){
 				if (sourcemode == "volume"){ // random point inside a STL-volume
@@ -348,7 +348,7 @@ struct TSource{
 					p1[1] = mc.UniformDist(kdtree->lo[1],kdtree->hi[1]); // random point
 					p1[2] = mc.UniformDist(kdtree->lo[2],kdtree->hi[2]); // random point
 					if (!InSourceVolume(p1)) continue;
-					mc.IsotropicDist(alpha, gamma);
+					mc.IsotropicDist(phi, theta);
 				}
 				else if (sourcemode == "customvol"){ // random point inside a volume defined by a custom parameter range
 					long double r = mc.LinearDist(r_min, r_max); // weighting because of the volume element and a r^2 probability outwards
@@ -357,7 +357,7 @@ struct TSource{
 					p1[0] = r*cos(phi);
 					p1[1] = r*sin(phi);
 					p1[2] = z;
-					mc.IsotropicDist(alpha, gamma);
+					mc.IsotropicDist(phi, theta);
 				}
 				else if (sourcemode == "surface" || sourcemode == "customsurf"){ // random point on a surface inside custom or STL volume
 					long double n[3];
@@ -395,8 +395,8 @@ struct TSource{
 					long double v[3] = {cos(winkeben)*sin(winksenkr), sin(winkeben)*sin(winksenkr), cos(winksenkr)};
 					RotateVector(v,n);
 
-					alpha = atan2(v[1],v[0]) - atan2(p1[1],p1[0]);
-					gamma = acos(v[2]);
+					phi = atan2(v[1],v[0]);
+					theta = acos(v[2]);
 				}
 				else{
 					printf("Invalid sourcemode: %s",sourcemode.c_str());

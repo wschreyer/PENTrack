@@ -29,7 +29,9 @@
 #include "nr/stepper.h"
 #include "nr/stepperdopr853.h"
 
-#include "particle.h"
+#include "neutron.h"
+#include "proton.h"
+#include "electron.h"
 #include "globals.h"
 #include "fields.h"
 #include "geometry.h"
@@ -50,7 +52,6 @@ int MonteCarloAnzahl=1; ///< number of particles for MC simulation (read from co
 int particletype; ///< type of particle which shall be simulated (read from config)
 int reflektlog = 0; ///< write reflections (1), transmissions (2) or both (3) to file? (read from config)
 vector<float> snapshots; ///< times when to take snapshots (read from config)
-int polarisation = POLARISATION_GOOD; ///< polarisation of neutrons (read from config)
 int decay = 2; ///< should neutrons decay? (no: 0; yes: 1; yes, with simulation of decay particles: 2) (read from config)
 long double decayoffset = 0; ///< start neutron decay timer after decayoffset seconds (read from config)
 long double tau_n = 885.7; ///< life time of neutrons (read from config)
@@ -197,7 +198,7 @@ int main(int argc, char **argv){
 			}
 			p->Integrate(SimTime, geom, mc, &field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog); // integrate particle
 			ID_counter[p->type % 3][p->ID]++; // increment counters
-			ntotalsteps += p->nsteps;
+			ntotalsteps += p->Nsteps;
 			IntegratorTime += p->comptime;
 			ReflTime += p->refltime;
 
@@ -205,7 +206,7 @@ int main(int argc, char **argv){
 				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
 					(*i)->Integrate(SimTime, geom, mc, &field, endlog, tracklog); // integrate secondary particles
 					ID_counter[(*i)->type % 3][(*i)->ID]++;
-					ntotalsteps += (*i)->nsteps;
+					ntotalsteps += (*i)->Nsteps;
 					IntegratorTime += (*i)->comptime;
 					ReflTime += (*i)->refltime;
 				}
@@ -251,7 +252,6 @@ int main(int argc, char **argv){
 void ConfigInit(void){
 	/* setting default values */
 	particletype = NEUTRON;
-	polarisation = POLARISATION_GOOD;
 	neutdist = 0;
 	outputopt = 2;
 	MonteCarloAnzahl = 1;
@@ -321,13 +321,12 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
     // print endlog header
 	fprintf(endlog,"jobnumber particle type polarisation "
                    "tstart xstart ystart zstart "
-                   "rstart phistart vstart alphastart gammastart "
+                   "vxstart vystart vzstart "
                    "Hstart Estart "
                    "tend xend yend zend "
-                   "rend phiend vend alphaend gammaend dt "
-                   "Hend Eend stopID NSF ComputingTime BFflipprob "
-                   "Nrefl vladmax vladtotal thumbmax trajlength "
-                   "Hmax\n");
+                   "vxend vyend vzend "
+                   "Hend Eend stopID Nspinflip ComputingTime "
+                   "Nhit trajlength Hmax\n");
 
 	if (particletype == NEUTRON && snapshots.size() > 0){
 		// open snapshot log
@@ -337,15 +336,14 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 	    	exit(-1);
 	    }
 	    // print snapshot log header
-		fprintf(snap,"jobnumber particle type polarisation "
-	                   "tstart xstart ystart zstart "
-	                   "rstart phistart vstart alphastart gammastart "
-	                   "Hstart Estart "
-	                   "tend xend yend zend "
-	                   "rend phiend vend alphaend gammaend dt "
-	                   "Hend Eend stopID NSF ComputingTime BFflipprob "
-	                   "Nrefl vladmax vladtotal thumbmax trajlength "
-	                   "Hmax\n");
+		fprintf(snap,	"jobnumber particle type polarisation "
+                		"tstart xstart ystart zstart "
+                		"vxstart vystart vzstart "
+                		"Hstart Estart "
+                		"tend xend yend zend "
+                		"vxend vyend vzend "
+                		"Hend Eend stopID Nspinflip ComputingTime "
+                		"Nhit trajlength Hmax\n");
 	}
 
 	if ((outputopt==OUTPUT_EVERYTHING)||(outputopt==OUTPUT_EVERYTHINGandSPIN)){
@@ -356,10 +354,10 @@ void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
 	    	exit(-1);
 	    }
 	    // print track log header
-		fprintf(tracklog,"particle type polarisation t x y z dxdt dydt dzdt "
-							"v H E Bx dBxdx dBxdy dBxdz By dBydx "
+		fprintf(tracklog,"particle type polarisation t x y z vx vy vz "
+							"H E Bx dBxdx dBxdy dBxdz By dBydx "
 							 "dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V "
-							 "timestep logvlad logthumb logBF\n");
+							 "timestep\n");
 	}
 
 	if (particletype == NEUTRON && reflektlog){
