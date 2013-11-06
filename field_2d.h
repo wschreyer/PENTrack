@@ -6,6 +6,7 @@
 #ifndef FIELD_2D_H_
 #define FIELD_2D_H_
 
+#include "field.h"
 
 /**
  * Translate VECTOR (not point) components from cylindrical to cartesian coordinates.
@@ -29,7 +30,7 @@ void CylToCart(long double v_r, long double v_phi, long double phi, long double 
  * Therefore it assumes that the fields are axisymmetric around the z axis.
  *
  */
-class TabField{
+class TabField: public TField{
 	private:
 		int m; ///< radial size of the table file
 		int n; ///< axial size of the arrays
@@ -54,7 +55,7 @@ class TabField{
 		 * Reads an Opera table file.
 		 *
 		 * File has to contain x and z coordinates, it may contain B_x, B_y ,B_z, E_x, E_y, E_z and V columns. If V is present, E_i are ignored.
-		 * Sets ::m, ::n, ::rdist, ::zdist, ::r_mi, ::z_mi according to the values in the table file which are used to determine the needed indeces on interpolation.
+		 * Sets TabField::m, TabField::n, TabField::rdist, TabField::zdist, TabField::r_mi, TabField::z_mi according to the values in the table file which are used to determine the needed indeces on interpolation.
 		 *
 		 * @param tabfile Path to table file
 		 * @param Bscale Magnetic field is always scaled by this factor
@@ -292,7 +293,7 @@ class TabField{
 		/**
 		 * Calculate bicubic interpolation coefficients for a table column
 		 *
-		 * Calls ::CalcDerivs for each column and determines the interpolation coefficients with ::bcucof
+		 * Calls TabField::CalcDerivs for each column and determines the interpolation coefficients with ::bcucof
 		 *
 		 * @param coeff Returns coefficients
 		 * @param Tab Table column
@@ -345,7 +346,7 @@ class TabField{
 		/**
 		 * Get magnetic field scale factor for a specific time.
 		 *
-		 * Determined by ::NullFieldTime, ::RampUpTime, ::FullFieldTime, ::RampDownTime
+		 * Determined by TabField::NullFieldTime, TabField::RampUpTime, TabField::FullFieldTime, TabField::RampDownTime
 		 *
 		 * @param t Time
 		 *
@@ -376,15 +377,15 @@ class TabField{
 		/**
 		 * Constructor.
 		 *
-		 * Calls ::ReadTabFile, ::CheckTab and for each column ::PreInterpol
+		 * Calls TabField::ReadTabFile, TabField::CheckTab and for each column TabField::PreInterpol
 		 *
 		 * @param tabfile Path of table file
 		 * @param Bscale Magnetic field is always scaled by this factor
 		 * @param Escale Electric field is always scaled by this factor
-		 * @param aNullFieldTime Sets ::NullFieldTime
-		 * @param aRampUpTime Sets ::RampUpTime
-		 * @param aFullFieldTime Sets ::FullFieldTime
-		 * @param aRampDownTime Set ::RampDownTime
+		 * @param aNullFieldTime Sets TabField::NullFieldTime
+		 * @param aRampUpTime Sets TabField::RampUpTime
+		 * @param aFullFieldTime Sets TabField::FullFieldTime
+		 * @param aRampDownTime Set TabField::RampDownTime
 		 */
 		TabField(const char *tabfile, long double Bscale, long double Escale,
 				long double aNullFieldTime, long double aRampUpTime, long double aFullFieldTime, long double aRampDownTime){
@@ -439,28 +440,25 @@ class TabField{
 				fflush(stdout);
 				PreInterpol(Ezc,EzTab);
 			}
-			printf("Done (%.f MB)\n",float(Brc.nrows()*Brc.ncols() + Bphic.nrows()*Bphic.ncols() + Bzc.nrows()*Bzc.ncols()
+			printf("Done (%.f MB)\n\n",float(Brc.nrows()*Brc.ncols() + Bphic.nrows()*Bphic.ncols() + Bzc.nrows()*Bzc.ncols()
 										 + Erc.nrows()*Erc.ncols() + Ezc.nrows()*Ezc.ncols() + Vc.nrows()*Vc.ncols())
 										*16*sizeof(Doub)/1024/1024);
 		};
 
-
 		/**
 		 * Get magnetic field at a specific point.
 		 *
-		 * Searches the right interpolation coefficients by determining the indices from ::r_mi, ::rdist, ::z_mi, ::zdist
+		 * Searches the right interpolation coefficients by determining the indices from TabField::r_mi, TabField::rdist, TabField::z_mi, TabField::zdist
 		 * and evaluates the interpolation polynom ::bcuint.
 		 * These radial, axial und azimuthal components have to be rotated into cartesian coordinate system.
 		 *
-		 * @param t Time
 		 * @param x X coordinate where the field shall be evaluated
 		 * @param y Y coordinate where the field shall be evaluated
 		 * @param z Z coordinate where the field shall be evaluated
-		 * @param B Returns magnetic field components B[0..2][0], their derivatives B[0..2][1..3], the absolute value B[3][0] and its derivatives B[3][1..3]
-		 *
-		 * @return Returns true if magnetic field could be evaluated at this point
+		 * @param t Time
+		 * @param B Adds magnetic field components B[0..2][0], their derivatives B[0..2][1..3], the absolute value B[3][0] and its derivatives B[3][1..3]
 		 */
-		bool BInterpol(long double t, long double x, long double y, long double z, long double B[4][4]){
+		void BField(long double x, long double y, long double z, long double t, long double B[4][4]){
 			long double r = sqrt(x*x+y*y);
 			long double Bscale = BFieldScale(t);
 			int indr = (int)((r - r_mi)/rdist);
@@ -470,46 +468,49 @@ class TabField{
 				long double rl = r_mi + indr*rdist;
 				long double zl = z_mi + indz*zdist;
 				long double Br = 0, dBrdr = 0, dBrdz = 0, Bphi = 0, dBphidr = 0, dBphidz = 0, dBzdr = 0;
+				long double Bx = 0, By = 0, Bz = 0, dBxdz = 0, dBydz = 0, dBzdz = 0;
 				long double phi = atan2(y,x);
 				if (Brc.nrows() > 0)   bcuint(Brc[indr][indz], 	 rl, rl+rdist, zl, zl+zdist, r, z, Br, dBrdr, dBrdz);
 				if (Bphic.nrows() > 0) bcuint(Bphic[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, Bphi, dBphidr, dBphidz);
-				CylToCart(Br,Bphi,phi,B[0][0],B[1][0]);
+				CylToCart(Br,Bphi,phi,Bx,By);
+				B[0][0] += Bx*Bscale;
+				B[1][0] += By*Bscale;
 				if (r > 0){
-					B[0][1] = dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r;
-					B[0][2] = dBrdr*cos(phi)*sin(phi) - dBphidr*sin(phi)*sin(phi) - (Br*cos(phi)*sin(phi) + Bphi*cos(phi)*cos(phi))/r;
-					B[1][1] = dBrdr*cos(phi)*sin(phi) + dBphidr*cos(phi)*cos(phi) - (Br*cos(phi)*sin(phi) - Bphi*sin(phi)*sin(phi))/r;
-					B[1][2] = dBrdr*sin(phi)*sin(phi) + dBphidr*cos(phi)*sin(phi) + (Br*cos(phi)*cos(phi) - Bphi*cos(phi)*sin(phi))/r;
+					B[0][1] += Bscale*(dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r);
+					B[0][2] += Bscale*(dBrdr*cos(phi)*sin(phi) - dBphidr*sin(phi)*sin(phi) - (Br*cos(phi)*sin(phi) + Bphi*cos(phi)*cos(phi))/r);
+					B[1][1] += Bscale*(dBrdr*cos(phi)*sin(phi) + dBphidr*cos(phi)*cos(phi) - (Br*cos(phi)*sin(phi) - Bphi*sin(phi)*sin(phi))/r);
+					B[1][2] += Bscale*(dBrdr*sin(phi)*sin(phi) + dBphidr*cos(phi)*sin(phi) + (Br*cos(phi)*cos(phi) - Bphi*cos(phi)*sin(phi))/r);
 				}
-				CylToCart(dBrdz,dBphidz,phi,B[0][3],B[1][3]);
-				if (Bzc.nrows() > 0)   bcuint(Bzc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, B[2][0], dBzdr, B[2][3]);
-				B[2][1] = dBzdr*cos(phi);
-				B[2][2] = dBzdr*sin(phi);
-				for (int i = 0; i < 4; i++)
-					for (int j = 0; j < 4; j++)
-						B[i][j] *= Bscale;
-				return (Brc.nrows() > 0 || Bphic.nrows() > 0 || Bzc.nrows() > 0);
+				CylToCart(dBrdz,dBphidz,phi,dBxdz,dBydz);
+				B[0][3] += dBxdz*Bscale;
+				B[1][3] += dBydz*Bscale;
+				if (Bzc.nrows() > 0)   bcuint(Bzc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, Bz, dBzdr, dBzdz);
+				B[2][0] += Bz*Bscale;
+				B[2][1] += dBzdr*cos(phi)*Bscale;
+				B[2][2] += dBzdr*sin(phi)*Bscale;
+				B[2][3] += dBzdz*Bscale;
 			}
-			return false;
 		};
 
 
 		/**
 		 * Get electric field at a specific point.
 		 *
-		 * Searches the right interpolation coefficients by determining the indices from ::r_mi, ::rdist, ::z_mi, ::zdist
+		 * Searches the right interpolation coefficients by determining the indices from TabField::r_mi, TabField::rdist, TabField::z_mi, TabField::zdist
 		 * and evaluates the interpolation polynom ::bcuint.
 		 * These radial, axial und azimuthal components have to be rotated into cartesian coordinate system.
 		 *
 		 * @param x X coordinate where the field shall be evaluated
 		 * @param y Y coordinate where the field shall be evaluated
 		 * @param z Z coordinate where the field shall be evaluated
+		 * @param t Time
 		 * @param V Returns electric potential
 		 * @param Ei Return electric field (negative spatial derivatives of V)
 		 *
 		 * @return Returns true if electric field could be evaluated at this point
 		 */
-		bool EInterpol(long double x, long double y, long double z, long double &V, long double Ei[3]){
-			long double dummy, dVdrj[3];
+		void EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]){
+			long double dummy, Vloc, dVdrj[3];
 			if (Vc.nrows() > 0){ // prefer E-field from potential over pure E-field interpolation
 				long double r = sqrt(x*x+y*y);
 				int indr = (int)((r - r_mi)/rdist);
@@ -519,12 +520,12 @@ class TabField{
 					// bicubic interpolation
 					long double rl = r_mi + indr*rdist;
 					long double zl = z_mi + indz*zdist;
-					bcuint(Vc[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, V, dVdrj[0], dVdrj[2]);
+					bcuint(Vc[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, Vloc, dVdrj[0], dVdrj[2]);
 					long double phi = atan2(y,x);
-					Ei[0] = -dVdrj[0]*cos(phi);
-					Ei[1] = -dVdrj[0]*sin(phi);
-					Ei[2] = -dVdrj[2];
-					return true;
+					V += Vloc;
+					Ei[0] += -dVdrj[0]*cos(phi);
+					Ei[1] += -dVdrj[0]*sin(phi);
+					Ei[2] += -dVdrj[2];
 				}
 			}
 			else if (Erc.nrows() > 0 || Ephic.nrows() > 0 || Ezc.nrows() > 0){
@@ -535,16 +536,17 @@ class TabField{
 					int indz = (int)((z - z_mi)/zdist);
 					long double rl = r_mi + indr*rdist;
 					long double zl = z_mi + indz*zdist;
-					long double Er = 0, Ephi = 0;
+					long double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0;
 					long double phi = atan2(y,x);
 					if (Erc.nrows() > 0)   bcuint(Erc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, Er, dummy, dummy);
 					if (Ephic.nrows() > 0) bcuint(Ephic[indr][indz], rl, rl+rdist, zl, zl+zdist, r, z, Ephi, dummy, dummy);
-					if (Ezc.nrows() > 0)   bcuint(Ezc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, Ei[2], dummy, dummy);
-					CylToCart(Er,Ephi,phi,Ei[0],Ei[1]);
-					return true;
+					if (Ezc.nrows() > 0)   bcuint(Ezc[indr][indz],   rl, rl+rdist, zl, zl+zdist, r, z, Ez, dummy, dummy);
+					CylToCart(Er,Ephi,phi,Ex,Ey);
+					Ei[0] += Ex;
+					Ei[1] += Ey;
+					Ei[2] += Ez;
 				}
 			}
-			return false;
 		};
 };
 

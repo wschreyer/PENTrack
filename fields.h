@@ -6,19 +6,17 @@
 #ifndef FIELDS_H_
 #define FIELDS_H_
 
-
+#include "field.h"
 #include "field_2d.h"
 #include "field_3d.h"
 #include "conductor.h"
 
 /**
- * Contains list of all fields (2D/3D-maps, conductors).
+ * Contains list of all fields (2D/3D-maps, conductors, ...).
  */
-struct TField{
+struct TFieldManager{
 	public:
-		vector<TabField*> tables2; ///< list of 2D-maps
-		vector<TabField3*> tables3; ///< list of 3D-maps
-		vector<TConductorField*> conductorfields; ///< list of conductor-created fields
+		vector<TField*> fields; ///< list of fields
 		int FieldOscillation; ///< If =1 field oscillation is turned on
 		long double OscillationFraction; ///< Field oscillation amplitude
 		long double OscillationFrequency; ///< Field oscillation frequency
@@ -33,7 +31,7 @@ struct TField{
 		 * @param aOscillationFraction Amplitude of field oscillation
 		 * @param aOscillationFrequency Frequency of field oscillation
 		 */
-		TField(const char *infilename, int aFieldOscillation = 0, long double aOscillationFraction = 0, long double aOscillationFrequency = 0){
+		TFieldManager(const char *infilename, int aFieldOscillation = 0, long double aOscillationFraction = 0, long double aOscillationFrequency = 0){
 			FieldOscillation = aFieldOscillation;
 			OscillationFraction = aOscillationFraction;
 			OscillationFrequency = aOscillationFrequency;
@@ -53,12 +51,8 @@ struct TField{
 		/**
 		 * Destructor, delete all fields.
 		 */
-		~TField(){
-			for (vector<TabField*>::iterator i = tables2.begin(); i != tables2.end(); i++)
-				delete (*i);
-			for (vector<TabField3*>::iterator i = tables3.begin(); i != tables3.end(); i++)
-				delete (*i);	
-			for (vector<TConductorField*>::iterator i = conductorfields.begin(); i != conductorfields.end(); i++)
+		~TFieldManager(){
+			for (vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++)
 				delete (*i);
 		};
 	
@@ -78,23 +72,16 @@ struct TField{
 		 * @param t Time
 		 * @param B Returns magnetic field component matrix
 		 */
-		void BFeld (long double x, long double y, long double z, long double t, long double B[4][4]){      //B-Feld am Ort des Teilchens berechnen
+		void BField (long double x, long double y, long double z, long double t, long double B[4][4]){      //B-Feld am Ort des Teilchens berechnen
 			for (int i = 0; i < 4; i++)
 				for (int j = 0; j < 4; j++)
 					B[i][j] = 0;
 
 			long double BFeldSkal = BFieldScale(t);
 			if (BFeldSkal != 0){
-				for (vector<TabField*>::iterator i = tables2.begin(); i != tables2.end(); i++){
-					if ((*i)->BInterpol(t, x, y, z, B))
-						break;
+				for (vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++){
+					(*i)->BField(x, y, z, t, B);
 				}
-				for (vector<TabField3*>::iterator i = tables3.begin(); i != tables3.end(); i++){
-					if ((*i)->BInterpol(t, x, y, z, B))
-						break;
-				}
-				for (vector<TConductorField*>::iterator i = conductorfields.begin(); i != conductorfields.end(); i++)
-					(*i)->BFeld(x,y,z,B);
 
 				if (BFeldSkal != 1)
 					for (int i = 0; i < 3; i++)
@@ -119,18 +106,14 @@ struct TField{
 		 * @param x Cartesian x coordinate
 		 * @param y Cartesian y coordinate
 		 * @param z Cartesian z coordinate
+		 * @param t Time
 		 * @param V Return electric potential (!=0 only if a map with potential was loaded)
 		 * @param Ei Returns electric field vector
 		 */
-		void EFeld(long double x, long double y, long double z, long double &V, long double Ei[3]){
+		void EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]){
 			Ei[0] = Ei[1] = Ei[2] = V = 0;
-			for (vector<TabField*>::iterator i = tables2.begin(); i != tables2.end(); i++){
-				if ((*i)->EInterpol(x, y, z, V, Ei))
-					break;
-			}
-			for (vector<TabField3*>::iterator i = tables3.begin(); i != tables3.end(); i++){
-				if ((*i)->EInterpol(x, y, z, V, Ei))
-					break;
+			for (vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++){
+				(*i)->EField(x, y, z, t, V, Ei);
 			}
 		};
 	
@@ -158,13 +141,13 @@ struct TField{
 					infile >> ft >> Bscale >> Escale >> NullFieldTime >> RampUpTime >> FullFieldTime >> RampDownTime;
 					TabField *tf;
 					tf = new TabField(ft.c_str(), Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime);
-					tables2.push_back(tf);
+					fields.push_back(tf);
 				}
 				else if (type == "3Dtable"){
 					infile >> ft >> Bscale >> Escale >> NullFieldTime >> RampUpTime >> FullFieldTime >> RampDownTime;
 					TabField3 *tf;
 					tf = new TabField3(ft.c_str(), Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime);
-					tables3.push_back(tf);
+					fields.push_back(tf);
 				}
 				else if (type == "InfiniteWireZ"){
 					infile >> Ibar >> p1 >> p2;
@@ -199,7 +182,7 @@ struct TField{
 					cf = new TFullRacetrack(p1, p2, p3, Ibar);
 				}
 				if (cf)
-					conductorfields.push_back(cf);
+					fields.push_back(cf);
 			}while(infile.good() && getline(infile,line).good());
 		};
 

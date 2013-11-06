@@ -6,23 +6,31 @@
 #ifndef RACETRACK_H_
 #define RACETRACK_H_
 
+#include "field.h"
+
 /**
  * Virtual base class for all straight wire classes.
  */
-struct TConductorField{
+struct TConductorField: public TField{
 	long double I; ///< current through wire
-	TConductorField(long double aI): I(aI){}; ///< constructor
-	virtual ~TConductorField(){}; ///< destructor
+	/**
+	 * Constructor
+	 *
+	 * Sets current through wire TConductorField::I
+	 */
+	TConductorField(long double aI): I(aI){};
 
 	/**
-	 * Returns magnetic field produced by wire.
+	 * Adds no electric field.
 	 *
 	 * @param x Cartesian x coordinate
 	 * @param y Cartesian y coordinate
 	 * @param z Cartesian z coordinate
-	 * @param B Magnetic field components matrix
+	 * @param t Time
+	 * @param V Electric potential
+	 * @param Ei Electric field components
 	 */
-	virtual void BFeld(long double x, long double y, long double z, long double B[4][4]) = 0;
+	void EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]){};
 };
 
 /**
@@ -41,7 +49,7 @@ struct TFiniteWire: public TConductorField{
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
 	TFiniteWire(long double SW1xx, long double SW1yy, long double SW1zz, long double SW2xx, long double SW2yy, long double SW2zz, long double aI): TConductorField(aI), SW1x(SW1xx), SW1y(SW1yy), SW1z(SW1zz), SW2x(SW2xx), SW2y(SW2yy), SW2z(SW2zz){};
-	void BFeld(const long double x, const long double y, const long double z, long double B[4][4])
+	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4])
 	{
 		long double vorfaktor = mu0 * I / (4 * pi);
 
@@ -188,7 +196,7 @@ struct TFiniteWireX: public TConductorField{
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
 	TFiniteWireX(long double SW1xx, long double SW2xx, long double SWzz, long double aI): TConductorField(aI), SW1x(SW1xx), SW2x(SW2xx), SWz(SWzz){};
-	void BFeld(const long double x, const long double y, const long double z, long double B[4][4])
+	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4])
 	{
 		long double vorfaktor = mu0 * I / (4 * pi);
 
@@ -264,7 +272,7 @@ struct TFiniteWireY: public TConductorField{
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
 	TFiniteWireY(long double SW1yy, long double SW2yy, long double SWzz, long double aI): TConductorField(aI), SW1y(SW1yy), SW2y(SW2yy), SWz(SWzz){};
-	void BFeld(const long double x, const long double y, const long double z, long double B[4][4])
+	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4])
 	{
 		long double vorfaktor = mu0 * I / (4 * pi);
 
@@ -337,7 +345,7 @@ struct TFiniteWireZ: public TConductorField{
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
 	TFiniteWireZ(long double SWxx, long double SWyy, long double SW1zz, long double SW2zz, long double aI): TConductorField(aI), SWx(SWxx), SWy(SWyy), SW1z(SW1zz), SW2z(SW2zz){};
-	void BFeld(const long double x, const long double y, const long double z, long double B[4][4])
+	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4])
 	{
 		long double vorfaktor = mu0 * I / (4 * pi);
 
@@ -415,7 +423,7 @@ struct TFiniteWireZCenter: public TConductorField{
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
 	TFiniteWireZCenter(long double SW1zz, long double SW2zz, long double aI): TConductorField(aI), SW1z(SW1zz), SW2z(SW2zz){};
-	void BFeld(const long double x, const long double y, const long double z, long double B[4][4]){
+	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]){
 
 		long double vorfaktor = mu0 * I / (2 * pi);
 		long double r2 = x*x + y*y;
@@ -445,7 +453,7 @@ struct TFullRacetrack: public TConductorField{
 	 * Constructor, requires coordinates, size and current.
 	 */
 	TFullRacetrack(long double SW1zz, long double SW2zz, long double SWrr, long double aI): TConductorField(aI), SW1z(SW1zz), SW2z(SW2zz), SWr(SWrr){};
-	void BFeld(long double x, long double y, long double z, long double B[4][4]){
+	void BField(long double x, long double y, long double z, long double t, long double B[4][4]){
 		long double vorfaktor = mu0 * I / (4 * pi);
 
 		long double t1 = x * x;
@@ -886,7 +894,7 @@ struct TInfiniteWireZ: public TConductorField{
 	 * Constructor, requires coordinates and current.
 	 */
 	TInfiniteWireZ(long double lxx, long double lyy, long double aI): TConductorField(aI), lx(lxx), ly(lyy){};
-	void BFeld(long double x,long double y,long double z, long double B[4][4]){
+	void BField(long double x,long double y,long double z, long double t, long double B[4][4]){
 		// cartesian coordinates of neutron
 		// cartesian coordinates of racetracks
 		long double vorfaktor = mu0 * I / (2 * pi);
@@ -924,7 +932,7 @@ struct TInfiniteWireZCenter: public TConductorField{
 	 * Constructor, requires current.
 	 */
 	TInfiniteWireZCenter(long double aI): TConductorField(aI){};
-	void BFeld(const long double x, const long double y, const long double z, long double B[4][4]){
+	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]){
 
 		long double vorfaktor = mu0 * I / (2 * pi);
 		long double r2 = x*x + y*y;

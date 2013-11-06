@@ -34,7 +34,11 @@ struct solid{
 	material mat; ///< material of solid
 	unsigned ID; ///< ID of solid
 	vector<long double> ignoretimes; ///< pairs of times, between which the solid should be ignored
-	bool operator< (const solid s) const { return ID < s.ID; }; ///< used to sort solids by ID
+
+	/**
+	 * Comparison operator used to sort solids by priority
+	 */
+	bool operator< (const solid s) const { return ID < s.ID; };
 };
 
 
@@ -58,7 +62,6 @@ struct TGeometry{
 			ifstream infile(geometryin);
 			string line;
 			vector<material> materials;	// dynamic array to store material properties
-			printf("\n");
 			while (infile.good()){
 				infile >> ws; // ignore whitespaces
 				if ((infile.peek() == '[') && getline(infile,line).good()){	// parse geometry.in for section header
@@ -269,9 +272,9 @@ struct TSource{
 		 *
 		 * @param geometryin Configuration file containing [SOURCE] section
 		 * @param geom TGeometry class against which start points are checked and which contains source surfaces
-		 * @param field TField class to calculate TSource::Hmin_lfs and TSource::Hmin_hfs
+		 * @param field TFieldManager class to calculate TSource::Hmin_lfs and TSource::Hmin_hfs
 		 */
-		TSource(const char *geometryin, TGeometry &geom, TField &field){
+		TSource(const char *geometryin, TGeometry &geom, TFieldManager &field){
 			geometry = &geom;
 			kdtree = NULL;
 			E_normal = 0;
@@ -497,15 +500,15 @@ struct TSource{
 		/**
 		 * Calculates energies of low and high field seeking neutrons at point p and updates Hmin_hfs/lfs accordingly.
 		 *
-		 * @param field TField to calculate magnet fields
+		 * @param field TFieldManager to calculate magnet fields
 		 * @param p Point to calculate energy at
 		 */
-		void CalcHmin(TField &field, long double p[3]){
+		void CalcHmin(TFieldManager &field, long double p[3]){
 			set<solid> solids;
 			geometry->GetSolids(0, p, solids);
 
 			long double B[4][4];
-			field.BFeld(p[0],p[1],p[2],0,B);
+			field.BField(p[0],p[1],p[2],0,B);
 			long double Epot = m_n*gravconst*p[2] + solids.rbegin()->mat.FermiReal*1e-9;
 			long double Emag = -(mu_nSI/ele_e)*B[3][0];
 			long double Hlfs = Epot + Emag;

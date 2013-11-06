@@ -42,8 +42,8 @@
 void ConfigInit(); // read config.in
 void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog);
 void OutputCodes(map<int, int> ID_counter[3]); // print simulation summary at program exit
-void PrintBFieldCut(const char *outfile, TField &field); // evaluate fields on given plane and write to outfile
-void PrintBField(const char *outfile, TField &field);
+void PrintBFieldCut(const char *outfile, TFieldManager &field); // evaluate fields on given plane and write to outfile
+void PrintBField(const char *outfile, TFieldManager &field);
 void PrintGeometry(const char *outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
 
 
@@ -110,7 +110,7 @@ int main(int argc, char **argv){
 	
 	cout << "Loading fields..." << '\n';
 	// load field configuration from geometry.in
-	TField field(string(inpath + "/geometry.in").c_str());
+	TFieldManager field(string(inpath + "/geometry.in").c_str());
 
 	switch(particletype)
 	{
@@ -121,7 +121,7 @@ int main(int argc, char **argv){
 	}
 
 
-	cout << "Loading geometry..." << '\n';
+	cout << "Loading geometry...\n";
 	//load geometry configuration from geometry.in
 	TGeometry geom(string(inpath + "/geometry.in").c_str());
 	
@@ -131,11 +131,11 @@ int main(int argc, char **argv){
 		return 0;
 	}
 	
-	cout << "Loading source..." << '\n';
+	cout << "Loading source...\n";
 	// load source configuration from geometry.in
 	TSource source(string(inpath + "/geometry.in").c_str(), geom, field);
 	
-	cout << "Loading random number generator..." << '\n';
+	cout << "Loading random number generator...\n";
 	// load random number generator from all3inone.in
 	TMCGenerator mc(string(inpath + "/particle.in").c_str());
 	
@@ -151,10 +151,10 @@ int main(int argc, char **argv){
 	gettimeofday(&simstart, NULL);	
 
 	printf(
-	" ################################################################\n"
-	" ###                 Welcome to PNTracker,                    ###\n"
-	" ###     the tracking program for neutrons and protons        ###\n"
-	" ################################################################\n");
+	" ########################################################################\n"
+	" ###                      Welcome to PENTrack,                        ###\n"
+	" ### a simulation tool for ultra-cold neutrons, protons and electrons ###\n"
+	" ########################################################################\n");
 
 	map<int, int> ID_counter[3]; // Array of three vectors (for n, p and e) to store particle kennzahlen
 
@@ -193,7 +193,7 @@ int main(int argc, char **argv){
 			else if (particletype == ELECTRON)
 				p = new TElectron(iMC, geom, source, mc, &field);
 			else{
-				printf("\nDon't know protneut==%i! Exiting...\n",particletype);
+				printf("\nDon't know particletype==%i! Exiting...\n",particletype);
 				exit(-1);
 			}
 			p->Integrate(SimTime, geom, mc, &field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog); // integrate particle
@@ -414,9 +414,9 @@ void OutputCodes(map<int, int> ID_counter[3]){
  * The slice plane is given by three points BCutPlayPoint[0..8] on the plane
  *
  * @param outfile filename of result file
- * @param field TField structure which should be evaluated
+ * @param field TFieldManager structure which should be evaluated
  */
-void PrintBFieldCut(const char *outfile, TField &field){
+void PrintBFieldCut(const char *outfile, TFieldManager &field){
 	// get directional vectors from points on plane by u = p2-p1, v = p3-p1
 	long double u[3] = {BCutPlanePoint[3] - BCutPlanePoint[0], BCutPlanePoint[4] - BCutPlanePoint[1], BCutPlanePoint[5] - BCutPlanePoint[2]};
 	long double v[3] = {BCutPlanePoint[6] - BCutPlanePoint[0], BCutPlanePoint[7] - BCutPlanePoint[1], BCutPlanePoint[8] - BCutPlanePoint[2]};
@@ -440,12 +440,12 @@ void PrintBFieldCut(const char *outfile, TField &field){
 			// print B-/E-Field to file
 			fprintf(cutfile, "%LG %LG %LG ", Pp[0],Pp[1],Pp[2]);
 			
-			field.BFeld(Pp[0], Pp[1], Pp[2], 0, B);
+			field.BField(Pp[0], Pp[1], Pp[2], 0, B);
 			for (int k = 0; k < 4; k++)
 				for (int l = 0; l < 4; l++)
 					fprintf(cutfile, "%LG ",B[k][l]);
 
-			field.EFeld(Pp[0], Pp[1], Pp[2], V, Ei);
+			field.EField(Pp[0], Pp[1], Pp[2], 0, V, Ei);
 			fprintf(cutfile, "%LG %LG %LG %LG\n",
 							  Ei[0],Ei[1],Ei[2],V);
 		}
@@ -467,7 +467,7 @@ void PrintBFieldCut(const char *outfile, TField &field){
  * @param outfile Filename of output file
  * @param field TField structure which should be evaluated
  */
-void PrintBField(const char *outfile, TField &field){
+void PrintBField(const char *outfile, TFieldManager &field){
 	// print BField to file
 	FILE *bfile = fopen(outfile, "w");
 	if (!bfile){
@@ -487,7 +487,7 @@ void PrintBField(const char *outfile, TField &field){
 	// sample space in cylindrical pattern
 	for (long double r = rmin; r <= rmax; r += dr){
 		for (long double z = zmin; z <= zmax; z += dz){
-			field.BFeld(r, 0, z, 500.0, B); // evaluate field
+			field.BField(r, 0, z, 500.0, B); // evaluate field
 			// print field values
 			fprintf(bfile,"%LG %G %LG %LG %LG %LG %G %G %LG \n",r,0.0,z,B[0][0],B[1][0],B[2][0],0.0,0.0,B[3][0]);
 			printf("r=%LG, z=%LG, Br=%LG T, Bz=%LG T\n",r,z,B[0][0],B[2][0]);

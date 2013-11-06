@@ -38,9 +38,9 @@ public:
 	 * @param ageometry Geomtry in which the particle will be simulated
 	 * @param src TSource in which particle should be generated
 	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TField used to calculate energies
+	 * @param afield TFieldManager used to calculate energies
 	 */
-	TNeutron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TField *afield)
+	TNeutron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TFieldManager *afield)
 			: TParticle(NEUTRON, 0, m_n, mu_nSI){
 		tstart = mcgen.UniformDist(0,src.ActiveTime);
 
@@ -182,7 +182,7 @@ protected:
 			long double H = 0.5*m_n*vabs*vabs + m_n*gravconst*y1[2] + currentsolid->mat.FermiReal; // total neutron energy
 			if (field){ // if there is a field, add magnetic potential to total neutron energy
 				long double B[4][4];
-				field->BFeld(y1[0], y1[1], y1[2], x1, B);
+				field->BField(y1[0], y1[1], y1[2], x1, B);
 				H += -polarisation*mu_nSI/ele_e*B[3][0];
 			}
 			fprintf(REFLECTLOG, "%i %i %i %i %i %i "
@@ -237,7 +237,7 @@ protected:
 
 		if (field){
 			long double B[4][4];
-			field->BFeld(y1[0],y1[1],y1[2],x1,B);
+			field->BField(y1[0],y1[1],y1[2],x1,B);
 /*
 			if (B[3][0] > 0){
 				// spin flip properties according to Vladimirsky and thumbrule
@@ -255,7 +255,7 @@ protected:
 			}
 */
 			long double B2[4][4];
-			field->BFeld(y2[0],y2[1],y2[2],x2,B2);
+			field->BField(y2[0],y2[1],y2[2],x2,B2);
 			long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2); // integrate spinflip probability
 //			if (1-sp > 1e-30) logBF = log10(1-sp);
 //			else logBF = -99;
@@ -299,7 +299,7 @@ protected:
 	 *
 	 * @return Returns additional potential energy due to Fermi-Potential of solid
 	 */
-	long double Epot(const long double t, const long double y[3], TField *field){
+	long double Epot(const long double t, const long double y[3], TFieldManager *field){
 		return TParticle::Epot(t, y, field) + currentsolids.rbegin()->mat.FermiReal*1e-9;
 	}
 

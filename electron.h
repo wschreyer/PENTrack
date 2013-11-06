@@ -31,7 +31,7 @@ public:
 	 * @param afield TField used to calculate energies (can be NULL)
 	 */
 	TElectron(int number, TGeometry &ageometry, TSource &src,
-				TMCGenerator &mcgen, TField *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
+				TMCGenerator &mcgen, TFieldManager *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
 		Init(number, ageometry, src, mcgen, afield);
 	};
 
@@ -54,7 +54,7 @@ public:
 	 */
 	TElectron(int number, long double t, long double atau, long double x, long double y, long double z,
 			long double vx, long double vy, long double vz, int pol, long double trajl,
-			TGeometry &ageometry, TField *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
+			TGeometry &ageometry, TFieldManager *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
 		InitV(number, t, atau, x, y, z, vx, vy, vz, pol, trajl, ageometry, afield);
 	}
 

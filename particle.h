@@ -106,7 +106,7 @@ struct TParticle{
 		 * @param areflectlog Should reflections (1) or transmissions (2) or both (3) be logged?
 		 * @param aREFLECTLOG FILE-pointer into which reflection and transmission are logged
 		 */
-		void Integrate(long double tmax, TGeometry &geometry, TMCGenerator &mcgen, TField *afield, FILE *ENDLOG, FILE *trackfile,
+		void Integrate(long double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, FILE *ENDLOG, FILE *trackfile,
 						FILE *SNAP = NULL, vector<float> *snapshots = NULL, int areflectlog = 0, FILE *aREFLECTLOG = NULL){
 			geom = &geometry;
 			if (currentsolids.empty())
@@ -231,7 +231,7 @@ struct TParticle{
 		std::set<solid> currentsolids; ///< solids in which particle is currently inside
 		TGeometry *geom; ///< TGeometry structure passed by "Integrate"
 		TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
-		TField *field; ///< TField structure passed by "Integrate"
+		TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
 		StepperDopr853<TParticle> *stepper; ///< ODE integrator
 		int reflectlog; ///< Should reflections (1) or transmissions (2) or both (3) be logged? Passed by "Integrate"
 		FILE *REFLECTLOG; ///< reflection log file passed by "Integrate"
@@ -248,10 +248,10 @@ struct TParticle{
 		 * @param ageometry TGeometry in which the particle will be simulated
 		 * @param src TSource in which particle should be generated
 		 * @param mcgen TMCGenerator used to dice inital values
-		 * @param afield TField used to calculate energies (can be NULL)
+		 * @param afield TFieldManager used to calculate energies (can be NULL)
 		 */
 		void Init(int number, TGeometry &ageometry, TSource &src,
-					TMCGenerator &mcgen, TField *afield){
+					TMCGenerator &mcgen, TFieldManager *afield){
 			tstart = mcgen.UniformDist(0,src.ActiveTime);
 			polarisation = mcgen.DicePolarisation(type);
 			Estart = mcgen.Spectrum(type);
@@ -284,7 +284,7 @@ struct TParticle{
 		 */
 		void InitE(int number, long double t, long double atau, long double x, long double y, long double z,
 				long double Ekin, long double phi, long double theta, int pol, long double trajl,
-				TGeometry &ageometry, TField *afield){
+				TGeometry &ageometry, TFieldManager *afield){
 			long double gammarel = Ekin/m/c_0/c_0 + 1;
 			long double vstart;
 			if (gammarel < 1.0001)
@@ -317,7 +317,7 @@ struct TParticle{
 		 */
 		void InitV(int number, long double t, long double atau, long double x, long double y, long double z,
 				long double vx, long double vy, long double vz, int pol, long double trajl,
-				TGeometry &ageometry, TField *afield){
+				TGeometry &ageometry, TFieldManager *afield){
 			ID = ID_UNKNOWN;
 			trajlength = comptime = refltime = 0;
 			Nhit = Nspinflip = Nsteps = 0;
@@ -372,9 +372,9 @@ struct TParticle{
 			if (field){
 				long double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
 				if (q != 0 || (mu != 0 && polarisation != 0))
-					field->BFeld(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
+					field->BField(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
 				if (q != 0)
-					field->EFeld(y[0],y[1],y[2], V, E); // if particle has charge caculate electric field+potential
+					field->EField(y[0],y[1],y[2], x, V, E); // if particle has charge caculate electric field+potential
 				if (q != 0){
 					F[0] += q*(E[0] + y[4]*B[2][0] - y[5]*B[1][0]); // add Lorentz-force
 					F[1] += q*(E[1] + y[5]*B[0][0] - y[3]*B[2][0]);
@@ -558,15 +558,15 @@ struct TParticle{
 		 *
 		 * @param t Time
 		 * @param y Coordinate vector
-		 * @param field Pointer to TField structure for electric and magnetic potential
+		 * @param field Pointer to TFieldManager structure for electric and magnetic potential
 		 *
 		 * @return Returns potential energy
 		 */
-		virtual long double Epot(const long double t, const long double y[3], TField *field = NULL){
+		virtual long double Epot(const long double t, const long double y[3], TFieldManager *field = NULL){
 			if ((q != 0 || mu != 0) &&field){
 				long double B[4][4], E[3], V;
-				field->BFeld(y[0],y[1],y[2],t,B);
-				field->EFeld(y[0],y[1],y[2],V,E);
+				field->BField(y[0],y[1],y[2],t,B);
+				field->EField(y[0],y[1],y[2],t,V,E);
 				return m*gravconst*y[2] + q/ele_e*V - polarisation*mu/ele_e*B[3][0];
 			}
 			return m*gravconst*y[2];
@@ -579,7 +579,7 @@ struct TParticle{
 		 * @param y State vector (position+velocity)
 		 * @param field Electric and magnetic fields (needed to determine total energy)
 		 */
-		void SetEndValues(long double x, VecDoub_I &y, TField *field){
+		void SetEndValues(long double x, VecDoub_I &y, TFieldManager *field){
 			tend = x;
 			for (int i = 0; i < 6; i++)
 				yend[i] = y[i];
@@ -637,8 +637,8 @@ struct TParticle{
 //			long double logvlad = 0.0, logfrac = 0.0;
 			printf("-");
 			if (field){
-				field->BFeld(y[0],y[1],y[2],x,B);
-				field->EFeld(y[0],y[1],y[2],V,E);
+				field->BField(y[0],y[1],y[2],x,B);
+				field->EField(y[0],y[1],y[2],x,V,E);
 			}
 			SetEndValues(x,y,field);
 			

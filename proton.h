@@ -28,10 +28,10 @@ public:
 	 * @param ageometry TGeometry in which the particle will be simulated
 	 * @param src TSource in which particle should be generated
 	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TField used to calculate energies (can be NULL)
+	 * @param afield TFieldManager used to calculate energies (can be NULL)
 	 */
 	TProton(int number, TGeometry &ageometry, TSource &src,
-				TMCGenerator &mcgen, TField *afield): TParticle(PROTON, ele_e, m_p, 0){
+				TMCGenerator &mcgen, TFieldManager *afield): TParticle(PROTON, ele_e, m_p, 0){
 		Init(number, ageometry, src, mcgen, afield);
 	};
 
@@ -54,7 +54,7 @@ public:
 	 */
 	TProton(int number, long double t, long double atau, long double x, long double y, long double z,
 			long double vx, long double vy, long double vz, int pol, long double trajl,
-			TGeometry &ageometry, TField *afield): TParticle(PROTON, ele_e, m_p, 0){
+			TGeometry &ageometry, TFieldManager *afield): TParticle(PROTON, ele_e, m_p, 0){
 		InitV(number, t, atau, x, y, z, vx, vy, vz, pol, trajl, ageometry, afield);
 	}
 
