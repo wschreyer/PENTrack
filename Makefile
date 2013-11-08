@@ -1,4 +1,4 @@
-SRC = main.c mersenne/mt.c kdtree.c libtricubic/*.cpp
+SRC = main.c kdtree.c libtricubic/*.cpp
 OBJ=$(SRC:.c=.o)
 
 
@@ -10,7 +10,7 @@ EXE=PENTrack
 
 .PHONY: all
 all:
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SRC) -o $(EXE)
+	$(CC) $(SRC) -o $(EXE) $(CFLAGS) $(LDFLAGS)
 	
 .PHONY: clean
 clean:

@@ -12,81 +12,77 @@
 #include <string>
 #include <map>
 
-#include "mersenne/mt.h"
+#include "nr/ran.h"
 #include "globals.h"
 
 /**
  * Class to generate random numbers in several distributions.
  */
 struct TMCGenerator{
-	mt_state_t v_mt_state; ///< mersenne twister random number generator
+	Ran *rangen; ///< random number generator
 	
 	map<string, map<string, string> > invars; ///< contains variables from *.in file
 
 	/**
 	 * Constructor.
 	 *
-	 * Create random seed and read all3inone.in.
+	 * Create random seed and read infile.
 	 *
 	 * @param infile Path to configuration file
 	 */
 	TMCGenerator(const char *infile){
-		time_t mytime;
-		tm *monthday;
-		timeval daysec;
-	
-		// for random numbers we need to set an initial seed
-		mytime = time(NULL);
-		
-		monthday = localtime(&mytime);
-		unsigned long int seed = (unsigned long int)(monthday->tm_mday)*24*60*60*1000; // add day in ms
-		seed = seed + (unsigned long int)(monthday->tm_hour)*60*60*1000; // add hour in ms
-		seed = seed + (unsigned long int)(monthday->tm_min)*60*1000; // add minute in ms
-		seed = seed + (unsigned long int)(monthday->tm_sec)*1000;  // add second in ms
-		gettimeofday(&daysec, NULL);
-		seed = seed + daysec.tv_usec/1000; // add milliseconds
-
-		printf("Random Seed: %lu\n\n", seed);
-	
-		mt_set (&v_mt_state, seed);
+		// get high resolution timestamp to generate seed
+		timespec highrestime;
+		clock_gettime(CLOCK_REALTIME, &highrestime);
+		Ullong seed = (Ullong)highrestime.tv_sec * (Ullong)1000000000 + (Ullong)highrestime.tv_nsec;
+		printf("Random Seed: %Lu\n\n", seed);
+		rangen = new Ran(seed);
 
 		ReadInFile(infile, invars);
 	};
 
+	/**
+	 * Destructor.
+	 *
+	 * Delete random number generator.
+	 */
+	~TMCGenerator(){
+		delete rangen;
+	};
 
 	/// return uniformly distributed random number in [min..max]
-	long double UniformDist(long double min, long double max){
-		return mt_get_double(&v_mt_state)*(max - min) + min;
+	long double UniformDist(double min, double max){
+		return rangen->doub()*(max - min) + min;
 	};
 	
 
 	/// return sine distributed random number in [min..max] (in rad!)
 	long double SinDist(long double min, long double max){
-		return acos(cos(min) - mt_get_double(&v_mt_state) * (cos(min) - cos(max)));	
+		return acos(cos(min) - rangen->doub() * (cos(min) - cos(max)));
 	};
 	
 
 	/// return sin(x)*cos(x) distributed random number in [min..max] (0 <= min/max < pi/2!)
 	long double SinCosDist(long double min, long double max){
-		return acos(sqrt(mt_get_double(&v_mt_state)*(cos(max)*cos(max) - cos(min)*cos(min)) + cos(min)*cos(min)));
+		return acos(sqrt(rangen->doub()*(cos(max)*cos(max) - cos(min)*cos(min)) + cos(min)*cos(min)));
 	};
 	
 
 	/// return x^2 distributed random number in [min..max]
 	long double SquareDist(long double min, long double max){
-		return pow(mt_get_double(&v_mt_state) * (pow(max,3) - pow(min,3)) + pow(min,3),1.0L/3.0);
+		return pow(rangen->doub() * (pow(max,3) - pow(min,3)) + pow(min,3),1.0L/3.0);
 	};
 	
 
 	/// return linearly distributed random number in [min..max]
 	long double LinearDist(long double min, long double max){
-		return sqrt(mt_get_double(&v_mt_state) * (max*max - min*min) + min*min);
+		return sqrt(rangen->doub() * (max*max - min*min) + min*min);
 	};
 
 
 	/// return sqrt(x) distributed random number in [min..max]
 	long double SqrtDist(long double min, long double max){
-		return pow((pow(max, 1.5L) - pow(min, 1.5L)) * mt_get_double(&v_mt_state) + pow(min, 1.5L), 2.0L/3.0);
+		return pow((pow(max, 1.5L) - pow(min, 1.5L)) * rangen->doub() + pow(min, 1.5L), 2.0L/3.0);
 	};
 	
 
@@ -315,7 +311,7 @@ struct TMCGenerator{
 		istringstream(invars[section]["tau"]) >> tau;
 		istringstream(invars[section]["tmax"]) >> tmax;
 		if (tau != 0)
-			return -tau * log(mt_get_double(&v_mt_state));
+			return -tau * log(rangen->doub());
 		else
 			return tmax;
 	};

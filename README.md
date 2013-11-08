@@ -10,12 +10,13 @@ Always use the master branch. The dev branch contains code in active development
 
 To compile the code, you need to copy some files from [Numerical Recipes v3.00-v3.04] (http://www.nr.com) into the /nr/ directory:
 * nr3.h (main header, one minor modification needed, patch file is provided)
+* ran.h (random number generator)
 * interp_1d.h (cubic spline interpolation)
 * interp_linear.h (linear interpolation)
 * interp_2d.h (bicubic interpolation, some modifications needed, patch file is provided)
 * odeint.h (ODE integration main header, one minor midification needed, patch file is provided)
 * stepper.h (ODE integration step control
-* nr/stepperdopr853.h (8th order Runge Kutta method)
+* stepperdopr853.h (8th order Runge Kutta method)
 
 Patch files can be applied by executing:  
 `patch originalheader.h patchfile.diff`
