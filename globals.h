@@ -134,7 +134,7 @@ void ReadInFile(const char *inpath, map<string, map<string, string> > &vars){
 		if (c == '[' && infile.ignore()){
 			if (infile.peek() == '/'){
 				section = "";
-				printf("\n");
+//				printf("\n");
 			}
 			else{
 				getline(infile, section, ']');
@@ -146,7 +146,12 @@ void ReadInFile(const char *inpath, map<string, map<string, string> > &vars){
 			getline(infile,rest);
 		else if (section != ""){
 			infile >> key;
-			getline(infile,vars[section][key]);
+			getline(infile,rest);
+			int l = rest.find('#');
+			if (l == string::npos)
+				vars[section][key] = rest;
+			else
+				vars[section][key] = rest.substr(0,l);
 		}
 		else
 			getline(infile,rest);
