@@ -347,7 +347,7 @@ struct TParticle{
 				Estart = 0.5*m*vstart*vstart;
 			else
 				Estart = (gammarel - 1)*m*c_0*c_0;
-			Estart = Eend;
+			Eend = Estart;
 			Hstart = Hend = Estart + Epot(t, ystart, afield);
 			Hmax = Hstart;
 		}
