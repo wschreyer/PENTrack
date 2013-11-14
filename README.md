@@ -6,7 +6,7 @@ PENTrack - a simulation tool for ultra-cold neutrons, protons and electrons
 Compilation
 -----------
 
-Always use the master branch. The dev branch contains code in active development and might not work at all. They will be merged from time to time.
+If you just want to do simulations, you should check out the stable releases, which have been tested. If you want the latest and greatest features or even want to contribute, you should check out the latest revision from master branch.
 
 To compile the code, you need to copy some files from [Numerical Recipes v3.00-v3.04] (http://www.nr.com) into the /nr/ directory:
 * nr3.h (main header, one minor modification needed, patch file is provided)
