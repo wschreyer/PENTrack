@@ -4,7 +4,7 @@ OBJ=$(SRC:.c=.o)
 
 CC=g++
 CFLAGS=-O2 #-Wall #-pedantic #-g # -O3: optimize -g: debug switch
-LDFLAGS=
+LDFLAGS=-lrt
 RM=rm
 EXE=PENTrack
 
