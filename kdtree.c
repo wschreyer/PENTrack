@@ -1,6 +1,8 @@
+#include <cstdlib>
 #include <cstring>
+#include <cmath>
+#include <limits>
 #include <fstream>
-#include <algorithm>
 
 #include "kdtree.h"
 
@@ -107,8 +109,8 @@ template <typename coord> bool KDTree::KDNode::SegmentInBox(const coord p1[3], c
     if (PointInBox(p1) || PointInBox(p2))   // one of the segment end points in box?
        return true;
     long double s, a, b, w;
-    short j,k;
-    for (short i = 0; i < 3; i++){  // segment cuts one of the six box faces?
+    int j,k;
+    for (int i = 0; i < 3; i++){  // segment cuts one of the six box faces?
         j = (i+1)%3;
         k = (i+2)%3;
 		w = p2[i] - p1[i];
@@ -143,7 +145,7 @@ bool KDTree::KDNode::TriangleInBox(Triangle *tri){
 			return true;    // one of the triangle sides cuts through the box?
 
 		// one of the 12 box edges cuts through the triangle?
-		long double s = INFINITY;
+		long double s = std::numeric_limits<long double>::infinity();
 		long double p1[3] = {lo[0],lo[1],lo[2]};	// lololo -> hilolo
 		long double p2[3] = {hi[0],lo[1],lo[2]};
 		if (tri->intersect(p1,p2,s))
@@ -274,7 +276,7 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
 	long double s_loc;
 	for (std::vector<Triangle*>::iterator i = tris.begin(); i != tris.end(); i++){    // iterate through triangles stored in node
 		if ((*i)->intersect(p1,p2,s_loc)){
-			long double n = sqrt(DotProduct((*i)->normal,(*i)->normal));
+			long double n = std::sqrt(DotProduct((*i)->normal,(*i)->normal));
 			TCollision c;
 			c.s = s_loc;
 			c.normal[0] = (*i)->normal[0]/n;	// return normalized normal vector
@@ -320,8 +322,8 @@ bool KDTree::KDNode::Collision(const long double p1[3], const long double p2[3],
 // constructor
 KDTree::KDTree(){
     root = lastnode = NULL;
-    lo[0] = lo[1] = lo[2] = INFINITY;
-    hi[0] = hi[1] = hi[2] = -INFINITY;
+    lo[0] = lo[1] = lo[2] = std::numeric_limits<float>::infinity();
+    hi[0] = hi[1] = hi[2] = -std::numeric_limits<float>::infinity();
 }
 
 // destructor
@@ -371,7 +373,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
     }
     else{
         printf("Could not open '%s'!\n",filename);
-        exit(-1);
+        std::exit(-1);
     }
 }
 

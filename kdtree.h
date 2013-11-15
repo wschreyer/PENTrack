@@ -22,7 +22,6 @@
 #ifndef KDTREE_H_
 #define KDTREE_H_
 
-#include <cmath>
 #include <vector>
 #include <set>
 
@@ -95,9 +94,9 @@ class KDTree{
              * @param v Vertex to which shall be compared
              */
             inline bool operator == (const TVertex v) const { 
-            	return  abs(vertex[0] - v.vertex[0]) <= 0 &&
-            			abs(vertex[1] - v.vertex[1]) <= 0 &&
-            			abs(vertex[2] - v.vertex[2]) <= 0;
+            	return  std::abs(vertex[0] - v.vertex[0]) <= 0 &&
+            			std::abs(vertex[1] - v.vertex[1]) <= 0 &&
+            			std::abs(vertex[2] - v.vertex[2]) <= 0;
             };
 
             /**
@@ -128,8 +127,8 @@ class KDTree{
                 KDNode *parent; ///< Root of this node
                 float lo[3]; ///< The three largest components of the node vertices
                 float hi[3]; ///< The three lowest components of the node vertices
-                short splitdir; ///< Direction in which this node is split (0=x, 1=y, 2=z)
-                short depth; ///< Depth of the node in the tree
+                int splitdir; ///< Direction in which this node is split (0=x, 1=y, 2=z)
+                int depth; ///< Depth of the node in the tree
                 unsigned tricount; ///< Count of triangles stored in this node
                 std::vector<Triangle*> tris; ///< List of triangles stored in this node
 
