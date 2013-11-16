@@ -141,7 +141,7 @@ struct TParticle{
 				y1 = y;
 				
 				if (x + h > tstart + tau)
-					h = tstart + tend - x;	//If stepsize can overshoot, decrease.
+					h = tstart + tau - x;	//If stepsize can overshoot, decrease.
 				if (x + h > tmax)
 					h = tmax - x;
 				
