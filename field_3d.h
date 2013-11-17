@@ -113,7 +113,7 @@ class TabField3: public TField{
 				else zi++;
 
 				// status if read is displayed
-				percent(xi*yi*zi ,0, xl*yl*zl, perc);
+				PrintPercent((float)xi*yi*zi/(xl*yl*zl), perc);
 
 				xind[xi] = x;
 				yind[yi] = y;

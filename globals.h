@@ -48,23 +48,17 @@ string inpath = "."; ///< path to configuration files, read from command line pa
 string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
 int outputopt = 5; ///< output options chosen by user
 
-// print percent of (x-x1)/len
-void percent(long double x, long double x1, long double len, int &perc){
+// print progress in percent
+void PrintPercent(double percentage, int &lastprint){
 	// write status to console
 	// one point per 2 percent of endtime
-	if((x - x1)*100/len > perc)
-	{
-		perc++;
-		if(perc%10==0)
-		{
-			printf("%i%%",perc);
-			fflush(stdout);
-		}
-		if((perc%10!=0)&&(perc%2==0))
-		{
-			printf(".");
-			fflush(stdout);
-		}
+	while (lastprint < percentage*100){
+		lastprint += 2;
+		if (lastprint % 10 == 0)
+			cout << lastprint << "%";
+		else
+			cout << ".";
+		cout.flush();
 	}
 }
 

@@ -198,12 +198,9 @@ struct TParticle{
 					y1 = y2;
 				}		
 				
-				if (trajlength/maxtraj < (x - tstart)/tau)
-					percent(x, tstart, tstart + tau, perc); // print percent of calculation
-				else
-					percent(trajlength, 0, maxtraj, perc); // print percent of calculation
+				PrintPercent(max((x - tstart)/tau, max((x - tstart)/(tmax - tstart), trajlength/maxtraj)), perc);
 
-				// x >= xstart + xend?
+				// x >= tstart + tau?
 				if (ID == ID_UNKNOWN && x >= tstart + tau)
 					ID = ID_DECAYED;
 				else if (ID == ID_UNKNOWN && (x >= tmax || trajlength >= maxtraj))
@@ -220,8 +217,10 @@ struct TParticle{
 			SetEndValues(x,y,field);
 			Print(ENDLOG);
 
-			if (ID == ID_DECAYED)
+			if (ID == ID_DECAYED){
+				cout << "Decayed!\n";
 				Decay();
+			}
 
 			printf("Done!!\nx: %LG y: %LG z: %LG E: %LG Code: %i t: %LG l: %LG hits: %i steps: %i\n\n",
 				yend[0], yend[1], yend[2], Eend, ID, tend, trajlength, Nhit, Nsteps);
