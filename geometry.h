@@ -32,7 +32,7 @@ struct material{
 struct solid{
 	string name; ///< name of solid
 	material mat; ///< material of solid
-	unsigned ID; ///< ID of solid
+	int ID; ///< ID of solid
 	vector<long double> ignoretimes; ///< pairs of times, between which the solid should be ignored
 
 	/**
@@ -198,6 +198,16 @@ struct TGeometry{
 				else if (!infile.good() || c == '[') break;	// next section found
 				solid model;
 				infile >> model.ID;
+				if (model.ID < 0){
+					cout << "You defined a solid with ID " << model.ID << " < 0! IDs have to be larger than zero!\n";
+					exit(-1);
+				}
+				for (vector<solid>::iterator i = solids.begin(); i != solids.end(); i++){
+					if (i->ID == model.ID){
+						cout << "You defined solids with identical ID " << model.ID << "! IDs have to be unique!\n";
+						exit(-1);
+					}
+				}
 				infile >> STLfile;
 				infile >> matname;
 				for (unsigned i = 0; i < materials.size(); i++){
@@ -355,10 +365,10 @@ struct TSource{
 				}
 				else if (sourcemode == "customvol"){ // random point inside a volume defined by a custom parameter range
 					long double r = mc.LinearDist(r_min, r_max); // weighting because of the volume element and a r^2 probability outwards
-					long double phi = mc.UniformDist(phi_min,phi_max);
+					long double phi_r = mc.UniformDist(phi_min,phi_max);
 					z = mc.UniformDist(z_min,z_max);
-					p1[0] = r*cos(phi);
-					p1[1] = r*sin(phi);
+					p1[0] = r*cos(phi_r);
+					p1[1] = r*sin(phi_r);
 					p1[2] = z;
 					mc.IsotropicDist(phi, theta);
 				}
