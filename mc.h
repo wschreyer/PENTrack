@@ -13,15 +13,35 @@
 #include <map>
 
 #include "nr/ran.h"
+#include "muParser.h"
 #include "globals.h"
+
+/**
+ * For each section in particle.in such a struct is created containing all user options
+ */
+struct TParticleConfig{
+	double tau; ///< lifetime
+	double tmax; ///< max. simulation time
+	double lmax; ///< max. trajectory length
+	int polarization; ///< initial polarization
+	double Emin; ///< min. initial energy
+	double Emax; ///< max. initial energy
+	mu::Parser spectrum; ///< Parsed energy spectrum given by user
+	mu::Parser phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
+	mu::Parser theta_v; ///< Parsed initial polar angle distribution of velocity given by user
+};
 
 /**
  * Class to generate random numbers in several distributions.
  */
-struct TMCGenerator{
+class TMCGenerator{
+private:
 	Ran *rangen; ///< random number generator
-	
-	map<string, map<string, string> > invars; ///< contains variables from *.in file
+	double xvar; ///< x variable for formula parser
+	map<string, TParticleConfig> pconfigs;
+
+public:
+	Ullong seed; ///< initial random seed
 
 	/**
 	 * Constructor.
@@ -34,11 +54,34 @@ struct TMCGenerator{
 		// get high resolution timestamp to generate seed
 		timespec highrestime;
 		clock_gettime(CLOCK_REALTIME, &highrestime);
-		Ullong seed = (Ullong)highrestime.tv_sec * (Ullong)1000000000 + (Ullong)highrestime.tv_nsec;
+		seed = (Ullong)highrestime.tv_sec * (Ullong)1000000000 + (Ullong)highrestime.tv_nsec;
 		printf("Random Seed: %Lu\n\n", seed);
 		rangen = new Ran(seed);
 
+		TConfig invars; ///< contains variables from *.in file
 		ReadInFile(infile, invars);
+		for (TConfig::iterator i = invars.begin(); i != invars.end(); i++){
+			istringstream(i->second["Emax"]) >> pconfigs[i->first].Emax;
+			istringstream(i->second["Emin"]) >> pconfigs[i->first].Emin;
+			istringstream(i->second["lmax"]) >> pconfigs[i->first].lmax;
+			istringstream(i->second["polarization"]) >> pconfigs[i->first].polarization;
+			istringstream(i->second["tau"]) >> pconfigs[i->first].tau;
+			istringstream(i->second["tmax"]) >> pconfigs[i->first].tmax;
+			try{
+				pconfigs[i->first].spectrum.DefineVar("x", &xvar);
+				pconfigs[i->first].spectrum.SetExpr(i->second["spectrum"]);
+				pconfigs[i->first].spectrum.DefineFun("ProtonBetaSpectrum", &ProtonBetaSpectrum);
+				pconfigs[i->first].spectrum.DefineFun("ElectronBetaSpectrum", &ElectronBetaSpectrum);
+				pconfigs[i->first].phi_v.DefineVar("x", &xvar);
+				pconfigs[i->first].phi_v.SetExpr(i->second["phi_v"]);
+				pconfigs[i->first].theta_v.DefineVar("x", &xvar);
+				pconfigs[i->first].theta_v.SetExpr(i->second["theta_v"]);
+			}
+			catch (mu::Parser::exception_type &exc){
+				cout << exc.GetMsg();
+				exit(-1);
+			}
+		}
 	};
 
 	/**
@@ -51,38 +94,38 @@ struct TMCGenerator{
 	};
 
 	/// return uniformly distributed random number in [min..max]
-	long double UniformDist(double min, double max){
+	long double UniformDist(long double min, long double max){
 		return rangen->doub()*(max - min) + min;
 	};
 	
 
 	/// return sine distributed random number in [min..max] (in rad!)
 	long double SinDist(long double min, long double max){
-		return acos(cos(min) - rangen->doub() * (cos(min) - cos(max)));
+		return acos(cos(min) - UniformDist(0,1) * (cos(min) - cos(max)));
 	};
 	
 
 	/// return sin(x)*cos(x) distributed random number in [min..max] (0 <= min/max < pi/2!)
 	long double SinCosDist(long double min, long double max){
-		return acos(sqrt(rangen->doub()*(cos(max)*cos(max) - cos(min)*cos(min)) + cos(min)*cos(min)));
+		return acos(sqrt(UniformDist(0,1)*(cos(max)*cos(max) - cos(min)*cos(min)) + cos(min)*cos(min)));
 	};
 	
 
 	/// return x^2 distributed random number in [min..max]
 	long double SquareDist(long double min, long double max){
-		return pow(rangen->doub() * (pow(max,3) - pow(min,3)) + pow(min,3),1.0L/3.0);
+		return pow(UniformDist(0,1)*(pow(max,3) - pow(min,3)) + pow(min,3),1.0L/3.0);
 	};
 	
 
 	/// return linearly distributed random number in [min..max]
 	long double LinearDist(long double min, long double max){
-		return sqrt(rangen->doub() * (max*max - min*min) + min*min);
+		return sqrt(UniformDist(0,1)*(max*max - min*min) + min*min);
 	};
 
 
 	/// return sqrt(x) distributed random number in [min..max]
 	long double SqrtDist(long double min, long double max){
-		return pow((pow(max, 1.5L) - pow(min, 1.5L)) * rangen->doub() + pow(min, 1.5L), 2.0L/3.0);
+		return pow((pow(max, 1.5L) - pow(min, 1.5L))*UniformDist(0,1) + pow(min, 1.5L), 2.0L/3.0);
 	};
 	
 
@@ -171,7 +214,7 @@ struct TMCGenerator{
 				return x*1e-9;
 		}
 */
-
+/*
 		//spectrum leaving horizontal guide
 		long double x,y;
 		for(;;){
@@ -180,7 +223,7 @@ struct TMCGenerator{
 			if (UniformDist(0,14000) < y)
 				return x*1e-9;
 		}
-
+*/
 /*
 		//lfs spectrum after ramping with 0.5B and absorber 34cm above storage bottom
 		long double x,y;
@@ -219,82 +262,24 @@ struct TMCGenerator{
 
 		return 0;
 	};
-	
-
-	/**
-	 * Energy distribution of protons [0..750 eV]
-	 *
-	 * Proton recoil spectrum from neutron beta decay from "Diplomarbeit M. Simson"
-	 */
-	long double ProtonSpectrum(){
-		long double Wahrschl, WktTMP, Energie;
-		// dice as long as point is above curve
-		do
-		{	//cout << "above distribution... dicing on..." << '\n';
-			Energie = UniformDist(0, 751); // constant distribution between 0 and 751 eV // [eV]
-			WktTMP = UniformDist(0, 2);
-			
-			long double DeltaM = m_n - m_p;
-			long double Xi = m_e / DeltaM;
-			long double Sigma = 1 - 2*Energie * m_n / pow(DeltaM, 2) / pow(c_0, 2);
-			long double g1 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma) - 4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
-			long double g2 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma - 2 * Sigma) - 4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
-			long double littlea = -0.1017;
-			Wahrschl = g1 + littlea * g2;
-			//cout << "Proton energy dist: E = " << Energie << " decay rate: " << Wahrschl << " diced value = " << WktTMP << '\n';
-	
-		}while(WktTMP > Wahrschl);
-		return Energie;
-	};
-	
-
-	/**
-	 * Energy distribution of electrons [0..782 keV]
-	 *
-	 * Electron energy spectrum from neutron beta decay from http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html
-	 */
-	long double ElectronSpectrum(){
-		long double Elvert, Energie, WktTMP;
-		long double Qvalue = 782e3;
-		// dice as long as point is above curve
-		do
-		{
-			Energie = UniformDist(0, 782e3); // constant distribution between 0 and 800 keV
-			WktTMP = UniformDist(0, 0.12);
-	
-			Elvert = sqrt(Energie*1e-6 * Energie*1e-6 + 2*Energie*1e-6 * m_e * c_0 * c_0*1e-6) * pow(Qvalue*1e-6 - Energie*1e-6, 2) * (Energie*1e-6 + m_e * c_0 * c_0*1e-6);
-	//		cout << "Electron energy dist: E = " << Energie << " decay rate: " << Elvert << " diced value = " << WktTMP << '\n';
-	 
-		}while(WktTMP > Elvert);
-		return Energie;
-	};
-	
-
-	/// select right variables from infile for each particle type
-	string SelectVarsSection(int particletype){
-		switch (particletype){
-			case NEUTRON:
-				return "neutron";
-			case PROTON:
-				return "proton";
-			case ELECTRON:
-				return "electron";
-		}
-		return "";
-	};
-
 
 	/**
 	 * Energy distribution for each particle type
 	 */
-	long double Spectrum(int particletype){
-		switch (particletype){
-			case NEUTRON:
-				return NeutronSpectrum();
-			case PROTON:
-				return ProtonSpectrum();
-			case ELECTRON:
-				return ElectronSpectrum();
+	double Spectrum(const string &particlename){
+		double y;
+		TParticleConfig *pconfig = &pconfigs[particlename];
+		for (;;){
+			xvar = UniformDist(pconfig->Emin, pconfig->Emax);
+			try{
+				y = pconfigs[particlename].spectrum.Eval();
+			}
+			catch(mu::Parser::exception_type &exc){
+				cout << exc.GetMsg();
+				exit(-1);
+			}
+			if (UniformDist(0,1) < y)
+				return xvar;
 		}
 		return 0;
 	};
@@ -302,42 +287,48 @@ struct TMCGenerator{
 	/**
 	 * Lifetime of different particles
 	 *
-	 * For neutrons it either returns nini::xend (from all3inone.in, if #decay=0) or a random exponential decay lifetime (if #decay =1 or =2 in config.in) with decay time #tau_n plus #decayoffset.
-	 * For electrons and protons it always returns eini::xend and pini::xend.
+	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
+	 *
+	 * @return Returns lifetimes using an exponentially decaying or flat distribution, depending on user choice in particle.in
 	 */
-	long double LifeTime(int particletype){
-		string section = SelectVarsSection(particletype);
-		long double tau, tmax;
-		istringstream(invars[section]["tau"]) >> tau;
-		istringstream(invars[section]["tmax"]) >> tmax;
+	long double LifeTime(const string &particlename){
+		double tau = pconfigs[particlename].tau;
 		if (tau != 0)
-			return -tau * log(rangen->doub());
+			return -tau * log(UniformDist(0,1));
 		else
-			return tmax;
+			return pconfigs[particlename].tmax;
 	};
 	
 
-	/// max. trajectory length for different particles
-	long double MaxTrajLength(int particletype){
-		string section = SelectVarsSection(particletype);
-		long double lmax;
-		istringstream(invars[section]["lmax"]) >> lmax;
-		return lmax;
+	/**
+	 * Max. trajectory length of different particles
+	 *
+	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
+	 *
+	 * @return Returns max. trajectory length, depending on user choice in particle.in
+	 */
+	long double MaxTrajLength(const string &particlename){
+		return pconfigs[particlename].lmax;
 	};
 	
 
-	/// get neutron polarisation, either diced (polarisation == 0) or fixed (polarisation == +/-1)
-	int DicePolarisation(int particletype){
-		string section = SelectVarsSection(particletype);
-		int p;
-		istringstream(invars[section]["polarization"]) >> p;
+	/**
+	 * Initial polarisation of different particles
+	 *
+	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
+	 *
+	 * @return Returns deiced of fixed polarisation (-1, 0, 1), depending on user choice in particle.in
+	 */
+	int DicePolarisation(const string &particlename){
+		int p = pconfigs[particlename].polarization;
 		if (p == 0){
 			if(UniformDist(0,1) < 0.5)
 				return -1;
 			else 
 				return 1;
 		}
-		return p;
+		else
+			return p;
 	};
 
 
@@ -353,7 +344,7 @@ struct TMCGenerator{
 	 *     R-  ->  e-  +  nue
 	 * 
 	 * Procedure:
-	 * (1) Dice the energy of the decay proton according to #ProtonSpectrum in the rest frame of the neutron and
+	 * (1) Dice the energy of the decay proton according to #ProtonBetaSpectrum in the rest frame of the neutron and
 	 *     calculate the proton momentum via the energy momentum relation.
 	 * (2) Dice isotropic orientation of the decay proton.
 	 * (3) Calculate 4-momentum of rest R- via 4-momentum conservation.
@@ -384,7 +375,13 @@ struct TMCGenerator{
 	 *
 	 */
 		// energy of proton
-		p[0] = ProtonSpectrum() / c_0 + m_p * c_0;
+	 	for (;;){
+	 		long double E = UniformDist(0,751);
+	 		if (UniformDist(0,1) < ProtonBetaSpectrum(E)){
+	 			p[0] = E/c_0 + m_p*c_0;
+	 			break;
+	 		}
+	 	}
 		// momentum norm of proton
 		pabs = sqrt(p[0]*p[0] - m_p*m_p*c_0*c_0);
 	

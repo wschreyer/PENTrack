@@ -1,7 +1,7 @@
 #ifndef BRUTEFORCE_H_
 #define BRUTEFORCE_H_
 
-FILE *BFLOG = NULL;
+ofstream BFfile;
 //parameters for different experiment phases
 int flipspin = 0;
 vector<long double> BFtimes;
@@ -17,7 +17,7 @@ VecDoub *I_n = NULL; // spin vector
 // struct used to calculate derivatives
 struct TBFderivs{
 	Doub xx1, xx2, c[4], cx[4], cy[4], cz[4]; // interpolation start time, end time, coefficients for cubic spline
-	Doub b[3], R11, R12, R22;
+	Doub b[3];
 	// constructor, pass integration step and field values
 	TBFderivs(long double x1, VecDoub_I &y1, long double B1[4][4], long double x2, VecDoub_I &y2, long double B2[4][4]){
 		xx1 = x1;
@@ -69,23 +69,21 @@ struct TBFderivs{
 void PrintBFStep(Output &out, TBFderivs &BFderivs){
 	for (int i = 0; i < out.count; i++){
 		if (BFZeilencount>50000){
-			fclose(BFLOG);
-			BFLOG = NULL;
+			BFfile.close();
 		}
 
-		if (!BFLOG){
+		if (!BFfile.is_open()){
 			BFFilecount++;
 			ostringstream BFoutfile1;
 			BFoutfile1 << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0) << "BF" << setw(3) << BFFilecount << setw(0) << ".out";
-			if(!(BFLOG = fopen(BFoutfile1.str().c_str(),"w")))
+			BFfile.open(BFoutfile1.str().c_str());
+			if(!BFfile.good())
 			{
-				perror("fopen");
+				cout << "Could not open " << BFoutfile1.str() << '\n';
 				exit(1);
 			}
-			fprintf(BFLOG,"t Babs Polar logPolar Ix Iy Iz Bx By Bz\n");
-			printf(" ##");
-			printf("%s", BFoutfile1.str().c_str());
-			printf("## ");
+			BFfile << "t Babs Polar logPolar Ix Iy Iz Bx By Bz\n";
+			cout << " ##" << BFoutfile1.str() << "## ";
 			BFZeilencount=1;
 		}
 
@@ -98,8 +96,9 @@ void PrintBFStep(Output &out, TBFderivs &BFderivs){
 			BFlogpol = log10(0.5-BFpol);
 		else if (BFpol==0.5)
 			BFlogpol = 0.0;
-		fprintf(BFLOG,"%.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG %.17LG\n",
-						out.xsave[i],BFBws,BFpol,BFlogpol,2*out.ysave[0][i],2*out.ysave[1][i],2*out.ysave[2][i],B[0]/BFBws,B[1]/BFBws,B[2]/BFBws);
+		BFfile << out.xsave[i] << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
+				<< 2*out.ysave[0][i] << " " << 2*out.ysave[1][i] << " " << 2*out.ysave[2][i] << " "
+				<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws << '\n';
 
 		BFZeilencount++;
 	}
@@ -107,7 +106,7 @@ void PrintBFStep(Output &out, TBFderivs &BFderivs){
 
 
 // calculate spin flip probability by integrating Bloch equations
-long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[4][4], long double x2, VecDoub_I &y2, long double B2[4][4]){
+long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[4][4], long double x2, VecDoub_I &y2, long double B2[4][4], int outputopt){
 	bool BruteForce1 = false, BruteForce2 = false;;
 	for (unsigned int i = 0; i < BFtimes.size(); i += 2){
 		BruteForce1 |= (x1 >= BFtimes[i] && x1 < BFtimes[i+1]);
@@ -133,14 +132,14 @@ long double BruteForceIntegration(long double x1, VecDoub_I &y1, long double B1[
 
 			TBFderivs BFderivs(x1,y1,B1,x2,y2,B2); // create derivs-struct
 			int nsave = 0;
-			if (outputopt == OUTPUT_EVERYTHINGandSPIN || outputopt == OUTPUT_ENDPOINTSandSPIN)
+			if (outputopt & OUTPUT_SPIN)
 				nsave = (int)((x2-x1)/BFdxsav); // save integrations steps in BFdxsav intervals
 			Output out(nsave); // create output object
 			// create integrator<stepper<derivobject> >, params: spin vector, start time, end time, atol, rtol, first step size, min step size, output object, derivobject
 			Odeint<StepperDopr853<TBFderivs> > ode(*I_n, x1, x2, 1e-13, 0, 1e-9, 0, out, BFderivs);
 			ode.integrate(); // integrate
 			intsteps += ode.nok + ode.nbad; // add up integration steps
-			if ((outputopt == OUTPUT_EVERYTHINGandSPIN)||(outputopt == OUTPUT_ENDPOINTSandSPIN))
+			if (outputopt & OUTPUT_SPIN)
 				PrintBFStep(out,BFderivs); // print integrations steps
 
 			if (B2[3][0] > BFTargetB || !BruteForce2){

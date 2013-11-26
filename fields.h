@@ -124,7 +124,7 @@ struct TFieldManager{
 		 * @param infile Configuration file stream
 		 */
 		void LoadFieldsSection(ifstream &infile){
-			char c;
+			int c;
 			string line;
 			do{	// parse table field list
 				infile >> ws; // ignore whitespaces

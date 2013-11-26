@@ -1,15 +1,27 @@
 [neutron]
-tau 880.0	#exponential decay lifetime, 0: no decay
-tmax 9e99	#max simulation time
-lmax 9e99	#max trajectory length
-polarization 0 #1: low-field-seeker, -1: high-field-seeker, 0: random
+tau 880.0		# exponential decay lifetime [s], 0: no decay
+tmax 9e99		# max simulation time [s]
+lmax 9e99		# max trajectory length [m]
+polarization 0	# 1: low-field-seeker, -1: high-field-seeker, 0: random
 
+Emin 100e-9		# min. energy [eV]
+Emax 300e-9		# max. energy [eV]
+#spectrum sqrt(x)/sqrt(300e-9)	# differential initial energy distribution (0 <= f(x) <= 1 !)
+spectrum (1.96616e39*x^5 - 0.00204264e36*x^4 + 0.834378e27*x^3 - 167.958e18*x^2 + 16674.8e9*x - 639317)/14000
+
+phi_v 1			# differential initial distribution of azimuth angle of velocity (0 <= f(x) <= 1 !)
+theta_v cos(x) # differential initial distribution of polar angle of velocity  (0 <= f(x) <= 1 !)
 
 [proton]
 tau 0
 tmax 3e-3
 lmax 9e99
 polarization 0
+Emin 0
+Emax 751
+spectrum ProtonBetaSpectrum(x)	# ProtonBetaSpectrum is a predefined function for proton energies from free neutron decay
+phi_v 1
+theta_v cos(x)
 
 
 [electron]
@@ -17,3 +29,8 @@ tau 0
 tmax 1e-5
 lmax 9e99
 polarization 0
+Emin 0
+Emax 782e3
+spectrum ElectronBetaSpectrum(x)	# ElectronBetaSpectrum is a predefined function for electron energies from free neutron decay
+phi_v 1
+theta_v cos(x)

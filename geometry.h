@@ -164,7 +164,7 @@ struct TGeometry{
 		 * @param materials Vector of material structs, returns list of materials in the configuration file
 		 */
 		void LoadMaterialsSection(ifstream &infile, vector<material> &materials){
-			char c;
+			int c;
 			string line;
 			do{	// parse material list
 				infile >> ws; // ignore whitespaces
@@ -184,7 +184,7 @@ struct TGeometry{
 		 * @param materials Vector of material structs given by LoadMaterialsSection
 		 */
 		void LoadGeometrySection(ifstream &infile, vector<material> &materials){
-			char c;
+			int c;
 			string line;
 			string STLfile;
 			string matname;
@@ -433,7 +433,7 @@ struct TSource{
 		 * @param infile File stream to configuration file containing [SOURCE] section
 		 */
 		void LoadSourceSection(ifstream &infile){
-			char c;
+			int c;
 			string line;
 			do{	// parse source line
 				infile >> ws; // ignore whitespaces

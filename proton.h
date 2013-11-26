@@ -6,6 +6,7 @@
 #ifndef PROTON_H_
 #define PROTON_H_
 
+static const char* NAME_PROTON = "proton";
 
 #include "globals.h"
 #include "particle.h"
@@ -31,7 +32,7 @@ public:
 	 * @param afield TFieldManager used to calculate energies (can be NULL)
 	 */
 	TProton(int number, TGeometry &ageometry, TSource &src,
-				TMCGenerator &mcgen, TFieldManager *afield): TParticle(PROTON, ele_e, m_p, 0){
+				TMCGenerator &mcgen, TFieldManager *afield): TParticle(NAME_PROTON, ele_e, m_p, 0){
 		Init(number, ageometry, src, mcgen, afield);
 	};
 
@@ -54,15 +55,15 @@ public:
 	 */
 	TProton(int number, long double t, long double atau, long double x, long double y, long double z,
 			long double vx, long double vy, long double vz, int pol, long double trajl,
-			TGeometry &ageometry, TFieldManager *afield): TParticle(PROTON, ele_e, m_p, 0){
+			TGeometry &ageometry, TFieldManager *afield): TParticle(NAME_PROTON, ele_e, m_p, 0){
 		InitV(number, t, atau, x, y, z, vx, vy, vz, pol, trajl, ageometry, afield);
 	}
 
 protected:
 	/**
-	 * Check for reflection on surfaces.
+	 * This method is executed, when a particle crosses a material boundary.
 	 *
-	 * Proton is never reflected
+	 * Nothing happens to protons.
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -70,17 +71,16 @@ protected:
 	 * @param y2 End point of line segment, returns reflected velocity
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the proton is leaving
-	 * @param entering Solid that the proton is entering
-	 * @param resetintegration Tell integrator to restart integration at x2 because e.g. y2 was changed.
+	 * @param entering Solid that the proton is entering (can be modified by method)
 	 * @return Returns true if particle was reflected
 	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *entering, bool &resetintegration){
+	bool OnHit(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *&entering){
 		return false;
 	};
 
 
 	/**
-	 * Checks for absorption
+	 * This method is executed on each step.
 	 *
 	 * Protons are immediately absorbed in solids other than TParticle::geom::defaultsolid
 	 *
@@ -91,7 +91,7 @@ protected:
 	 * @param currentsolid Solid in which the proton is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
+	bool OnStep(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
 		if (currentsolid->ID != geom->defaultsolid.ID){
 			x2 = x1;
 			y2 = y1;
