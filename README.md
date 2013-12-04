@@ -28,6 +28,13 @@ You may have to change the nr file format from DOS/MAC to UNIX text file format 
 
 Numerical Recipes forces us to put almost all code into header files, which makes it less easy to read but it also avoids duplicate work in code- and header-files.
 
+### CGAL
+
+The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
+Some Linux distributions (Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website.
+
+Only v4.2 has been tested so far.
+
 ### libtricubic
 
 [Lekien and Marsden] (http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.

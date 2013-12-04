@@ -6,6 +6,8 @@
 
 #include "kdtree.h"
 
+#ifndef USE_CGAL
+
 #define MIN_SIZE 0.02 ///< when the size of a node is smaller than that, it will be splitted no more
 #define MAX_FACECOUNT 10 ///< when the number of faces in one node exceeds this value the node is split up in two new nodes
 #define TOLERANCE 0 ///< kd-nodes will overlap this far
@@ -283,7 +285,6 @@ bool KDTree::KDNode::TestCollision(const long double p1[3], const long double p2
 			c.normal[1] = (*i)->normal[1]/n;
 			c.normal[2] = (*i)->normal[2]/n;
 			c.ID = (*i)->ID;
-			c.tri = *i;
 			colls.insert(c);
 			result = true;
 		}
@@ -331,9 +332,13 @@ KDTree::~KDTree(){
     if (root) delete root;  // delete tree
 }
 
+#endif
+
 // read triangles from STL-file
 void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
+#ifndef USE_CGAL
 	if (root) return; // stop if Init was called already
+#endif
 	std::ifstream f(filename, std::fstream::binary);
     if (f.is_open()){
         char header[80];
@@ -350,6 +355,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 
         for (i = 0; i < filefacecount && !f.eof(); i++){
             f.seekg(3*4,std::fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
+#ifndef USE_CGAL
             TVertex v;
             const float *vertices[3];
             for (short j = 0; j < 3; j++){
@@ -359,7 +365,6 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
                 vertices[j] = allvertices.insert(v).first->vertex; // insert vertex into vertex list and save pointer to inserted vertex into triangle
             }
             f.seekg(2,std::fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
-
             Triangle tri(vertices);
             tri.ID = ID;
             for (short j = 0; j < 3; j++){
@@ -367,6 +372,17 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
                 hi[j] = std::max(hi[j], std::max(std::max(tri.vertex[0][j], tri.vertex[1][j]), tri.vertex[2][j]));
             }
             alltris.push_back(tri); // add triangle to list
+
+#else
+            float vertices[3][3];
+            for (short j = 0; j < 3; j++){
+                 f.read((char*)vertices[j],12);
+            }
+            f.seekg(2,std::fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
+            triangles.push_back(TTriangle(CPoint(vertices[0][0], vertices[0][1], vertices[0][2]),
+            								CPoint(vertices[1][0], vertices[1][1], vertices[1][2]),
+            								CPoint(vertices[2][0], vertices[2][1], vertices[2][2]), ID));
+#endif
         }
         f.close();
         printf("Read %u triangles\n",i);
@@ -379,6 +395,7 @@ void KDTree::ReadFile(const char *filename, const unsigned ID, char name[80]){
 
 // build search tree
 void KDTree::Init(){
+#ifndef USE_CGAL
 	printf("Edges are (%f %f %f),(%f %f %f)\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);  // print the size of the root node
 
 	root = new KDNode(lo,hi,0,NULL);  // create root node
@@ -393,16 +410,46 @@ void KDTree::Init(){
 	root->Split();  // split root node
 	printf("Wrote %u triangles in %u nodes (%u empty)\n\n",facecount,nodecount,emptynodecount);   // print number of triangles contained in tree
 	fflush(stdout);
+#else
+	tree.rebuild(triangles.begin(), triangles.end());
+	tree.accelerate_distance_queries();
+	printf("Edges are (%f %f %f),(%f %f %f)\n",tree.bbox().min(0),tree.bbox().min(1),tree.bbox().min(2),
+												tree.bbox().max(0),tree.bbox().max(1),tree.bbox().max(2));  // print the size of the root node
+#endif
 }
 
 // test segment p1->p2 for collision with a triangle and return a list of all found collisions
 bool KDTree::Collision(const long double p1[3], const long double p2[3], std::set<TCollision> &colls){
-    if (!root) return false; // stop if Init was not called yet
+#ifdef USE_CGAL
+	CPoint point1(p1[0], p1[1], p1[2]);
+	CPoint point2(p2[0], p2[1], p2[2]);
+	CSegment segment(point1, point2);
+
+	std::list< CTree::Object_and_primitive_id > out;
+	tree.all_intersections(segment, std::back_inserter(out));
+	for (std::list< CTree::Object_and_primitive_id >::iterator i = out.begin(); i != out.end(); i++){
+		TCollision coll;
+		CPoint collp = CGAL::object_cast<CPoint>(i->first);
+		coll.s = sqrt(pow(collp[0] - p1[0], 2) + pow(collp[1] - p1[1], 2) + pow(collp[2] - p1[2], 2))
+				/sqrt(pow(p2[0] - p1[0], 2) + pow(p2[1] - p1[1], 2) + pow(p2[2] - p1[2], 2));
+		CIterator tri = i->second;
+		K::Vector_3 n = tri->supporting_plane().orthogonal_vector();
+		coll.ID = tri->ID;
+		coll.normal[0] = n[0]/sqrt(n.squared_length());
+		coll.normal[1] = n[1]/sqrt(n.squared_length());
+		coll.normal[2] = n[2]/sqrt(n.squared_length());
+		colls.insert(coll);
+	}
+	if (colls.size() > 0)
+		return true;
+#else
+	if (!root) return false; // stop if Init was not called yet
     if (!lastnode) lastnode = root; // start search in last tested node, when last node is not known start in root node
-    if (lastnode->Collision(p1,p2,lastnode,colls)){
+    bool collided = lastnode->Collision(p1,p2,lastnode,colls);
+    if (collided){
     	return true;
     }
-    else return false;
-
+#endif
+    return false;
 }
 

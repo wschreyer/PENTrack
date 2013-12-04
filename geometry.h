@@ -90,7 +90,11 @@ struct TGeometry{
 		 * @return Returns true if point is inside the bounding box
 		 */
 		bool CheckSegment(const long double y1[3], const long double y2[3]){
-			return kdtree->SegmentInBox(y1,y2) ;
+#ifdef USE_CGAL
+			return CGAL::do_intersect(kdtree->tree.bbox(), CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
+#else
+			return kdtree->SegmentInBox(y1,y2);
+#endif
 		};
 		
 		/**
@@ -141,7 +145,11 @@ struct TGeometry{
 		 * @param currentsolids Set of solids in which the point is inside
 		 */
 		void GetSolids(const long double t, const long double p[3], std::set<solid> &currentsolids){
+#ifndef USE_CGAL
 			long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
+#else
+			long double p2[3] = {p[0], p[1], kdtree->tree.bbox().zmin() - REFLECT_TOLERANCE};
+#endif
 			set<TCollision> c;
 			currentsolids.clear();
 			currentsolids.insert(defaultsolid);
@@ -272,8 +280,11 @@ struct TSource{
 		long double Hmin_lfs; ///< Minimum total energy of low field seeking neutrons inside the source volume
 		long double Hmin_hfs; ///< Minimum total energy of high field seeking neutrons inside the source volume
 		long double ActiveTime; ///< the source produces particles in the time range [0..ActiveTime]
-		
+#ifndef USE_CGAL
 		vector<Triangle*> sourcetris; ///< list of triangles (part of TSource::geometry) inside the source volume (only relevant if source mode is "surface" or "customsurf")
+#else
+		vector<TTriangle*> sourcetris;
+#endif
 		long double sourcearea; ///< area of all triangles in TSource::sourcetris (needed for correct weighting)
 		
 
@@ -314,9 +325,15 @@ struct TSource{
 			else if (sourcemode == "volume"){
 				Hmin_lfs = Hmin_hfs = 9e99;
 				long double p[3];
+#ifndef USE_CGAL
 				for (p[0] = kdtree->lo[0]; p[0] <= kdtree->hi[0]; p[0] += d){
 					for (p[1] = kdtree->lo[1]; p[1] <= kdtree->lo[1]; p[1] += d){
 						for (p[2] = kdtree->lo[2]; p[2] <= kdtree->lo[2]; p[2] += d){
+#else
+				for (p[0] = kdtree->tree.bbox().xmin(); p[0] <= kdtree->tree.bbox().xmax(); p[0] += d){
+					for (p[1] = kdtree->tree.bbox().ymin(); p[1] <= kdtree->tree.bbox().ymax(); p[1] += d){
+						for (p[2] = kdtree->tree.bbox().zmin(); p[2] <= kdtree->tree.bbox().zmax(); p[2] += d){
+#endif
 							if (InSourceVolume(p)) CalcHmin(field,p);
 						}
 					}
@@ -357,9 +374,15 @@ struct TSource{
 			long double p1[3];
 			for(;;){
 				if (sourcemode == "volume"){ // random point inside a STL-volume
+#ifndef USE_CGAL
 					p1[0] = mc.UniformDist(kdtree->lo[0],kdtree->hi[0]); // random point
 					p1[1] = mc.UniformDist(kdtree->lo[1],kdtree->hi[1]); // random point
 					p1[2] = mc.UniformDist(kdtree->lo[2],kdtree->hi[2]); // random point
+#else
+					p1[0] = mc.UniformDist(kdtree->tree.bbox().xmin(),kdtree->tree.bbox().xmax()); // random point
+					p1[1] = mc.UniformDist(kdtree->tree.bbox().ymin(),kdtree->tree.bbox().ymax()); // random point
+					p1[2] = mc.UniformDist(kdtree->tree.bbox().zmin(),kdtree->tree.bbox().zmax()); // random point
+#endif
 					if (!InSourceVolume(p1)) continue;
 					mc.IsotropicDist(phi, theta);
 				}
@@ -376,6 +399,7 @@ struct TSource{
 					long double n[3];
 					long double RandA = mc.UniformDist(0,sourcearea);
 					long double CurrA = 0, SumA = 0;
+#ifndef USE_CGAL
 					vector<Triangle*>::iterator i;
 					for (i = sourcetris.begin(); i != sourcetris.end(); i++){
 						n[0] = (*i)->normal[0];
@@ -385,17 +409,33 @@ struct TSource{
 						SumA += CurrA;
 						if (RandA <= SumA) break; // select random triangle, weighted by triangle area
 					}
+#else
+					vector<TTriangle*>::iterator i;
+					for (i = sourcetris.begin(); i != sourcetris.end(); i++){
+						SumA += sqrt((*i)->squared_area());
+						if (RandA <= SumA) break;
+					}
+#endif
 					long double a = mc.UniformDist(0,1); // generate random point on triangle (see Numerical Recipes 3rd ed., p. 1114)
 					long double b = mc.UniformDist(0,1);
 					if (a+b > 1){
 						a = 1 - a;
 						b = 1 - b;
 					}
+#ifndef USE_CGAL
 					for (int j = 0; j < 3; j++){
 						n[j] /= CurrA; // normalize normal vector
 						p1[j] = (*i)->vertex[0][j] + a*((*i)->vertex[1][j] - (*i)->vertex[0][j]) + b*((*i)->vertex[2][j] - (*i)->vertex[0][j]);
 						p1[j] += REFLECT_TOLERANCE*n[j]; // add some tolerance to avoid starting inside solid
 					}
+#else
+					K::Vector_3 nv = (*i)->supporting_plane().orthogonal_vector();
+					CPoint v1 = (**i)[0] + a*((**i)[1] - (**i)[0]) + b*((**i)[2] - (**i)[0]) + nv*REFLECT_TOLERANCE;
+					for (int j = 0; j < 3; j++){
+						n[j] = nv[j]/sqrt(nv.squared_length());
+						p1[j] = v1[j];
+					}
+#endif
 					if (!InSourceVolume(p1)) continue;
 					long double winkeben = mc.UniformDist(0, 2*pi); // generate random velocity angles in upper hemisphere
 					long double winksenkr = mc.SinCosDist(0, 0.5*pi); // Lambert's law!
@@ -459,6 +499,7 @@ struct TSource{
 			
 			if (sourcemode == "customsurf" || sourcemode == "surface"){
 				sourcearea = 0; // add triangles, whose vertices are all in the source volume, to sourcetris list
+#ifndef USE_CGAL
 				for (vector<Triangle>::iterator i = geometry->kdtree->alltris.begin(); i != geometry->kdtree->alltris.end(); i++){
 					if (InSourceVolume(i->vertex[0]) && InSourceVolume(i->vertex[1]) && InSourceVolume(i->vertex[2])){
 						sourcetris.push_back(&*i);
@@ -466,10 +507,24 @@ struct TSource{
 						sourcearea += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 					}
 				}
+#else
+				for (CIterator i = geometry->kdtree->triangles.begin(); i != geometry->kdtree->triangles.end(); i++){
+					if (InSourceVolume((*i)[0]) && InSourceVolume((*i)[1]) && InSourceVolume((*i)[2])){
+						sourcetris.push_back(&*i);
+						sourcearea += sqrt(i->squared_area());
+					}
+				}
+#endif
 				printf("Source Area: %LG m^2\n",sourcearea);
 			}	
 		};
-		
+
+#ifdef USE_CGAL
+		bool InSourceVolume(CPoint p){
+			double pp[3] = {p[0],p[1],p[2]};
+			return InSourceVolume(pp);
+		}
+#endif
 
 		/**
 		 * Checks if a point is inside the source volume.
@@ -492,7 +547,11 @@ struct TSource{
 			}
 			else{ // shoot a ray to the bottom of the sourcevol bounding box and check for intersection with the sourcevol surface
 				long double p1[3] = {p[0], p[1], p[2]};
+#ifndef USE_CGAL
 				long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
+#else
+				long double p2[3] = {p[0], p[1], kdtree->tree.bbox().zmin() - REFLECT_TOLERANCE};
+#endif
 				set<TCollision> c;
 				if (kdtree->Collision(p1,p2,c)){
 					int count = 0;

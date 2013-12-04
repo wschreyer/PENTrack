@@ -26,22 +26,22 @@
 #define OUTPUT_ENDPOINTSandSPIN 4 ///< configuration value to print endlog+spintrack
 
 // physical constants
-#define pi 3.1415926535897932384626L ///< Pi
-#define ele_e 1.602176487E-19L ///< elementary charge [C]
-#define gravconst 9.80665L ///< g [m/s]
-#define conv pi/180.L ///< deg to rad conversion factor
-#define mu0 4*pi*1e-7L ///< magnetic permeability [Vs/Am]
-#define m_n 1.674927211E-27L/ele_e ///< neutron mass [eV/c^2]
-#define m_p 1.672621637E-27L/ele_e ///< proton mass [eV/c^2]
-#define m_e 9.10938215e-31L/ele_e ///< electron mass [eV/c^2]
-#define c_0 299792458.L ///< light speed [m/s]
-#define hbar 1.05457266e-34L ///< planck constant [Js]
-#define mu_nSI -0.96623641e-26L	///< Neutron magnetic moment [J/T]
-#define gamma_n -1.83247185e8L ///< 2*::mu_nSI/::hquer gyromagnetic ratio of neutron [1/Ts]
+static const long double pi = 3.1415926535897932384626L; ///< Pi
+static const long double ele_e = 1.602176487E-19L; ///< elementary charge [C]
+static const long double gravconst = 9.80665L; ///< g [m/s]
+static const long double conv = pi/180.L; ///< deg to rad conversion factor
+static const long double mu0 = 4*pi*1e-7L; ///< magnetic permeability [Vs/Am]
+static const long double m_n = 1.674927211E-27L/ele_e; ///< neutron mass [eV/c^2]
+static const long double m_p = 1.672621637E-27L/ele_e; ///< proton mass [eV/c^2]
+static const long double m_e = 9.10938215e-31L/ele_e; ///< electron mass [eV/c^2]
+static const long double c_0 = 299792458.L; ///< light speed [m/s]
+static const long double hbar = 1.05457266e-34L; ///< planck constant [Js]
+static const long double mu_nSI = -0.96623641e-26L;	///< Neutron magnetic moment [J/T]
+static const long double gamma_n = -1.83247185e8L; ///< 2*::mu_nSI/::hquer gyromagnetic ratio of neutron [1/Ts]
 
-const long double lengthconv = 0.01; ///< length conversion factor cgs -> SI [cm -> m]
-const long double Bconv = 1e-4; ///< magnetic field conversion factor cgs -> SI [G -> T]
-const long double Econv = 1e2; ///< electric field conversion factor cgs -> SI [V/cm -> V/m]
+static const long double lengthconv = 0.01; ///< length conversion factor cgs -> SI [cm -> m]
+static const long double Bconv = 1e-4; ///< magnetic field conversion factor cgs -> SI [G -> T]
+static const long double Econv = 1e2; ///< electric field conversion factor cgs -> SI [V/cm -> V/m]
 
 int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
 string inpath = "."; ///< path to configuration files, read from command line paramters
