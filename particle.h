@@ -129,14 +129,19 @@ struct TParticle{
 			long double x = tstart, x1, x2;
 			VecDoub y(6,ystart), dydx(6), y1(6), y2(6);
 			long double h = 0.001/sqrt(ystart[3]*ystart[3] + ystart[4]*ystart[4] + ystart[5]*ystart[5]); // first guess for stepsize
-			derivs(x,y,dydx);
 			if (trackfile)
 				PrintIntegrationStep(trackfile, x, y, h); // print start into track file
 			long double lastsave = x;
-			// create integrator class (stepperdopr853 = 8th order Runge Kutta)
-			stepper = new StepperDopr853<TParticle>(y, dydx, x, 1e-13, 0, true);// y, dydx, x, atol, rtol, dense output
+			bool resetintegration = true;
 			
 			while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
+				if (resetintegration){
+					if (stepper != NULL)
+						delete stepper;
+					derivs(x,y,dydx);
+					// create integrator class (stepperdopr853 = 8th order Runge Kutta)
+					stepper = new StepperDopr853<TParticle>(y, dydx, x, 1e-13, 0, true);// y, dydx, x, atol, rtol, dense output
+				}
 				x1 = x; // save point before next step
 				y1 = y;
 				
@@ -147,6 +152,7 @@ struct TParticle{
 				
 				try{
 					stepper->step(h, *this); // integrate one step
+					h = stepper->hnext; // set suggested stepsize for next step
 					Nsteps++;
 				}
 				catch(...){ // catch Exceptions thrown by numerical recipes routines
@@ -166,7 +172,8 @@ struct TParticle{
 					}
 					
 					gettimeofday(&refl_start, NULL);
-					if (ReflectOrAbsorb(x1, y1, x2, y2)){ // check for reflection or absorption between y1 and y2
+					resetintegration = ReflectOrAbsorb(x1, y1, x2, y2); // check for reflection or absorption between y1 and y2
+					if (resetintegration){
 						x = x2; // if there was reflection or absorption: reset integration end point
 						y = y2;
 					}
@@ -205,13 +212,12 @@ struct TParticle{
 					ID = ID_DECAYED;
 				else if (ID == ID_UNKNOWN && (x >= tmax || trajlength >= maxtraj))
 					ID = ID_NOT_FINISH;
-			
-				h = stepper->hnext; // set suggested stepsize for next step
 			}
 			
 			gettimeofday(&clock_end, NULL);
 			comptime = clock_end.tv_sec - clock_start.tv_sec + (long double)(clock_end.tv_usec - clock_start.tv_usec)/1e6;
 			delete stepper;
+			stepper = NULL;
 			
 			// Endwerte schreiben
 			SetEndValues(x,y,field);
@@ -482,7 +488,7 @@ struct TParticle{
 					long double xnew, xbisect1 = x1, xbisect2 = x1;
 					VecDoub ybisect1 = y1, ybisect2 = y1;
 
-					xnew = x1 + (x2 - x1)*c->s*(1 - 0.01*iteration); // cut integration right before collision point
+					xnew = x1 + (x2 - x1)*(c->s - 0.01*iteration); // cut integration right before collision point
 					if (xnew > x1 && xnew < x2){ // check that new line segment is in correct time interval
 						xbisect1 = xbisect2 = xnew;
 						for (int i = 0; i < 6; i++)
@@ -494,7 +500,7 @@ struct TParticle{
 						}
 					}
 
-					xnew = x1 + (x2 - x1)*c->s*(1 + 0.01*iteration); // cut integration right after collision point
+					xnew = x1 + (x2 - x1)*(c->s + 0.01*iteration); // cut integration right after collision point
 					if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
 						xbisect2 = xnew;
 						for (int i = 0; i < 6; i++)

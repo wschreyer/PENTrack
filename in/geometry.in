@@ -54,18 +54,3 @@ surface 	in/source.STL		200		0
 #FullRacetrack		2250		-0.15		1.35		0.6
 
 FiniteWireZCenter	12500		-1		2
-
-############# How to use STL-files ############
-# STL files use a list of triangles to describe 3D-surfaces (see here for file format: http://www.ennex.com/~fabbers/StL.asp)
-# They can be created with Solidworks via "Datei - Speichern unter... - Dateityp STL - Save"
-# Note the "Optionen..." button in the Save dialog, there you can change format (only binary supported), resolution, coordinate system etc.
-# If you want to export several parts of an Solidworks assembly you can do the following (if you know a nicer/easier way, please add it here)
-# - select the part(s) to be exported and rightclick
-# - select "Auswahl invertieren" and then use "Unterdruecken" on all other parts
-# - WARNING! You might not be able to undo the "Unterdruecken"-command but have to reload the assembly, so save any changes before that!
-# - now you can save that single part as STL (make sure the option "STL-Ausgabedaten nicht auf positiven Raum uebertragen" is checked
-#		and to use the same coordinate system for every part or else the different parts will not fit together)
-# You can check the positioning of the parts with several tools: MeshLab, SolidView, Minimagics, Solidworks...
-# Solidworks makes sure that the surface normals always point outside a solid body. This is used to check if the source volume overlaps
-#	with other solids so that no particle is created inside a solid body.
-# memory consumption of loading STL-files into program is about 5 times the file size
