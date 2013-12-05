@@ -10,6 +10,7 @@
 #include <fstream>
 #include <vector>
 #include <set>
+#include <limits>
 
 #include "mc.h"
 #include "kdtree.h"
@@ -301,22 +302,26 @@ struct TSource{
 				else getline(infile,line);
 			}
 			
-			const long double d = 0.003;
 			if (sourcemode == "customvol"){ // get minimal possible energy for neutrons to avoid long inital value dicing for too-low-energy neutron
-				Hmin_lfs = Hmin_hfs = 9e99;
-				for (long double r = r_min; r <= r_max; r += d){
-					for (long double z = z_min; z <= z_max; z += d){
+				Hmin_lfs = Hmin_hfs = numeric_limits<long double>::infinity();
+				long double dr = (r_max - r_min)/300;
+				long double dz = (z_max - z_min)/300;
+				for (long double r = r_min; r <= r_max; r += dr){
+					for (long double z = z_min; z <= z_max; z += dz){
 						long double p[3] = {r,0.0,z};
 						CalcHmin(field,p);
 					}
 				}
 			}
 			else if (sourcemode == "volume"){
-				Hmin_lfs = Hmin_hfs = 9e99;
+				Hmin_lfs = Hmin_hfs = numeric_limits<long double>::infinity();
 				long double p[3];
-				for (p[0] = kdtree->lo[0]; p[0] <= kdtree->hi[0]; p[0] += d){
-					for (p[1] = kdtree->lo[1]; p[1] <= kdtree->lo[1]; p[1] += d){
-						for (p[2] = kdtree->lo[2]; p[2] <= kdtree->lo[2]; p[2] += d){
+				long double dx = (kdtree->hi[0] - kdtree->lo[0])/50;
+				long double dy = (kdtree->hi[1] - kdtree->lo[1])/50;
+				long double dz = (kdtree->hi[2] - kdtree->lo[2])/50;
+				for (p[0] = kdtree->lo[0]; p[0] <= kdtree->hi[0]; p[0] += dx){
+					for (p[1] = kdtree->lo[1]; p[1] <= kdtree->hi[1]; p[1] += dy){
+						for (p[2] = kdtree->lo[2]; p[2] <= kdtree->hi[2]; p[2] += dz){
 							if (InSourceVolume(p)) CalcHmin(field,p);
 						}
 					}
