@@ -1,12 +1,12 @@
 66c66
-< /*
+< 
 ---
-> 
+> /*
 84c84
-< */
+< 
 ---
-> 
+> */
 484c484
-< typedef long double Doub; // default floating type
+< typedef double Doub; // default floating type
 ---
-> typedef double Doub; // default floating type
+> typedef long double Doub; // default floating type
