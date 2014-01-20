@@ -429,16 +429,18 @@ bool KDTree::Collision(const long double p1[3], const long double p2[3], std::se
 	tree.all_intersections(segment, std::back_inserter(out));
 	for (std::list< CTree::Object_and_primitive_id >::iterator i = out.begin(); i != out.end(); i++){
 		TCollision coll;
-		CPoint collp = CGAL::object_cast<CPoint>(i->first);
-		coll.s = sqrt(pow(collp[0] - p1[0], 2) + pow(collp[1] - p1[1], 2) + pow(collp[2] - p1[2], 2))
-				/sqrt(pow(p2[0] - p1[0], 2) + pow(p2[1] - p1[1], 2) + pow(p2[2] - p1[2], 2));
-		CIterator tri = i->second;
-		K::Vector_3 n = tri->supporting_plane().orthogonal_vector();
-		coll.ID = tri->ID;
-		coll.normal[0] = n[0]/sqrt(n.squared_length());
-		coll.normal[1] = n[1]/sqrt(n.squared_length());
-		coll.normal[2] = n[2]/sqrt(n.squared_length());
-		colls.insert(coll);
+		const CPoint *collp = CGAL::object_cast<CPoint>(&i->first);
+		if (collp){
+			coll.s = sqrt(pow(collp->x() - p1[0], 2) + pow(collp->y() - p1[1], 2) + pow(collp->z() - p1[2], 2))
+					/sqrt(pow(p2[0] - p1[0], 2) + pow(p2[1] - p1[1], 2) + pow(p2[2] - p1[2], 2));
+			CIterator tri = i->second;
+			K::Vector_3 n = tri->supporting_plane().orthogonal_vector();
+			coll.ID = tri->ID;
+			coll.normal[0] = n[0]/sqrt(n.squared_length());
+			coll.normal[1] = n[1]/sqrt(n.squared_length());
+			coll.normal[2] = n[2]/sqrt(n.squared_length());
+			colls.insert(coll);
+		}
 	}
 	if (colls.size() > 0)
 		return true;
