@@ -248,6 +248,21 @@ class KDTree{
          * @param p Point
          */
         bool SegmentInBox(const long double p1[3], const long double p2[3]){ return (root && root->SegmentInBox(p1,p2)); };
+
+
+        /**
+         * Test if point is inside an object
+         *
+         * @param p Point
+         *
+         * @return Returns true if point is inside solid object
+         */
+        template<typename T> bool InSolid(const T p[3]){
+        	std::set<TCollision> colls;
+        	long double p1[3] = {p[0], p[1], p[2]};
+        	long double p2[3] = {p[0], p[1], lo[2] - 1};
+        	return Collision(p1, p2, colls) && (colls.size() & 1); // return true if collided with surface and number of collisions is odd
+        }
 };
 
 #endif // KDTREE_H_

@@ -35,6 +35,7 @@
 #include "globals.h"
 #include "fields.h"
 #include "geometry.h"
+#include "source.h"
 #include "mc.h" 
 #include "bruteforce.h"
 #include "ndist.h"

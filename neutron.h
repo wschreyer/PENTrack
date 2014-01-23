@@ -12,6 +12,7 @@ static const char* NAME_NEUTRON = "neutron";
 
 #include "globals.h"
 #include "particle.h"
+#include "source.h"
 #include "proton.h"
 #include "electron.h"
 
@@ -43,7 +44,7 @@ public:
 	 */
 	TNeutron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TFieldManager *afield)
 			: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI){
-		long double t = mcgen.UniformDist(0,src.ActiveTime);
+		long double t;
 		int polarisation = mcgen.DicePolarisation(name);
 		long double H = mcgen.Spectrum(name);
 		long double E;

@@ -18,6 +18,7 @@
 #include "fields.h"
 #include "mc.h"
 #include "geometry.h"
+#include "source.h"
 #include "bruteforce.h"
 #include "ndist.h"
 #include "adiabacity.h"
@@ -447,7 +448,7 @@ struct TParticle{
 		 */
 		void Init(int number, TGeometry &ageometry, TSource &src,
 					TMCGenerator &mcgen, TFieldManager *afield){
-			long double t = mcgen.UniformDist(0,src.ActiveTime);
+			long double t;
 			long double E = mcgen.Spectrum(name);
 			long double phi, theta;
 			long double p[3];
