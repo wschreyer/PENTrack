@@ -105,6 +105,9 @@ public:
 			p[j] += REFLECT_TOLERANCE*n[j]; // add some tolerance to avoid starting inside solid
 		}
 
+		x = p[0];
+		y = p[1];
+		z = p[2];
 		phi_v = mc.UniformDist(0, 2*pi); // generate random velocity angles in upper hemisphere
 		theta_v = mc.SinCosDist(0, 0.5*pi); // Lambert's law!
 		if (Enormal > 0){
@@ -115,9 +118,6 @@ public:
 			Doub v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
 			RotateVector(v,n);
 
-			x = p[0];
-			y = p[1];
-			z = p[2];
 			phi_v = atan2(v[1],v[0]);
 			theta_v = acos(v[2]);
 		}
@@ -314,10 +314,10 @@ public:
 	TSource(const char *geometryin, TGeometry &geom, TFieldManager &field){
 		TConfig geometryconf;
 		ReadInFile(geometryin, geometryconf);
-		istringstream sourceconf(geometryconf["SOURCE"][0]); // only first source in geometry.in is read in
+		sourcemode = geometryconf["SOURCE"].begin()->first; // only first source in geometry.in is read in
+		istringstream sourceconf(geometryconf["SOURCE"].begin()->second);
 
 		Doub ActiveTime;
-		sourceconf >> sourcemode;
 		if (sourcemode == "customvol"){
 			Doub r_min, r_max, phi_min, phi_max, z_min, z_max;
 			sourceconf >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime;
@@ -338,6 +338,10 @@ public:
 			Doub E_normal;
 			sourceconf >> sourcefile >> ActiveTime >> E_normal;
 			source = new TSTLSurfaceSource(ActiveTime, geom, sourcefile, E_normal);
+		}
+		else{
+			cout << "Uknown source " << sourcemode << "! Stopping!\n";
+			exit(-1);
 		}
 	};
 
