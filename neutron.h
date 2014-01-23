@@ -78,7 +78,6 @@ public:
 				return;
 			}
 		}
-
 		InitE(number, t, mcgen.LifeTime(name), p[0], p[1], p[2],
 			E, phi, theta, polarisation, mcgen.MaxTrajLength(name), ageometry, afield);
 	};
@@ -101,7 +100,7 @@ protected:
 	 * @param entering Solid that the particle is entering (can be modified by method)
 	 * @return Returns true if particle path was changed
 	 */
-	bool OnHit(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *&entering){
+	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering){
 		long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 		bool log = false, refl = false;
@@ -146,7 +145,8 @@ protected:
 				//************** specular reflection **************
 //				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
 				x2 = x1;
-				y2 = y1;
+				for (int i = 0; i < 6; i++)
+					y2[i] = y1[i];
 				y2[3] -= 2*vnormal*normal[0]; // reflect velocity
 				y2[4] -= 2*vnormal*normal[1];
 				y2[5] -= 2*vnormal*normal[2];
@@ -157,7 +157,8 @@ protected:
 				theta_r = mc->SinCosDist(0, 0.5*pi);
 				if (vnormal > 0) theta_r += pi; // if normal points out of volume rotate by 180 degrees
 				x2 = x1;
-				y2 = y1;
+				for (int i = 0; i < 6; i++)
+					y2[i] = y1[i];
 				y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
 				y2[4] = vabs*sin(phi_r)*sin(theta_r);
 				y2[5] = vabs*cos(theta_r);
@@ -186,7 +187,7 @@ protected:
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
+	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid){
 		bool result = false;
 		if (currentsolid->mat.FermiImag > 0){
 			long double prob = mc->UniformDist(0,1);
@@ -253,13 +254,13 @@ protected:
 	void Decay(){
 		long double v_p[3], v_e[3];
 		TParticle *p;
-		mc->NeutronDecay(&yend()[3], v_p, v_e);
-		p = new TProton(particlenumber, tend(), mc->LifeTime("proton"),
-							yend()[0], yend()[1], yend()[2], v_p[0], v_p[1], v_p[2],
+		mc->NeutronDecay(&yend[3], v_p, v_e);
+		p = new TProton(particlenumber, tend, mc->LifeTime("proton"),
+							yend[0], yend[1], yend[2], v_p[0], v_p[1], v_p[2],
 							mc->DicePolarisation("proton"), mc->MaxTrajLength("proton"), *geom, field);
 		secondaries.push_back(p);
-		p = new TElectron(particlenumber, tend(), mc->LifeTime("electron"),
-							yend()[0], yend()[1], yend()[2], v_e[0], v_e[1], v_e[2],
+		p = new TElectron(particlenumber, tend, mc->LifeTime("electron"),
+							yend[0], yend[1], yend[2], v_e[0], v_e[1], v_e[2],
 							mc->DicePolarisation("electron"), mc->MaxTrajLength("electron"), *geom, field);
 		secondaries.push_back(p);
 	};

@@ -75,7 +75,7 @@ protected:
 	 * @param entering Solid that the electron is entering (can be modified by method)
 	 * @return Returns true if particle path was changed
 	 */
-	bool OnHit(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *&entering){
+	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering){
 		return false;
 	};
 
@@ -92,10 +92,11 @@ protected:
 	 * @param currentsolid Solid in which the electron is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
+	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid){
 		if (currentsolid->ID != geom->defaultsolid.ID){
 			x2 = x1;
-			y2 = y1;
+			for (int i = 0; i < 6; i++)
+				y2[i] = y1[i];
 			ID = currentsolid->ID;
 			return true;
 		}
@@ -112,7 +113,7 @@ protected:
 				double v_scat[3] = {y2[3], y2[4], y2[5]};
 				eH2velocity(Eloss, theta, v_scat); // change velocity accordingly
 				if (index == 3){ // on ionization create secondary electron
-					TElectron *e = new TElectron(particlenumber, x2, &y2[0], &y2[3], polarisation, *mc, *field);
+					TElectron *e = new TElectron(particlenumber, x2, y2, &y2[3], polarisation, *mc, *field);
 					secondaries.push_back(e);
 				}
 			}

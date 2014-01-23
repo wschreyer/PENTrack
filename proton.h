@@ -74,7 +74,7 @@ protected:
 	 * @param entering Solid that the proton is entering (can be modified by method)
 	 * @return Returns true if particle was reflected
 	 */
-	bool OnHit(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *&entering){
+	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering){
 		return false;
 	};
 
@@ -91,10 +91,11 @@ protected:
 	 * @param currentsolid Solid in which the proton is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
+	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid){
 		if (currentsolid->ID != geom->defaultsolid.ID){
 			x2 = x1;
-			y2 = y1;
+			for (int i = 0; i < 6; i++)
+				y2[i] = y1[i];
 			ID = currentsolid->ID;
 			return true;
 		}

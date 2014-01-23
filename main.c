@@ -40,8 +40,6 @@
 #include "ndist.h"
 
 void ConfigInit(); // read config.in
-void LogParticle(TParticle *p);
-void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog);
 void OutputCodes(map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
 void PrintBFieldCut(const char *outfile, TFieldManager &field); // evaluate fields on given plane and write to outfile
 void PrintBField(const char *outfile, TFieldManager &field);
@@ -51,13 +49,11 @@ void PrintGeometry(const char *outfile, TGeometry &geom); // do many random coll
 long double SimTime = 1500.; ///< max. simulation time
 int simcount = 1; ///< number of particles for MC simulation (read from config)
 int simtype = NEUTRON; ///< type of particle which shall be simulated (read from config)
-int outputopt = 0; ///< user defined output options, each bit switches one of the OUTPUT_* options defined in globals.h
-set<float> snapshots; ///< user defined times at which the particle's track should be saved (read from config)
 int secondaries = 1; ///< should secondary particles be simulated? (read from config)
 long double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
 int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
-map<string, ofstream*> outputstreams;
+map<string, TOutput> output;
 
 /**
  * Catch signals.
@@ -191,18 +187,17 @@ int main(int argc, char **argv){
 				printf("\nDon't know simtype %i! Exiting...\n",simtype);
 				exit(-1);
 			}
-			p->Integrate(SimTime, geom, mc, &field, snapshots); // integrate particle
+			p->Integrate(SimTime, geom, mc, &field, output[p->name]); // integrate particle
 			ID_counter[p->name][p->ID]++; // increment counters
-			ntotalsteps += p->Nsteps();
+			ntotalsteps += p->Nstep;
 			IntegratorTime += p->inttime;
 			ReflTime += p->refltime;
-			LogParticle(p);
 
 			if (secondaries == 1){
 				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
-					(*i)->Integrate(SimTime, geom, mc, &field, snapshots); // integrate secondary particles
+					(*i)->Integrate(SimTime, geom, mc, &field, output[(*i)->name]); // integrate secondary particles
 					ID_counter[(*i)->name][(*i)->ID]++;
-					ntotalsteps += (*i)->Nsteps();
+					ntotalsteps += (*i)->Nstep;
 					IntegratorTime += (*i)->inttime;
 					ReflTime += (*i)->refltime;
 				}
@@ -227,10 +222,6 @@ int main(int argc, char **argv){
 	ostringstream fileprefix;
 	fileprefix << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0);
 	if (neutdist == 1) outndist((fileprefix.str() + "ndist.out").c_str());   // print neutron distribution into file
-	for (map<string, ofstream*>::iterator i = outputstreams.begin(); i != outputstreams.end(); i++){
-		i->second->close();
-		delete i->second;
-	}
 
 	return 0;
 }
@@ -259,22 +250,6 @@ void ConfigInit(void){
 	istringstream(config["global"]["snapshotlog"])	>> snapshotlog;
 	istringstream(config["global"]["spinlog"])		>> spinlog;
 	istringstream(config["global"]["neutdist"])		>> neutdist;
-	outputopt = 0;
-	if (endlog) outputopt |= OUTPUT_END;
-	if (tracklog) outputopt |= OUTPUT_TRACK;
-	if (hitlog) outputopt |= OUTPUT_HIT;
-	if (snapshotlog) outputopt |= OUTPUT_SNAPSHOT;
-	if (spinlog) outputopt |= OUTPUT_SPIN;
-	
-
-	if (outputopt & OUTPUT_SNAPSHOT){
-		float tmp_snapshot;
-		istringstream isnapshots(config["global"]["snapshots"]);
-		do{
-			isnapshots >> tmp_snapshot;
-			if (isnapshots.good()) snapshots.insert(tmp_snapshot);
-		}while(isnapshots.good());
-	}
 	
 	int BFstart, BFend;
 	istringstream iBruteForce(config["global"]["BruteForce"]);
@@ -294,81 +269,35 @@ void ConfigInit(void){
 													>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
 													>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
 													>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
-}
 
 
-/**
- * Open output files.
- *
- * @param endlog Returns FILE-pointer to particles' end point log
- * @param tracklog Returns FILE-pointer to particles' trajectory log (if specified in config)
- * @param snap Return FILE-pointer to print snapshots at specified times (if specified in config)
- * @param reflectlog Return FILE-pointer to reflection and transmission log (if specified in config)
- */
-void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
-	// **************** create log files ****************
-/*	ostringstream fileprefix;
-	fileprefix << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0);
+	TConfig logconf;
+	ReadInFile(string(inpath+"/particle.in").c_str(), logconf); // read particle specific log configuration from particle.in
+	for (TConfig::iterator i = logconf.begin(); i != logconf.end(); i++){
+		if (i->first != "all"){
+			i->second = logconf["all"]; // set all particle specific settings to the "all" settings
+		}
+	}
+	ReadInFile(string(inpath+"/particle.in").c_str(), logconf); // read again to overwrite "all" settings with particle specific settings
 
-	// open endlog
-	endlog = fopen((fileprefix.str() + "end.out").c_str(),"w");
-    if (!endlog){
-    	printf("\n%s not found!\n",(fileprefix.str() + "end.out").c_str());
-    	exit(-1);
-    }
-    // print endlog header
-	fprintf(endlog,"jobnumber particle polarisation "
-                   "tstart xstart ystart zstart "
-                   "vxstart vystart vzstart "
-                   "Hstart Estart "
-                   "tend xend yend zend "
-                   "vxend vyend vzend "
-                   "Hend Eend stopID Nspinflip ComputingTime "
-                   "Nhit trajlength Hmax\n");
-
-	if (particletype == NEUTRON && snapshots.size() > 0){
-		// open snapshot log
-		snap = fopen((fileprefix.str() + "snapshot.out").c_str(),"w");
-	    if (!snap){
-	    	printf("\n%s not found!\n",(fileprefix.str() + "snapshot.out").c_str());
-	    	exit(-1);
-	    }
-	    // print snapshot log header
-		fprintf(snap,	"jobnumber particle polarisation "
-                		"tstart xstart ystart zstart "
-                		"vxstart vystart vzstart "
-                		"Hstart Estart "
-                		"tend xend yend zend "
-                		"vxend vyend vzend "
-                		"Hend Eend stopID Nspinflip ComputingTime "
-                		"Nhit trajlength Hmax\n");
+	for (TConfig::iterator i = logconf.begin(); i != logconf.end(); i++){
+		if (i->first != "all"){
+			istringstream(i->second["endlog"]) 		>> output[i->first].endlog;
+			istringstream(i->second["tracklog"]) 	>> output[i->first].tracklog;
+			istringstream(i->second["hitlog"]) 		>> output[i->first].tracklog;
+			istringstream(i->second["snapshotlog"])	>> output[i->first].snapshotlog;
+			istringstream(i->second["spinlog"])		>> output[i->first].spinlog;
+			if (output[i->first].snapshotlog){
+				float tmp_snapshot;
+				istringstream isnapshots(i->second["snapshots"]);
+				do{
+					isnapshots >> tmp_snapshot;
+					if (isnapshots.good()) output[i->first].snapshottimes.insert(tmp_snapshot);
+				}while(isnapshots.good());
+			}
+		}
 	}
 
-	if ((outputopt==OUTPUT_EVERYTHING)||(outputopt==OUTPUT_EVERYTHINGandSPIN)){
-		// open track log
-		tracklog = fopen((fileprefix.str() + "track.out").c_str(),"w");
-	    if (!tracklog){
-	    	printf("\n%s not found!\n",(fileprefix.str() + "track.out").c_str());
-	    	exit(-1);
-	    }
-	    // print track log header
-		fprintf(tracklog,"particle polarisation t x y z vx vy vz "
-							"H E Bx dBxdx dBxdy dBxdz By dBydx "
-							 "dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V "
-							 "timestep\n");
-	}
-
-	if (particletype == NEUTRON && reflektlog){
-		// open reflect log
-		reflectlog = fopen((fileprefix.str() + "reflect.out").c_str(),"w");
-	    if (!reflectlog){
-	    	printf("\n%s not found!\n",(fileprefix.str() + "reflect.out").c_str());
-	    	exit(-1);
-	    }
-	    // print reflect log header
-		fprintf(reflectlog,"jobnumber particle polarisation reflection solid t x y z vx vy vz nx ny nz H diffphi difftheta\n"); // Header for Reflection File
-	}
-*/	// **************** end create log files ****************
 }
 
 
@@ -394,48 +323,6 @@ void OutputCodes(map<string, map<int, int> > &ID_counter){
 	}
 }
 
-
-/**
- * Log particle results
- */
-void LogParticle(TParticle *p){
-	ostringstream fileprefix;
-	fileprefix << outpath << '/' << setw(12) << setfill('0') << jobnumber;
-	if (outputopt & OUTPUT_END){
-		string filesuffix(p->name);
-		filesuffix += ".end.out";
-		ofstream *str = outputstreams[filesuffix];
-		if (!str)
-			str = outputstreams[filesuffix] = new ofstream((fileprefix.str() + filesuffix).c_str());
-		str->precision(10);
-		p->PrintStartEnd(*str);
-	}
-	if (outputopt & OUTPUT_HIT){
-		string filesuffix(p->name);
-		filesuffix += ".hit.out";
-		ofstream *str = outputstreams[filesuffix];
-		if (!str)
-			str = outputstreams[filesuffix] = new ofstream((fileprefix.str() + filesuffix).c_str());
-		p->PrintHits(*str);
-	}
-	if (outputopt & OUTPUT_TRACK){
-		string filesuffix(p->name);
-		filesuffix += ".track.out";
-		ofstream *str = outputstreams[filesuffix];
-		if (!str)
-			str = outputstreams[filesuffix] = new ofstream((fileprefix.str() + filesuffix).c_str());
-		p->PrintTrack(*str);
-	}
-	if (outputopt & OUTPUT_SNAPSHOT){
-		string filesuffix(p->name);
-		filesuffix += ".snapshot.out";
-		ofstream *str = outputstreams[filesuffix];
-		if (!str)
-			str = outputstreams[filesuffix] = new ofstream((fileprefix.str() + filesuffix).c_str());
-		p->PrintSnapshots(*str);
-	}
-	cout << '\n';
-}
 
 /**
  * Print planar slice of fields into a file.

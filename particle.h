@@ -24,24 +24,52 @@
 
 
 /**
- * Track points are saved in an array of this structure
+ * Struct containing all output options and streams
  */
-struct TTrackEntry{
-	long double t; ///< time
-	VecDoub y; ///< state vector (x,y,z,vx,vy,vz)
-	int polarisation; ///< polarisation
-};
-
-
-/**
- * Material boundary hits are saved in an array of this structure
- */
-struct THitEntry{
-	vector<TTrackEntry>::iterator point1; ///< iterator pointing to track point in front of material boundary
-	vector<TTrackEntry>::iterator point2; ///< iterator pointing to track point beyond material boundary
-	solid leaving; ///< solid, which the particle left at this material boundary
-	solid entering; ///< solid, which the particle entered at this material boundary
-	long double normal[3]; ///< normal of the hit surface
+struct TOutput{
+	bool endlog; ///< Log particle values after integration
+	bool tracklog; ///< Log particle track
+	bool hitlog; ///< Log materiual hits
+	bool snapshotlog; ///< Log snapshots
+	bool spinlog; ///< Log spin tracking
+	ofstream *endout; ///< endlog file stream
+	ofstream *trackout; ///< tracklog file stream
+	ofstream *hitout; ///< hitlog file stream
+	ofstream *spinout; ///< spinlog file stream
+	set<float> snapshottimes; ///< times on which to take snapshots
+	
+	/**
+	 * Constructor: initializes values and empty streams
+	 */
+	TOutput(): endlog(false), tracklog(false), hitlog(false), snapshotlog(false), spinlog(false), endout(NULL), trackout(NULL), hitout(NULL), spinout(NULL) { };
+	
+	/**
+	 * Copy constructor, copies values, initializes empty streams
+	 */
+	TOutput(const TOutput &output): endlog(output.endlog), tracklog(output.tracklog), hitlog(output.hitlog), snapshotlog(output.snapshotlog), spinlog(output.spinlog),
+			endout(NULL), trackout(NULL), hitout(NULL), spinout(NULL) { };
+	
+	/**
+	 * Destructor, close open streams.
+	 */
+	~TOutput(){
+		if (endout){
+			endout->close();
+			delete endout;
+		}
+		if (trackout){
+			trackout->close();
+			delete trackout;
+		}
+		if (hitout){
+			hitout->close();
+			delete hitout;
+		}
+		if (spinout){
+			spinout->close();
+			delete spinout;
+		}
+	}
 };
 
 
@@ -66,74 +94,51 @@ struct TParticle{
 		long double refltime; ///< reflection computing time
 
 		/// start time
-		long double tstart(){ return track.begin()->t; };
+		long double tstart;
 
 		/// stop time
-		long double tend(){ return (track.end() - 1)->t; };
+		long double tend;
 
 		/// state vector before integration
-		VecDoub ystart(){ return track.begin()->y; };
+		long double ystart[6];
 
 		/// state vector after integration)
-		VecDoub yend(){ return (track.end() - 1)->y; };
-
-		/// total start energy
-		long double Hstart(){ return Estart() + Epot(tstart(), &ystart()[0], polstart(), field); };
-
-		/// total end energy
-		long double Hend(){ return Eend() + Epot(tend(), &yend()[0], polend(), field); };
-
-		/// max total energy
-		long double Hmax(){
-			long double result = -numeric_limits<long double>::infinity();
-			for (vector<TTrackEntry>::iterator i = track.begin(); i != track.end(); i++){
-				long double H = Ekin(&i->y[3]) + Epot(i->t, &i->y[0], i->polarisation, field);
-				result = max(result, H);
-			}
-			return result;
-		};
-
-		/// kinetic start energy
-		long double Estart(){ return Ekin(&track.begin()->y[3]); };
-
-		/// kinetic end energy
-		long double Eend(){ return Ekin(&(track.end() - 1)->y[3]); };
-
-		/// trajectory length
-		long double lend(){
-			long double result = 0;
-			for (vector<TTrackEntry>::iterator i = ++track.begin(); i != track.end(); i++){
-				result += sqrt(pow(i->y[0] - (i-1)->y[0], 2) + pow(i->y[1] - (i-1)->y[1], 2) + pow(i->y[2] - (i-1)->y[2], 2));
-			}
-			return result;
-		};
+		long double yend[6];
 
 		/// initial polarisation of particle (-1,0,1)
-		int polstart(){ return track.begin()->polarisation; };
+		int polstart;
 
 		/// final polarisation of particle (-1,0,1)
-		int polend(){ return (track.end() - 1)->polarisation; };
+		int polend;
+
+		/// total start energy
+		long double Hstart(){ return Ekin(&ystart[3]) + Epot(tstart, ystart, polstart, field); };
+
+		/// total end energy
+		long double Hend(){ return Ekin(&yend[3]) + Epot(tend, yend, polend, field); };
+
+		/// max total energy
+		long double Hmax;
+
+		/// kinetic start energy
+		long double Estart(){ return Ekin(&ystart[3]); };
+
+		/// kinetic end energy
+		long double Eend(){ return Ekin(&yend[3]); };
+
+		/// trajectory length
+		long double lend;
 
 		/// number of material boundary hits
-		int Nhit(){ return hits.size(); };
+		int Nhit;
 
 		/// number of spin flips
-		int Nspinflip(){
-			int result = 0;
-			for (vector<TTrackEntry>::iterator i = ++track.begin(); i != track.end(); i++){
-				if (i->polarisation != (i-1)->polarisation)
-					result++;
-			}
-			return result;
-		};
+		int Nspinflip;
 
 		/// number of integration steps
-		int Nsteps(){ return track.size(); };
+		int Nstep;
 
 		vector<TParticle*> secondaries; ///< list of secondary particles
-		vector<TTrackEntry> track; ///< list of track entries
-		vector<THitEntry> hits; ///< list of material boundary hits
-		vector<vector<TTrackEntry>::iterator> snapshots;
 
 
 		/**
@@ -142,7 +147,7 @@ struct TParticle{
 		 * Has to be called by every derived class constructor with the respective values
 		 */
 		TParticle(const char *aname, const long double qq, const long double mm, const long double mumu)
-				: name(aname), q(qq), m(mm), mu(mumu){ };
+				: name(aname), q(qq), m(mm), mu(mumu), tstart(0), field(NULL), ID(0), mc(NULL), polend(0), maxtraj(0), tau(0), particlenumber(0), tend(0), geom(NULL), Nhit(0), Hmax(0), Nstep(0), refltime(0), stepper(NULL), inttime(0), lend(0), polstart(0), Nspinflip(0){ };
 
 		/**
 		 * Destructor, deletes secondaries and snapshots
@@ -181,47 +186,51 @@ struct TParticle{
 		 * @param afield Pointer to field which acts on particle (can be NULL)
 		 * @param snapshottime List of times at which the track should be saved
 		 */
-		void Integrate(long double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, set<float> &snapshottimes){
+		void Integrate(long double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, TOutput &output){
 			geom = &geometry;
 			if (currentsolids.empty())
-				geom->GetSolids(tend(), &yend()[0], currentsolids);
+				geom->GetSolids(tend, yend, currentsolids);
 			mc = &mcgen;
 			field = afield;
 			timespec clock_start, clock_end, refl_start, refl_end;
 
 			int perc = 0;
 			cout << "Particle no.: " << particlenumber << " particle type: " << name << '\n';
-			cout << "x: " << yend()[0] << " y: " << yend()[1] << " z: " << yend()[2]
-			     << " E: " << Eend() << " t: " << tend() << " tau: " << tau << " lmax: " << maxtraj << '\n';
+			cout << "x: " << yend[0] << " y: " << yend[1] << " z: " << yend[2]
+			     << " E: " << Eend() << " t: " << tend << " tau: " << tau << " lmax: " << maxtraj << '\n';
 		
 			// set initial values for integrator
-			long double x = tend(), x1, x2;
-			VecDoub y(yend()), dydx(6), y1(6), y2(6);
-			long double l = lend();
-			int polarisation = polend();
-			long double h = 0.001/sqrt(yend()[3]*yend()[3] + yend()[4]*yend()[4] + yend()[5]*yend()[5]); // first guess for stepsize
+			long double x = tend, x1, x2;
+			VecDoub y(6, yend), dydx(6);
+			long double y1[6], y2[6];
+			int polarisation = polend;
+			long double h = 0.001/sqrt(yend[3]*yend[3] + yend[4]*yend[4] + yend[5]*yend[5]); // first guess for stepsize
 			derivs(x,y,dydx);
 
 			// create integrator class (stepperdopr853 = 8th order Runge Kutta)
 			stepper = new StepperDopr853<TParticle>(y, dydx, x, 1e-13, 0, true);// y, dydx, x, atol, rtol, dense output
 
-			set<float>::iterator nextsnapshot = snapshottimes.begin();
-			while (nextsnapshot != snapshottimes.end() && *nextsnapshot < x) // find first snapshot time
+			set<float>::iterator nextsnapshot = output.snapshottimes.begin();
+			while (nextsnapshot != output.snapshottimes.end() && *nextsnapshot < x) // find first snapshot time
 				nextsnapshot++;
+			if (output.tracklog)
+				PrintTrack(output.trackout, x2, y2, polarisation);
 			long double lastsave = x;
 
 			while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 				x1 = x; // save point before next step
-				y1 = y;
+				for (int i = 0; i < 6; i++)
+					y1[i] = y[i];
 				
-				if (x + h > tstart() + tau)
-					h = tstart() + tau - x;	//If stepsize can overshoot, decrease.
+				if (x + h > tstart + tau)
+					h = tstart + tau - x;	//If stepsize can overshoot, decrease.
 				if (x + h > tmax)
 					h = tmax - x;
 				
 				clock_gettime(CLOCK_REALTIME, &clock_start); // start computing time measure
 				try{
 					stepper->step(h, *this); // integrate one step
+					Nstep++;
 				}
 				catch(...){ // catch Exceptions thrown by numerical recipes routines
 					ID = ID_NRERROR;
@@ -234,7 +243,8 @@ struct TParticle{
 					x2 = x1 + MAX_SAMPLE_DIST/v1; // time length = spatial length/velocity
 					if (x2 >= x){
 						x2 = x;
-						y2 = y;
+						for (int i = 0; i < 6; i++)
+							y2[i] = y[i];
 					}
 					else{
 						for (int i = 0; i < 6; i++)
@@ -242,49 +252,56 @@ struct TParticle{
 					}
 					
 					clock_gettime(CLOCK_REALTIME, &refl_start);
-					if (CheckHit(x1, y1, x2, y2, polarisation)){ // check if particle hit a material boundary or was absorbed between y1 and y2
+					if (CheckHit(x1, y1, x2, y2, polarisation, output)){ // check if particle hit a material boundary or was absorbed between y1 and y2
 						x = x2; // if particle path was changed: reset integration end point
-						y = y2;
+						for (int i = 0; i < 6; i++)
+							y[i] = y2[i];
 					}
 					clock_gettime(CLOCK_REALTIME, &refl_end);
 					refltime += refl_end.tv_sec - refl_start.tv_sec + (long double)(refl_end.tv_nsec - refl_start.tv_nsec)/1e9;
 				
-					l += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
+					lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
+					Hmax = max(Ekin(&y2[3]) + Epot(x, y2, polarisation, field), Hmax);
 
 					// take snapshots at certain times
-					if (nextsnapshot != snapshottimes.end()){
+					if (output.snapshotlog && nextsnapshot != output.snapshottimes.end()){
 						long double xsnap = *nextsnapshot;
 						if (x1 <= xsnap && x2 > xsnap){
-							VecDoub ysnap(6);
+							long double ysnap[6];
 							for (int i = 0; i < 6; i++)
 								ysnap[i] = stepper->dense_out(i, xsnap, stepper->hdid);
 							cout << "\n Snapshot at " << xsnap << " s \n";
 
-							TTrackEntry point = {xsnap, ysnap, polarisation};
-							track.push_back(point);
-							snapshots.push_back(track.end() - 1);
+							Print(output.endout, xsnap, ysnap, polarisation);
 							nextsnapshot++;
 						}
 					}
 
-					TTrackEntry trackentry = {x2, y2, polarisation};
-					track.push_back(trackentry);
+					if (output.tracklog)
+						PrintTrack(output.trackout, x2, y2, polarisation);
 
 					x1 = x2;
-					y1 = y2;
+					for (int i = 0; i < 6; i++)
+						y1[i] = y2[i];
 				}		
 				
-				PrintPercent(max((x - tstart())/tau, max((x - tstart())/(tmax - tstart()), l/maxtraj)), perc);
+				PrintPercent(max((x - tstart)/tau, max((x - tstart)/(tmax - tstart), lend/maxtraj)), perc);
 
 				// x >= tstart + tau?
-				if (ID == ID_UNKNOWN && x >= tstart() + tau)
+				if (ID == ID_UNKNOWN && x >= tstart + tau)
 					ID = ID_DECAYED;
-				else if (ID == ID_UNKNOWN && (x >= tmax || l >= maxtraj))
+				else if (ID == ID_UNKNOWN && (x >= tmax || lend >= maxtraj))
 					ID = ID_NOT_FINISH;
 			
 				h = stepper->hnext; // set suggested stepsize for next step
 			}
 			
+			tend = x;
+			for (int i = 0; i < 6; i++)
+				yend[i] = y[i];
+			polend = polarisation;
+			Print(output.endout, tend, yend, polend);
+
 			delete stepper;
 			
 			if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
@@ -292,30 +309,34 @@ struct TParticle{
 				Decay();
 			}
 
-			cout << "Done!!\n";
-			cout << "x: " << yend()[0];
-			cout << " y: " << yend()[1];
-			cout << " z: " << yend()[2];
+			cout << "x: " << yend[0];
+			cout << " y: " << yend[1];
+			cout << " z: " << yend[2];
 			cout << " E: " << Eend();
 			cout << " Code: " << ID;
-			cout << " t: " << tend();
-			cout << " l: " << lend();
-			cout << " hits: " << Nhit();
-			cout << " steps: " << Nsteps() << "\n";
-			cout.flush();
+			cout << " t: " << tend;
+			cout << " l: " << lend;
+			cout << " hits: " << Nhit << '\n';
+			cout << "Computation took " << Nstep << " steps, " << inttime << " s for integration and " << refltime << " s for geometry checks\n";
+			cout << "Done!!\n\n";
+//			cout.flush();
 		};
 	
 
 		/**
-		 * Print *start and *end values to a stream.
+		 * Print start and current values to a stream.
 		 *
 		 * This is a virtual function and can be overwritten by derived particle classes.
 		 *
 		 * @param endfile stream to print into
 		 */
-		virtual void PrintStartEnd(ostream &endfile){
-			if (endfile.tellp() == 0){
-				endfile <<	"jobnumber particle "
+		virtual void Print(ofstream *&file, long double x, long double *y, int polarisation){
+			if (!file){
+				ostringstream filename;
+				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "end.out";
+				cout << "Creating " << filename << '\n';
+				file = new ofstream(filename.str().c_str());
+				*file <<	"jobnumber particle "
 	                		"tstart xstart ystart zstart "
 	                		"vxstart vystart vzstart "
 	                		"polstart Hstart Estart "
@@ -325,75 +346,17 @@ struct TParticle{
 	                		"Nhit Nstep trajlength Hmax\n";
 			}
 			cout << "Printing status\n";
-			endfile	<<	jobnumber << " " << particlenumber << " "
-					<<	tstart() << " " << ystart()[0] << " " << ystart()[1] << " " << ystart()[2] << " "
-					<<	ystart()[3] << " " << ystart()[4] << " " << ystart()[5] << " "
-					<< polstart() << " " <<	Hstart() << " " << Estart() << " "
-					<< tend() << " " << yend()[0] << " " << yend()[1] << " " << yend()[2] << " "
-					<< yend()[3] << " " << yend()[4] << " " << yend()[5] << " "
-					<< polend() << " " << Hend() << " " << Eend() << " " << ID << " " << Nspinflip() << " " << inttime << " "
-					<< Nhit() << " " << Nsteps() << " " << lend() << " " << Hmax() << '\n';
+			long double E = Ekin(&y[3]);
+			*file	<<	jobnumber << " " << particlenumber << " "
+					<<	tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
+					<<	ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
+					<< polstart << " " << Hstart() << " " << Estart() << " "
+					<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
+					<< y[3] << " " << y[4] << " " << y[5] << " "
+					<< polarisation << " " << E + Epot(x, y, polarisation, field) << " " << E << " " << ID << " " << Nspinflip << " " << inttime << " "
+					<< Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
 		};
 
-
-		/**
-		 * Print snapshots to a stream.
-		 *
-		 * This is a virtual function and can be overwritten by derived particle classes.
-		 *
-		 * @param snapfile stream to print into
-		 * @param snapshots list of snapshot times
-		 */
-		virtual void PrintSnapshots(ostream &snapfile){
-			if (snapfile.tellp() == 0){
-				snapfile <<	"jobnumber particle polarisation "
-	                		"tstart xstart ystart zstart "
-	                		"vxstart vystart vzstart "
-	                		"Hstart Estart "
-	                		"tend xend yend zend "
-	                		"vxend vyend vzend "
-	                		"Hend Eend stopID Nspinflip "
-	                		"Nhit Nstep trajlength Hmax\n";
-			}
-
-			vector<TTrackEntry>::iterator te = track.begin();
-			vector<THitEntry>::iterator he = hits.begin();
-			vector<vector<TTrackEntry>::iterator>::iterator ss = snapshots.begin();
-			VecDoub y;
-			int Nh = 0, Ns = 0, Nf = 0;
-			long double H, E, l = 0, maxH = -numeric_limits<long double>::infinity();
-			while (ss != snapshots.end() && te != track.end()){
-				Ns++;
-				y = te->y;
-				E = Ekin(&y[3]);
-				H = E + Epot(te->t, &y[0], te->polarisation, field);
-				if (H > maxH) maxH = H;
-				if (te != track.begin()){
-					if (te->polarisation != (te + 1)->polarisation)
-						Nf++;
-					l += sqrt(pow(te->y[0] - (te-1)->y[0], 2) + pow(te->y[1] - (te-1)->y[1], 2) + pow(te->y[2] - (te-1)->y[2], 2));
-				}
-
-				if (he->point2->t < (*ss)->t && he != hits.end()){
-					Nh++;
-					he++;
-				}
-				if ((*ss)->t == te->t){
-					cout << "Printing snapshot at t = " << (*ss)->t << " s\n";
-					snapfile<< jobnumber << " " << particlenumber << " " << te->polarisation << " "
-							<< tstart() << " " << ystart()[0] << " " << ystart()[1] << " " << ystart()[2] << " "
-							<< ystart()[3] << " " << ystart()[4] << " " << ystart()[5] << " "
-							<< Hstart() << " " << Estart() << " "
-							<< te->t << " " << y[0] << " " << y[1] << " " << y[2] << " "
-							<< y[3] << " " << y[4] << " " << y[5] << " "
-							<< H << " " << E << " " << ID << " " << Nf << " "
-							<< Nh << " " << Ns << " " << l << " " << maxH << '\n';
-					ss++;
-				}
-				te++;
-			}
-
-		};
 
 
 		/**
@@ -404,45 +367,36 @@ struct TParticle{
 		 * @param trackfile stream to print into
 		 * @param minPointDist if points are closer than this distance, only one is printed
 		 */
-		virtual void PrintTrack(ostream &trackfile, long double minPointDist = 0){
-			if (trackfile.tellp() == 0){
-				trackfile << 	"particle polarisation "
+		virtual void PrintTrack(ofstream *&trackfile, long double x, long double y[6], int polarisation, long double minPointDist = 0){
+			if (!trackfile){
+				ostringstream filename;
+				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
+				cout << "Creating " << filename << '\n';
+				trackfile = new ofstream(filename.str().c_str());
+				*trackfile << 	"particle polarisation "
 								"t x y z vx vy vz "
 								"H E Bx dBxdx dBxdy dBxdz By dBydx "
 								"dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n";
 			}
 
-			int percent = 0;
-			cout << "Printing track ";
-			for (vector<TTrackEntry>::iterator i = track.begin(); i != track.end(); i++){
-				long double x = i->t;
-				VecDoub y = i->y;
-				if (i != track.begin() && minPointDist > 0){
-					VecDoub yprev = (i - 1)->y;
-					if (pow(y[0] - yprev[0], 2) + pow(y[1] - yprev[1], 2) + pow(y[2] - yprev[2], 2) < minPointDist*minPointDist)
-						continue;
-				}
-				long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-				long double E[3] = {0,0,0};
-				long double V = 0;
-				if (field){
-					field->BField(y[0],y[1],y[2],x,B);
-					field->EField(y[0],y[1],y[2],x,V,E);
-				}
-				long double Ek = Ekin(&y[3]);
-				long double H = Ek + Epot(x, &y[0], i->polarisation, field);
+			cout << "-";
+			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+			long double E[3] = {0,0,0};
+			long double V = 0;
+			if (field){
+				field->BField(y[0],y[1],y[2],x,B);
+				field->EField(y[0],y[1],y[2],x,V,E);
+			}
+			long double Ek = Ekin(&y[3]);
+			long double H = Ek + Epot(x, y, polarisation, field);
 
-				trackfile 	<< particlenumber << " " << i->polarisation << " "
+				*trackfile 	<< particlenumber << " " << polarisation << " "
 							<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
 							<< H << " " << Ek << " ";
 				for (int i = 0; i < 4; i++)
 					for (int j = 0; j < 4; j++)
-						trackfile << B[i][j] << " ";
-				trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
-
-				PrintPercent((x - tstart())/(tend() - tstart()), percent);
-			}
-			cout << '\n';
+						*trackfile << B[i][j] << " ";
+				*trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
 		};
 
 		/**
@@ -452,25 +406,22 @@ struct TParticle{
 		 *
 		 * @param hitfile stream to print into
 		 */
-		virtual void PrintHits(ostream &hitfile){
-			if (hitfile.tellp() == 0){
-				hitfile << "jobnumber particle "
+		virtual void PrintHit(ofstream *&hitfile, long double x, long double *y1, long double *y2, int pol1, int pol2, long double *normal, const solid *leaving, const solid *entering){
+			if (!hitfile){
+				ostringstream filename;
+				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
+				cout << "Creating " << filename << '\n';
+				hitfile = new ofstream(filename.str().c_str());
+				*hitfile << "jobnumber particle "
 							"t x y z v1x v1y v1z pol1"
 							"v2x v2y v2z pol2 "
 							"nx ny nz solid1 solid2\n";
 			}
 
-			cout << "Printing hits ...\n";
-			for (vector<THitEntry>::iterator i = hits.begin(); i != hits.end(); i++){
-				cout << i->entering.ID;
-				cout.flush();
-				long double x1 = i->point1->t, x2 = i->point2->t;
-				VecDoub y1 = i->point1->y, y2 = i->point2->y;
-				hitfile << jobnumber << " " << particlenumber << " "
-						<< x1 << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << i->point1->polarisation << " "
-						<< y2[3] << " " << y2[4] << " " << y2[5] << " " << i->point2->polarisation << " "
-						<< i->normal[0] << " " << i->normal[1] << " " << i->normal[2] << " " << i->leaving.ID << " " << i->entering.ID << '\n';
-			}
+			*hitfile << jobnumber << " " << particlenumber << " "
+					<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << pol1 << " "
+					<< y2[3] << " " << y2[4] << " " << y2[5] << " " << pol2 << " "
+					<< normal[0] << " " << normal[1] << " " << normal[2] << " " << leaving->ID << " " << entering->ID << '\n';
 		}
 
 	protected:
@@ -572,12 +523,18 @@ struct TParticle{
 			particlenumber = number;
 			tau = atau;
 			maxtraj = trajl;
-			long double ys[6] = {x, y, z, vx, vy, vz};
-			TTrackEntry trackentry = {t, VecDoub(6, ys), pol}; // save first track point
-			track.push_back(trackentry);
-
+			lend = 0;
+			tend = tstart = t;
+			yend[0] = ystart[0] = x;
+			yend[1] = ystart[1] = y;
+			yend[2] = ystart[2] = z;
+			yend[3] = ystart[3] = vx;
+			yend[4] = ystart[4] = vy;
+			yend[5] = ystart[5] = vz;
+			polend = polstart = pol;
+			Hmax = Hstart();
 			if (currentsolids.empty())
-				geom->GetSolids(t, ys, currentsolids);
+				geom->GetSolids(t, ystart, currentsolids);
 		}
 
 		/**
@@ -599,7 +556,7 @@ struct TParticle{
 				F[2] += -gravconst*m*ele_e; // add gravitation to force
 			if (field){
 				long double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
-				if (q != 0 || (mu != 0 && polend() != 0))
+				if (q != 0 || (mu != 0 && polend != 0))
 					field->BField(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
 				if (q != 0)
 					field->EField(y[0],y[1],y[2], x, V, E); // if particle has charge caculate electric field+potential
@@ -608,10 +565,10 @@ struct TParticle{
 					F[1] += q*(E[1] + y[5]*B[0][0] - y[3]*B[2][0]);
 					F[2] += q*(E[2] + y[3]*B[1][0] - y[4]*B[0][0]);
 				}
-				if (mu != 0 && polend() != 0){
-					F[0] += polend()*mu*B[3][1]; // add force on magnetic dipole moment
-					F[1] += polend()*mu*B[3][2];
-					F[2] += polend()*mu*B[3][3];
+				if (mu != 0 && polend != 0){
+					F[0] += polend*mu*B[3][1]; // add force on magnetic dipole moment
+					F[1] += polend*mu*B[3][2];
+					F[2] += polend*mu*B[3][3];
 				}
 			}
 			long double rel = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0))/m/ele_e; // relativstic factor 1/gamma/m
@@ -638,14 +595,14 @@ struct TParticle{
 		 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 		 * @return Returns true if particle was reflected/absorbed
 		 */
-		bool CheckHit(long double &x1, VecDoub_IO &y1, long double &x2, VecDoub_IO &y2, int &pol, int iteration = 1){
-			if (!geom->CheckSegment(&y1[0],&y2[0])){ // check if start point is inside bounding box of the simulation geometry
+		bool CheckHit(long double &x1, long double y1[6], long double &x2, long double y2[6], int &pol, TOutput &output, int iteration = 1){
+			if (!geom->CheckSegment(y1,y2)){ // check if start point is inside bounding box of the simulation geometry
 				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x2,y2[0],y2[1],y2[2]);
 				ID = ID_HIT_BOUNDARIES;
 				return true;
 			}
 			set<TCollision> colls;
-			if (geom->GetCollisions(x1, &y1[0], stepper->hdid, &y2[0], colls)){	// if there is a collision with a wall
+			if (geom->GetCollisions(x1, y1, stepper->hdid, y2, colls)){	// if there is a collision with a wall
 				TCollision coll = *colls.begin();
 				long double u[3] = {y2[0] - y1[0], y2[1] - y1[1], y2[2] - y1[2]};
 				long double distnormal = u[0]*coll.normal[0] + u[1]*coll.normal[1] + u[2]*coll.normal[2];
@@ -654,26 +611,27 @@ struct TParticle{
 					&& (1 - coll.s)*abs(distnormal) < REFLECT_TOLERANCE) // if there is only one collision which is closer to y1 and y2 than REFLECT_TOLERANCE
 					|| iteration > 99) // or if iteration counter reached a certain maximum value
 				{
-					TTrackEntry track1 = {x1,y1,pol};
-					track.push_back(track1);
 					solid *hitsolid = &geom->solids[coll.ID];
 					if (colls.size() > 1 && coll.ID != (++colls.begin())->ID){
 						// if particle hits two or more different surfaces at once, something went wrong
 						printf("Reflection from two surfaces (%s & %s) at once!\n", hitsolid->name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
 						printf("Check geometry for touching surfaces!");
 						x2 = x1;
-						y2 = y1;
+						for (int i = 0; i < 6; i++)
+							y2[i] = y1[i];
 						ID = ID_NRERROR;
 						return true;
 					}
 //					cout << "Hit " << sld->ID << " - current solid " << currentsolids.rbegin()->ID << '\n';
+					int prevpol = pol;
 					const solid *leaving, *entering;
 					bool resetintegration = false, hit = false;
 					if (distnormal < 0){ // particle is entering solid
 						if (currentsolids.find(*hitsolid) != currentsolids.end()){ // if solid already is in currentsolids list something went wrong
 							printf("Particle entering '%s' which it did enter before! Stopping it! Did you define overlapping solids with equal priorities?\n", geom->solids[coll.ID].name.c_str());
 							x2 = x1;
-							y2 = y1;
+							for (int i = 0; i < 6; i++)
+								y2[i] = y1[i];
 							ID = ID_NRERROR;
 							return true;
 						}
@@ -691,7 +649,8 @@ struct TParticle{
 						if (currentsolids.find(*hitsolid) == currentsolids.end()){ // if solid is not in currentsolids list something went wrong
 							cout << "Particle inside '" << hitsolid->name << "' which it did not enter before! Stopping it!\n";
 							x2 = x1;
-							y2 = y1;
+							for (int i = 0; i < 6; i++)
+								y2[i] = y1[i];
 							ID = ID_NRERROR;
 							return true;
 						}
@@ -709,17 +668,15 @@ struct TParticle{
 					else{
 						cout << "Particle is crossing material boundary with parallel track! Stopping it!\n";
 						x2 = x1;
-						y2 = y1;
+						for (int i = 0; i < 6; i++)
+							y2[i] = y1[i];
 						ID = ID_NRERROR;
 						return true;
 					}
 
-					TTrackEntry track2 = {x2,y2,pol};
-					track.push_back(track2);
-					if (hit){
-						THitEntry hitentry = {--track.end(), ----track.end(), *leaving, *entering, {coll.normal[0], coll.normal[1], coll.normal[2]}};
-						hits.push_back(hitentry);
-					}
+					if (hit && output.hitlog)
+						PrintHit(output.hitout, x1, y1, y2, prevpol, pol, coll.normal, leaving, entering);
+
 					if (resetintegration)
 						return true;
 					else if (OnStep(x1, y1, x2, y2, &*currentsolids.rbegin())){ // check for absorption
@@ -732,16 +689,20 @@ struct TParticle{
 					// and call ReflectOrAbsorb again for each smaller step (quite similar to bisection algorithm)
 					const TCollision *c = &*colls.begin();
 					long double xnew, xbisect1 = x1, xbisect2 = x1;
-					VecDoub ybisect1 = y1, ybisect2 = y1;
+					long double ybisect1[6];
+					long double ybisect2[6];
+					for (int i = 0; i < 6; i++)
+						ybisect1[i] = ybisect2[i] = y1[i];
 
 					xnew = x1 + (x2 - x1)*c->s*(1 - 0.01*iteration); // cut integration right before collision point
 					if (xnew > x1 && xnew < x2){ // check that new line segment is in correct time interval
 						xbisect1 = xbisect2 = xnew;
 						for (int i = 0; i < 6; i++)
 							ybisect1[i] = ybisect2[i] = stepper->dense_out(i, xbisect1, stepper->hdid); // get point at cut time
-						if (CheckHit(x1, y1, xbisect1, ybisect1, pol, iteration+1)){ // recursive call for step before coll. point
+						if (CheckHit(x1, y1, xbisect1, ybisect1, pol, output, iteration+1)){ // recursive call for step before coll. point
 							x2 = xbisect1;
-							y2 = ybisect1;
+							for (int i = 0; i < 6; i++)
+								y2[i] = ybisect1[i];
 							return true;
 						}
 					}
@@ -751,14 +712,15 @@ struct TParticle{
 						xbisect2 = xnew;
 						for (int i = 0; i < 6; i++)
 							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
-						if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, pol, iteration+1)){ // recursive call for step over coll. point
+						if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, pol, output, iteration+1)){ // recursive call for step over coll. point
 							x2 = xbisect2;
-							y2 = ybisect2;
+							for (int i = 0; i < 6; i++)
+								y2[i] = ybisect2[i];
 							return true;
 						}
 					}
 
-					if (CheckHit(xbisect2, ybisect2, x2, y2, pol, iteration+1)) // recursive call for step after coll. point
+					if (CheckHit(xbisect2, ybisect2, x2, y2, pol, output, iteration+1)) // recursive call for step after coll. point
 						return true;
 				}
 			}
@@ -785,7 +747,7 @@ struct TParticle{
 		 * @param entering Solid that the particle is entering (can be modified by method)
 		 * @return Returns true if particle path was changed
 		 */
-		virtual bool OnHit(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *&entering) = 0;
+		virtual bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering) = 0;
 
 
 		/**
@@ -801,7 +763,7 @@ struct TParticle{
 		 * @param currentsolid Solid through which the particle is moving
 		 * @return Returns true if particle path was changed
 		 */
-		virtual bool OnStep(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid) = 0;
+		virtual bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid) = 0;
 
 
 		/**

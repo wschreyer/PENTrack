@@ -27,7 +27,11 @@ struct TParticleConfig{
 	double Emin; ///< min. initial energy
 	double Emax; ///< max. initial energy
 	mu::Parser spectrum; ///< Parsed energy spectrum given by user
+	double phi_v_min; ///< Parsed minimum for initial azimuthal angle of velocity given by user
+	double phi_v_max; ///< Parsed maximum for initial azimuthal angle of velocity given by user
 	mu::Parser phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
+	double theta_v_min; ///< Parsed minimum for initial polarl angle of velocity given by user
+	double theta_v_max; ///< Parsed maximum for initial polar angle of velocity given by user
 	mu::Parser theta_v; ///< Parsed initial polar angle distribution of velocity given by user
 };
 
@@ -61,12 +65,22 @@ public:
 		TConfig invars; ///< contains variables from *.in file
 		ReadInFile(infile, invars);
 		for (TConfig::iterator i = invars.begin(); i != invars.end(); i++){
+			if (i->first != "all")
+				i->second = invars["all"]; // default particle specific settings to "all"-settings
+		}
+		ReadInFile(infile, invars); // read particle.in again to overwrite defaults for specific particle settings
+
+		for (TConfig::iterator i = invars.begin(); i != invars.end(); i++){
 			istringstream(i->second["Emax"]) >> pconfigs[i->first].Emax;
 			istringstream(i->second["Emin"]) >> pconfigs[i->first].Emin;
 			istringstream(i->second["lmax"]) >> pconfigs[i->first].lmax;
 			istringstream(i->second["polarization"]) >> pconfigs[i->first].polarization;
 			istringstream(i->second["tau"]) >> pconfigs[i->first].tau;
 			istringstream(i->second["tmax"]) >> pconfigs[i->first].tmax;
+			istringstream(i->second["phi_v_min"]) >> pconfigs[i->first].phi_v_min;
+			istringstream(i->second["phi_v_max"]) >> pconfigs[i->first].phi_v_max;
+			istringstream(i->second["theta_v_min"]) >> pconfigs[i->first].theta_v_min;
+			istringstream(i->second["theta_v_max"]) >> pconfigs[i->first].theta_v_max;
 			try{
 				pconfigs[i->first].spectrum.DefineVar("x", &xvar);
 				pconfigs[i->first].spectrum.SetExpr(i->second["spectrum"]);
@@ -272,7 +286,7 @@ public:
 		for (;;){
 			xvar = UniformDist(pconfig->Emin, pconfig->Emax);
 			try{
-				y = pconfigs[particlename].spectrum.Eval();
+				y = pconfig->spectrum.Eval();
 			}
 			catch(mu::Parser::exception_type &exc){
 				cout << exc.GetMsg();
@@ -283,6 +297,44 @@ public:
 		}
 		return 0;
 	};
+
+
+	/**
+	 * Angular velocity distribution for each particle type
+	 * 
+	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
+	 * @param phi_v Returns velocity azimuth
+	 * @param theta_v Returns velocity polar angle
+	 */
+	void AngularDist(const string &particlename, double &phi_v, double &theta_v){
+		double y;
+		TParticleConfig *pconfig = &pconfigs[particlename];
+		for (;;){
+			xvar = UniformDist(pconfig->phi_v_min, pconfig->phi_v_max);
+			try{
+				y = pconfig->phi_v.Eval();
+			}
+			catch(mu::Parser::exception_type &exc){
+				cout << exc.GetMsg();
+				exit(-1);
+			}
+			if (UniformDist(0,1) < y)
+				phi_v = xvar;
+		}
+		for (;;){
+			xvar = UniformDist(pconfig->theta_v_min, pconfig->theta_v_max);
+			try{
+				y = pconfig->theta_v.Eval();
+			}
+			catch(mu::Parser::exception_type &exc){
+				cout << exc.GetMsg();
+				exit(-1);
+			}
+			if (UniformDist(0,1) < y)
+				theta_v = xvar;
+		}
+	}
+
 
 	/**
 	 * Lifetime of different particles
