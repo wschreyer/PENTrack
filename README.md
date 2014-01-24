@@ -31,9 +31,16 @@ Numerical Recipes forces us to put almost all code into header files, which make
 ### CGAL
 
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
-Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the CGAL_INCLUDE and CGAL_LIB paths in the Makefile.
+Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the CGAL_INCLUDE, CGAL_LIB and CGAL_SHAREDLIB paths in the Makefile.
 
 Only v4.1-v4.2 have been tested, v4.3 is not supported yet.
+
+### muparser
+
+[muparser](http://muparser.beltoforion.de/) is a fast formula parser and is used to interpret energy distributions etc. given by the user in particle.in
+Most Linux distributions include libmuparser-dev or muparser-devel packages. It can also be downloaded and installed manually from the website. In that case you may have to adjust the MUPARSER_INCLUDE, MUPARSER_LIB and MUPARSER_SHAREDLIB paths in the Makefile.
+
+Only v2.2.3 has been tested so far.
 
 ### libtricubic
 
@@ -44,9 +51,9 @@ Writing your own simulation
 
 You can modify the simulation on four different levels:
 
-1. Modify the /in/*.in configuration files and use the implemented particles, sources, spectra, etc. (more info below and in the corresponding *.in files)
+1. Modify the /in/*.in configuration files and use the implemented particles, sources, fields, etc. (more info below and in the corresponding *.in files)
 2. Modify the code in main.c and combine TParticle-, TGeometry-, TField-, TSource-classes etc. into your own simulation (you can generate a Doxygen documentation by typing `doxygen doxygen.config`)
-3. Implement your own particles by inheriting from the TParticle class and fill the Reflect-, Absorb- and Decay-Routines with the corresponding physics
+3. Implement your own particles, sources or fields by inheriting from the corresponding base classes and fill the virtual routines with the corresponding physics
 4. Make low level changes to the existing classes
 
 Defining your experiment
@@ -79,7 +86,7 @@ You can also define analytic fields from straight, finite conductors.
 
 ### Particle sources
 
-Particle sources can be defined using STL files or manual parameter ranges, however particle spectra and velocity distributions are hardcoded into the TMCGenerator class at the moment
+Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the particle.in file.
 
 Run the simulation
 ------------------
