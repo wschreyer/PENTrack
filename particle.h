@@ -354,6 +354,7 @@ struct TParticle{
 	                		"vxend vyend vzend "
 	                		"polend Hend Eend stopID Nspinflip ComputingTime "
 	                		"Nhit Nstep trajlength Hmax\n";
+				file->precision(10);
 			}
 			cout << "Printing status\n";
 			long double E = Ekin(&y[3]);
@@ -387,6 +388,7 @@ struct TParticle{
 								"t x y z vx vy vz "
 								"H E Bx dBxdx dBxdy dBxdz By dBydx "
 								"dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n";
+				trackfile->precision(10);
 			}
 
 			cout << "-";
@@ -400,13 +402,13 @@ struct TParticle{
 			long double Ek = Ekin(&y[3]);
 			long double H = Ek + Epot(x, y, polarisation, field);
 
-				*trackfile 	<< particlenumber << " " << polarisation << " "
-							<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
-							<< H << " " << Ek << " ";
-				for (int i = 0; i < 4; i++)
-					for (int j = 0; j < 4; j++)
-						*trackfile << B[i][j] << " ";
-				*trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
+			*trackfile 	<< particlenumber << " " << polarisation << " "
+						<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
+						<< H << " " << Ek << " ";
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					*trackfile << B[i][j] << " ";
+			*trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
 		};
 
 		/**
@@ -426,6 +428,7 @@ struct TParticle{
 							"t x y z v1x v1y v1z pol1 "
 							"v2x v2y v2z pol2 "
 							"nx ny nz solid1 solid2\n";
+				hitfile->precision(10);
 			}
 
 			cout << ":";
