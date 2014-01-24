@@ -214,7 +214,7 @@ struct TParticle{
 			while (nextsnapshot != output.snapshottimes.end() && *nextsnapshot < x) // find first snapshot time
 				nextsnapshot++;
 			if (output.tracklog)
-				PrintTrack(output.trackout, x2, y2, polarisation);
+				PrintTrack(output.trackout, tend, yend, polend);
 			long double lastsave = x;
 
 			while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
@@ -423,11 +423,12 @@ struct TParticle{
 				cout << "Creating " << filename << '\n';
 				hitfile = new ofstream(filename.str().c_str());
 				*hitfile << "jobnumber particle "
-							"t x y z v1x v1y v1z pol1"
+							"t x y z v1x v1y v1z pol1 "
 							"v2x v2y v2z pol2 "
 							"nx ny nz solid1 solid2\n";
 			}
 
+			cout << ":";
 			*hitfile << jobnumber << " " << particlenumber << " "
 					<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << pol1 << " "
 					<< y2[3] << " " << y2[4] << " " << y2[5] << " " << pol2 << " "

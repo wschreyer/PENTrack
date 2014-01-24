@@ -285,7 +285,7 @@ void ConfigInit(void){
 		if (i->first != "all"){
 			istringstream(i->second["endlog"]) 		>> output[i->first].endlog;
 			istringstream(i->second["tracklog"]) 	>> output[i->first].tracklog;
-			istringstream(i->second["hitlog"]) 		>> output[i->first].tracklog;
+			istringstream(i->second["hitlog"]) 		>> output[i->first].hitlog;
 			istringstream(i->second["snapshotlog"])	>> output[i->first].snapshotlog;
 			istringstream(i->second["spinlog"])		>> output[i->first].spinlog;
 			if (output[i->first].snapshotlog){
