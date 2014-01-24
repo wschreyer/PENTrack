@@ -24,7 +24,33 @@
 
 #include <vector>
 #include <set>
+#include <list>
 
+#define USE_CGAL
+
+#ifdef USE_CGAL
+
+#include <CGAL/Simple_cartesian.h>
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_traits.h>
+#include <CGAL/AABB_triangle_primitive.h>
+
+typedef CGAL::Simple_cartesian<double> K;
+
+typedef K::Segment_3 CSegment;
+typedef K::Point_3 CPoint;
+typedef K::Triangle_3 CTriangle;
+class TTriangle: public K::Triangle_3{
+public:
+	int ID;
+	TTriangle(K::Point_3 a, K::Point_3 b, K::Point_3 c, int aID): K::Triangle_3(a, b, c), ID(aID) { };
+};
+typedef std::list<TTriangle>::iterator CIterator;
+typedef CGAL::AABB_triangle_primitive<K,CIterator> CPrimitive;
+typedef CGAL::AABB_traits<K, CPrimitive> CTraits;
+typedef CGAL::AABB_tree<CTraits> CTree;
+
+#else
 
 /**
  * Triangle class.
@@ -58,6 +84,7 @@ struct Triangle{
      */
     bool intersect(const long double p1[3], const long double p2[3], long double &s);
 };
+#endif
 
 /**
  * Structure that is returned by KDTree::Collision.
@@ -66,9 +93,7 @@ struct TCollision{
 	long double s; ///< parametric coordinate of intersection point (P = p1 + s*(p2 - p1))
 	long double normal[3]; ///< normal (length = 1) of intersected surface
 	unsigned ID; ///< ID of intersected surface
-	Triangle *tri; ///< pointer to intersected triangle
 	inline bool operator < (const TCollision c) const { return s < c.s; }; ///< overloaded operator, needed for sorting
-	inline bool operator == (const TCollision c) const { return c.tri == tri; }; ///< overloaded operator, to get rid of two equal collisions
 };
 
 /**
@@ -77,7 +102,8 @@ struct TCollision{
  * Encapsulates all the nodes.
  */
 class KDTree{
-    private:
+#ifndef USE_CGAL
+	private:
     	/**
     	 * Triangle vertex class.
     	 *
@@ -215,12 +241,18 @@ class KDTree{
         std::set<TVertex> allvertices; ///< list of all triangle vertices
         KDNode *root; ///< root node
         KDNode *lastnode; ///< remember last collision-tested node to speed up search when segments are adjacent
+
     public:
         KDTree(); ///< constructor
         ~KDTree(); ///< destructor
         float lo[3],hi[3]; ///< bounding box of root node
         std::vector<Triangle> alltris; ///< list of all triangles in the tree
-
+#else
+    public:
+        std::list<TTriangle> triangles;
+        CTree tree;
+#endif
+    public:
         /**
          * Read STL-file.
          *
@@ -242,12 +274,14 @@ class KDTree{
          */
         bool Collision(const long double p1[3], const long double p2[3], std::set<TCollision> &colls);
 
-        /**
+#ifndef USE_CGAL
+       /**
          * Test if point is inside root node.
          *
          * @param p Point
          */
         bool SegmentInBox(const long double p1[3], const long double p2[3]){ return (root && root->SegmentInBox(p1,p2)); };
+#endif
 };
 
 #endif // KDTREE_H_

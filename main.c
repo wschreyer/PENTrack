@@ -539,9 +539,14 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
     float timer = clock(), colltimer = 0;
     for (unsigned i = 0; i < count; i++){
     	// random segment start point
+#ifndef USE_CGAL
         p1[0] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[0] - geom.kdtree->lo[0]) + geom.kdtree->lo[0];
         p1[1] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[1] - geom.kdtree->lo[1]) + geom.kdtree->lo[1];
         p1[2] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[2] - geom.kdtree->lo[2]) + geom.kdtree->lo[2];
+#else
+        for (int j = 0; j < 3; j++)
+        	p1[j] = (long double)rand()/RAND_MAX * (geom.kdtree->tree.bbox().max(j) - geom.kdtree->tree.bbox().min(j)) + geom.kdtree->tree.bbox().min(j);
+#endif
 		// random segment direction
         theta = (long double)rand()/RAND_MAX*pi;
 		phi = (long double)rand()/RAND_MAX*2*pi;

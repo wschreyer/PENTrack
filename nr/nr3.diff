@@ -1,3 +1,11 @@
+66c66
+< 
+---
+> /*
+84c84
+< 
+---
+> */
 484c484
 < typedef double Doub; // default floating type
 ---
