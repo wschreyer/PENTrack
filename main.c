@@ -35,30 +35,26 @@
 #include "globals.h"
 #include "fields.h"
 #include "geometry.h"
+#include "source.h"
 #include "mc.h" 
 #include "bruteforce.h"
 #include "ndist.h"
 
 void ConfigInit(); // read config.in
-void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog);
-void OutputCodes(map<int, int> ID_counter[3]); // print simulation summary at program exit
+void OutputCodes(map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
 void PrintBFieldCut(const char *outfile, TFieldManager &field); // evaluate fields on given plane and write to outfile
 void PrintBField(const char *outfile, TFieldManager &field);
 void PrintGeometry(const char *outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
 
 
 long double SimTime = 1500.; ///< max. simulation time
-int MonteCarloAnzahl=1; ///< number of particles for MC simulation (read from config)
-int particletype; ///< type of particle which shall be simulated (read from config)
-int reflektlog = 0; ///< write reflections (1), transmissions (2) or both (3) to file? (read from config)
-vector<float> snapshots; ///< times when to take snapshots (read from config)
-int decay = 2; ///< should neutrons decay? (no: 0; yes: 1; yes, with simulation of decay particles: 2) (read from config)
-long double decayoffset = 0; ///< start neutron decay timer after decayoffset seconds (read from config)
-long double tau_n = 885.7; ///< life time of neutrons (read from config)
+int simcount = 1; ///< number of particles for MC simulation (read from config)
+int simtype = NEUTRON; ///< type of particle which shall be simulated (read from config)
+int secondaries = 1; ///< should secondary particles be simulated? (read from config)
 long double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
 int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
-
+map<string, TOutput> output;
 
 /**
  * Catch signals.
@@ -89,11 +85,11 @@ int main(int argc, char **argv){
 	signal (SIGUSR2, catch_alarm);
 	signal (SIGXCPU, catch_alarm);   
 	
-	jobnumber=0;
+	jobnumber = 0;
 	outpath = "./out";
 	inpath = "./in";
 	if(argc>1) // if user supplied at least 1 arg (outputfilestamp)
-		jobnumber=atoi(argv[1]);
+		istringstream(argv[1]) >> jobnumber;
 	if(argc>2) // if user supplied 2 or more args (outputfilestamp, inpath)
 		inpath = argv[2]; // input path pointer set
 	if(argc>3) // if user supplied all 3 args (outputfilestamp, inpath, outpath)
@@ -102,17 +98,17 @@ int main(int argc, char **argv){
 	// read config.in
 	ConfigInit();
 
-	if(particletype == NEUTRON){
+	if(simtype == NEUTRON){
 		if (neutdist == 1) prepndist(); // prepare for neutron distribution-calculation
 	}
 	else
 		neutdist = 0;
 	
-	cout << "Loading fields..." << '\n';
+	cout << "Loading fields...\n";
 	// load field configuration from geometry.in
 	TFieldManager field(string(inpath + "/geometry.in").c_str());
 
-	switch(particletype)
+	switch(simtype)
 	{
 		case BF_ONLY:	PrintBField(string(outpath+"/BF.out").c_str(), field); // estimate ramp heating
 						return 0;
@@ -125,7 +121,7 @@ int main(int argc, char **argv){
 	//load geometry configuration from geometry.in
 	TGeometry geom(string(inpath + "/geometry.in").c_str());
 	
-	if (particletype == GEOMETRY){
+	if (simtype == GEOMETRY){
 		// print random points on walls in file to visualize geometry
 		PrintGeometry(string(outpath+"/geometry.out").c_str(), geom);
 		return 0;
@@ -139,16 +135,12 @@ int main(int argc, char **argv){
 	// load random number generator from all3inone.in
 	TMCGenerator mc(string(inpath + "/particle.in").c_str());
 	
-	FILE *endlog = NULL, *tracklog = NULL, *snap = NULL, *reflectlog = NULL;
-	// open output files according to config
-	OpenFiles(endlog, tracklog, snap, reflectlog);	
-
 	int ntotalsteps = 0;     // counters to determine average steps per integrator call
 	float InitTime = (1.*clock())/CLOCKS_PER_SEC, DiceTime = 0, IntegratorTime = 0, ReflTime = 0; // time statistics
 
 	// simulation time counter
-	timeval simstart, simend;
-	gettimeofday(&simstart, NULL);	
+	timespec simstart, simend;
+	clock_gettime(CLOCK_REALTIME, &simstart);
 
 	printf(
 	" ########################################################################\n"
@@ -156,7 +148,7 @@ int main(int argc, char **argv){
 	" ### a simulation tool for ultra-cold neutrons, protons and electrons ###\n"
 	" ########################################################################\n");
 
-	map<int, int> ID_counter[3]; // Array of three vectors (for n, p and e) to store particle kennzahlen
+	map<string, map<int, int> > ID_counter; // 2D map to store number of each ID for each particle type
 
 	/*
 	stringstream filename;
@@ -182,32 +174,32 @@ int main(int argc, char **argv){
 		infile >> ws;
 	}
 */
-	for (int iMC = 1; iMC <= MonteCarloAnzahl; iMC++)
+	for (int iMC = 1; iMC <= simcount; iMC++)
 	{      
-		if (particletype == NEUTRON || particletype == PROTON || particletype == ELECTRON){ // if proton or neutron shall be simulated
+		if (simtype == NEUTRON || simtype == PROTON || simtype == ELECTRON){ // if proton or neutron shall be simulated
 			TParticle *p;
-			if (particletype == NEUTRON) // create particle according to protneut
+			if (simtype == NEUTRON) // create particle according to protneut
 				p = new TNeutron(iMC, geom, source, mc, &field);
-			else if (particletype == PROTON)
+			else if (simtype == PROTON)
 				p = new TProton(iMC, geom, source, mc, &field);
-			else if (particletype == ELECTRON)
+			else if (simtype == ELECTRON)
 				p = new TElectron(iMC, geom, source, mc, &field);
 			else{
-				printf("\nDon't know particletype==%i! Exiting...\n",particletype);
+				printf("\nDon't know simtype %i! Exiting...\n",simtype);
 				exit(-1);
 			}
-			p->Integrate(SimTime, geom, mc, &field, endlog, tracklog, snap, &snapshots, reflektlog, reflectlog); // integrate particle
-			ID_counter[p->type % 3][p->ID]++; // increment counters
-			ntotalsteps += p->Nsteps;
-			IntegratorTime += p->comptime;
+			p->Integrate(SimTime, geom, mc, &field, output[p->name]); // integrate particle
+			ID_counter[p->name][p->ID]++; // increment counters
+			ntotalsteps += p->Nstep;
+			IntegratorTime += p->inttime;
 			ReflTime += p->refltime;
 
-			if (decay == 2){
+			if (secondaries == 1){
 				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
-					(*i)->Integrate(SimTime, geom, mc, &field, endlog, tracklog); // integrate secondary particles
-					ID_counter[(*i)->type % 3][(*i)->ID]++;
-					ntotalsteps += (*i)->Nsteps;
-					IntegratorTime += (*i)->comptime;
+					(*i)->Integrate(SimTime, geom, mc, &field, output[(*i)->name]); // integrate secondary particles
+					ID_counter[(*i)->name][(*i)->ID]++;
+					ntotalsteps += (*i)->Nstep;
+					IntegratorTime += (*i)->inttime;
 					ReflTime += (*i)->refltime;
 				}
 			}
@@ -221,9 +213,9 @@ int main(int argc, char **argv){
 	
 	// print statistics
 	printf("The integrator made %d steps. \n", ntotalsteps);
-	gettimeofday(&simend, NULL);
-	float SimulationTime = simend.tv_sec - simstart.tv_sec + (float)(simend.tv_usec - simstart.tv_usec)/1e6;
-	printf("Init: %.2fs, Simulation: %.2fs, Integrator: %.2fs (%.2f%%) including Reflection: %.2fs (%.f%%), Dicing: %.4fs\n",
+	clock_gettime(CLOCK_REALTIME, &simend);
+	float SimulationTime = simend.tv_sec - simstart.tv_sec + (float)(simend.tv_nsec - simstart.tv_nsec)/1e9;
+	printf("Init: %.2fs, Simulation: %.2fs, Integrator: %.2fs (%.2f%%), Reflection: %.2fs (%.f%%), Dicing: %.4fs\n",
 			InitTime, SimulationTime, IntegratorTime, IntegratorTime*100/SimulationTime, ReflTime, ReflTime*100/SimulationTime, DiceTime);
 	printf("That's it... Have a nice day!\n");
 	
@@ -232,16 +224,6 @@ int main(int argc, char **argv){
 	fileprefix << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0);
 	if (neutdist == 1) outndist((fileprefix.str() + "ndist.out").c_str());   // print neutron distribution into file
 
-	// close files
-	if (tracklog)
-		fclose(tracklog);
-	if (endlog)
-		fclose(endlog);
-	if (snap)
-		fclose(snap);
-	if (reflectlog)
-		fclose(reflectlog);
-		
 	return 0;
 }
 
@@ -251,31 +233,24 @@ int main(int argc, char **argv){
  */
 void ConfigInit(void){
 	/* setting default values */
-	particletype = NEUTRON;
+	simtype = NEUTRON;
 	neutdist = 0;
-	outputopt = 2;
-	MonteCarloAnzahl = 1;
+	simcount = 1;
 	/*end default values*/
 	
 	/* read lines in config.in into map */
-	map<string, map<string, string> > config;
+	TConfig config;
 	ReadInFile(string(inpath+"/config.in").c_str(), config);
 	
 	/* read variables from map by casting strings in map into istringstreams and extracting value with ">>"-operator */
-	istringstream(config["global"]["particletype"])				>> particletype;
-	istringstream(config["global"]["neutdist"])				>> neutdist;
-	istringstream(config["global"]["outputopt"])			>> outputopt;
-	
-	int snapshot;
-	istringstream(config["global"]["snapshot"])				>> snapshot;
-	if (snapshot){
-		float tmp_snapshot;
-		istringstream isnapshots(config["global"]["snapshots"]);	
-		do{
-			isnapshots >> tmp_snapshot;
-			if (isnapshots.good()) snapshots.push_back(tmp_snapshot);
-		}while(isnapshots.good());
-	}
+	int endlog = 0, tracklog = 0, hitlog = 0, snapshotlog, spinlog = 0;
+	istringstream(config["global"]["simtype"])		>> simtype;
+	istringstream(config["global"]["endlog"])		>> endlog;
+	istringstream(config["global"]["tracklog"])		>> tracklog;
+	istringstream(config["global"]["hitlog"])		>> hitlog;
+	istringstream(config["global"]["snapshotlog"])	>> snapshotlog;
+	istringstream(config["global"]["spinlog"])		>> spinlog;
+	istringstream(config["global"]["neutdist"])		>> neutdist;
 	
 	int BFstart, BFend;
 	istringstream iBruteForce(config["global"]["BruteForce"]);
@@ -287,123 +262,65 @@ void ConfigInit(void){
 		}
 	}while(iBruteForce.good());
 
-	istringstream(config["global"]["reflektlog"])			>> reflektlog;
-	istringstream(config["global"]["MonteCarloAnzahl"])		>> MonteCarloAnzahl;
-	istringstream(config["global"]["simtime"])				>> SimTime;
-	istringstream(config["global"]["BFTargetB"])			>> BFTargetB;
-	istringstream(config["global"]["decay"])				>> decay;
-	istringstream(config["global"]["BCutPlane"])			>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2] 
-															>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
-															>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
-															>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
-}
+	istringstream(config["global"]["simcount"])		>> simcount;
+	istringstream(config["global"]["simtime"])		>> SimTime;
+	istringstream(config["global"]["BFTargetB"])	>> BFTargetB;
+	istringstream(config["global"]["secondaries"])	>> secondaries;
+	istringstream(config["global"]["BCutPlane"])	>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2]
+													>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
+													>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
+													>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
 
 
-/**
- * Open output files.
- *
- * @param endlog Returns FILE-pointer to particles' end point log
- * @param tracklog Returns FILE-pointer to particles' trajectory log (if specified in config)
- * @param snap Return FILE-pointer to print snapshots at specified times (if specified in config)
- * @param reflectlog Return FILE-pointer to reflection and transmission log (if specified in config)
- */
-void OpenFiles(FILE *&endlog, FILE *&tracklog, FILE *&snap, FILE *&reflectlog){
-	// **************** create log files ****************
-	ostringstream fileprefix;
-	fileprefix << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0);
+	TConfig logconf;
+	ReadInFile(string(inpath+"/particle.in").c_str(), logconf); // read particle specific log configuration from particle.in
+	for (TConfig::iterator i = logconf.begin(); i != logconf.end(); i++){
+		if (i->first != "all"){
+			i->second = logconf["all"]; // set all particle specific settings to the "all" settings
+		}
+	}
+	ReadInFile(string(inpath+"/particle.in").c_str(), logconf); // read again to overwrite "all" settings with particle specific settings
 
-	// open endlog
-	endlog = fopen((fileprefix.str() + "end.out").c_str(),"w");
-    if (!endlog){
-    	printf("\n%s not found!\n",(fileprefix.str() + "end.out").c_str());
-    	exit(-1);
-    }
-    // print endlog header
-	fprintf(endlog,"jobnumber particle type polarisation "
-                   "tstart xstart ystart zstart "
-                   "vxstart vystart vzstart "
-                   "Hstart Estart "
-                   "tend xend yend zend "
-                   "vxend vyend vzend "
-                   "Hend Eend stopID Nspinflip ComputingTime "
-                   "Nhit trajlength Hmax\n");
-
-	if (particletype == NEUTRON && snapshots.size() > 0){
-		// open snapshot log
-		snap = fopen((fileprefix.str() + "snapshot.out").c_str(),"w");
-	    if (!snap){
-	    	printf("\n%s not found!\n",(fileprefix.str() + "snapshot.out").c_str());
-	    	exit(-1);
-	    }
-	    // print snapshot log header
-		fprintf(snap,	"jobnumber particle type polarisation "
-                		"tstart xstart ystart zstart "
-                		"vxstart vystart vzstart "
-                		"Hstart Estart "
-                		"tend xend yend zend "
-                		"vxend vyend vzend "
-                		"Hend Eend stopID Nspinflip ComputingTime "
-                		"Nhit trajlength Hmax\n");
+	for (TConfig::iterator i = logconf.begin(); i != logconf.end(); i++){
+		if (i->first != "all"){
+			istringstream(i->second["endlog"]) 		>> output[i->first].endlog;
+			istringstream(i->second["tracklog"]) 	>> output[i->first].tracklog;
+			istringstream(i->second["hitlog"]) 		>> output[i->first].tracklog;
+			istringstream(i->second["snapshotlog"])	>> output[i->first].snapshotlog;
+			istringstream(i->second["spinlog"])		>> output[i->first].spinlog;
+			if (output[i->first].snapshotlog){
+				float tmp_snapshot;
+				istringstream isnapshots(i->second["snapshots"]);
+				do{
+					isnapshots >> tmp_snapshot;
+					if (isnapshots.good()) output[i->first].snapshottimes.insert(tmp_snapshot);
+				}while(isnapshots.good());
+			}
+		}
 	}
 
-	if ((outputopt==OUTPUT_EVERYTHING)||(outputopt==OUTPUT_EVERYTHINGandSPIN)){
-		// open track log
-		tracklog = fopen((fileprefix.str() + "track.out").c_str(),"w");
-	    if (!tracklog){
-	    	printf("\n%s not found!\n",(fileprefix.str() + "track.out").c_str());
-	    	exit(-1);
-	    }
-	    // print track log header
-		fprintf(tracklog,"particle type polarisation t x y z vx vy vz "
-							"H E Bx dBxdx dBxdy dBxdz By dBydx "
-							 "dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V "
-							 "timestep\n");
-	}
-
-	if (particletype == NEUTRON && reflektlog){
-		// open reflect log
-		reflectlog = fopen((fileprefix.str() + "reflect.out").c_str(),"w");
-	    if (!reflectlog){
-	    	printf("\n%s not found!\n",(fileprefix.str() + "reflect.out").c_str());
-	    	exit(-1);
-	    }
-	    // print reflect log header
-		fprintf(reflectlog,"jobnumber particle type polarisation reflection solid t x y z vx vy vz nx ny nz H diffphi difftheta\n"); // Header for Reflection File
-	}
-	// **************** end create log files ****************	
 }
 
 
 /**
  * Print final particles statistics.
  */
-void OutputCodes(map<int, int> ID_counter[3]){
-	int count[3] = {0, 0, 0}, max = 0;
-	for (int i = 0; i < 3; i++){
-		for (map<int, int>::iterator j = ID_counter[i].begin(); j != ID_counter[i].end(); j++){
-			count[i] += j->second;
-			max = j->first > max ? j->first : max;
+void OutputCodes(map<string, map<int, int> > &ID_counter){
+	cout << "\nThe simulated particles suffered following fates:\n";
+	for (map<string, map<int, int> >::iterator i = ID_counter.begin(); i != ID_counter.end(); i++){
+		map<int, int> counts = i->second;
+		const char *name = i->first.c_str();
+		printf("%4i: %6i %10s(s) were not categorized\n",		 0, counts[ 0], name);
+		printf("%4i: %6i %10s(s) did not finish\n",				-1, counts[-1], name);
+		printf("%4i: %6i %10s(s) hit outer boundaries\n",		-2, counts[-2], name);
+		printf("%4i: %6i %10s(s) produced a numerical error\n", -3, counts[-3], name);
+		printf("%4i: %6i %10s(s) decayed\n",					-4, counts[-4], name);
+		printf("%4i: %6i %10s(s) found no initial position\n",	-5, counts[-5], name);
+		for (map<int, int>::iterator j = counts.begin(); j != counts.end(); j++){
+			if (j->first > 0)
+				printf("%4i: %6i %10s(s) were absorbed\n", j->first, j->second, name);
 		}
-	}
-	printf("\nThe calculations of %i particle(s) yielded:\n"
-	       "endcode:  of %4i neutron(s) ; of %4i proton(s) ; of %4i electron(s)\n"
-	       "   0 %12i %20i %19i 		(were not categorized)\n"
-	       "  -1 %12i %20i %19i 		(did not finish)\n"
-	       "  -2 %12i %20i %19i 		(hit outer boundaries)\n"
-	       "  -3 %12i %20i %19i 		(produced a numerical error)\n"
-	       "  -4 %12i %20i %19i 		(decayed)\n"
-	       "  -5 %12i %20i %19i 		(found no initial position)\n",
-	       count[1] + count[2] + count[0],
-	       count[1], count[2], count[0],
-	       ID_counter[1][0],  ID_counter[2][0],  ID_counter[0][0],
-	       ID_counter[1][-1], ID_counter[2][-1], ID_counter[0][-1],
-	       ID_counter[1][-2], ID_counter[2][-2], ID_counter[0][-2],
-	       ID_counter[1][-3], ID_counter[2][-3], ID_counter[0][-3],
-	       ID_counter[1][-4], ID_counter[2][-4], ID_counter[0][-4],
-	       ID_counter[1][-5], ID_counter[2][-5], ID_counter[0][-5]);
-	for (int i = 1; i <= max; i++){
-		printf("  %2i %12i %20i %19i		(were statistically absorbed)\n",
-				i,ID_counter[1][i],ID_counter[2][i],ID_counter[0][i]);
+		printf("\n");
 	}
 }
 
@@ -536,8 +453,9 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 
     set<TCollision> c;
     srand(time(NULL));
-    float timer = clock(), colltimer = 0;
-    for (unsigned i = 0; i < count; i++){
+	timespec collstart,collend;
+	clock_gettime(CLOCK_REALTIME, &collstart);
+	for (unsigned i = 0; i < count; i++){
     	// random segment start point
 #ifndef USE_CGAL
         p1[0] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[0] - geom.kdtree->lo[0]) + geom.kdtree->lo[0];
@@ -555,19 +473,16 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 		p2[1] = p1[1] + raylength*sin(theta)*sin(phi);
 		p2[2] = p1[2] + raylength*cos(theta);
 
-		timeval collstart,collend;
-		gettimeofday(&collstart,NULL);
 		if (geom.kdtree->Collision(p1,p2,c)){ // check if segment intersected with surfaces
 			collcount++;
 			for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){ // print all intersection points into file
 				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << '\n';
 			}
 		}
-		gettimeofday(&collend,NULL);
-		colltimer += (collend.tv_sec - collstart.tv_sec)*1e6+collend.tv_usec - collstart.tv_usec;
     }
-    timer = (clock() - timer)*1000/CLOCKS_PER_SEC;
+	clock_gettime(CLOCK_REALTIME, &collend);
+	float colltimer = (collend.tv_sec - collstart.tv_sec)*1e9 + collend.tv_nsec - collstart.tv_nsec;
     // print some time statistics
-    printf("%u tests, %u collisions in %fms (%fms per Test, %fms per Collision)\n",count,collcount,timer,timer/count,colltimer/collcount/1000);
+    printf("%u tests, %u collisions in %fms (%fms per Test, %fms per Collision)\n",count,collcount,colltimer,colltimer/count/1e6,colltimer/collcount/1e6);
     f.close();	
 }

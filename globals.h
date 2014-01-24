@@ -9,21 +9,23 @@
 #define ID_NOT_FINISH -1 ///< kennz flag for particles which reached ::StorageTime
 #define ID_HIT_BOUNDARIES -2 ///< kennz flag for particles which left bounding box of TParticle::geom
 #define ID_NRERROR -3 ///< kennz flag for particles which produces a serious numerical error (step size underflow, missed reflection, ...)
-#define ID_DECAYED -4 ///< kennz flag for particles which reached TParticle::xend
+#define ID_DECAYED -4 ///< kennz flag for particles which reached TParticle::tau
 #define ID_INITIAL_NOT_FOUND -5 ///< kennz flag for particles which had a too low total energy to find a initial spot in the source volume
 
-#define NEUTRON 1 ///< TParticle::type of neutrons
-#define PROTON 2 ///< TParticle::type of protons
+#define NEUTRON 1 ///< set particletype in configuration to this value to simulate neutrons
+#define PROTON 2 ///< set particletype in configuration to this value to simulate only protons
 #define BF_ONLY 3 ///< set particletype in configuration to this value to print out a ramp heating analysis
 #define BF_CUT 4 ///< set particletype in configuration to this value to print out a planar slice through electric/magnetic fields
-#define ELECTRON 6 ///< TParticle::type of electrons
+#define ELECTRON 6 ///< set particletype in configuration to this value to simulate only electrons
 #define GEOMETRY 7 ///< set particletype in configuration to this value to print out a sampling of the geometry
 
-#define OUTPUT_EVERYTHING 1 ///< configuration value to print endlog+tracklog
-#define OUTPUT_ENDPOINTS 2 ///< configuration value to print endlog only
-#define OUTPUT_NOTHING 5
-#define OUTPUT_EVERYTHINGandSPIN 3 ///< configuration value to print endlog+tracklog+spintrack
-#define OUTPUT_ENDPOINTSandSPIN 4 ///< configuration value to print endlog+spintrack
+#define OUTPUT_END 1 ///< endlog option
+#define OUTPUT_TRACK 2 ///< tracklog option
+#define OUTPUT_HIT 4 ///< hitlog option
+#define OUTPUT_SNAPSHOT 8 ///< snapshot option
+#define OUTPUT_SPIN 16 ///< spinlog option
+
+#define RELATIVISTIC_THRESHOLD 0.01 ///< threshold (v/c) above which kinetic energy is calculated relativisticly
 
 // physical constants
 static const long double pi = 3.1415926535897932384626L; ///< Pi
@@ -43,10 +45,9 @@ static const long double lengthconv = 0.01; ///< length conversion factor cgs ->
 static const long double Bconv = 1e-4; ///< magnetic field conversion factor cgs -> SI [G -> T]
 static const long double Econv = 1e2; ///< electric field conversion factor cgs -> SI [V/cm -> V/m]
 
-int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
+long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
 string inpath = "."; ///< path to configuration files, read from command line paramters
 string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
-int outputopt = 5; ///< output options chosen by user
 
 // print progress in percent
 void PrintPercent(double percentage, int &lastprint){
@@ -99,13 +100,13 @@ void BOOST(long double beta[3], long double p[4]){
 // energy distribution of protons (0 < 'Energie' < 750 eV)
 // proton recoil spectrum from "Diplomarbeit M. Simson"
 // result always < 1!
-long double ProtonSpectrum(long double E){
-	long double DeltaM = m_n - m_p;
-	long double Xi = m_e / DeltaM;
-	long double Sigma = 1 - 2*E*m_n / pow(DeltaM, 2) / pow(c_0, 2);
-	long double g1 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma) - 				4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
-	long double g2 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma - 2 * Sigma) - 	4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
-	long double littlea = -0.1017;
+double ProtonBetaSpectrum(double E){
+	double DeltaM = m_n - m_p;
+	double Xi = m_e / DeltaM;
+	double Sigma = 1 - 2*E*m_n / pow(DeltaM, 2) / pow(c_0, 2);
+	double g1 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma) - 				4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
+	double g2 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma - 2 * Sigma) - 	4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
+	double littlea = -0.1017;
 	return 0.5*(g1 + littlea * g2);
 }
 
@@ -113,14 +114,16 @@ long double ProtonSpectrum(long double E){
 // energy distribution of electrons (0 < 'Energie' < 782 keV)
 // from "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
 // result always < 1!
-long double ElectronSpectrum(long double E){
-	long double Qvalue = 0.782; //[MeV]
+double ElectronBetaSpectrum(double E){
+	double Qvalue = 0.782; //[MeV]
 	return 8.2*sqrt(E*1e-6*E*1e-6 + 2*E*1e-6*m_e*c_0*c_0*1e-6) * pow(Qvalue - E*1e-6, 2) * (E*1e-6 + m_e*c_0*c_0*1e-6);
 }
 
 
+typedef map<string, map<string, string> > TConfig;
+
 //read variables from *.in file into map
-void ReadInFile(const char *inpath, map<string, map<string, string> > &vars){
+void ReadInFile(const char *inpath, TConfig &vars){
 	ifstream infile(inpath);
 	char c;
 	string rest,section,key;
@@ -141,7 +144,7 @@ void ReadInFile(const char *inpath, map<string, map<string, string> > &vars){
 		else if (section != ""){
 			infile >> key;
 			getline(infile,rest);
-			int l = rest.find('#');
+			string::size_type l = rest.find('#');
 			if (l == string::npos)
 				vars[section][key] = rest;
 			else

@@ -6,6 +6,8 @@
 #ifndef ELECTRON_H_
 #define ELECTRON_H_
 
+static const char* NAME_ELECTRON = "electron";
+
 
 #include "globals.h"
 #include "particle.h"
@@ -31,7 +33,7 @@ public:
 	 * @param afield TField used to calculate energies (can be NULL)
 	 */
 	TElectron(int number, TGeometry &ageometry, TSource &src,
-				TMCGenerator &mcgen, TFieldManager *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
+				TMCGenerator &mcgen, TFieldManager *afield): TParticle(NAME_ELECTRON, -ele_e, m_e, 0){
 		Init(number, ageometry, src, mcgen, afield);
 	};
 
@@ -54,15 +56,15 @@ public:
 	 */
 	TElectron(int number, long double t, long double atau, long double x, long double y, long double z,
 			long double vx, long double vy, long double vz, int pol, long double trajl,
-			TGeometry &ageometry, TFieldManager *afield): TParticle(ELECTRON, -ele_e, m_e, 0){
+			TGeometry &ageometry, TFieldManager *afield): TParticle(NAME_ELECTRON, -ele_e, m_e, 0){
 		InitV(number, t, atau, x, y, z, vx, vy, vz, pol, trajl, ageometry, afield);
 	}
 
 protected:
 	/**
-	 * Check for reflection on surfaces.
+	 * This method is executed, when a particle crosses a material boundary.
 	 *
-	 * Electron is never reflected
+	 * Nothing happens to electrons.
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -70,17 +72,16 @@ protected:
 	 * @param y2 End point of line segment, returns reflected velocity
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the electron is leaving
-	 * @param entering Solid that the electron is entering
-	 * @param resetintegration Tell integrator to restart integration at x2 because e.g. y2 was changed.
-	 * @return Returns true if particle was reflected
+	 * @param entering Solid that the electron is entering (can be modified by method)
+	 * @return Returns true if particle path was changed
 	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *entering, bool &resetintegration){
+	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering){
 		return false;
 	};
 
 
 	/**
-	 * Checks for absorption
+	 * This method is executed on each step.
 	 *
 	 * Electrons are immediately absorbed in solids other than TParticle::geom::defaultsolid
 	 *
@@ -91,10 +92,11 @@ protected:
 	 * @param currentsolid Solid in which the electron is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
+	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid){
 		if (currentsolid->ID != geom->defaultsolid.ID){
 			x2 = x1;
-			y2 = y1;
+			for (int i = 0; i < 6; i++)
+				y2[i] = y1[i];
 			ID = currentsolid->ID;
 			return true;
 		}
@@ -111,7 +113,7 @@ protected:
 				double v_scat[3] = {y2[3], y2[4], y2[5]};
 				eH2velocity(Eloss, theta, v_scat); // change velocity accordingly
 				if (index == 3){ // on ionization create secondary electron
-					TElectron *e = new TElectron(particlenumber, x2, &y2[0], &y2[3], polarisation, *mc, *field);
+					TElectron *e = new TElectron(particlenumber, x2, y2, &y2[3], polarisation, *mc, *field);
 					secondaries.push_back(e);
 				}
 			}

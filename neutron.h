@@ -6,11 +6,13 @@
 #ifndef NEUTRON_H_
 #define NEUTRON_H_
 
+static const char* NAME_NEUTRON = "neutron";
 
 #include <complex>
 
 #include "globals.h"
 #include "particle.h"
+#include "source.h"
 #include "proton.h"
 #include "electron.h"
 
@@ -41,13 +43,14 @@ public:
 	 * @param afield TFieldManager used to calculate energies
 	 */
 	TNeutron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TFieldManager *afield)
-			: TParticle(NEUTRON, 0, m_n, mu_nSI){
-		tstart = mcgen.UniformDist(0,src.ActiveTime);
+			: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI){
+		long double t;
+		int polarisation = mcgen.DicePolarisation(name);
+		long double H = mcgen.Spectrum(name);
+		long double E;
+		long double p[3];
 
-		polarisation = mcgen.DicePolarisation(type);
-		Hstart = mcgen.NeutronSpectrum();
-
-		printf("Dice starting position for E_neutron = %LG neV ",Hstart*1e9);
+		cout << "Dice starting position for E_neutron = " << H*1e9 << " neV ";
 		fflush(stdout);
 		long double phi, theta;
 		for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
@@ -55,18 +58,18 @@ public:
 				printf("."); // print progress
 				fflush(stdout);
 			}
-			src.RandomPointInSourceVolume(mcgen, tstart, Hstart, ystart[0], ystart[1], ystart[2], phi, theta);
-			ageometry.GetSolids(tstart, ystart, currentsolids);
+			src.RandomPointInSourceVolume(mcgen, t, H, p[0], p[1], p[2], phi, theta);
+			ageometry.GetSolids(t, p, currentsolids);
 			if (src.sourcemode == "volume" || src.sourcemode == "customvol"){ // dice H for volume source
-				Estart = Hstart - Epot(tstart, &ystart[0], afield);
-				if (mcgen.UniformDist(0,1) > sqrt(Estart/Hstart))
-					Estart = -1; // correct weighting of phase space (see Golub/Richardson/Lamoreaux p. 82)
+				E = H - Epot(t, p, polarisation, afield);
+				if (mcgen.UniformDist(0,1) > sqrt(E/H))
+					E = -1; // correct weighting of phase space (see Golub/Richardson/Lamoreaux p. 82)
 			}
 			else{ // dice E for surface source
-				Estart = Hstart;
-				Hstart = Estart + Epot(tstart, &ystart[0], afield);
+				E = H;
+				H = E + Epot(t, p, polarisation, afield);
 			}
-			if (Estart >= 0){
+			if (E >= 0){
 				printf(" Found! %i dice(s) rolled\n", nroll+1);
 				break;
 			}
@@ -76,9 +79,8 @@ public:
 				return;
 			}
 		}
-
-		InitE(number, tstart, mcgen.LifeTime(type), ystart[0], ystart[1], ystart[2],
-			Estart, phi, theta, polarisation, mcgen.MaxTrajLength(type), ageometry, afield);
+		InitE(number, t, mcgen.LifeTime(name), p[0], p[1], p[2],
+			E, phi, theta, polarisation, mcgen.MaxTrajLength(name), ageometry, afield);
 	};
 
 protected:
@@ -96,11 +98,10 @@ protected:
 	 * @param y2 End point of line segment, may be altered
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
-	 * @param entering Solid that the particle is entering
-	 * @param resetintegration Tell integrator to restart integration at x2 because e.g. y2 was changed
-	 * @return Returns true if particle was reflected
+	 * @param entering Solid that the particle is entering (can be modified by method)
+	 * @return Returns true if particle path was changed
 	 */
-	bool Reflect(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, long double normal[3], const solid *leaving, const solid *entering, bool &resetintegration){
+	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering){
 		long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 		bool log = false, refl = false;
@@ -113,14 +114,10 @@ protected:
 			long double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
 			long double transprob = 4*k1*k2/(k1 + k2)/(k1 + k2); // transmission probability
 //			cout << " TransProb = " << transprob << '\n';
-			if (prob < transprob){
-
+			if (prob < transprob){ // -> transmission
 				for (int i = 0; i < 3; i++)
 					y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
-
-				resetintegration = true;
-				if (reflectlog & 2)
-					log = true;
+				return true;
 			}
 			else // no transmission -> reflection
 				refl = true;
@@ -131,9 +128,9 @@ protected:
 			complex<long double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
 			long double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
 //			cout << " ReflProb = " << reflprob << '\n';
-			if (prob > reflprob){ // particle is not reflected
-				ID = entering->ID; // -> absorption on reflection
-				resetintegration = true;
+			if (prob > reflprob){ // -> absorption on reflection
+				ID = entering->ID; //
+				return true;
 			}
 			else // no absorption -> reflection
 				refl = true;
@@ -143,14 +140,14 @@ protected:
 		long double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 		if (refl){
 			//particle was neither transmitted nor absorbed, so it has to be reflected
+			entering = leaving; // particle does not enter into new material
 			prob = mc->UniformDist(0,1);
 			if (prob >= entering->mat.DiffProb){
 				//************** specular reflection **************
 //				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
-				if(reflectlog & 1)
-					log = true;
 				x2 = x1;
-				y2 = y1;
+				for (int i = 0; i < 6; i++)
+					y2[i] = y1[i];
 				y2[3] -= 2*vnormal*normal[0]; // reflect velocity
 				y2[4] -= 2*vnormal*normal[1];
 				y2[5] -= 2*vnormal*normal[2];
@@ -160,43 +157,19 @@ protected:
 				phi_r = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
 				theta_r = mc->SinCosDist(0, 0.5*pi);
 				if (vnormal > 0) theta_r += pi; // if normal points out of volume rotate by 180 degrees
-				if(reflectlog & 1)
-					log = true;
 				x2 = x1;
-				y2 = y1;
+				for (int i = 0; i < 6; i++)
+					y2[i] = y1[i];
 				y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
 				y2[4] = vabs*sin(phi_r)*sin(theta_r);
 				y2[5] = vabs*cos(theta_r);
 				RotateVector(&y2[3],normal); // rotate coordinate system so that new z-axis lies on normal
 //				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
 			}
+			return true;
 		}
 
-		const solid *currentsolid;
-		if (refl)
-			currentsolid = leaving;
-		else
-			currentsolid = entering;
-
-		if (log){
-			long double H = 0.5*m_n*vabs*vabs + m_n*gravconst*y1[2] + currentsolid->mat.FermiReal; // total neutron energy
-			if (field){ // if there is a field, add magnetic potential to total neutron energy
-				long double B[4][4];
-				field->BField(y1[0], y1[1], y1[2], x1, B);
-				H += -polarisation*mu_nSI/ele_e*B[3][0];
-			}
-			fprintf(REFLECTLOG, "%i %i %i %i %i %i "
-								"%.10LG %.10LG %.10LG %.10LG %.10LG %.10LG %.10LG "
-								"%.10LG %.10LG %.10LG %.10LG "
-								"%.10LG %.10LG\n",
-								jobnumber, particlenumber, type, polarisation, refl, currentsolid->ID,
-								x1,y1[0],y1[1],y1[2],y1[3],y1[4],y1[5],
-								normal[0],normal[1],normal[2],H,
-								phi_r,theta_r);
-			fflush(REFLECTLOG);
-		}
-
-		return refl;
+		return false;
 	};
 
 
@@ -215,7 +188,7 @@ protected:
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle was absorbed
 	 */
-	bool Absorb(long double x1, VecDoub_I &y1, long double &x2, VecDoub_IO &y2, const solid *currentsolid){
+	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid){
 		bool result = false;
 		if (currentsolid->mat.FermiImag > 0){
 			long double prob = mc->UniformDist(0,1);
@@ -234,11 +207,11 @@ protected:
 		// do special calculations for neutrons (spinflipcheck, snapshots, etc)
 		if (neutdist == 1)
 			fillndist(x1, y1, x2, y2); // write spatial neutron distribution
-
+/*
 		if (field){
 			long double B[4][4];
 			field->BField(y1[0],y1[1],y1[2],x1,B);
-/*
+*//*
 			if (B[3][0] > 0){
 				// spin flip properties according to Vladimirsky and thumbrule
 				vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
@@ -254,7 +227,7 @@ protected:
 					thumbmax = max(thumbmax,log10(frac));
 			}
 */
-			long double B2[4][4];
+/*			long double B2[4][4];
 			field->BField(y2[0],y2[1],y2[2],x2,B2);
 			long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2); // integrate spinflip probability
 //			if (1-sp > 1e-30) logBF = log10(1-sp);
@@ -269,7 +242,7 @@ protected:
 				result = true;
 			}
 		}
-
+*/
 		return result;
 	};
 
@@ -283,13 +256,13 @@ protected:
 		long double v_p[3], v_e[3];
 		TParticle *p;
 		mc->NeutronDecay(&yend[3], v_p, v_e);
-		p = new TProton(particlenumber, tend, mc->LifeTime(PROTON),
+		p = new TProton(particlenumber, tend, mc->LifeTime("proton"),
 							yend[0], yend[1], yend[2], v_p[0], v_p[1], v_p[2],
-							mc->DicePolarisation(PROTON), mc->MaxTrajLength(PROTON), *geom, field);
+							mc->DicePolarisation("proton"), mc->MaxTrajLength("proton"), *geom, field);
 		secondaries.push_back(p);
-		p = new TElectron(particlenumber, tend, mc->LifeTime(ELECTRON),
+		p = new TElectron(particlenumber, tend, mc->LifeTime("electron"),
 							yend[0], yend[1], yend[2], v_e[0], v_e[1], v_e[2],
-							mc->DicePolarisation(ELECTRON), mc->MaxTrajLength(ELECTRON), *geom, field);
+							mc->DicePolarisation("electron"), mc->MaxTrajLength("electron"), *geom, field);
 		secondaries.push_back(p);
 	};
 
@@ -297,10 +270,15 @@ protected:
 	/**
 	 * Potential energy, other than electromagnetic or gravitational, which is added to total energy of neutron
 	 *
-	 * @return Returns additional potential energy due to Fermi-Potential of solid
+	 * @param t Time
+	 * @param y Position vector
+	 * @param polarisation Particle polarisation
+	 * @param field TFieldManager for electromagnetic potential
+	 *
+	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
-	long double Epot(const long double t, const long double y[3], TFieldManager *field){
-		return TParticle::Epot(t, y, field) + currentsolids.rbegin()->mat.FermiReal*1e-9;
+	long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field){
+		return TParticle::Epot(t, y, polarisation, field) + currentsolids.rbegin()->mat.FermiReal*1e-9;
 	}
 
 

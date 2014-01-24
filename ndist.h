@@ -15,7 +15,7 @@ void prepndist()
 }
 
 /// fill neutron density histogram
-void fillndist(long double x1, VecDoub_I &y1, long double x2, VecDoub_I &y2)
+void fillndist(long double x1, long double y1[6], long double x2, long double y2[6])
 {
 	long double r1 = sqrt(y1[0]*y1[0] + y1[1]*y1[1]);
 	long double z1 = y1[2];
