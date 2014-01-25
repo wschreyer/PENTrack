@@ -21,6 +21,19 @@ struct TConductorField: public TField{
 	TConductorField(long double aI): I(aI){};
 
 	/**
+	 * Compute magnetic field.
+	 *
+	 * Virtual: has to be implented for all derived classes.
+	 *
+	 * @param x Cartesian x coordinate
+	 * @param y Cartesian y coordinate
+	 * @param z Cartesian z coordinate
+	 * @param t Time
+	 * @param B Magnetic field components
+	 */
+	void BField(long double x, long double y, long double z, long double t, long double B[4][4]) = 0;
+
+	/**
 	 * Adds no electric field.
 	 *
 	 * @param x Cartesian x coordinate
@@ -425,15 +438,61 @@ struct TFiniteWireZCenter: public TConductorField{
 	TFiniteWireZCenter(long double SW1zz, long double SW2zz, long double aI): TConductorField(aI), SW1z(SW1zz), SW2z(SW2zz){};
 	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]){
 
-		long double vorfaktor = mu0 * I / (2 * pi);
-		long double r2 = x*x + y*y;
-		B[0][0] += vorfaktor*y/r2;
-		B[0][1] += 2*vorfaktor*x*y/r2;
-		B[0][2] += 2*vorfaktor*y*y/r2 - vorfaktor/r2;
+		long double vorfaktor = mu0 * I / (4 * pi);
 
-		B[1][0] += vorfaktor*x/r2;
-		B[1][1] += -2*vorfaktor*x*x/r2 + vorfaktor/r2;
-		B[1][2] += -2*vorfaktor*x*y/r2;
+		long double t1 = x * x;
+		long double t2 = y * y;
+		long double t3 = SW2z * SW2z;
+		long double t6 = z * z;
+		long double t7 = t1 + t2 + t3 - 2 * SW2z * z + t6;
+		long double t8 = sqrt(t7);
+		long double t9 = 0.1e1 / t8;
+		long double t10 = SW2z - z;
+		long double t12 = -SW1z + z;
+		long double t13 = SW1z * SW1z;
+		long double t16 = t1 + t2 + t13 - 2 * SW1z * z + t6;
+		long double t17 = sqrt(t16);
+		long double t18 = 0.1e1 / t17;
+		long double t20 = -t10 * t9 - t18 * t12;
+		long double t21 = fabs(t20);
+		long double t22 = t21 * vorfaktor;
+		long double t23 = y * t22;
+		long double t24 = -SW2z + SW1z;
+		long double t25 = t2 + t1;
+		long double t26 = sqrt(t25);
+		long double t27 = 0.1e1 / t26;
+		long double t29 = t24 * t24;
+		long double t30 = t29 * t25;
+		long double t31 = sqrt(t30);
+		long double t32 = 0.1e1 / t31;
+		long double t33 = t32 * t27 * t24;
+		long double t35 = fabs(t20) / t20;
+		long double t36 = t35 * vorfaktor;
+		long double t39 = t10 / t8 / t7;
+		long double t43 = 0.1e1 / t17 / t16 * t12;
+		long double t45 = x * t39 + x * t43;
+		long double t49 = t32 * t27 * t24 * y;
+		long double t52 = 0.1e1 / t26 / t25;
+		long double t53 = t52 * t24;
+		long double t54 = x * t32;
+		long double t58 = t27 * t29 * t24;
+		long double t60 = 0.1e1 / t31 / t30;
+		long double t67 = y * t39 + y * t43;
+		long double t71 = t2 * t22;
+		long double t81 = -t10 * t39 + t9 - t18 + t12 * t43;
+		long double t84 = t27 * vorfaktor;
+		long double t85 = t21 * t84;
+		long double t89 = t21 * t52 * vorfaktor;
+		long double t93 = t35 * t84;
+		long double t95 = -t24 * x;
+		B[0][0] += t33 * t23;
+		B[0][1] += t49 * t45 * t36 - t54 * t53 * t23 - x * t60 * t58 * t23;
+		B[0][2] += t49 * t67 * t36 + t33 * t22 - t32 * t53 * t71 - t60 * t58 * t71;
+		B[0][3] += t49 * t81 * t36;
+		B[1][0] += -t24 * t54 * t85;
+		B[1][1] += t24 * t1 * t32 * t89 + t95 * t32 * t45 * t93 + t29 * t24 * t1 * t60 * t85 - t24 * t32 * t21 * t84;
+		B[1][2] += t24 * y * t54 * t89 + t95 * t32 * t67 * t93 - t29 * y * t95 * t60 * t21 * t84;
+		B[1][3] += t95 * t32 * t81 * t93;
 	}
 };
 
@@ -937,12 +996,12 @@ struct TInfiniteWireZCenter: public TConductorField{
 		long double vorfaktor = mu0 * I / (2 * pi);
 		long double r2 = x*x + y*y;
 		B[0][0] += vorfaktor*y/r2;
-		B[0][1] += 2*vorfaktor*x*y/r2;
-		B[0][2] += 2*vorfaktor*y*y/r2 - vorfaktor/r2;
+		B[0][1] += -2*vorfaktor*x*y/r2/r2;
+		B[0][2] += vorfaktor*(x*x - y*y)/r2/r2;
 
-		B[1][0] += vorfaktor*x/r2;
-		B[1][1] += -2*vorfaktor*x*x/r2 + vorfaktor/r2;
-		B[1][2] += -2*vorfaktor*x*y/r2;
+		B[1][0] += -vorfaktor*x/r2;
+		B[1][1] += vorfaktor*(x*x - y*y)/r2/r2;
+		B[1][2] += 2*vorfaktor*x*y/r2/r2;
 	}
 };
 
