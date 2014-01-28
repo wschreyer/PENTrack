@@ -114,8 +114,8 @@ public:
 #ifndef USE_CGAL
 		for (int j = 0; j < 3; j++){
 			n[j] /= CurrA; // normalize normal vector
-			p1[j] = (*i)->vertex[0][j] + a*((*i)->vertex[1][j] - (*i)->vertex[0][j]) + b*((*i)->vertex[2][j] - (*i)->vertex[0][j]);
-			p1[j] += REFLECT_TOLERANCE*n[j]; // add some tolerance to avoid starting inside solid
+			p[j] = (*i)->vertex[0][j] + a*((*i)->vertex[1][j] - (*i)->vertex[0][j]) + b*((*i)->vertex[2][j] - (*i)->vertex[0][j]);
+			p[j] += REFLECT_TOLERANCE*n[j]; // add some tolerance to avoid starting inside solid
 		}
 #else
 		K::Vector_3 nv = (*i)->supporting_plane().orthogonal_vector();
@@ -291,9 +291,9 @@ public:
 		Doub p[3];
 		for(;;){
 #ifndef USE_CGAL
-			p[0] = mc.UniformDist(kdtree->lo[0],kdtree->hi[0]); // random point
-			p[1] = mc.UniformDist(kdtree->lo[1],kdtree->hi[1]); // random point
-			p[2] = mc.UniformDist(kdtree->lo[2],kdtree->hi[2]); // random point
+			p[0] = mc.UniformDist(kdtree.lo[0],kdtree.hi[0]); // random point
+			p[1] = mc.UniformDist(kdtree.lo[1],kdtree.hi[1]); // random point
+			p[2] = mc.UniformDist(kdtree.lo[2],kdtree.hi[2]); // random point
 #else
 			p[0] = mc.UniformDist(kdtree.tree.bbox().xmin(),kdtree.tree.bbox().xmax()); // random point
 			p[1] = mc.UniformDist(kdtree.tree.bbox().ymin(),kdtree.tree.bbox().ymax()); // random point
