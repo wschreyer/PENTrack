@@ -10,11 +10,6 @@ simcount 1000
 #simtime = max. simulation time
 simtime 1000
 
-# do bruteforce integration between these times
-BruteForce 0 0
-# flux density below which the spin will also be tracked, when BF is turned on
-BFTargetB 0.1
-
 # secondaries: 1: secondary particles (e.g. from decay) will be simulated
 secondaries 1
 

@@ -43,7 +43,7 @@ public:
 	 * @param afield TFieldManager used to calculate energies
 	 */
 	TNeutron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TFieldManager *afield)
-			: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI){
+			: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n){
 		long double t;
 		int polarisation = mcgen.DicePolarisation(name);
 		long double H = mcgen.Spectrum(name);

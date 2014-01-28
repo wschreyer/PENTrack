@@ -19,12 +19,6 @@
 #define ELECTRON 6 ///< set particletype in configuration to this value to simulate only electrons
 #define GEOMETRY 7 ///< set particletype in configuration to this value to print out a sampling of the geometry
 
-#define OUTPUT_END 1 ///< endlog option
-#define OUTPUT_TRACK 2 ///< tracklog option
-#define OUTPUT_HIT 4 ///< hitlog option
-#define OUTPUT_SNAPSHOT 8 ///< snapshot option
-#define OUTPUT_SPIN 16 ///< spinlog option
-
 #define RELATIVISTIC_THRESHOLD 0.01 ///< threshold (v/c) above which kinetic energy is calculated relativisticly
 
 // physical constants

@@ -97,12 +97,23 @@ int main(int argc, char **argv){
 	
 	// read config.in
 	ConfigInit();
+	TConfig configin;
+	ReadInFile(string(inpath + "/config.in").c_str(), configin);
+	TConfig geometryin;
+	ReadInFile(string(inpath + "/geometry.in").c_str(), geometryin);
+	TConfig particlein;
+	ReadInFile(string(inpath+"/particle.in").c_str(), particlein); // read particle specific log configuration from particle.in
+	for (TConfig::iterator i = particlein.begin(); i != particlein.end(); i++){
+		if (i->first != "all"){
+			i->second = particlein["all"]; // set all particle specific settings to the "all" settings
+		}
+	}
+	ReadInFile(string(inpath+"/particle.in").c_str(), particlein); // read again to overwrite "all" settings with particle specific settings
+
 
 	if(simtype == NEUTRON){
 		if (neutdist == 1) prepndist(); // prepare for neutron distribution-calculation
 	}
-	else
-		neutdist = 0;
 	
 	cout << "Loading fields...\n";
 	// load field configuration from geometry.in
@@ -188,7 +199,7 @@ int main(int argc, char **argv){
 				printf("\nDon't know simtype %i! Exiting...\n",simtype);
 				exit(-1);
 			}
-			p->Integrate(SimTime, geom, mc, &field, output[p->name]); // integrate particle
+			p->Integrate(SimTime, geom, mc, &field, particlein[p->name], output[p->name]); // integrate particle
 			ID_counter[p->name][p->ID]++; // increment counters
 			ntotalsteps += p->Nstep;
 			IntegratorTime += p->inttime;
@@ -196,7 +207,7 @@ int main(int argc, char **argv){
 
 			if (secondaries == 1){
 				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
-					(*i)->Integrate(SimTime, geom, mc, &field, output[(*i)->name]); // integrate secondary particles
+					(*i)->Integrate(SimTime, geom, mc, &field, particlein[(*i)->name], output[(*i)->name]); // integrate secondary particles
 					ID_counter[(*i)->name][(*i)->ID]++;
 					ntotalsteps += (*i)->Nstep;
 					IntegratorTime += (*i)->inttime;
@@ -243,62 +254,17 @@ void ConfigInit(void){
 	ReadInFile(string(inpath+"/config.in").c_str(), config);
 	
 	/* read variables from map by casting strings in map into istringstreams and extracting value with ">>"-operator */
-	int endlog = 0, tracklog = 0, hitlog = 0, snapshotlog, spinlog = 0;
 	istringstream(config["global"]["simtype"])		>> simtype;
-	istringstream(config["global"]["endlog"])		>> endlog;
-	istringstream(config["global"]["tracklog"])		>> tracklog;
-	istringstream(config["global"]["hitlog"])		>> hitlog;
-	istringstream(config["global"]["snapshotlog"])	>> snapshotlog;
-	istringstream(config["global"]["spinlog"])		>> spinlog;
 	istringstream(config["global"]["neutdist"])		>> neutdist;
 	
-	int BFstart, BFend;
-	istringstream iBruteForce(config["global"]["BruteForce"]);
-	do{
-		iBruteForce >> BFstart >> BFend;
-		if (iBruteForce.good()){
-			BFtimes.push_back(BFstart);
-			BFtimes.push_back(BFend);
-		}
-	}while(iBruteForce.good());
 
 	istringstream(config["global"]["simcount"])		>> simcount;
 	istringstream(config["global"]["simtime"])		>> SimTime;
-	istringstream(config["global"]["BFTargetB"])	>> BFTargetB;
 	istringstream(config["global"]["secondaries"])	>> secondaries;
 	istringstream(config["global"]["BCutPlane"])	>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2]
 													>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
 													>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
 													>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
-
-
-	TConfig logconf;
-	ReadInFile(string(inpath+"/particle.in").c_str(), logconf); // read particle specific log configuration from particle.in
-	for (TConfig::iterator i = logconf.begin(); i != logconf.end(); i++){
-		if (i->first != "all"){
-			i->second = logconf["all"]; // set all particle specific settings to the "all" settings
-		}
-	}
-	ReadInFile(string(inpath+"/particle.in").c_str(), logconf); // read again to overwrite "all" settings with particle specific settings
-
-	for (TConfig::iterator i = logconf.begin(); i != logconf.end(); i++){
-		if (i->first != "all"){
-			istringstream(i->second["endlog"]) 		>> output[i->first].endlog;
-			istringstream(i->second["tracklog"]) 	>> output[i->first].tracklog;
-			istringstream(i->second["hitlog"]) 		>> output[i->first].hitlog;
-			istringstream(i->second["snapshotlog"])	>> output[i->first].snapshotlog;
-			istringstream(i->second["spinlog"])		>> output[i->first].spinlog;
-			if (output[i->first].snapshotlog){
-				float tmp_snapshot;
-				istringstream isnapshots(i->second["snapshots"]);
-				do{
-					isnapshots >> tmp_snapshot;
-					if (isnapshots.good()) output[i->first].snapshottimes.insert(tmp_snapshot);
-				}while(isnapshots.good());
-			}
-		}
-	}
-
 }
 
 
