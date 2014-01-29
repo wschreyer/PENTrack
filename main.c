@@ -40,7 +40,7 @@
 #include "bruteforce.h"
 #include "ndist.h"
 
-void ConfigInit(); // read config.in
+void ConfigInit(TConfig &config); // read config.in
 void OutputCodes(map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
 void PrintBFieldCut(const char *outfile, TFieldManager &field); // evaluate fields on given plane and write to outfile
 void PrintBField(const char *outfile, TFieldManager &field);
@@ -95,14 +95,12 @@ int main(int argc, char **argv){
 	if(argc>3) // if user supplied all 3 args (outputfilestamp, inpath, outpath)
 		outpath = argv[3]; // set the output path pointer
 	
-	// read config.in
-	ConfigInit();
 	TConfig configin;
 	ReadInFile(string(inpath + "/config.in").c_str(), configin);
 	TConfig geometryin;
 	ReadInFile(string(inpath + "/geometry.in").c_str(), geometryin);
 	TConfig particlein;
-	ReadInFile(string(inpath+"/particle.in").c_str(), particlein); // read particle specific log configuration from particle.in
+	ReadInFile(string(inpath + "/particle.in").c_str(), particlein); // read particle specific log configuration from particle.in
 	for (TConfig::iterator i = particlein.begin(); i != particlein.end(); i++){
 		if (i->first != "all"){
 			i->second = particlein["all"]; // set all particle specific settings to the "all" settings
@@ -110,6 +108,8 @@ int main(int argc, char **argv){
 	}
 	ReadInFile(string(inpath+"/particle.in").c_str(), particlein); // read again to overwrite "all" settings with particle specific settings
 
+	// read config.in
+	ConfigInit(configin);
 
 	if(simtype == NEUTRON){
 		if (neutdist == 1) prepndist(); // prepare for neutron distribution-calculation
@@ -117,7 +117,7 @@ int main(int argc, char **argv){
 	
 	cout << "Loading fields...\n";
 	// load field configuration from geometry.in
-	TFieldManager field(string(inpath + "/geometry.in").c_str());
+	TFieldManager field(geometryin);
 
 	switch(simtype)
 	{
@@ -140,7 +140,7 @@ int main(int argc, char **argv){
 	
 	cout << "Loading source...\n";
 	// load source configuration from geometry.in
-	TSource source(string(inpath + "/geometry.in").c_str(), geom, field);
+	TSource source(geometryin, geom, field);
 	
 	cout << "Loading random number generator...\n";
 	// load random number generator from all3inone.in
@@ -241,18 +241,16 @@ int main(int argc, char **argv){
 
 /**
  * Read config file.
+ *
+ * @param config TConfig struct containing [global] options map
  */
-void ConfigInit(void){
+void ConfigInit(TConfig &config){
 	/* setting default values */
 	simtype = NEUTRON;
 	neutdist = 0;
 	simcount = 1;
 	/*end default values*/
-	
-	/* read lines in config.in into map */
-	TConfig config;
-	ReadInFile(string(inpath+"/config.in").c_str(), config);
-	
+
 	/* read variables from map by casting strings in map into istringstreams and extracting value with ">>"-operator */
 	istringstream(config["global"]["simtype"])		>> simtype;
 	istringstream(config["global"]["neutdist"])		>> neutdist;

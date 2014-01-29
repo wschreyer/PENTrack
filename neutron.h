@@ -104,7 +104,7 @@ protected:
 	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering){
 		long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-		bool log = false, refl = false;
+		bool refl = false;
 		long double prob = mc->UniformDist(0,1);
 
 		long double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;

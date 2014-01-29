@@ -31,7 +31,7 @@ struct TConductorField: public TField{
 	 * @param t Time
 	 * @param B Magnetic field components
 	 */
-	void BField(long double x, long double y, long double z, long double t, long double B[4][4]) = 0;
+	virtual void BField(long double x, long double y, long double z, long double t, long double B[4][4]) = 0;
 
 	/**
 	 * Adds no electric field.

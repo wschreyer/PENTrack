@@ -87,15 +87,14 @@ public:
 		Doub p[3] = {x, y, z};
 		Doub n[3];
 		Doub RandA = mc.UniformDist(0,sourcearea);
-		Doub CurrA = 0, SumA = 0;
+		Doub SumA = 0;
 #ifndef USE_CGAL
 		vector<Triangle*>::iterator i;
 		for (i = sourcetris.begin(); i != sourcetris.end(); i++){
 			n[0] = (*i)->normal[0];
 			n[1] = (*i)->normal[1];
 			n[2] = (*i)->normal[2];
-			CurrA = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
-			SumA += CurrA;
+			SumA += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 			if (RandA <= SumA) break; // select random triangle, weighted by triangle area
 		}
 #else
@@ -360,13 +359,11 @@ public:
 	/**
 	 * Constructor, loads [SOURCE] section of configuration file, calculates TSource::Hmin_lfs and TSource::Hmin_hfs
 	 *
-	 * @param geometryin Configuration file containing [SOURCE] section
+	 * @param geometryconf TConfig struct containing [SOURCE] option map
 	 * @param geom TGeometry class against which start points are checked and which contains source surfaces
 	 * @param field TFieldManager class to calculate TSource::Hmin_lfs and TSource::Hmin_hfs
 	 */
-	TSource(const char *geometryin, TGeometry &geom, TFieldManager &field){
-		TConfig geometryconf;
-		ReadInFile(geometryin, geometryconf);
+	TSource(TConfig &geometryconf, TGeometry &geom, TFieldManager &field): source(NULL){
 		sourcemode = geometryconf["SOURCE"].begin()->first; // only first source in geometry.in is read in
 		istringstream sourceconf(geometryconf["SOURCE"].begin()->second);
 
@@ -374,29 +371,43 @@ public:
 		if (sourcemode == "customvol"){
 			Doub r_min, r_max, phi_min, phi_max, z_min, z_max;
 			sourceconf >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime;
-			source = new TCylindricalVolumeSource(ActiveTime, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max);
+			if (sourceconf)
+				source = new TCylindricalVolumeSource(ActiveTime, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max);
 		}
 		else if (sourcemode == "volume"){
 			string sourcefile;
 			sourceconf >> sourcefile >> ActiveTime;
-			source = new TSTLVolumeSource(ActiveTime, sourcefile);
+			if (sourceconf)
+				source = new TSTLVolumeSource(ActiveTime, sourcefile);
 		}
 		else if (sourcemode == "customsurf"){
 			Doub r_min, r_max, phi_min, phi_max, z_min, z_max, E_normal;
 			sourceconf >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime >> E_normal;
-			source = new TCylindricalSurfaceSource(ActiveTime, geom, E_normal, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max);
+			if (sourceconf)
+				source = new TCylindricalSurfaceSource(ActiveTime, geom, E_normal, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max);
 		}
 		else if (sourcemode == "surface"){
 			string sourcefile;
 			Doub E_normal;
 			sourceconf >> sourcefile >> ActiveTime >> E_normal;
-			source = new TSTLSurfaceSource(ActiveTime, geom, sourcefile, E_normal);
+			if (sourceconf)
+				source = new TSTLSurfaceSource(ActiveTime, geom, sourcefile, E_normal);
 		}
-		else{
-			cout << "Uknown source " << sourcemode << "! Stopping!\n";
+
+		if (!source){
+			cout << "\nCould not load source """ << sourcemode << """! Did you enter invalid parameters?\n";
 			exit(-1);
 		}
 	};
+
+
+	/**
+	 * Destructor. Delete TSource::source.
+	 */
+	~TSource(){
+		if (source)
+			delete source;
+	}
 
 
 	/**
