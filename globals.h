@@ -121,15 +121,14 @@ void ReadInFile(const char *inpath, TConfig &vars){
 	ifstream infile(inpath);
 	char c;
 	string rest,section,key;
-	while (infile.good() && (infile >> ws) && (c = infile.peek())){
+	while (infile && (infile >> ws) && (c = infile.peek())){
 		if (c == '[' && infile.ignore()){
 			if (infile.peek() == '/'){
 				section = "";
-//				printf("\n");
 			}
 			else{
 				getline(infile, section, ']');
-//				printf("section : %s\n",section.c_str());
+//				cout << "\nsection: " << section.c_str() << '\n';
 			}
 			getline(infile,rest);
 		}
@@ -138,11 +137,14 @@ void ReadInFile(const char *inpath, TConfig &vars){
 		else if (section != ""){
 			infile >> key;
 			getline(infile,rest);
-			string::size_type l = rest.find('#');
-			if (l == string::npos)
-				vars[section][key] = rest;
-			else
-				vars[section][key] = rest.substr(0,l);
+			if (infile){
+				string::size_type l = rest.find('#');
+				if (l == string::npos)
+					vars[section][key] = rest;
+				else
+					vars[section][key] = rest.substr(0,l);
+//				cout << key << " " << vars[section][key] << '\n';
+			}
 		}
 		else
 			getline(infile,rest);
