@@ -96,5 +96,5 @@ Type "make" to compile the code, then run the executable. Some information will 
 Physics
 -------
 
-All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described via the Fermi potential formalism and the Lambert model for diffuse reflection. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. UCN spin tracking by bruteforce integration of the Bloch equation is also included.
+All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and the Lambert model for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
 

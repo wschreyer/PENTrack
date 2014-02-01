@@ -96,12 +96,13 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
+	 * @param polarisation Polarisation of particle, may be altered
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering (can be modified by method)
 	 * @return Returns true if particle path was changed
 	 */
-	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering){
+	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation, long double normal[3], const solid *leaving, const solid *&entering){
 		long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 		bool refl = false;
@@ -140,7 +141,6 @@ protected:
 		long double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 		if (refl){
 			//particle was neither transmitted nor absorbed, so it has to be reflected
-			entering = leaving; // particle does not enter into new material
 			prob = mc->UniformDist(0,1);
 			if (prob >= entering->mat.DiffProb){
 				//************** specular reflection **************
@@ -166,6 +166,13 @@ protected:
 				RotateVector(&y2[3],normal); // rotate coordinate system so that new z-axis lies on normal
 //				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
 			}
+
+			if (mc->UniformDist(0,1) < entering->mat.SpinflipProb){
+				polarisation *= -1;
+				Nspinflip++;
+			}
+			
+			entering = leaving; // particle does not enter into new material
 			return true;
 		}
 

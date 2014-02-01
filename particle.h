@@ -348,7 +348,8 @@ struct TParticle{
 			cout << " Code: " << ID;
 			cout << " t: " << tend;
 			cout << " l: " << lend;
-			cout << " hits: " << Nhit << '\n';
+			cout << " hits: " << Nhit;
+			cout << " spinflips: " << Nspinflip << '\n';
 			cout << "Computation took " << Nstep << " steps, " << inttime << " s for integration and " << refltime << " s for geometry checks\n";
 			cout << "Done!!\n\n";
 //			cout.flush();
@@ -690,7 +691,7 @@ struct TParticle{
 						entering = hitsolid;
 						if (entering->ID > leaving->ID){ // check for reflection only, if priority of entered solid is larger than that of current solid
 							hit = true;
-							resetintegration = OnHit(x1, y1, x2, y2, coll.normal, leaving, entering); // do particle specific things
+							resetintegration = OnHit(x1, y1, x2, y2, pol, coll.normal, leaving, entering); // do particle specific things
 							if (entering != leaving)
 								currentsolids.insert(*entering);
 							entering = hitsolid;
@@ -709,7 +710,7 @@ struct TParticle{
 						if (leaving->ID == currentsolids.rbegin()->ID){ // check for reflection only, if left solids is the solid with highest priority
 							hit = true;
 							entering = &*++currentsolids.rbegin();
-							resetintegration = OnHit(x1, y1, x2, y2, coll.normal, leaving, entering); // do particle specific things
+							resetintegration = OnHit(x1, y1, x2, y2, pol, coll.normal, leaving, entering); // do particle specific things
 							if (entering != leaving)
 								currentsolids.erase(*leaving);
 							else
@@ -725,8 +726,9 @@ struct TParticle{
 						return true;
 					}
 
-					if (hit && hitlog){
-						PrintHit(hitout, x1, y1, y2, prevpol, pol, coll.normal, leaving, entering);
+					if (hit){
+						if (hitlog)
+							PrintHit(hitout, x1, y1, y2, prevpol, pol, coll.normal, leaving, entering);
 						Nhit++;
 					}
 
@@ -795,12 +797,14 @@ struct TParticle{
 		 * @param y1 Start point of line segment
 		 * @param x2 End time of line segment, may be altered
 		 * @param y2 End point of line segment, may be altered
+		 * @param polarisation Polarisation of particle, may be altered
 		 * @param normal Normal vector of hit surface
 		 * @param leaving Solid that the particle is leaving
 		 * @param entering Solid that the particle is entering (can be modified by method)
 		 * @return Returns true if particle path was changed
 		 */
-		virtual bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering) = 0;
+		virtual bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
+							long double normal[3], const solid *leaving, const solid *&entering) = 0;
 
 
 		/**

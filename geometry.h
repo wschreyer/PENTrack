@@ -26,6 +26,7 @@ struct material{
 	long double FermiReal; ///< Real part of Fermi potential
 	long double FermiImag; ///< Imaginary part of Fermi potential
 	long double DiffProb; ///< Diffuse reflection probability
+	long double SpinflipProb; ///< Probability for spin flip on reflection
 };
 
 
@@ -181,7 +182,7 @@ struct TGeometry{
 				if (c == '#') continue; // skip comments
 				else if (!infile.good() || c == '[') break;	// next section found
 				material mat;
-				infile >> mat.name >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb;
+				infile >> mat.name >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb >> mat.SpinflipProb;
 				materials.push_back(mat);
 			}while(infile.good() && getline(infile,line).good());	
 		};

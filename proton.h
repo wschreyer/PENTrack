@@ -69,12 +69,14 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, set to x1 if reflection happened
 	 * @param y2 End point of line segment, returns reflected velocity
+	 * @param polarisation Polarisation of particle, may be altered
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the proton is leaving
 	 * @param entering Solid that the proton is entering (can be modified by method)
 	 * @return Returns true if particle was reflected
 	 */
-	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], long double normal[3], const solid *leaving, const solid *&entering){
+	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
+				long double normal[3], const solid *leaving, const solid *&entering){
 		return false;
 	};
 
