@@ -1,15 +1,14 @@
-/*
- * source.h
- *
- *  Created on: 10.12.2013
- *      Author: wolfgang
+/**
+ * \file
+ * Contains base class TParticleSource and several dervied particle source classes.
+ * Class TSource creates one of these according to user input.
  */
 
 #ifndef SOURCE_H_
 #define SOURCE_H_
 
 #include "geometry.h"
-#include "kdtree.h"
+#include "trianglemesh.h"
 #include "globals.h"
 
 /**
@@ -38,10 +37,10 @@ public:
 	 * @param t Generated start time, usually within [0..ActiveTime]
 	 * @param Ekin Initial kinetic energy. This value is usually not set in RandomSourcePoint, but it might be modified
 	 * @param x Generated initial x coordinate
-	 * @param x Generated initial y coordinate
-	 * @param x Generated initial z coordinate
-	 * @param x Generated initial azimuth angle of velocity vector
-	 * @param x Generated initial polar angle of velocity vector
+	 * @param y Generated initial y coordinate
+	 * @param z Generated initial z coordinate
+	 * @param phi_v Generated initial azimuth angle of velocity vector
+	 * @param theta_v Generated initial polar angle of velocity vector
 	 */
 	virtual	void RandomSourcePoint(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v) = 0;
 };
@@ -56,11 +55,7 @@ class TSurfaceSource: public TParticleSource{
 protected:
 	Doub sourcearea; ///< Net area of source surface
 	Doub Enormal; ///< Boost given to particles starting from this surface
-#ifndef USE_CGAL
-	vector<Triangle*> sourcetris; ///< list of triangles (part of TSource::geometry) inside the source volume (only relevant if source mode is "surface" or "customsurf")
-#else
-	vector<TTriangle*> sourcetris;
-#endif
+	vector<TTriangle> sourcetris; ///< List of triangles making up the source surface
 public:
 	/**
 	 * Constructor.
@@ -77,10 +72,10 @@ public:
 	 * @param t Generated start time, usually within [0..ActiveTime]
 	 * @param Ekin Initial kinetic energy. This value is modified when E_normal was given
 	 * @param x Generated initial x coordinate
-	 * @param x Generated initial y coordinate
-	 * @param x Generated initial z coordinate
-	 * @param x Generated initial azimuth angle of velocity vector, distributed according to Lambert's law with an optional boost when E_normal was given
-	 * @param x Generated initial polar angle of velocity vector, distributed according to Lambert's law with an optional boost when E_normal was given
+	 * @param y Generated initial y coordinate
+	 * @param z Generated initial z coordinate
+	 * @param phi_v Generated initial azimuth angle of velocity vector, distributed according to Lambert's law with an optional boost when E_normal was given
+	 * @param theta_v Generated initial polar angle of velocity vector, distributed according to Lambert's law with an optional boost when E_normal was given
 	 */
 	void RandomSourcePoint(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v){
 		t = mc.UniformDist(0, fActiveTime);
@@ -88,42 +83,23 @@ public:
 		Doub n[3];
 		Doub RandA = mc.UniformDist(0,sourcearea);
 		Doub SumA = 0;
-#ifndef USE_CGAL
-		vector<Triangle*>::iterator i;
+		vector<TTriangle>::iterator i;
 		for (i = sourcetris.begin(); i != sourcetris.end(); i++){
-			n[0] = (*i)->normal[0];
-			n[1] = (*i)->normal[1];
-			n[2] = (*i)->normal[2];
-			SumA += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
-			if (RandA <= SumA) break; // select random triangle, weighted by triangle area
-		}
-#else
-		vector<TTriangle*>::iterator i;
-		for (i = sourcetris.begin(); i != sourcetris.end(); i++){
-			SumA += sqrt((*i)->squared_area());
+			SumA += i->area();
 			if (RandA <= SumA) break;
 		}
-#endif
 		Doub a = mc.UniformDist(0,1); // generate random point on triangle (see Numerical Recipes 3rd ed., p. 1114)
 		Doub b = mc.UniformDist(0,1);
 		if (a+b > 1){
 			a = 1 - a;
 			b = 1 - b;
 		}
-#ifndef USE_CGAL
-		for (int j = 0; j < 3; j++){
-			n[j] /= CurrA; // normalize normal vector
-			p[j] = (*i)->vertex[0][j] + a*((*i)->vertex[1][j] - (*i)->vertex[0][j]) + b*((*i)->vertex[2][j] - (*i)->vertex[0][j]);
-			p[j] += REFLECT_TOLERANCE*n[j]; // add some tolerance to avoid starting inside solid
-		}
-#else
-		K::Vector_3 nv = (*i)->supporting_plane().orthogonal_vector();
-		CPoint v1 = (**i)[0] + a*((**i)[1] - (**i)[0]) + b*((**i)[2] - (**i)[0]) + nv*REFLECT_TOLERANCE;
+		CVector nv = i->normal();
+		CPoint v1 = i->tri[0] + a*(i->tri[1] - i->tri[0]) + b*(i->tri[2] - i->tri[0]) + nv*REFLECT_TOLERANCE;
 		for (int j = 0; j < 3; j++){
 			n[j] = nv[j]/sqrt(nv.squared_length());
 			p[j] = v1[j];
 		}
-#endif
 
 		x = p[0];
 		y = p[1];
@@ -174,10 +150,10 @@ public:
 	 * @param t Generated start time, usually within [0..ActiveTime]
 	 * @param Ekin Initial kinetic energy. This value is modified when E_normal was given
 	 * @param x Generated initial x coordinate
-	 * @param x Generated initial y coordinate
-	 * @param x Generated initial z coordinate
-	 * @param x Generated initial azimuth angle of velocity vector, isotropically distributed
-	 * @param x Generated initial polar angle of velocity vector, isotropically distributed
+	 * @param y Generated initial y coordinate
+	 * @param z Generated initial z coordinate
+	 * @param phi_v Generated initial azimuth angle of velocity vector, isotropically distributed
+	 * @param theta_v Generated initial polar angle of velocity vector, isotropically distributed
 	 */
 	void RandomSourcePoint(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v){
 		t = mc.UniformDist(0, fActiveTime);
@@ -200,20 +176,13 @@ private:
 	/**
 	 * Check if a point is inside the cylindrical coordinate range
 	 */
-	bool InSourceVolume(const float p[3]){
+	bool InSourceVolume(CPoint p){
 		Doub r = sqrt(p[0]*p[0] + p[1]*p[1]);
 		Doub phi = atan2(p[1],p[0]);
 		return (r >= rmin && r <= rmax &&
 				phi >= phimin && phi <= phimax &&
 				p[2] >= zmin && p[2] <= zmax); // check if point is in custom paramter range
 	}
-
-#ifdef USE_CGAL
-	bool InSourceVolume(CPoint p){
-		float pp[3] = {p[0],p[1],p[2]};
-		return InSourceVolume(pp);
-	}
-#endif
 
 public:
 	/**
@@ -233,22 +202,12 @@ public:
 	 */
 	TCylindricalSurfaceSource(Doub ActiveTime, TGeometry &geometry, Doub E_normal, Doub r_min, Doub r_max, Doub phi_min, Doub phi_max, Doub z_min, Doub z_max)
 		: TSurfaceSource(ActiveTime, E_normal), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
-#ifndef USE_CGAL
-		for (vector<Triangle>::iterator i = geometry.kdtree->alltris.begin(); i != geometry.kdtree->alltris.end(); i++){
-			if (InSourceVolume(i->vertex[0]) && InSourceVolume(i->vertex[1]) && InSourceVolume(i->vertex[2])){
-				sourcetris.push_back(&*i);
-				long double *n = i->normal;
-				sourcearea += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+		for (CIterator i = geometry.mesh.triangles.begin(); i != geometry.mesh.triangles.end(); i++){
+			if (InSourceVolume(i->tri[0]) && InSourceVolume(i->tri[1]) && InSourceVolume(i->tri[2])){
+				sourcetris.push_back(*i);
+				sourcearea += i->area();
 			}
 		}
-#else
-		for (CIterator i = geometry.kdtree->triangles.begin(); i != geometry.kdtree->triangles.end(); i++){
-			if (InSourceVolume((*i)[0]) && InSourceVolume((*i)[1]) && InSourceVolume((*i)[2])){
-				sourcetris.push_back(&*i);
-				sourcearea += sqrt(i->squared_area());
-			}
-		}
-#endif
 		printf("Source Area: %LG m^2\n",sourcearea);
 	}
 };
@@ -260,7 +219,7 @@ public:
  */
 class TSTLVolumeSource: public TParticleSource{
 private:
-	KDTree kdtree; ///< internal KDTree storing the STL solid
+	TTriangleMesh kdtree; ///< internal AABB tree storing the STL solid
 public:
 	/**
 	 * Constructor.
@@ -280,24 +239,18 @@ public:
 	 * @param t Generated start time, usually within [0..ActiveTime]
 	 * @param Ekin Initial kinetic energy. Not modified.
 	 * @param x Generated initial x coordinate
-	 * @param x Generated initial y coordinate
-	 * @param x Generated initial z coordinate
-	 * @param x Generated initial azimuth angle of velocity vector, isotropically distributed
-	 * @param x Generated initial polar angle of velocity vector, isotropically distributed
+	 * @param y Generated initial y coordinate
+	 * @param z Generated initial z coordinate
+	 * @param phi_v Generated initial azimuth angle of velocity vector, isotropically distributed
+	 * @param theta_v Generated initial polar angle of velocity vector, isotropically distributed
 	 */
 	void RandomSourcePoint(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v){
 		t = mc.UniformDist(0, fActiveTime);
 		Doub p[3];
 		for(;;){
-#ifndef USE_CGAL
-			p[0] = mc.UniformDist(kdtree.lo[0],kdtree.hi[0]); // random point
-			p[1] = mc.UniformDist(kdtree.lo[1],kdtree.hi[1]); // random point
-			p[2] = mc.UniformDist(kdtree.lo[2],kdtree.hi[2]); // random point
-#else
 			p[0] = mc.UniformDist(kdtree.tree.bbox().xmin(),kdtree.tree.bbox().xmax()); // random point
 			p[1] = mc.UniformDist(kdtree.tree.bbox().ymin(),kdtree.tree.bbox().ymax()); // random point
 			p[2] = mc.UniformDist(kdtree.tree.bbox().zmin(),kdtree.tree.bbox().zmax()); // random point
-#endif
 			if (kdtree.InSolid(p)){
 				mc.IsotropicDist(phi_v, theta_v);
 				x = p[0];
@@ -307,38 +260,38 @@ public:
 			}
 		}
 	}
-	virtual void CalcHmin(TFieldManager *field = NULL){
-
-	}
 };
 
+
+/**
+ * Surface source.
+ *
+ * Starting points are created on a surface of the experiment geometry whose triangles are all inside the given STL solid
+ */
 class TSTLSurfaceSource: public TSurfaceSource{
 public:
+	/**
+	 * Constructor.
+	 *
+	 * Search for all triangles in geometry's mesh which are inside the STL solid given in sourcefile.
+	 *
+	 * @param ActiveTime Time for which the source is active.
+	 * @param geometry Experiment geometry from which the surface is taken.
+	 * @param sourcefile STL solid in which the surface should lie.
+	 * @param E_normal Give particles starting at this source a velocity boost normal to the surface.
+	 */
 	TSTLSurfaceSource(Doub ActiveTime, TGeometry &geometry, string sourcefile, Doub E_normal): TSurfaceSource(ActiveTime, E_normal){
-		KDTree kdtree;
-		kdtree.ReadFile(sourcefile.c_str(),0);
-		kdtree.Init();
+		TTriangleMesh mesh;
+		mesh.ReadFile(sourcefile.c_str(),0);
+		mesh.Init();
 		sourcearea = 0; // add triangles, whose vertices are all in the source volume, to sourcetris list
-#ifndef USE_CGAL
-		for (vector<Triangle>::iterator i = geometry.kdtree->alltris.begin(); i != geometry.kdtree->alltris.end(); i++){
-			if (kdtree.InSolid(i->vertex[0]) && kdtree.InSolid(i->vertex[1]) && kdtree.InSolid(i->vertex[2])){
-				sourcetris.push_back(&*i);
-				long double *n = i->normal;
-				sourcearea += sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+		for (CIterator i = geometry.mesh.triangles.begin(); i != geometry.mesh.triangles.end(); i++){
+			if (mesh.InSolid(i->tri[0]) && mesh.InSolid(i->tri[1]) && mesh.InSolid(i->tri[2])){
+				sourcetris.push_back(*i);
+				sourcearea += i->area();
 			}
 		}
-#else
-		for (CIterator i = geometry.kdtree->triangles.begin(); i != geometry.kdtree->triangles.end(); i++){
-			if (kdtree.InSolid((*i)[0]) && kdtree.InSolid((*i)[1]) && kdtree.InSolid((*i)[2])){
-				sourcetris.push_back(&*i);
-				sourcearea += sqrt(i->squared_area());
-			}
-		}
-#endif
 		printf("Source Area: %LG m^2\n",sourcearea);
-	}
-	virtual void CalcHmin(TFieldManager *field = NULL){
-
 	}
 };
 
@@ -354,7 +307,7 @@ public:
 struct TSource{
 public:
 	string sourcemode; ///< volume/surface/customvol/customsurf
-	TParticleSource *source;
+	TParticleSource *source; ///< TParticleSource contructed according to user chosen sourcemode
 
 	/**
 	 * Constructor, loads [SOURCE] section of configuration file, calculates TSource::Hmin_lfs and TSource::Hmin_hfs
@@ -398,6 +351,7 @@ public:
 			cout << "\nCould not load source """ << sourcemode << """! Did you enter invalid parameters?\n";
 			exit(-1);
 		}
+		cout << '\n';
 	};
 
 

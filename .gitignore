@@ -2,5 +2,6 @@ PENTrack
 nr/*.h
 out/*.out
 doc/
+*.o
 libtricubic/*.o
-muparser_v2_2_3/src/*.o
+

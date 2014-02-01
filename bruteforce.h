@@ -193,7 +193,7 @@ struct TBFIntegrator{
 					// calculate polarisation at end of step BFpol = (I_n*B/|B|) in [-1/2,1/2]
 					long double BFpol = ((*I_n)[0]*B2[0][0] + (*I_n)[1]*B2[1][0] + (*I_n)[2]*B2[2][0])/B2[3][0];
 
-					cout << " BF endtime " << x2 << ", BFflipprop " << 1 - (BFpol + 0.5) << ", intsteps taken " << intsteps << ", Bmin " << BFBminmem << "\n";
+					cout << " BF endtime " << x2 << ", BFflipprop " << 1 - (BFpol + 0.5) << ", intsteps taken " << intsteps << ", Bmin " << BFBminmem << " ";
 
 					BFBminmem = numeric_limits<long double>::infinity(); // reset values when done
 					intsteps = 0;
@@ -220,6 +220,7 @@ struct TBFIntegrator{
 			if (!spinout){
 				ostringstream BFoutfile1;
 				BFoutfile1 << outpath << "/" << setw(12) << setfill('0') << jobnumber << setw(0) << particlename << "spin.out";
+				cout << "Creating " << BFoutfile1.str() << '\n';
 				spinout = new ofstream(BFoutfile1.str().c_str());
 				if(spinout->bad())
 				{

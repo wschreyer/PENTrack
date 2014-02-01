@@ -421,14 +421,8 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 	clock_gettime(CLOCK_REALTIME, &collstart);
 	for (unsigned i = 0; i < count; i++){
     	// random segment start point
-#ifndef USE_CGAL
-        p1[0] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[0] - geom.kdtree->lo[0]) + geom.kdtree->lo[0];
-        p1[1] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[1] - geom.kdtree->lo[1]) + geom.kdtree->lo[1];
-        p1[2] = (((long double)rand())/RAND_MAX) * (geom.kdtree->hi[2] - geom.kdtree->lo[2]) + geom.kdtree->lo[2];
-#else
         for (int j = 0; j < 3; j++)
-        	p1[j] = (long double)rand()/RAND_MAX * (geom.kdtree->tree.bbox().max(j) - geom.kdtree->tree.bbox().min(j)) + geom.kdtree->tree.bbox().min(j);
-#endif
+        	p1[j] = (long double)rand()/RAND_MAX * (geom.mesh.tree.bbox().max(j) - geom.mesh.tree.bbox().min(j)) + geom.mesh.tree.bbox().min(j);
 		// random segment direction
         theta = (long double)rand()/RAND_MAX*pi;
 		phi = (long double)rand()/RAND_MAX*2*pi;
@@ -437,7 +431,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 		p2[1] = p1[1] + raylength*sin(theta)*sin(phi);
 		p2[2] = p1[2] + raylength*cos(theta);
 
-		if (geom.kdtree->Collision(p1,p2,c)){ // check if segment intersected with surfaces
+		if (geom.mesh.Collision(p1,p2,c)){ // check if segment intersected with surfaces
 			collcount++;
 			for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){ // print all intersection points into file
 				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << '\n';

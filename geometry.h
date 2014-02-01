@@ -13,7 +13,7 @@
 #include <limits>
 
 #include "mc.h"
-#include "kdtree.h"
+#include "trianglemesh.h"
 #include "fields.h"
 
 static const int MAX_DICE_ROLL = 42000000; ///< number of tries to find start point
@@ -51,7 +51,7 @@ struct solid{
  */
 struct TGeometry{
 	public:
-		KDTree *kdtree; ///< kd-tree structure containing triangle meshes from STL-files
+		TTriangleMesh mesh; ///< kd-tree structure containing triangle meshes from STL-files
 		vector<solid> solids; ///< solids list
 		solid defaultsolid; ///< "vacuum", this solid's properties are used when the particle is not inside any other solid
 		
@@ -79,10 +79,6 @@ struct TGeometry{
 			}
 		};
 
-		~TGeometry(){
-			if (kdtree) delete kdtree;
-		};
-		
 		/**
 		 * Check if point is inside geometry bounding box.
 		 *
@@ -92,11 +88,7 @@ struct TGeometry{
 		 * @return Returns true if point is inside the bounding box
 		 */
 		bool CheckSegment(const long double y1[3], const long double y2[3]){
-#ifdef USE_CGAL
-			return CGAL::do_intersect(kdtree->tree.bbox(), CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
-#else
-			return kdtree->SegmentInBox(y1,y2);
-#endif
+			return CGAL::do_intersect(mesh.tree.bbox(), CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
 		};
 		
 		/**
@@ -114,7 +106,7 @@ struct TGeometry{
 		 * @return Returns true if line segment collides with a surface
 		 */
 		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], set<TCollision> &colls){
-			if (kdtree->Collision(p1,p2,colls)){ // search in the kdtree for collisions
+			if (mesh.Collision(p1,p2,colls)){ // search in the kdtree for collisions
 				set<TCollision>::iterator it = colls.begin();
 				while (it != colls.end()){ // go through all collisions
 					vector<long double> *times = &solids[(*it).ID].ignoretimes;
@@ -147,11 +139,7 @@ struct TGeometry{
 		 * @param currentsolids Set of solids in which the point is inside
 		 */
 		void GetSolids(const long double t, const long double p[3], std::set<solid> &currentsolids){
-#ifndef USE_CGAL
-			long double p2[3] = {p[0], p[1], kdtree->lo[2] - REFLECT_TOLERANCE};
-#else
-			long double p2[3] = {p[0], p[1], kdtree->tree.bbox().zmin() - REFLECT_TOLERANCE};
-#endif
+			long double p2[3] = {p[0], p[1], mesh.tree.bbox().zmin() - REFLECT_TOLERANCE};
 			set<TCollision> c;
 			currentsolids.clear();
 			currentsolids.insert(defaultsolid);
@@ -198,7 +186,6 @@ struct TGeometry{
 			string line;
 			string STLfile;
 			string matname;
-			kdtree = new KDTree;
 			char name[80];
 			long double ignorestart, ignoreend;
 			do{	// parse STLfile list
@@ -224,7 +211,7 @@ struct TGeometry{
 					if (matname == materials[i].name){
 						model.mat = materials[i];
 						if (model.ID > 1)
-							kdtree->ReadFile(STLfile.c_str(),solids.size(),name);
+							mesh.ReadFile(STLfile.c_str(),solids.size(),name);
 						model.name = name;
 						break;
 					}
@@ -253,7 +240,7 @@ struct TGeometry{
 				else
 					solids.push_back(model);
 			}while(infile.good() && getline(infile,line).good());
-			kdtree->Init();
+			mesh.Init();
 		};
 		
 };

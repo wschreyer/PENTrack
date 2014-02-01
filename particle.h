@@ -370,7 +370,7 @@ struct TParticle{
 			if (!file){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "end.out";
-				cout << "Creating " << filename << '\n';
+				cout << "Creating " << filename.str() << '\n';
 				file = new ofstream(filename.str().c_str());
 				*file <<	"jobnumber particle "
 	                		"tstart xstart ystart zstart "
@@ -410,7 +410,7 @@ struct TParticle{
 			if (!trackfile){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
-				cout << "Creating " << filename << '\n';
+				cout << "Creating " << filename.str() << '\n';
 				trackfile = new ofstream(filename.str().c_str());
 				*trackfile << 	"particle polarisation "
 								"t x y z vx vy vz "
@@ -698,7 +698,8 @@ struct TParticle{
 						}
 					}
 					else if (distnormal > 0){ // particle is leaving solid
-						if (currentsolids.find(*hitsolid) == currentsolids.end()){ // if solid is not in currentsolids list something went wrong
+						if (hitsolid->ignoretimes.empty() // ignore this error for temporary solids
+									&& currentsolids.find(*hitsolid) == currentsolids.end()){ // if solid is not in currentsolids list something went wrong
 							cout << "Particle inside '" << hitsolid->name << "' which it did not enter before! Stopping it!\n";
 							x2 = x1;
 							for (int i = 0; i < 6; i++)

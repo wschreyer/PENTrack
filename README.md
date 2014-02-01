@@ -33,7 +33,7 @@ Numerical Recipes forces us to put almost all code into header files, which make
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
 Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the CGAL_INCLUDE, CGAL_LIB and CGAL_SHAREDLIB paths in the Makefile.
 
-Only v4.1-v4.2 have been tested, v4.3 is not supported yet.
+CGAL v4.1 - v4.3 have been tested.
 
 ### muparser
 
