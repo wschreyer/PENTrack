@@ -316,6 +316,7 @@ struct TParticle{
 					x1 = x2;
 					for (int i = 0; i < 6; i++)
 						y1[i] = y2[i];
+					polend = polarisation;
 				}		
 				
 				PrintPercent(max((x - tstart)/tau, max((x - tstart)/(tmax - tstart), lend/maxtraj)), perc);
