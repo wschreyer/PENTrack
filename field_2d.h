@@ -461,8 +461,8 @@ class TabField: public TField{
 		void BField(long double x, long double y, long double z, long double t, long double B[4][4]){
 			long double r = sqrt(x*x+y*y);
 			long double Bscale = BFieldScale(t);
-			int indr = (int)((r - r_mi)/rdist);
-			int indz = (int)((z - z_mi)/zdist);
+			int indr = floor((r - r_mi)/rdist);
+			int indz = floor((z - z_mi)/zdist);
 			if (Bscale != 0 && indr >= 0 && indr < m - 1 && indz >= 0 && indz < n - 1){
 				// bicubic interpolation
 				long double rl = r_mi + indr*rdist;
@@ -513,10 +513,9 @@ class TabField: public TField{
 			long double dummy, Vloc, dVdrj[3];
 			if (Vc.nrows() > 0){ // prefer E-field from potential over pure E-field interpolation
 				long double r = sqrt(x*x+y*y);
-				int indr = (int)((r - r_mi)/rdist);
-				int indz = (int)((z - z_mi)/zdist);
-				if (indr > 0 && indr < m - 1
-				 && indz > 0 && indz < n - 1){
+				int indr = floor((r - r_mi)/rdist);
+				int indz = floor((z - z_mi)/zdist);
+				if (indr >= 0 && indr < m - 1 && indz >= 0 && indz < n - 1){
 					// bicubic interpolation
 					long double rl = r_mi + indr*rdist;
 					long double zl = z_mi + indz*zdist;
@@ -530,10 +529,10 @@ class TabField: public TField{
 			}
 			else if (Erc.nrows() > 0 || Ephic.nrows() > 0 || Ezc.nrows() > 0){
 				long double r = sqrt(x*x+y*y);
-				if ((r - r_mi)/rdist > 0 && (r - r_mi - (m-1)*rdist)/rdist < 0 && (z - z_mi)/zdist > 0 && (z - z_mi - (n-1)*zdist)/zdist < 0){
+				int indr = floor((r - r_mi)/rdist);
+				int indz = floor((z - z_mi)/zdist);
+				if (indr >= 0 && indr < m - 1 && indz >= 0 && indz < n - 1){
 					// bicubic interpolation
-					int indr = (int)((r - r_mi)/rdist);
-					int indz = (int)((z - z_mi)/zdist);
 					long double rl = r_mi + indr*rdist;
 					long double zl = z_mi + indz*zdist;
 					long double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0;
