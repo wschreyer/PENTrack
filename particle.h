@@ -12,7 +12,8 @@
 #include <algorithm>
 #include <sys/time.h>
 
-#define MAX_SAMPLE_DIST 0.01 ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
+static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
+static const bool IGNORE_MISSEDHITS_IN_TEMPSOLIDS = false; ///< set this to true, if you want to ignore errors for particles that happen to be inside temporary solids when they appear. Might mask other faults in your geometry, so use with caution
 
 #include "globals.h"
 #include "fields.h"
@@ -413,7 +414,7 @@ struct TParticle{
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
 				cout << "Creating " << filename.str() << '\n';
 				trackfile = new ofstream(filename.str().c_str());
-				*trackfile << 	"particle polarisation "
+				*trackfile << 	"jobnumber particle polarisation "
 								"t x y z vx vy vz "
 								"H E Bx dBxdx dBxdy dBxdz By dBydx "
 								"dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n";
@@ -431,7 +432,7 @@ struct TParticle{
 			long double Ek = Ekin(&y[3]);
 			long double H = Ek + Epot(x, y, polarisation, field);
 
-			*trackfile 	<< particlenumber << " " << polarisation << " "
+			*trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
 						<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
 						<< H << " " << Ek << " ";
 			for (int i = 0; i < 4; i++)
@@ -699,8 +700,8 @@ struct TParticle{
 						}
 					}
 					else if (distnormal > 0){ // particle is leaving solid
-						if (hitsolid->ignoretimes.empty() // ignore this error for temporary solids
-									&& currentsolids.find(*hitsolid) == currentsolids.end()){ // if solid is not in currentsolids list something went wrong
+						if (currentsolids.find(*hitsolid) == currentsolids.end() // if solid is not in currentsolids list something went wrong
+							&& (hitsolid->ignoretimes.empty() || (!hitsolid->ignoretimes.empty() && !IGNORE_MISSEDHITS_IN_TEMPSOLIDS))){ // ignore this error for temporary solids
 							cout << "Particle inside '" << hitsolid->name << "' which it did not enter before! Stopping it!\n";
 							x2 = x1;
 							for (int i = 0; i < 6; i++)
