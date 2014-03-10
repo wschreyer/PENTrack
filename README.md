@@ -98,3 +98,103 @@ Physics
 
 All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and the Lambert model for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
 
+Output
+-------
+
+Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be completely disabled for each particle type individually by adding corresponding variables in “particle.in”. All output files are tables with space separated columns; the first line contains the column name.
+
+Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
+
+### Endlog
+
+The endlog keeps track of the starting and end parameters of the particles simulated. In the endlog, you get the following parameters:
+
+- jobnumber: corresponds to job number of the PENTrack run (command line parameter of PENTrack). Only used when running multiple instances of PENTrack simultaneously.
+- particle: number which corresponds to particle being simulated 
+- tstart: time at which particle is created in the simulation [s]
+- xstart, ystart, zstart: coordinate from which the particle starts [m]
+- vxstart, vystart,vzstart: velocity with which the particle starts [m/s]
+- polstart: initial polarization of the particle (-1,1)
+- Hstart: initial total energy of particle [eV]
+- Estart: initial kinetic energy of the particle [eV]
+- tend: time at which particle simulation is stopped [s]
+- xend, yend, zend: coordinate at which the particle ends [m]
+- vxend, vyend, vzend: velocity with which the particle ends [m/s]
+- polend: final polarization of the particle (-1,1)
+- Hend: final total energy of particle [eV]
+- Eend: final kinetic energy of the particle [eV]
+- stopID: code which identifies how/in what geometry the particle ended 
+  - 0: not catagorized
+  - -1: did not finish (reached max. simulation time)
+  - -2: hit outer poundaries
+  - -3: produced numerical error
+  - -4: decayed
+  - -5: found no initial position
+  - 1: absorbed in default medium
+  - 2+: absorbed in geometry associated with number
+- NSpinflip: number of spin flips that the particle underwent during simulation
+- spinflipprob: probability that the particle has undergone a spinflip, calculated by bruteforce integration of the Bloch equation
+- ComputingTime: Time that PENTrack required to compute and track the particle [s]
+- Nhit: number of times particle hit a geometry surface (e.g. wall of guidetube)
+- Nstep: number of steps that it took to simulate particle
+- trajlength: the total length of the particle trajectory from creation to finish [m]
+- Hmax: the maximum total energy that the particle had during trajectory [eV]
+
+### Tracklog
+
+The tracklog contains the complete trajectory of the particle, with following parameters:
+
+- jobnumber: corresponds to job number of the PENTrack run (command line parameter of PENTrack). Only used when running multiple instances of PENTrack simultaneously.
+- particle: number which corresponds to particle being simulated 
+- polarization: the polarization of the particle (-1,1)
+- t: time [s]
+- x,y,z coordinates [m]
+- vx,vy,vz: velocity [m/s]
+- H: total energy [eV]
+- E: kinetic energy [eV]
+- Bx: x-component of Magnetic Field at coordinates [T]
+- dBxdx, dBxdy, dBxdz: gradient of x-component of Magnetic field at coordinates [T/m]
+- By : y-component of magnetic field at coordinates[T]
+- dBydx, dBydy, dBydz : gradient of y-component of Magnetic field at coordinates [T/m]
+- Bz: y-component of magnetic field at coordinates[T]
+- dBzdx, dBzdy, dBzdz: gradient of z-component of Magnetic field at coordinates [T/m]
+- Ex, Ey, Ez: X, Y, and Z component of electric field at coordinates [V/m]
+- V: electric potential at coordinates [V]
+
+### Hitlog
+
+This log contains all the points at which particle hits a surface of the experiment geometry. This includes both reflections and transmissions.
+
+In the hitlog, you get the following parameters:
+
+- jobnumber: number which corresponds to job number of the PENTrack run (command line parameter of PENTrack). Only used when running multiple instances of PENTrack simultaneously.
+- particle: number which corresponds to particle being simulated
+- t: time at which particle hit the surface [s]
+- x, y, z: coordinate of the hit [m]
+- v1x, v1y,v1z: velocity of the particle before it interacts with the new geometry/surface [m/s]
+- pol1: polarization of particle before it interacts with the new geometry/surface (-1,1)
+- v2x, v2y,v2z: velocity of the particle after it interacted with the new geometry/surface [m/s]
+- pol2: polarization of particle after it interacted with the new geometry/surface (-1,1)
+- nx,ny,nz: normal to the surface of the geometry that the particle hits
+- solid1: ID number of the geometry that the particle starts in
+- solid2: ID number of the geometry that the particle hits
+
+### Snapshotlog
+
+Switching on snapshotlog in "particle.in" will output the particle parameters at additional “stop times” (also defined in "particle.in") in the endlog. The resulting file will have multiple rows with the same particle number but different end times. The last end time refers to the actual end of the particle simulation whereas the others are simply output at the snapshot times listed in “particle.in” and can be selected by their stopID equal to 0. 
+
+### Spinlog
+
+If bruteforce integration of particle spin precession is active, it will be logged into the spinlog. In the spinlog, you get the following parameters:
+
+- t: time [s]
+- Babs: absolute magnetic field [T]
+- Polar: projection of Bloch spin vector onto magnetic field direction vector (Bloch vector has dimensionless length 0.5, so this quantity is also dimensionless)
+- logPolar: logarithm of above value [dimensionless]
+- Ix, Iy, Iz: x, y and z components of the Bloch vector (times 2) [dimensionless]
+- Bx, By, Bz: x, y and z components of magnetic field direction vector (B[i]/Babs) [dimensionless]
+
+### Writing Output files to ROOT readable files
+
+merge_all.c: A [ROOT](http://root.cern.ch) script that writes all out-files (or those, whose filename matches some pattern) into a single ROOT file containing trees for each log- and particle-type.
+
