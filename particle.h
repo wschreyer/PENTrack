@@ -30,6 +30,7 @@ static const bool IGNORE_MISSEDHITS_IN_TEMPSOLIDS = false; ///< set this to true
  */
 struct TOutput{
 	ofstream *endout; ///< endlog file stream
+	ofstream *snapshotout; ///< snapshot file stream
 	ofstream *trackout; ///< tracklog file stream
 	ofstream *hitout; ///< hitlog file stream
 	ofstream *spinout; ///< spinlog file stream
@@ -37,7 +38,7 @@ struct TOutput{
 	/**
 	 * Constructor: initializes empty streams
 	 */
-	TOutput(): endout(NULL), trackout(NULL), hitout(NULL), spinout(NULL) { };
+	TOutput(): endout(NULL), snapshotout(NULL), trackout(NULL), hitout(NULL), spinout(NULL) { };
 
 	/**
 	 * Destructor, close open streams.
@@ -46,6 +47,10 @@ struct TOutput{
 		if (endout){
 			endout->close();
 			delete endout;
+		}
+		if (snapshotout){
+			snapshotout->close();
+			delete snapshotout;
 		}
 		if (trackout){
 			trackout->close();
@@ -299,7 +304,7 @@ struct TParticle{
 								ysnap[i] = stepper->dense_out(i, nextsnapshot, stepper->hdid);
 							cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
-							Print(output.endout, nextsnapshot, ysnap, polarisation);
+							Print(output.snapshotout, nextsnapshot, ysnap, polarisation, "snapshot.out");
 							snapshots >> nextsnapshot;
 						}
 					}
@@ -357,124 +362,6 @@ struct TParticle{
 //			cout.flush();
 		};
 	
-
-		/**
-		 * Print start and current values to a stream.
-		 *
-		 * This is a virtual function and can be overwritten by derived particle classes.
-		 *
-		 * @param file stream to print into
-		 * @param x Current time
-		 * @param y Current state vector
-		 * @param polarisation Current polarisation
-		 */
-		virtual void Print(ofstream *&file, long double x, long double y[6], int polarisation){
-			if (!file){
-				ostringstream filename;
-				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "end.out";
-				cout << "Creating " << filename.str() << '\n';
-				file = new ofstream(filename.str().c_str());
-				*file <<	"jobnumber particle "
-	                		"tstart xstart ystart zstart "
-	                		"vxstart vystart vzstart "
-	                		"polstart Hstart Estart "
-	                		"tend xend yend zend "
-	                		"vxend vyend vzend "
-	                		"polend Hend Eend stopID Nspinflip spinflipprob "
-	                		"ComputingTime Nhit Nstep trajlength Hmax\n";
-				file->precision(10);
-			}
-			cout << "Printing status\n";
-			long double E = Ekin(&y[3]);
-			*file	<<	jobnumber << " " << particlenumber << " "
-					<<	tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
-					<<	ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
-					<< polstart << " " << Hstart() << " " << Estart() << " "
-					<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
-					<< y[3] << " " << y[4] << " " << y[5] << " "
-					<< polarisation << " " << E + Epot(x, y, polarisation, field) << " " << E << " " << ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-					<< inttime << " " << Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
-		};
-
-
-
-		/**
-		 * Print current track point into stream to allow visualization of the particle's trajectory.
-		 *
-		 * This is a virtual function and can be overwritten by derived particle classes.
-		 *
-		 * @param trackfile Stream to print into
-		 * @param x Current time
-		 * @param y Current state vector
-		 * @param polarisation Current polarisation
-		 */
-		virtual void PrintTrack(ofstream *&trackfile, long double x, long double y[6], int polarisation){
-			if (!trackfile){
-				ostringstream filename;
-				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
-				cout << "Creating " << filename.str() << '\n';
-				trackfile = new ofstream(filename.str().c_str());
-				*trackfile << 	"jobnumber particle polarisation "
-								"t x y z vx vy vz "
-								"H E Bx dBxdx dBxdy dBxdz By dBydx "
-								"dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n";
-				trackfile->precision(10);
-			}
-
-			cout << "-";
-			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-			long double E[3] = {0,0,0};
-			long double V = 0;
-			if (field){
-				field->BField(y[0],y[1],y[2],x,B);
-				field->EField(y[0],y[1],y[2],x,V,E);
-			}
-			long double Ek = Ekin(&y[3]);
-			long double H = Ek + Epot(x, y, polarisation, field);
-
-			*trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
-						<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
-						<< H << " " << Ek << " ";
-			for (int i = 0; i < 4; i++)
-				for (int j = 0; j < 4; j++)
-					*trackfile << B[i][j] << " ";
-			*trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
-		};
-
-		/**
-		 * Print material boundary hits into stream.
-		 *
-		 * This is a virtual function and can be overwritten by derived particle classes.
-		 *
-		 * @param hitfile stream to print into
-		 * @param x Time of material hit
-		 * @param y1 State vector before material hit
-		 * @param y2 State vector after material hit
-		 * @param pol1 Polarisation before material hit
-		 * @param pol2 Polarisation after material hit
-		 * @param normal Normal vector of hit surface
-		 * @param leaving Material which is left at this boundary
-		 * @param entering Material which is entered at this boundary
-		 */
-		virtual void PrintHit(ofstream *&hitfile, long double x, long double *y1, long double *y2, int pol1, int pol2, long double *normal, const solid *leaving, const solid *entering){
-			if (!hitfile){
-				ostringstream filename;
-				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
-				cout << "Creating " << filename.str() << '\n';
-				hitfile = new ofstream(filename.str().c_str());
-				*hitfile << "jobnumber particle "
-							"t x y z v1x v1y v1z pol1 "
-							"v2x v2y v2z pol2 "
-							"nx ny nz solid1 solid2\n";
-				hitfile->precision(10);
-			}
-
-			cout << ":";
-			*hitfile << jobnumber << " " << particlenumber << " "
-					<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << pol1 << " "
-					<< y2[3] << " " << y2[4] << " " << y2[5] << " " << pol2 << " "
-					<< normal[0] << " " << normal[1] << " " << normal[2] << " " << leaving->ID << " " << entering->ID << '\n';
-		}
 
 	protected:
 		std::set<solid> currentsolids; ///< solids in which particle is currently inside
@@ -830,6 +717,127 @@ struct TParticle{
 		 * Virtual routine which is called when particles reaches its lifetime, has to be implemented for each derived particle.
 		 */
 		virtual void Decay() = 0;
+
+
+
+		/**
+		 * Print start and current values to a stream.
+		 *
+		 * This is a virtual function and can be overwritten by derived particle classes.
+		 *
+		 * @param file stream to print into
+		 * @param x Current time
+		 * @param y Current state vector
+		 * @param polarisation Current polarisation
+		 * @param filesuffix Optional suffix added to the file name (default: "end.out")
+		 */
+		virtual void Print(ofstream *&file, long double x, long double y[6], int polarisation, string filesuffix = "end.out"){
+			if (!file){
+				ostringstream filename;
+				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << filesuffix;
+				cout << "Creating " << filename.str() << '\n';
+				file = new ofstream(filename.str().c_str());
+				*file <<	"jobnumber particle "
+	                		"tstart xstart ystart zstart "
+	                		"vxstart vystart vzstart "
+	                		"polstart Hstart Estart "
+	                		"tend xend yend zend "
+	                		"vxend vyend vzend "
+	                		"polend Hend Eend stopID Nspinflip spinflipprob "
+	                		"ComputingTime Nhit Nstep trajlength Hmax\n";
+				file->precision(10);
+			}
+			cout << "Printing status\n";
+			long double E = Ekin(&y[3]);
+			*file	<<	jobnumber << " " << particlenumber << " "
+					<<	tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
+					<<	ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
+					<< polstart << " " << Hstart() << " " << Estart() << " "
+					<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
+					<< y[3] << " " << y[4] << " " << y[5] << " "
+					<< polarisation << " " << E + Epot(x, y, polarisation, field) << " " << E << " " << ID << " " << Nspinflip << " " << 1 - noflipprob << " "
+					<< inttime << " " << Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
+		};
+
+
+		/**
+		 * Print current track point into stream to allow visualization of the particle's trajectory.
+		 *
+		 * This is a virtual function and can be overwritten by derived particle classes.
+		 *
+		 * @param trackfile Stream to print into
+		 * @param x Current time
+		 * @param y Current state vector
+		 * @param polarisation Current polarisation
+		 */
+		virtual void PrintTrack(ofstream *&trackfile, long double x, long double y[6], int polarisation){
+			if (!trackfile){
+				ostringstream filename;
+				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
+				cout << "Creating " << filename.str() << '\n';
+				trackfile = new ofstream(filename.str().c_str());
+				*trackfile << 	"jobnumber particle polarisation "
+								"t x y z vx vy vz "
+								"H E Bx dBxdx dBxdy dBxdz By dBydx "
+								"dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n";
+				trackfile->precision(10);
+			}
+
+			cout << "-";
+			long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+			long double E[3] = {0,0,0};
+			long double V = 0;
+			if (field){
+				field->BField(y[0],y[1],y[2],x,B);
+				field->EField(y[0],y[1],y[2],x,V,E);
+			}
+			long double Ek = Ekin(&y[3]);
+			long double H = Ek + Epot(x, y, polarisation, field);
+
+			*trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
+						<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
+						<< H << " " << Ek << " ";
+			for (int i = 0; i < 4; i++)
+				for (int j = 0; j < 4; j++)
+					*trackfile << B[i][j] << " ";
+			*trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
+		};
+
+
+		/**
+		 * Print material boundary hits into stream.
+		 *
+		 * This is a virtual function and can be overwritten by derived particle classes.
+		 *
+		 * @param hitfile stream to print into
+		 * @param x Time of material hit
+		 * @param y1 State vector before material hit
+		 * @param y2 State vector after material hit
+		 * @param pol1 Polarisation before material hit
+		 * @param pol2 Polarisation after material hit
+		 * @param normal Normal vector of hit surface
+		 * @param leaving Material which is left at this boundary
+		 * @param entering Material which is entered at this boundary
+		 */
+		virtual void PrintHit(ofstream *&hitfile, long double x, long double *y1, long double *y2, int pol1, int pol2, long double *normal, const solid *leaving, const solid *entering){
+			if (!hitfile){
+				ostringstream filename;
+				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
+				cout << "Creating " << filename.str() << '\n';
+				hitfile = new ofstream(filename.str().c_str());
+				*hitfile << "jobnumber particle "
+							"t x y z v1x v1y v1z pol1 "
+							"v2x v2y v2z pol2 "
+							"nx ny nz solid1 solid2\n";
+				hitfile->precision(10);
+			}
+
+			cout << ":";
+			*hitfile << jobnumber << " " << particlenumber << " "
+					<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << pol1 << " "
+					<< y2[3] << " " << y2[4] << " " << y2[5] << " " << pol2 << " "
+					<< normal[0] << " " << normal[1] << " " << normal[2] << " " << leaving->ID << " " << entering->ID << '\n';
+		}
 
 
 		/**

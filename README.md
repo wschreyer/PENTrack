@@ -124,14 +124,14 @@ The endlog keeps track of the starting and end parameters of the particles simul
 - Hend: final total energy of particle [eV]
 - Eend: final kinetic energy of the particle [eV]
 - stopID: code which identifies how/in what geometry the particle ended 
-  - 0: not catagorized
+  - 0: not categorized
   - -1: did not finish (reached max. simulation time)
   - -2: hit outer poundaries
   - -3: produced numerical error
   - -4: decayed
   - -5: found no initial position
   - 1: absorbed in default medium
-  - 2+: absorbed in geometry associated with number
+  - 2+: absorbed in geometry associated with number (as defined in geometry.in)
 - NSpinflip: number of spin flips that the particle underwent during simulation
 - spinflipprob: probability that the particle has undergone a spinflip, calculated by bruteforce integration of the Bloch equation
 - ComputingTime: Time that PENTrack required to compute and track the particle [s]
@@ -139,6 +139,10 @@ The endlog keeps track of the starting and end parameters of the particles simul
 - Nstep: number of steps that it took to simulate particle
 - trajlength: the total length of the particle trajectory from creation to finish [m]
 - Hmax: the maximum total energy that the particle had during trajectory [eV]
+
+### Snapshotlog
+
+Switching on snapshotlog in "particle.in" will output the particle parameters at additional “snapshot times” (also defined in "particle.in") in the snapshotlog. It contains the same data fields as the endlog.
 
 ### Tracklog
 
@@ -178,10 +182,6 @@ In the hitlog, you get the following parameters:
 - nx,ny,nz: normal to the surface of the geometry that the particle hits
 - solid1: ID number of the geometry that the particle starts in
 - solid2: ID number of the geometry that the particle hits
-
-### Snapshotlog
-
-Switching on snapshotlog in "particle.in" will output the particle parameters at additional “stop times” (also defined in "particle.in") in the endlog. The resulting file will have multiple rows with the same particle number but different end times. The last end time refers to the actual end of the particle simulation whereas the others are simply output at the snapshot times listed in “particle.in” and can be selected by their stopID equal to 0. 
 
 ### Spinlog
 
