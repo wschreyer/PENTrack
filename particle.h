@@ -13,6 +13,7 @@
 #include <sys/time.h>
 
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
+static const double RELATIVISTIC_THRESHOLD = 0.01; ///< threshold (v/c) above which kinetic energy is calculated relativisticly
 static const bool IGNORE_MISSEDHITS_IN_TEMPSOLIDS = false; ///< set this to true, if you want to ignore errors for particles that happen to be inside temporary solids when they appear. Might mask other faults in your geometry, so use with caution
 
 #include "globals.h"
@@ -108,10 +109,14 @@ struct TParticle{
 		int polend;
 
 		/// total start energy
-		long double Hstart(){ return Ekin(&ystart[3]) + Epot(tstart, ystart, polstart, field); };
+		long double Hstart(){
+			set<solid> solids;
+			geom->GetSolids(tstart, ystart, solids);
+			return Ekin(&ystart[3]) + Epot(tstart, ystart, polstart, field, solids);
+		};
 
 		/// total end energy
-		long double Hend(){ return Ekin(&yend[3]) + Epot(tend, yend, polend, field); };
+		long double Hend(){ return Ekin(&yend[3]) + Epot(tend, yend, polend, field, currentsolids); };
 
 		/// max total energy
 		long double Hmax;
@@ -294,7 +299,7 @@ struct TParticle{
 					refltime += refl_end.tv_sec - refl_start.tv_sec + (long double)(refl_end.tv_nsec - refl_start.tv_nsec)/1e9;
 				
 					lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
-					Hmax = max(Ekin(&y2[3]) + Epot(x, y2, polarisation, field), Hmax);
+					Hmax = max(Ekin(&y2[3]) + Epot(x, y2, polarisation, field, currentsolids), Hmax);
 
 					// take snapshots at certain times
 					if (snapshotlog && snapshots.good()){
@@ -755,7 +760,7 @@ struct TParticle{
 					<< polstart << " " << Hstart() << " " << Estart() << " "
 					<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 					<< y[3] << " " << y[4] << " " << y[5] << " "
-					<< polarisation << " " << E + Epot(x, y, polarisation, field) << " " << E << " " << ID << " " << Nspinflip << " " << 1 - noflipprob << " "
+					<< polarisation << " " << E + Epot(x, y, polarisation, field, currentsolids) << " " << E << " " << ID << " " << Nspinflip << " " << 1 - noflipprob << " "
 					<< inttime << " " << Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
 		};
 
@@ -792,7 +797,7 @@ struct TParticle{
 				field->EField(y[0],y[1],y[2],x,V,E);
 			}
 			long double Ek = Ekin(&y[3]);
-			long double H = Ek + Epot(x, y, polarisation, field);
+			long double H = Ek + Epot(x, y, polarisation, field, currentsolids);
 
 			*trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
 						<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
@@ -864,10 +869,11 @@ struct TParticle{
 		 * @param y Coordinate vector
 		 * @param polarisation Particle polarisation
 		 * @param field Pointer to TFieldManager structure for electric and magnetic potential
+		 * @param solids List of solids for optional material potential
 		 *
 		 * @return Returns potential energy [eV]
 		 */
-		virtual long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field = NULL){
+		virtual long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field, set<solid> &solids){
 			long double result = 0;
 			if ((q != 0 || mu != 0) && field){
 				long double B[4][4], E[3], V;

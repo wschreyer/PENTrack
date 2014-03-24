@@ -16,6 +16,8 @@ static const char* NAME_NEUTRON = "neutron";
 #include "proton.h"
 #include "electron.h"
 
+static const int MAX_DICE_ROLL = 42000000; ///< number of tries to find neutron start point
+
 /**
  * Neutron particle class.
  *
@@ -51,23 +53,21 @@ public:
 		long double p[3];
 
 		cout << "Dice starting position for E_neutron = " << H*1e9 << " neV ";
-		fflush(stdout);
 		long double phi, theta;
 		for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
 			if (nroll % 1000000 == 0){
 				printf("."); // print progress
-				fflush(stdout);
 			}
 			src.RandomPointInSourceVolume(mcgen, t, H, p[0], p[1], p[2], phi, theta);
 			ageometry.GetSolids(t, p, currentsolids);
 			if (src.sourcemode == "volume" || src.sourcemode == "customvol"){ // dice H for volume source
-				E = H - Epot(t, p, polarisation, afield);
+				E = H - Epot(t, p, polarisation, afield, currentsolids);
 				if (mcgen.UniformDist(0,1) > sqrt(E/H))
 					E = -1; // correct weighting of phase space (see Golub/Richardson/Lamoreaux p. 82)
 			}
 			else{ // dice E for surface source
 				E = H;
-				H = E + Epot(t, p, polarisation, afield);
+				H = E + Epot(t, p, polarisation, afield, currentsolids);
 			}
 			if (E >= 0){
 				printf(" Found! %i dice(s) rolled\n", nroll+1);
@@ -130,7 +130,11 @@ protected:
 			long double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
 //			cout << " ReflProb = " << reflprob << '\n';
 			if (prob > reflprob){ // -> absorption on reflection
-				ID = entering->ID; //
+				ID = entering->ID; // set ID to absorbing solid
+				x2 = x1; // set stopping point to track point right before collision
+				for (int i = 0; i < 6; i++)
+					y2[i] = y1[i];
+				entering = leaving; // reset entering solid, so it is not put into currentsolids list
 				return true;
 			}
 			else // no absorption -> reflection
@@ -281,11 +285,12 @@ protected:
 	 * @param y Position vector
 	 * @param polarisation Particle polarisation
 	 * @param field TFieldManager for electromagnetic potential
+	 * @param solids List of solids for optional material potential
 	 *
 	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
-	long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field){
-		return TParticle::Epot(t, y, polarisation, field) + currentsolids.rbegin()->mat.FermiReal*1e-9;
+	long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field, set<solid> &solids){
+		return TParticle::Epot(t, y, polarisation, field, solids) + solids.rbegin()->mat.FermiReal*1e-9;
 	}
 
 
