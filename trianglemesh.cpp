@@ -21,7 +21,6 @@ void TTriangleMesh::ReadFile(const char *filename, const unsigned ID, char name[
         if (name) memcpy(name,header,80);
         f.read((char*)&filefacecount,4);
         printf("Reading '%.80s' from '%s' containing %u triangles ... ",header,filename,filefacecount);    // print header
-		fflush(stdout);
 
         for (i = 0; i < filefacecount && !f.eof(); i++){
             f.seekg(3*4,std::fstream::cur);  // skip normal in STL-file (will be calculated from vertices)

@@ -2,7 +2,6 @@
 #define GLOBALS_H_
 
 #include <string>
-#include <cstdio>
 #include <map>
 
 #define ID_UNKNOWN 0 ///< standard kennz flag for particles
@@ -18,8 +17,6 @@
 #define BF_CUT 4 ///< set particletype in configuration to this value to print out a planar slice through electric/magnetic fields
 #define ELECTRON 6 ///< set particletype in configuration to this value to simulate only electrons
 #define GEOMETRY 7 ///< set particletype in configuration to this value to print out a sampling of the geometry
-
-#define RELATIVISTIC_THRESHOLD 0.01 ///< threshold (v/c) above which kinetic energy is calculated relativisticly
 
 // physical constants
 static const long double pi = 3.1415926535897932384626L; ///< Pi
@@ -39,116 +36,76 @@ static const long double lengthconv = 0.01; ///< length conversion factor cgs ->
 static const long double Bconv = 1e-4; ///< magnetic field conversion factor cgs -> SI [G -> T]
 static const long double Econv = 1e2; ///< electric field conversion factor cgs -> SI [V/cm -> V/m]
 
-long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
-string inpath = "."; ///< path to configuration files, read from command line paramters
-string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
+static long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
+static std::string inpath = "."; ///< path to configuration files, read from command line paramters
+static std::string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
 
-// print progress in percent
-void PrintPercent(double percentage, int &lastprint){
-	// write status to console
-	// one point per 2 percent of endtime
-	while (lastprint < percentage*100){
-		lastprint += 2;
-		if (lastprint % 10 == 0)
-			cout << lastprint << "%";
-		else
-			cout << ".";
-		cout.flush();
-	}
-}
+/**
+ * Print progress bar.
+ *
+ * Prints a point every 2% and a number every 10%
+ *
+ * @param percentage Progress of current action (0..1)
+ * @param lastprint Put in and return last printed percentage
+ */
+void PrintPercent(double percentage, int &lastprint);
 
-// rotate vector into new coordinate sys whose z-axis lies on NORMALIZED vector n (active transformation)
-void RotateVector(long double v[3], long double n[3])
-{
-	long double cosalpha = n[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
-	if (sinalpha > 1e-30){ // when normal not parallel to z-axis rotate new velocity into the coordinate system where the normal is the z-axis
-		long double a[2] = {-n[1]/sinalpha, n[0]/sinalpha};	// rotation axis (z cross n), a[2] = 0
-		long double vtemp[3] = {v[0],v[1],v[2]};
-		// rotate velocity vector
-		v[0] = (cosalpha + a[0]*a[0]*(1 - cosalpha))*	vtemp[0] +  a[0]*a[1]*(1 - cosalpha)*				vtemp[1] + a[1]*sinalpha*	vtemp[2];
-		v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
-		v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
-	}
-	else if (cosalpha < 0){
-		v[0] = -v[0];
-		v[1] = -v[1];
-		v[2] = -v[2];
-	}
-}
+/**
+ * Rotate a vector.
+ *
+ * Rotate vector into new coordinate system whose z-axis lies on NORMALIZED vector n (active transformation)
+ */
+void RotateVector(long double v[3], long double n[3]);
 
-//======== Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta ======================================================
-void BOOST(long double beta[3], long double p[4]){
-   //Boost this Lorentz vector (copy&paste from ROOT)
-   long double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
-   long double gamma = 1.0 / sqrt(1.0 - b2);
-   long double bp = beta[0]*p[1] + beta[1]*p[2] + beta[2]*p[3];
-   long double gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
+/**
+ * Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta.
+ *
+ * Copy & paste from ROOT
+ *
+ * @param beta Vector v/c of moving reference frame
+ * @param p Four-vector
+ */
+void BOOST(long double beta[3], long double p[4]);
 
-   p[1] = (p[1] + gamma2*bp*beta[0] + gamma*beta[0]*p[0]);
-   p[2] = (p[2] + gamma2*bp*beta[1] + gamma*beta[1]*p[0]);
-   p[3] = (p[3] + gamma2*bp*beta[2] + gamma*beta[2]*p[0]);
-   p[0] = (gamma*(p[0] + bp));
-}
-//======== end of BOOST ====================================================================================================
-
-// energy distribution of protons (0 < 'Energie' < 750 eV)
-// proton recoil spectrum from "Diplomarbeit M. Simson"
-// result always < 1!
-double ProtonBetaSpectrum(double E){
-	double DeltaM = m_n - m_p;
-	double Xi = m_e / DeltaM;
-	double Sigma = 1 - 2*E*m_n / pow(DeltaM, 2) / pow(c_0, 2);
-	double g1 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma) - 				4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
-	double g2 = pow(((Sigma - pow(Xi, 2)) / Sigma), 2) * sqrt(1 - Sigma) * (4*(1 + pow(Xi, 2) / Sigma - 2 * Sigma) - 	4/3*((Sigma - pow(Xi, 2)) / Sigma * (1 - Sigma)));
-	double littlea = -0.1017;
-	return 0.5*(g1 + littlea * g2);
-}
+/**
+ * Energy distribution of protons from free neutron beta decay (0 < E < 750 eV)
+ *
+ * From diploma thesis M. Simson.
+ *
+ * @param E energy
+ *
+ * @return Returns a probability between 0 and 1 that a proton with energy E is created.
+ */
+double ProtonBetaSpectrum(double E);
 
 
-// energy distribution of electrons (0 < 'Energie' < 782 keV)
-// from "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
-// result always < 1!
-double ElectronBetaSpectrum(double E){
-	double Qvalue = 0.782; //[MeV]
-	return 8.2*sqrt(E*1e-6*E*1e-6 + 2*E*1e-6*m_e*c_0*c_0*1e-6) * pow(Qvalue - E*1e-6, 2) * (E*1e-6 + m_e*c_0*c_0*1e-6);
-}
+/**
+ * Energy distribution of electrons from free neutron decay (0 < E < 782 keV)
+ *
+ * From "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
+ *
+ * @param E energy
+ *
+ * @return Returns probability between 0 and 1 that an electron with energy E is created.
+ */
+double ElectronBetaSpectrum(double E);
 
 
-typedef map<string, map<string, string> > TConfig;
+typedef std::map<std::string, std::map<std::string, std::string> > TConfig; ///< map of sections containing a map of key-value pairs
 
-//read variables from *.in file into map
-void ReadInFile(const char *inpath, TConfig &vars){
-	ifstream infile(inpath);
-	char c;
-	string rest,section,key;
-	while (infile && (infile >> ws) && (c = infile.peek())){
-		if (c == '[' && infile.ignore()){
-			if (infile.peek() == '/'){
-				section = "";
-			}
-			else{
-				getline(infile, section, ']');
-//				cout << "\nsection: " << section.c_str() << '\n';
-			}
-			getline(infile,rest);
-		}
-		else if (c == '#')
-			getline(infile,rest);
-		else if (section != ""){
-			infile >> key;
-			getline(infile,rest);
-			if (infile){
-				string::size_type l = rest.find('#');
-				if (l == string::npos)
-					vars[section][key] = rest;
-				else
-					vars[section][key] = rest.substr(0,l);
-//				cout << key << " " << vars[section][key] << '\n';
-			}
-		}
-		else
-			getline(infile,rest);
-	}
-}
+/**
+ * Read variables from *.in file into map.
+ *
+ * in file is assumed to have structure
+ * [section]
+ * key arbitrary string
+ * key value
+ * [section]
+ * ...
+ *
+ * @param inpath Path to in file.
+ * @param vars Return TConfig map
+ */
+void ReadInFile(const char *inpath, TConfig &vars);
 
 #endif /*GLOBALS_H_*/

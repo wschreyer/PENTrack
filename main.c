@@ -54,7 +54,7 @@ int secondaries = 1; ///< should secondary particles be simulated? (read from co
 long double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
 int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
-map<string, TOutput> output;
+map<string, TOutput> output; ///< map assigning each simulated particle type a TOutput struct
 
 /**
  * Catch signals.
@@ -87,7 +87,7 @@ int main(int argc, char **argv){
 	
 	jobnumber = 0;
 	outpath = "./out";
-	inpath = "./in";
+	string inpath = "./in";
 	if(argc>1) // if user supplied at least 1 arg (outputfilestamp)
 		istringstream(argv[1]) >> jobnumber;
 	if(argc>2) // if user supplied 2 or more args (outputfilestamp, inpath)
@@ -130,7 +130,7 @@ int main(int argc, char **argv){
 
 	cout << "Loading geometry...\n";
 	//load geometry configuration from geometry.in
-	TGeometry geom(string(inpath + "/geometry.in").c_str());
+	TGeometry geom(geometryin);
 	
 	if (simtype == GEOMETRY){
 		// print random points on walls in file to visualize geometry

@@ -4,4 +4,3 @@ out/*.out
 doc/
 *.o
 libtricubic/*.o
-

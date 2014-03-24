@@ -15,7 +15,7 @@ LDFLAGS=-lrt -lboost_system $(CGAL_LIB) -lCGAL $(MUPARSER_LIB) -lmuparser
 RM=rm
 EXE=PENTrack
 
-ADDSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp trianglemesh.cpp
+ADDSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp globals.cpp trianglemesh.cpp geometry.cpp
 ADDOBJ = $(ADDSRC:.cpp=.o)
 
 .PHONY: all

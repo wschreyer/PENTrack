@@ -173,7 +173,6 @@ struct TBFIntegrator{
 					else
 						(*I_n)[2] = 0.5;
 					cout << "\nBF starttime " << x1 << " ";
-					fflush(stdout);
 				}
 
 				TBFderivs BFderivs(gamma, x1, y1, B1, x2, y2, B2); // create derivs-struct
