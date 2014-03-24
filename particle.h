@@ -848,16 +848,17 @@ struct TParticle{
 		/**
 		 * Calculate kinetic energy.
 		 *
-		 * Kinetic energy is calculated by 0.5mv^2, if v/c < ::RELATIVSTIC_THRESHOLD, else it is calculated by (gamma-1)mc^2
+		 * Kinetic energy is calculated by series expansion of rel. gamma factor, if v/c < ::RELATIVSTIC_THRESHOLD, else it is calculated exactly by (gamma-1)mc^2
 		 *
 		 * @return Kinetic energy [eV]
 		 */
 		long double Ekin(const long double v[3]){
 			long double vend = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-			if (vend/c_0 < RELATIVISTIC_THRESHOLD)
-				return 0.5*m*vend*vend;
+			long double beta = vend/c_0;
+			if (beta < RELATIVISTIC_THRESHOLD) // use series expansion for energy calculation with small beta
+				return 0.5*m*vend*vend + (3/8*m + 5/16*m*beta*beta + 35/128*beta*beta*beta*beta)*vend*vend*beta*beta;
 			else{
-				long double gammarel = 1/sqrt(1 - vend*vend/(c_0*c_0));
+				long double gammarel = 1/sqrt(1 - beta*beta); // use relativistic formula for larger beta
 				return c_0*c_0*m*(gammarel - 1);
 			}
 		}
