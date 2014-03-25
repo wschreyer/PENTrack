@@ -599,9 +599,9 @@ class TabField3: public TField{
 		void BField(long double x, long double y, long double z, long double t, long double B[4][4]){
 			long double Bscale = BFieldScale(t);
 			// get coordinate index
-			int indx = floor((x - x_mi)/xdist);
-			int indy = floor((y - y_mi)/ydist);
-			int indz = floor((z - z_mi)/zdist);
+			int indx = (int)floor((x - x_mi)/xdist);
+			int indy = (int)floor((y - y_mi)/ydist);
+			int indz = (int)floor((z - z_mi)/zdist);
 			if (Bscale != 0 && indx >= 0 && indx < xl - 1 && indy >= 0 && indy < yl - 1 && indz >= 0 && indz < zl - 1){
 				// scale coordinates to unit cube
 				x = (x - x_mi - indx*xdist)/xdist;
@@ -648,9 +648,9 @@ class TabField3: public TField{
 				(y - y_mi)/ydist > 0 && (y - y_mi - yl*ydist)/ydist < 0 &&
 				(z - z_mi)/zdist > 0 && (z - z_mi - zl*zdist)/zdist < 0){
 				// get coordinate index
-				int indx = floor((x - x_mi)/xdist);
-				int indy = floor((y - y_mi)/ydist);
-				int indz = floor((z - z_mi)/zdist);
+				int indx = (int)floor((x - x_mi)/xdist);
+				int indy = (int)floor((y - y_mi)/ydist);
+				int indz = (int)floor((z - z_mi)/zdist);
 				// scale coordinates to unit cube
 				x = (x - x_mi - indx*xdist)/xdist;
 				y = (y - y_mi - indy*ydist)/ydist;

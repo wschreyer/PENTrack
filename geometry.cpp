@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <sstream>
 
 #include "globals.h"
 #include "geometry.h"
