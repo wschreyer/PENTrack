@@ -742,6 +742,10 @@ struct TParticle{
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << filesuffix;
 				cout << "Creating " << filename.str() << '\n';
 				file = new ofstream(filename.str().c_str());
+				if (!file || !file->is_open()){
+					cout << "Could not create" << filename.str() << '\n';
+					exit(-1);
+				}
 				*file <<	"jobnumber particle "
 	                		"tstart xstart ystart zstart "
 	                		"vxstart vystart vzstart "
@@ -781,6 +785,10 @@ struct TParticle{
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
 				cout << "Creating " << filename.str() << '\n';
 				trackfile = new ofstream(filename.str().c_str());
+				if (!trackfile || !trackfile->is_open()){
+					cout << "Could not create" << filename.str() << '\n';
+					exit(-1);
+				}
 				*trackfile << 	"jobnumber particle polarisation "
 								"t x y z vx vy vz "
 								"H E Bx dBxdx dBxdy dBxdz By dBydx "
@@ -830,6 +838,10 @@ struct TParticle{
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
 				cout << "Creating " << filename.str() << '\n';
 				hitfile = new ofstream(filename.str().c_str());
+				if (!hitfile || !hitfile->is_open()){
+					cout << "Could not create" << filename.str() << '\n';
+					exit(-1);
+				}
 				*hitfile << "jobnumber particle "
 							"t x y z v1x v1y v1z pol1 "
 							"v2x v2y v2z pol2 "
