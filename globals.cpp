@@ -19,7 +19,7 @@ void PrintPercent(double percentage, int &lastprint){
 }
 
 // rotate vector into new coordinate sys whose z-axis lies on NORMALIZED vector n (active transformation)
-void RotateVector(long double v[3], long double n[3])
+void RotateVector(long double v[3], const long double n[3])
 {
 	long double cosalpha = n[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
 	if (sinalpha > 1e-30){ // when normal not parallel to z-axis rotate new velocity into the coordinate system where the normal is the z-axis

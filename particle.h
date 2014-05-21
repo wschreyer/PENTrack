@@ -14,7 +14,6 @@
 
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
 static const double RELATIVISTIC_THRESHOLD = 0.01; ///< threshold (v/c) above which kinetic energy is calculated relativisticly
-static const bool IGNORE_MISSEDHITS_IN_TEMPSOLIDS = false; ///< set this to true, if you want to ignore errors for particles that happen to be inside temporary solids when they appear. Might mask other faults in your geometry, so use with caution
 
 #include "globals.h"
 #include "fields.h"
@@ -110,7 +109,7 @@ struct TParticle{
 
 		/// total start energy
 		long double Hstart(){
-			set<solid> solids;
+			map<solid, bool> solids;
 			geom->GetSolids(tstart, ystart, solids);
 			return Ekin(&ystart[3]) + Epot(tstart, ystart, polstart, field, solids);
 		};
@@ -369,12 +368,18 @@ struct TParticle{
 	
 
 	protected:
-		std::set<solid> currentsolids; ///< solids in which particle is currently inside
+		map<solid, bool> currentsolids; ///< solids in which particle is currently inside
 		TGeometry *geom; ///< TGeometry structure passed by "Integrate"
 		TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
 		TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
 		StepperDopr853<TParticle> *stepper; ///< ODE integrator
 
+		solid GetCurrentsolid(){
+			map<solid, bool>::iterator it = currentsolids.begin();
+			while (it->second)
+				it++;
+			return it->first;
+		}
 
 		/**
 		 * Initialize particle, set start values randomly according to *.in files.
@@ -522,6 +527,27 @@ struct TParticle{
 		};
 		
 
+		bool CheckHitError(solid *hitsolid, long double distnormal){
+			if (distnormal < 0){ // particle is entering solid
+				if (currentsolids.find(*hitsolid) != currentsolids.end()){ // if solid already is in currentsolids list something went wrong
+					cout << "Particle entering " << hitsolid->name.c_str() << " which it did enter before! Stopping it! Did you define overlapping solids with equal priorities?\n";
+					return true;
+				}
+			}
+			else if (distnormal > 0){ // particle is leaving solid
+				if (currentsolids.find(*hitsolid) == currentsolids.end()){ // if solid is not in currentsolids list something went wrong
+					cout << "Particle inside '" << hitsolid->name << "' which it did not enter before! Stopping it!\n";
+					return true;
+				}
+			}
+			else{
+				cout << "Particle is crossing material boundary with parallel track! Stopping it!\n";
+				return true;
+			}
+			return false;
+		}
+
+
 		/**
 		 * Check, if particle hit a material boundary or was absorbed.
 		 *
@@ -547,104 +573,95 @@ struct TParticle{
 				ID = ID_HIT_BOUNDARIES;
 				return true;
 			}
-			set<TCollision> colls;
+
+			map<TCollision, bool> colls;
 			if (geom->GetCollisions(x1, y1, stepper->hdid, y2, colls)){	// if there is a collision with a wall
-				TCollision coll = *colls.begin();
-				long double u[3] = {y2[0] - y1[0], y2[1] - y1[1], y2[2] - y1[2]};
-				long double distnormal = u[0]*coll.normal[0] + u[1]*coll.normal[1] + u[2]*coll.normal[2];
-				if ((colls.size() == 1
-					&& coll.s*abs(distnormal) < REFLECT_TOLERANCE
-					&& (1 - coll.s)*abs(distnormal) < REFLECT_TOLERANCE) // if there is only one collision which is closer to y1 and y2 than REFLECT_TOLERANCE
+				map<TCollision, bool>::iterator coll = colls.begin();
+				if ((abs(coll->first.s*coll->first.distnormal) < REFLECT_TOLERANCE
+					&& (1 - coll->first.s)*abs(coll->first.distnormal) < REFLECT_TOLERANCE) // if first collision is closer to y1 and y2 than REFLECT_TOLERANCE
 					|| iteration > 99) // or if iteration counter reached a certain maximum value
 				{
-					solid *hitsolid = &geom->solids[coll.ID];
-					if (colls.size() > 1 && coll.ID != (++colls.begin())->ID){
-						// if particle hits two or more different surfaces at once, something went wrong
-						printf("Reflection from two surfaces (%s & %s) at once!\n", hitsolid->name.c_str(), geom->solids[(++colls.begin())->ID].name.c_str());
-						printf("Check geometry for touching surfaces!");
-						x2 = x1;
-						for (int i = 0; i < 6; i++)
-							y2[i] = y1[i];
-						ID = ID_NRERROR;
-						return true;
-					}
-//					cout << "Hit " << sld->ID << " - current solid " << currentsolids.rbegin()->ID << '\n';
 					int prevpol = pol;
-					const solid *leaving, *entering;
-					bool resetintegration = false, hit = false;
-					if (distnormal < 0){ // particle is entering solid
-						if (currentsolids.find(*hitsolid) != currentsolids.end()){ // if solid already is in currentsolids list something went wrong
-							printf("Particle entering '%s' which it did enter before! Stopping it! Did you define overlapping solids with equal priorities?\n", geom->solids[coll.ID].name.c_str());
+					solid currentsolid = GetCurrentsolid();
+					solid *hitsolid = &geom->defaultsolid;
+					coll = colls.end();
+					for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){
+						if (CheckHitError(&geom->solids[it->first.sldindex], it->first.distnormal)){ // check all hits for errors
 							x2 = x1;
 							for (int i = 0; i < 6; i++)
 								y2[i] = y1[i];
 							ID = ID_NRERROR;
 							return true;
 						}
-						leaving = &*currentsolids.rbegin();
-						entering = hitsolid;
-						if (entering->ID > leaving->ID){ // check for reflection only, if priority of entered solid is larger than that of current solid
-							hit = true;
-							resetintegration = OnHit(x1, y1, x2, y2, pol, coll.normal, leaving, entering); // do particle specific things
-							if (entering != leaving)
-								currentsolids.insert(*entering);
-							entering = hitsolid;
+						if (!it->second && (geom->solids[it->first.sldindex].ID > hitsolid->ID)){ // find non-ignored collision with highest priority
+							coll = it;
+							hitsolid = &geom->solids[it->first.sldindex];
 						}
-					}
-					else if (distnormal > 0){ // particle is leaving solid
-						if (currentsolids.find(*hitsolid) == currentsolids.end() // if solid is not in currentsolids list something went wrong
-							&& (hitsolid->ignoretimes.empty() || (!hitsolid->ignoretimes.empty() && !IGNORE_MISSEDHITS_IN_TEMPSOLIDS))){ // ignore this error for temporary solids
-							cout << "Particle inside '" << hitsolid->name << "' which it did not enter before! Stopping it!\n";
-							x2 = x1;
-							for (int i = 0; i < 6; i++)
-								y2[i] = y1[i];
-							ID = ID_NRERROR;
-							return true;
-						}
-						leaving = hitsolid;
-						if (leaving->ID == currentsolids.rbegin()->ID){ // check for reflection only, if left solids is the solid with highest priority
-							hit = true;
-							entering = &*++currentsolids.rbegin();
-							resetintegration = OnHit(x1, y1, x2, y2, pol, coll.normal, leaving, entering); // do particle specific things
-							if (entering != leaving)
-								currentsolids.erase(*leaving);
-							else
-								entering = &*++currentsolids.rbegin();
-						}
-					}
-					else{
-						cout << "Particle is crossing material boundary with parallel track! Stopping it!\n";
-						x2 = x1;
-						for (int i = 0; i < 6; i++)
-							y2[i] = y1[i];
-						ID = ID_NRERROR;
-						return true;
 					}
 
-					if (hit){
-						if (hitlog)
-							PrintHit(hitout, x1, y1, y2, prevpol, pol, coll.normal, leaving, entering);
-						Nhit++;
+					bool trajectoryaltered = false, traversed = true;
+
+					map<solid, bool> newsolids = currentsolids;
+					for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){ // compile list of solids after material boundary
+						if (it->first.distnormal < 0){
+							newsolids[geom->solids[it->first.sldindex]] = it->second;
+						}else{
+							newsolids.erase(geom->solids[it->first.sldindex]);
+						}
 					}
 
-					if (resetintegration)
+					if (coll != colls.end()){ // if a non-ignored collision was found
+						solid leaving, entering;
+						bool hit = false;
+						if (coll->first.distnormal < 0){ // particle is entering solid
+							leaving = currentsolid;
+							entering = *hitsolid;
+							if (entering.ID > leaving.ID){ // check for reflection only if priority of entered solid is larger than that of current solid
+								hit = true;
+								OnHit(x1, y1, x2, y2, pol, coll->first.normal, &leaving, &entering, trajectoryaltered, traversed); // do particle specific things
+							}
+						}
+						else if (coll->first.distnormal > 0){ // particle is leaving solid
+							leaving = *hitsolid;
+							map<solid, bool>::iterator it = newsolids.begin();
+							while (it->second) // find first non-ignored solid in list of new solids
+								it++;
+							entering = it->first;
+							if (leaving.ID == currentsolid.ID){ // check for reflection only, if left solid is the solid with highest priority
+								hit = true;
+								OnHit(x1, y1, x2, y2, pol, coll->first.normal, &leaving, &entering, trajectoryaltered, traversed); // do particle specific things
+							}
+						}
+
+						if (hit){
+							if (hitlog)
+								PrintHit(hitout, x1, y1, y2, prevpol, pol, coll->first.normal, &leaving, &entering);
+							Nhit++;
+						}
+					}
+
+					if (traversed){
+						currentsolids = newsolids; // if material boundary was traversed, replace current solids with list of new solids
+					}
+
+					if (trajectoryaltered)
 						return true;
-					else if (OnStep(x1, y1, x2, y2, &*currentsolids.rbegin())){ // check for absorption
+					else if (OnStep(x1, y1, x2, y2, GetCurrentsolid())){ // check for absorption
 						printf("Absorption!\n");
 						return true;
 					}
+
 				}
 				else{
 					// else cut integration step right before and after first collision point
 					// and call ReflectOrAbsorb again for each smaller step (quite similar to bisection algorithm)
-					const TCollision *c = &*colls.begin();
 					long double xnew, xbisect1 = x1, xbisect2 = x1;
 					long double ybisect1[6];
 					long double ybisect2[6];
 					for (int i = 0; i < 6; i++)
 						ybisect1[i] = ybisect2[i] = y1[i];
 
-					xnew = x1 + (x2 - x1)*(c->s - 0.01*iteration); // cut integration right before collision point
+					xnew = x1 + (x2 - x1)*(coll->first.s - 0.01*iteration); // cut integration right before collision point
 					if (xnew > x1 && xnew < x2){ // check that new line segment is in correct time interval
 						xbisect1 = xbisect2 = xnew;
 						for (int i = 0; i < 6; i++)
@@ -657,7 +674,7 @@ struct TParticle{
 						}
 					}
 
-					xnew = x1 + (x2 - x1)*(c->s + 0.01*iteration); // cut integration right after collision point
+					xnew = x1 + (x2 - x1)*(coll->first.s + 0.01*iteration); // cut integration right after collision point
 					if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
 						xbisect2 = xnew;
 						for (int i = 0; i < 6; i++)
@@ -674,8 +691,7 @@ struct TParticle{
 						return true;
 				}
 			}
-			else if (OnStep(x1, y1, x2, y2, &*currentsolids.rbegin())){ // if there was no collision: just check for absorption in solid with highest priority
-				printf("Absorption!\n");
+			else if (OnStep(x1, y1, x2, y2, GetCurrentsolid())){ // if there was no collision: just check for absorption in solid with highest priority
 				return true;
 			}
 			return false;
@@ -695,11 +711,12 @@ struct TParticle{
 		 * @param polarisation Polarisation of particle, may be altered
 		 * @param normal Normal vector of hit surface
 		 * @param leaving Solid that the particle is leaving
-		 * @param entering Solid that the particle is entering (can be modified by method)
-		 * @return Returns true if particle path was changed
+		 * @param entering Solid that the particle is entering
+		 * @param trajectoryaltered Returns true if the particle trajectory was altered
+		 * @param travered Returns true if the material boundary was traversed by the particle
 		 */
-		virtual bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
-							long double normal[3], const solid *leaving, const solid *&entering) = 0;
+		virtual void OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
+							const long double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed) = 0;
 
 
 		/**
@@ -715,7 +732,7 @@ struct TParticle{
 		 * @param currentsolid Solid through which the particle is moving
 		 * @return Returns true if particle path was changed
 		 */
-		virtual bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid) = 0;
+		virtual bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], solid currentsolid) = 0;
 
 
 		/**
@@ -832,7 +849,7 @@ struct TParticle{
 		 * @param leaving Material which is left at this boundary
 		 * @param entering Material which is entered at this boundary
 		 */
-		virtual void PrintHit(ofstream *&hitfile, long double x, long double *y1, long double *y2, int pol1, int pol2, long double *normal, const solid *leaving, const solid *entering){
+		virtual void PrintHit(ofstream *&hitfile, long double x, long double *y1, long double *y2, int pol1, int pol2, const long double *normal, solid *leaving, solid *entering){
 			if (!hitfile){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
@@ -886,7 +903,7 @@ struct TParticle{
 		 *
 		 * @return Returns potential energy [eV]
 		 */
-		virtual long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field, set<solid> &solids){
+		virtual long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field, map<solid, bool> &solids){
 			long double result = 0;
 			if ((q != 0 || mu != 0) && field){
 				long double B[4][4], E[3], V;

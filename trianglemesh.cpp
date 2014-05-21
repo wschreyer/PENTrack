@@ -8,7 +8,7 @@
 
 
 // read triangles from STL-file
-void TTriangleMesh::ReadFile(const char *filename, const unsigned ID, char name[80]){
+void TTriangleMesh::ReadFile(const char *filename, int sldindex, char name[80]){
 	std::ifstream f(filename, std::fstream::binary);
     if (f.is_open()){
         char header[80];
@@ -31,7 +31,7 @@ void TTriangleMesh::ReadFile(const char *filename, const unsigned ID, char name[
             f.seekg(2,std::fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
             triangles.push_back(TTriangle(CPoint(v[0][0], v[0][1], v[0][2]),
             							  CPoint(v[1][0], v[1][1], v[1][2]),
-            							  CPoint(v[2][0], v[2][1], v[2][2]), ID));
+            							  CPoint(v[2][0], v[2][1], v[2][2]), sldindex));
         }
         f.close();
         printf("Read %u triangles\n",i);
@@ -66,14 +66,14 @@ bool TTriangleMesh::Collision(const long double p1[3], const long double p2[3], 
 #endif
 			if (collp){
 				TCollision coll;
-				coll.s = sqrt(pow(collp->x() - p1[0], 2) + pow(collp->y() - p1[1], 2) + pow(collp->z() - p1[2], 2))
-						/sqrt(pow(p2[0] - p1[0], 2) + pow(p2[1] - p1[1], 2) + pow(p2[2] - p1[2], 2));
+				coll.s = sqrt((*collp - point1).squared_length()/segment.squared_length());
 				CIterator tri = (*i)->second;
-				CVector n = tri->tri.supporting_plane().orthogonal_vector();
-				coll.ID = tri->ID;
-				coll.normal[0] = n[0]/sqrt(n.squared_length());
-				coll.normal[1] = n[1]/sqrt(n.squared_length());
-				coll.normal[2] = n[2]/sqrt(n.squared_length());
+				coll.sldindex = tri->sldindex;
+				CVector n = tri->normal();
+				coll.normal[0] = n[0];
+				coll.normal[1] = n[1];
+				coll.normal[2] = n[2];
+				coll.distnormal = segment.to_vector()*n;
 				colls.insert(coll);
 			}
 		}

@@ -73,11 +73,14 @@ protected:
 	 * @param polarisation Polarisation of particle, may be altered
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the electron is leaving
-	 * @param entering Solid that the electron is entering (can be modified by method)
-	 * @return Returns true if particle path was changed
+	 * @param entering Solid that the electron is entering
+	 * @param trajectoryaltered Returns true if the particle trajectory was altered
+	 * @param travered Returns true if the material boundary was traversed by the particle
 	 */
-	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation, long double normal[3], const solid *leaving, const solid *&entering){
-		return false;
+	void OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
+				const long double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+		traversed = true;
+		trajectoryaltered = false;
 	};
 
 
@@ -91,14 +94,15 @@ protected:
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
 	 * @param currentsolid Solid in which the electron is at the moment
-	 * @return Returns true if particle was absorbed
+	 * @return Returns true if particle trajectory was altered
 	 */
-	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid){
-		if (currentsolid->ID != geom->defaultsolid.ID){
+	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], solid currentsolid){
+		if (currentsolid.ID != geom->defaultsolid.ID){
 			x2 = x1;
 			for (int i = 0; i < 6; i++)
 				y2[i] = y1[i];
-			ID = currentsolid->ID;
+			ID = currentsolid.ID;
+			printf("Absorption!\n");
 			return true;
 		}
 /*		else{

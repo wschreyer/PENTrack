@@ -100,12 +100,16 @@ protected:
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering (can be modified by method)
-	 * @return Returns true if particle path was changed
+	 * @param trajectoryaltered Returns true if the particle trajectory was altered
+	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	bool OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation, long double normal[3], const solid *leaving, const solid *&entering){
+	void OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
+				const long double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
 		long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 		bool refl = false;
+		trajectoryaltered = false;
+		traversed = true;
 		long double prob = mc->UniformDist(0,1);
 
 		long double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
@@ -118,7 +122,8 @@ protected:
 			if (prob < transprob){ // -> transmission
 				for (int i = 0; i < 3; i++)
 					y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
-				return true;
+				traversed = true;
+				trajectoryaltered = true;
 			}
 			else // no transmission -> reflection
 				refl = true;
@@ -134,8 +139,8 @@ protected:
 				x2 = x1; // set stopping point to track point right before collision
 				for (int i = 0; i < 6; i++)
 					y2[i] = y1[i];
-				entering = leaving; // reset entering solid, so it is not put into currentsolids list
-				return true;
+				traversed = false;
+				trajectoryaltered = true;
 			}
 			else // no absorption -> reflection
 				refl = true;
@@ -176,11 +181,9 @@ protected:
 				Nspinflip++;
 			}
 			
-			entering = leaving; // particle does not enter into new material
-			return true;
+			trajectoryaltered = true;
+			traversed = false;
 		}
-
-		return false;
 	};
 
 
@@ -199,18 +202,19 @@ protected:
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], const solid *currentsolid){
+	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], solid currentsolid){
 		bool result = false;
-		if (currentsolid->mat.FermiImag > 0){
+		if (currentsolid.mat.FermiImag > 0){
 			long double prob = mc->UniformDist(0,1);
-			complex<long double> E(0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid->mat.FermiImag*1e-9); // E + i*W
+			complex<long double> E(0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
 			complex<long double> k = sqrt(2*m_n*E)*ele_e/hbar; // wave vector
 			long double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
 			if (prob > exp(-imag(k)*l)){ // exponential probability decay
 				x2 = x1 + mc->UniformDist(0,1)*(x2 - x1); // if absorbed, chose a random time between x1 and x2
 				for (int i = 0; i < 6; i++)
 					y2[i] = stepper->dense_out(i, x2, stepper->hdid); // set y2 to position at random time
-				ID = currentsolid->ID;
+				ID = currentsolid.ID;
+				printf("Absorption!\n");
 				result = true; // stop integration
 			}
 		}
@@ -289,8 +293,11 @@ protected:
 	 *
 	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
-	long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field, set<solid> &solids){
-		return TParticle::Epot(t, y, polarisation, field, solids) + solids.rbegin()->mat.FermiReal*1e-9;
+	long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field, map<solid, bool> &solids){
+		map<solid, bool>::iterator sld = solids.begin();
+		while (sld->second)
+			sld++;
+		return TParticle::Epot(t, y, polarisation, field, solids) + sld->first.mat.FermiReal*1e-9;
 	}
 
 

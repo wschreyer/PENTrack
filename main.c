@@ -80,6 +80,11 @@ void catch_alarm (int sig){
  *
  */
 int main(int argc, char **argv){
+	if ((argc > 1) && (strcmp(argv[1], "-h") == 0)){
+		cout << "Usage:\nPENTrack [jobnumber [path/to/in/files [path/to/out/files]]]" << endl;
+		exit(0);
+	}
+
 	//Initialize signal-analizing
 	signal (SIGUSR1, catch_alarm);
 	signal (SIGUSR2, catch_alarm);

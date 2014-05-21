@@ -11,6 +11,7 @@
 #include <vector>
 #include <set>
 #include <limits>
+#include <map>
 
 #include "trianglemesh.h"
 #include "globals.h"
@@ -19,10 +20,9 @@ using namespace std;
 
 static const double REFLECT_TOLERANCE = 1e-8;  ///< max distance of reflection point to actual surface collision point
 
-
 /// Struct to store material properties (read from geometry.in, right now only for neutrons)
 struct material{
-	string name; ///< Material name
+	std::string name; ///< Material name
 	long double FermiReal; ///< Real part of Fermi potential
 	long double FermiImag; ///< Imaginary part of Fermi potential
 	long double DiffProb; ///< Diffuse reflection probability
@@ -32,19 +32,19 @@ struct material{
 
 /// Struct to store solid information (read from geometry.in)
 struct solid{
-	string name; ///< name of solid
+	std::string name; ///< name of solid
 	material mat; ///< material of solid
-	int ID; ///< ID of solid
-	vector<long double> ignoretimes; ///< pairs of times, between which the solid should be ignored
+	unsigned ID; ///< ID of solid
+	std::vector<long double> ignoretimes; ///< pairs of times, between which the solid should be ignored
 
 	/**
-	 * Comparison operator used to sort solids by priority
+	 * Comparison operator used to sort solids by priority (descending)
 	 *
 	 * @param s solid struct compared to this solid
 	 *
-	 * @return Returns true if this solid's ID is smaller than the other one's
+	 * @return Returns true if this solid's ID is larger than the other one's
 	 */
-	bool operator< (const solid s) const { return ID < s.ID; };
+	bool operator< (const solid s) const { return ID > s.ID; };
 };
 
 
@@ -90,11 +90,11 @@ struct TGeometry{
 		 * @param p1 Start point of line segment
 		 * @param h Time length of line segment
 		 * @param p2 End point of line segment
-		 * @param colls List of collisions
+		 * @param colls List of collisions, paired with bool indicator it it should be ignored
 		 *
 		 * @return Returns true if line segment collides with a surface
 		 */
-		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], set<TCollision> &colls);
+		bool GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], map<TCollision, bool> &colls);
 		
 			
 		/**
@@ -102,9 +102,9 @@ struct TGeometry{
 		 *
 		 * @param t Time
 		 * @param p Point to test
-		 * @param currentsolids Set of solids in which the point is inside
+		 * @param currentsolids Map of solids in which the point is inside paired with information if it was ignored or not
 		 */
-		void GetSolids(const long double t, const long double p[3], std::set<solid> &currentsolids);
+		void GetSolids(const long double t, const long double p[3], map<solid, bool> &currentsolids);
 };
 
 #endif /*GEOMETRY_H_*/

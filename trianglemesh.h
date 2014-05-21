@@ -25,6 +25,7 @@
 #include <vector>
 #include <set>
 #include <list>
+#include <string>
 
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/AABB_tree.h>
@@ -37,6 +38,7 @@ typedef CKernel::Point_3 CPoint; ///< CGAL point type
 typedef CKernel::Triangle_3 CTriangle; ///< CGAL triangle type
 typedef CKernel::Vector_3 CVector; ///< CGAL vector type
 
+
 /**
  * Triangle class.
  *
@@ -44,7 +46,7 @@ typedef CKernel::Vector_3 CVector; ///< CGAL vector type
  */
 struct TTriangle {
 	CTriangle tri; ///< CGAL triangle
-	int ID; ///< ID of corresponding solid and material
+	int sldindex; ///< index of corresponding solid
 
 	/**
 	 * Constructor.
@@ -54,9 +56,9 @@ struct TTriangle {
 	 * @param pa First triangle vertex
 	 * @param pb Second triangle vertex
 	 * @param pc Third triangle vertex
-	 * @param aID Surface ID
+	 * @param sld Index of the solid to which the triangle belongs
 	 */
-	TTriangle(CPoint pa, CPoint pb, CPoint pc, int aID): tri(CTriangle(pa, pb, pc)), ID(aID) {}
+	TTriangle(CPoint pa, CPoint pb, CPoint pc, int asldindex): tri(CTriangle(pa, pb, pc)), sldindex(asldindex) {}
 
 	/**
 	 * Get normalized orthogonal vector.
@@ -145,7 +147,8 @@ typedef CGAL::AABB_tree<CTraits> CTree; ///< CGAL AABB tree type containing CPri
 struct TCollision{
 	long double s; ///< parametric coordinate of intersection point (P = p1 + s*(p2 - p1))
 	long double normal[3]; ///< normal (length = 1) of intersected surface
-	unsigned ID; ///< ID of intersected surface
+	int sldindex; ///< index of solid to which the intersected surface belongs
+	long double distnormal; ///< distance between start- and endpoint of colliding segment, projected onto normal direction
 
 	/**
 	 * Overloaded operator, needed for sorting
@@ -165,10 +168,10 @@ class TTriangleMesh{
          * Read STL-file.
          *
          * @param filename Filename of STL file
-         * @param ID Assign this ID to all triangles in this file
+         * @param sldindex Index of solid properties assigned to this STL file
          * @param name Returns name of file
          */
-        void ReadFile(const char *filename, const unsigned ID, char name[80] = NULL);
+        void ReadFile(const char *filename, int sldindex, char name[80] = NULL);
         void Init(); ///< create AABB tree
 
         /**

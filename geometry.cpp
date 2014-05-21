@@ -1,7 +1,4 @@
 #include <iostream>
-#include <string>
-#include <vector>
-#include <set>
 #include <sstream>
 
 #include "globals.h"
@@ -47,9 +44,12 @@ TGeometry::TGeometry(TConfig &geometryin){
 			for (unsigned i = 0; i < materials.size(); i++){
 				if (matname == materials[i].name){
 					model.mat = materials[i];
-					if (model.ID > 1)
+					if (model.ID > 1){
 						mesh.ReadFile(STLfile.c_str(),solids.size(),name);
-					model.name = name;
+						model.name = name;
+					}
+					else
+						model.name = "default solid";
 					break;
 				}
 				else if (i+1 == materials.size()){
@@ -91,45 +91,39 @@ TGeometry::TGeometry(TConfig &geometryin){
 }
 
 
-bool TGeometry::GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], set<TCollision> &colls){
-	if (mesh.Collision(p1,p2,colls)){ // search in the kdtree for collisions
-		set<TCollision>::iterator it = colls.begin();
-		while (it != colls.end()){ // go through all collisions
-			vector<long double> *times = &solids[(*it).ID].ignoretimes;
-			if (!times->empty()){
-				long double x = x1 + (*it).s*h;
-				for (unsigned int i = 0; i < times->size(); i += 2){
-					if (x >= (*times)[i] && x < (*times)[i+1]){
-						set<TCollision>::iterator del = it;
-						it++;
-						colls.erase(del); // delete collision if it should be ignored according to geometry.in
-						break;
-					}
-					else if (i == times->size() - 2)
-						it++;
+bool TGeometry::GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], map<TCollision, bool> &colls){
+	set<TCollision> c;
+	mesh.Collision(p1,p2,c);
+	colls.clear();
+	for (set<TCollision>::iterator it = c.begin(); it != c.end(); it++){
+		colls[*it] = false;
+		std::vector<long double> *times = &solids[it->sldindex].ignoretimes;
+		if (!times->empty()){
+			long double x = x1 + h*it->s;
+			for (unsigned int i = 0; i < times->size(); i += 2){
+				if (x >= (*times)[i] && x < (*times)[i+1]){
+					colls[*it] = true; // set ignored flag if collision should be ignored according to geometry.in
+					break;
 				}
 			}
-			else it++;
 		}
-		if (!colls.empty())
-			return true; // return true if there is a collision
 	}
-	return false;
+	return !colls.empty();
 }
 
 
-void TGeometry::GetSolids(const long double t, const long double p[3], std::set<solid> &currentsolids){
+void TGeometry::GetSolids(const long double t, const long double p[3], std::map<solid, bool> &currentsolids){
 	long double p2[3] = {p[0], p[1], mesh.tree.bbox().zmin() - REFLECT_TOLERANCE};
-	set<TCollision> c;
+	map<TCollision, bool> c;
 	currentsolids.clear();
-	currentsolids.insert(defaultsolid);
+	currentsolids[defaultsolid] = false;
 	if (GetCollisions(t,p,0,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
-		for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){
-			solid sld = solids[i->ID];
-			if (currentsolids.count(sld) > 0) // if there is a collision with a solid already in the list, remove it from list
-				currentsolids.erase(sld);
+		for (map<TCollision, bool>::iterator i = c.begin(); i != c.end(); i++){
+			solid *sld = &solids[i->first.sldindex];
+			if (currentsolids.count(*sld) > 0) // if there is a collision with a solid already in the list, remove it from list
+				currentsolids.erase(*sld);
 			else
-				currentsolids.insert(sld); // else add solid to list
+				currentsolids[*sld] = i->second; // else add solid to list
 		}
 	}
 }

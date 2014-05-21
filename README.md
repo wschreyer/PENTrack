@@ -46,16 +46,6 @@ Only v2.2.3 has been tested so far.
 
 [Lekien and Marsden] (http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.
 
-Writing your own simulation
----------------------------
-
-You can modify the simulation on four different levels:
-
-1. Modify the /in/*.in configuration files and use the implemented particles, sources, fields, etc. (more info below and in the corresponding *.in files)
-2. Modify the code in main.c and combine TParticle-, TGeometry-, TField-, TSource-classes etc. into your own simulation (you can generate a Doxygen documentation by typing `doxygen doxygen.config`)
-3. Implement your own particles, sources or fields by inheriting from the corresponding base classes and fill the virtual routines with the corresponding physics
-4. Make low level changes to the existing classes
-
 Defining your experiment
 ------------------------
 
@@ -92,11 +82,22 @@ Run the simulation
 ------------------
 
 Type "make" to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
+Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
 
 Physics
 -------
 
 All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and the Lambert model for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
+
+Writing your own simulation
+---------------------------
+
+You can modify the simulation on four different levels:
+
+1. Modify the /in/*.in configuration files and use the implemented particles, sources, fields, etc. (more info below and in the corresponding *.in files)
+2. Modify the code in main.c and combine TParticle-, TGeometry-, TField-, TSource-classes etc. into your own simulation (you can generate a Doxygen documentation by typing `doxygen doxygen.config`)
+3. Implement your own particles, sources or fields by inheriting from the corresponding base classes and fill the virtual routines with the corresponding physics
+4. Make low level changes to the existing classes
 
 Output
 -------
