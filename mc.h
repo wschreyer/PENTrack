@@ -71,25 +71,26 @@ public:
 		ReadInFile(infile, invars); // read particle.in again to overwrite defaults for specific particle settings
 
 		for (TConfig::iterator i = invars.begin(); i != invars.end(); i++){
-			istringstream(i->second["Emax"]) >> pconfigs[i->first].Emax;
-			istringstream(i->second["Emin"]) >> pconfigs[i->first].Emin;
-			istringstream(i->second["lmax"]) >> pconfigs[i->first].lmax;
-			istringstream(i->second["polarization"]) >> pconfigs[i->first].polarization;
-			istringstream(i->second["tau"]) >> pconfigs[i->first].tau;
-			istringstream(i->second["tmax"]) >> pconfigs[i->first].tmax;
-			istringstream(i->second["phi_v_min"]) >> pconfigs[i->first].phi_v_min;
-			istringstream(i->second["phi_v_max"]) >> pconfigs[i->first].phi_v_max;
-			istringstream(i->second["theta_v_min"]) >> pconfigs[i->first].theta_v_min;
-			istringstream(i->second["theta_v_max"]) >> pconfigs[i->first].theta_v_max;
+			TParticleConfig *pconf = &pconfigs[i->first];
+			istringstream(i->second["Emax"]) >> pconf->Emax;
+			istringstream(i->second["Emin"]) >> pconf->Emin;
+			istringstream(i->second["lmax"]) >> pconf->lmax;
+			istringstream(i->second["polarization"]) >> pconf->polarization;
+			istringstream(i->second["tau"]) >> pconf->tau;
+			istringstream(i->second["tmax"]) >> pconf->tmax;
+			istringstream(i->second["phi_v_min"]) >> pconf->phi_v_min;
+			istringstream(i->second["phi_v_max"]) >> pconf->phi_v_max;
+			istringstream(i->second["theta_v_min"]) >> pconf->theta_v_min;
+			istringstream(i->second["theta_v_max"]) >> pconf->theta_v_max;
 			try{
-				pconfigs[i->first].spectrum.DefineVar("x", &xvar);
-				pconfigs[i->first].spectrum.SetExpr(i->second["spectrum"]);
-				pconfigs[i->first].spectrum.DefineFun("ProtonBetaSpectrum", &ProtonBetaSpectrum);
-				pconfigs[i->first].spectrum.DefineFun("ElectronBetaSpectrum", &ElectronBetaSpectrum);
-				pconfigs[i->first].phi_v.DefineVar("x", &xvar);
-				pconfigs[i->first].phi_v.SetExpr(i->second["phi_v"]);
-				pconfigs[i->first].theta_v.DefineVar("x", &xvar);
-				pconfigs[i->first].theta_v.SetExpr(i->second["theta_v"]);
+				pconf->spectrum.DefineVar("x", &xvar);
+				pconf->spectrum.SetExpr(i->second["spectrum"]);
+				pconf->spectrum.DefineFun("ProtonBetaSpectrum", &ProtonBetaSpectrum);
+				pconf->spectrum.DefineFun("ElectronBetaSpectrum", &ElectronBetaSpectrum);
+				pconf->phi_v.DefineVar("x", &xvar);
+				pconf->phi_v.SetExpr(i->second["phi_v"]);
+				pconf->theta_v.DefineVar("x", &xvar);
+				pconf->theta_v.SetExpr(i->second["theta_v"]);
 			}
 			catch (mu::Parser::exception_type &exc){
 				cout << exc.GetMsg();
@@ -306,7 +307,7 @@ public:
 	 * @param phi_v Returns velocity azimuth
 	 * @param theta_v Returns velocity polar angle
 	 */
-	void AngularDist(const string &particlename, double &phi_v, double &theta_v){
+	void AngularDist(const string &particlename, long double &phi_v, long double &theta_v){
 		double y;
 		TParticleConfig *pconfig = &pconfigs[particlename];
 		for (;;){
@@ -318,8 +319,10 @@ public:
 				cout << exc.GetMsg();
 				exit(-1);
 			}
-			if (UniformDist(0,1) < y)
+			if (UniformDist(0,1) < y){
 				phi_v = xvar;
+				break;
+			}
 		}
 		for (;;){
 			xvar = UniformDist(pconfig->theta_v_min, pconfig->theta_v_max);
@@ -330,8 +333,10 @@ public:
 				cout << exc.GetMsg();
 				exit(-1);
 			}
-			if (UniformDist(0,1) < y)
+			if (UniformDist(0,1) < y){
 				theta_v = xvar;
+				break;
+			}
 		}
 	}
 

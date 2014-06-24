@@ -25,20 +25,23 @@ UCNdet		0.1			1			0				0
 
 [SOURCE]
 ############ sourcemodes ###############
-# volume: source volume is given by a STL file, particles are created in the space completely surrounded by the STL-surface
-# customvol: particle starting values are diced in the given parameter range (r,phi,z)
-# surface: starting values are on triangles whose vertices are all in the given STL-volume
-# customsurf: starting values are on triangles which have at least one vertex in the given parameter range (r,phi,z)
+# STLvolume: source volume is given by a STL file, particles are created in the space completely surrounded by the STL-surface
+# cylvolume: particle starting values are diced in the given parameter range (r,phi,z)
+# STLsurface: starting values are on triangles whose vertices are all in the given STL-volume
+# cylsurface: starting values are on triangles which have at least one vertex in the given parameter range (r,phi,z)
 ########################################
 
-#customxxx	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	Enormal (customsurf only)
-#customsurf	0.123	0.495	0		360			0.003	1.145	200			0
-#customvol	0.125	0.495	0		360			0.005	1.145	0
+#cylsurface	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	Enormal
+#cylsurface	electron	0.123	0.495	0		360			0.003	1.145	200			0
 
-#inital conditions will be randomly picked from this volume
-#sourcetype 	STL-file		ActiveTime	Enormal (surface only)
-surface 	in/source.STL		200		0
-#volume 	in/source.STL		0
+#cylvolume	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime
+#cylvolume	neutron		0.125	0.495	0		360			0.005	1.145	0
+
+#STLsurface	particles 	STL-file		ActiveTime	Enormal
+STLsurface 	neutron		in/source.STL	200			0
+
+#STLvolume	particles	STL-file		ActiveTime
+#STLvolume 	neutron		in/source.STL	0
 
 [FIELDS]
 #field 		table-file			BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime

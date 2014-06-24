@@ -8,13 +8,13 @@ Emin 0				# min. energy [eV]
 Emax 0				# max. energy [eV]
 spectrum 1			# differential initial energy distribution (0 <= f(x) <= 1 !)
 
-#phi_v_min 0			# min. azimuth angle of velocity
-#phi_v_max 6.2831853	# max. azimuth angle of velocity
-#phi_v 1				# differential initial distribution of azimuth angle of velocity (0 <= f(x) <= 1 !)
+phi_v_min 0			# min. azimuth angle of velocity
+phi_v_max 6.2831853	# max. azimuth angle of velocity
+phi_v 1				# differential initial distribution of azimuth angle of velocity - volume source only! (0 <= f(x) <= 1 !)
 
-#theta_v_min 0		# min. polar angle of velocity
-#theta_v_max 3.14159	# max. polar angle of velocity
-#theta_v sin(x)		# differential initial distribution of polar angle of velocity  (0 <= f(x) <= 1 !)
+theta_v_min 0		# min. polar angle of velocity
+theta_v_max 3.14159	# max. polar angle of velocity
+theta_v sin(x)		# differential initial distribution of polar angle of velocity - volume source only! (0 <= f(x) <= 1 !)
 
 endlog 1			# print start and end values to file
 tracklog 0			# print track to file

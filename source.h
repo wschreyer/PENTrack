@@ -16,14 +16,15 @@
  */
 class TParticleSource{
 protected:
-	Doub fActiveTime; ///< Duration for which the source will be active
+	double fActiveTime; ///< Duration for which the source will be active
+	const string fParticleName;
 public:
 	/**
 	 * Constructor, should be called by every derived class
 	 *
 	 * @param ActiveTime Duration for which the source shall be active
 	 */
-	TParticleSource(Doub ActiveTime): fActiveTime(ActiveTime){ };
+	TParticleSource(const string ParticleName, double ActiveTime): fActiveTime(ActiveTime), fParticleName(ParticleName){ };
 
 	/**
 	 * Destructor
@@ -42,7 +43,7 @@ public:
 	 * @param phi_v Generated initial azimuth angle of velocity vector
 	 * @param theta_v Generated initial polar angle of velocity vector
 	 */
-	virtual	void RandomSourcePoint(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v) = 0;
+	virtual	void RandomSourcePoint(TMCGenerator &mc, long double &t, long double &Ekin, long double &x, long double &y, long double &z, long double &phi_v, long double &theta_v) = 0;
 };
 
 
@@ -53,8 +54,8 @@ public:
  */
 class TSurfaceSource: public TParticleSource{
 protected:
-	Doub sourcearea; ///< Net area of source surface
-	Doub Enormal; ///< Boost given to particles starting from this surface
+	double sourcearea; ///< Net area of source surface
+	double Enormal; ///< Boost given to particles starting from this surface
 	vector<TTriangle> sourcetris; ///< List of triangles making up the source surface
 public:
 	/**
@@ -63,7 +64,7 @@ public:
 	 * @param ActiveTime Duration for which the source shall be active
 	 * @param E_normal Energy boost that should be given to particles starting from this surface source
 	 */
-	TSurfaceSource(Doub ActiveTime, Doub E_normal): TParticleSource(ActiveTime), Enormal(E_normal), sourcearea(0){ }
+	TSurfaceSource(const string ParticleName, double ActiveTime, double E_normal): TParticleSource(ParticleName, ActiveTime), Enormal(E_normal), sourcearea(0){ }
 
 	/**
 	 * Generate a random time, point and velocity direction
@@ -77,19 +78,19 @@ public:
 	 * @param phi_v Generated initial azimuth angle of velocity vector, distributed according to Lambert's law with an optional boost when E_normal was given
 	 * @param theta_v Generated initial polar angle of velocity vector, distributed according to Lambert's law with an optional boost when E_normal was given
 	 */
-	void RandomSourcePoint(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v){
+	void RandomSourcePoint(TMCGenerator &mc, long double &t, long double &Ekin, long double &x, long double &y, long double &z, long double &phi_v, long double &theta_v){
 		t = mc.UniformDist(0, fActiveTime);
-		Doub p[3] = {x, y, z};
-		Doub n[3];
-		Doub RandA = mc.UniformDist(0,sourcearea);
-		Doub SumA = 0;
+		long double p[3] = {x, y, z};
+		long double n[3];
+		double RandA = mc.UniformDist(0,sourcearea);
+		double SumA = 0;
 		vector<TTriangle>::iterator i;
 		for (i = sourcetris.begin(); i != sourcetris.end(); i++){
 			SumA += i->area();
 			if (RandA <= SumA) break;
 		}
-		Doub a = mc.UniformDist(0,1); // generate random point on triangle (see Numerical Recipes 3rd ed., p. 1114)
-		Doub b = mc.UniformDist(0,1);
+		double a = mc.UniformDist(0,1); // generate random point on triangle (see Numerical Recipes 3rd ed., p. 1114)
+		double b = mc.UniformDist(0,1);
 		if (a+b > 1){
 			a = 1 - a;
 			b = 1 - b;
@@ -107,11 +108,11 @@ public:
 		phi_v = mc.UniformDist(0, 2*pi); // generate random velocity angles in upper hemisphere
 		theta_v = mc.SinCosDist(0, 0.5*pi); // Lambert's law!
 		if (Enormal > 0){
-			Doub vnormal = sqrt(Ekin*cos(theta_v)*cos(theta_v) + Enormal); // add E_normal to component normal to surface
-			Doub vtangential = sqrt(Ekin)*sin(theta_v);
+			double vnormal = sqrt(Ekin*cos(theta_v)*cos(theta_v) + Enormal); // add E_normal to component normal to surface
+			double vtangential = sqrt(Ekin)*sin(theta_v);
 			theta_v = atan2(vtangential, vnormal); // update angle
 			Ekin = vnormal*vnormal + vtangential*vtangential; // update energy
-			Doub v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
+			long double v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
 			RotateVector(v,n);
 
 			phi_v = atan2(v[1],v[0]);
@@ -125,7 +126,7 @@ public:
  */
 class TCylindricalVolumeSource: public TParticleSource{
 private:
-	Doub rmin, rmax, phimin, phimax, zmin, zmax;
+	double rmin, rmax, phimin, phimax, zmin, zmax;
 public:
 	/**
 	 * Constructor.
@@ -138,8 +139,8 @@ public:
 	 * @param z_min Minimal axial coordinate range
 	 * @param z_max Maximal axial coordinate range
 	 */
-	TCylindricalVolumeSource(Doub ActiveTime, Doub r_min, Doub r_max, Doub phi_min, Doub phi_max, Doub z_min, Doub z_max)
-		: TParticleSource(ActiveTime), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
+	TCylindricalVolumeSource(const string ParticleName, double ActiveTime, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max)
+		: TParticleSource(ParticleName, ActiveTime), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
 
 	}
 
@@ -155,14 +156,14 @@ public:
 	 * @param phi_v Generated initial azimuth angle of velocity vector, isotropically distributed
 	 * @param theta_v Generated initial polar angle of velocity vector, isotropically distributed
 	 */
-	void RandomSourcePoint(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v){
+	void RandomSourcePoint(TMCGenerator &mc, long double &t, long double &Ekin, long double &x, long double &y, long double &z, long double &phi_v, long double &theta_v){
 		t = mc.UniformDist(0, fActiveTime);
-		Doub r = mc.LinearDist(rmin, rmax); // weighting because of the volume element and a r^2 probability outwards
-		Doub phi_r = mc.UniformDist(phimin,phimax);
+		double r = mc.LinearDist(rmin, rmax); // weighting because of the volume element and a r^2 probability outwards
+		double phi_r = mc.UniformDist(phimin,phimax);
 		x = r*cos(phi_r);
 		y = r*sin(phi_r);
 		z = mc.UniformDist(zmin,zmax);
-		mc.IsotropicDist(phi_v, theta_v);
+		mc.AngularDist(fParticleName, phi_v, theta_v);
 	}
 };
 
@@ -171,14 +172,14 @@ public:
  */
 class TCylindricalSurfaceSource: public TSurfaceSource{
 private:
-	Doub rmin, rmax, phimin, phimax, zmin, zmax;
+	double rmin, rmax, phimin, phimax, zmin, zmax;
 
 	/**
 	 * Check if a point is inside the cylindrical coordinate range
 	 */
 	bool InSourceVolume(CPoint p){
-		Doub r = sqrt(p[0]*p[0] + p[1]*p[1]);
-		Doub phi = atan2(p[1],p[0]);
+		double r = sqrt(p[0]*p[0] + p[1]*p[1]);
+		double phi = atan2(p[1],p[0]);
 		return (r >= rmin && r <= rmax &&
 				phi >= phimin && phi <= phimax &&
 				p[2] >= zmin && p[2] <= zmax); // check if point is in custom paramter range
@@ -200,15 +201,15 @@ public:
 	 * @param z_min Minimal axial coordinate range
 	 * @param z_max Maximal axial coordinate range
 	 */
-	TCylindricalSurfaceSource(Doub ActiveTime, TGeometry &geometry, Doub E_normal, Doub r_min, Doub r_max, Doub phi_min, Doub phi_max, Doub z_min, Doub z_max)
-		: TSurfaceSource(ActiveTime, E_normal), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
+	TCylindricalSurfaceSource(const string ParticleName, double ActiveTime, TGeometry &geometry, double E_normal, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max)
+		: TSurfaceSource(ParticleName, ActiveTime, E_normal), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
 		for (CIterator i = geometry.mesh.triangles.begin(); i != geometry.mesh.triangles.end(); i++){
 			if (InSourceVolume(i->tri[0]) && InSourceVolume(i->tri[1]) && InSourceVolume(i->tri[2])){
 				sourcetris.push_back(*i);
 				sourcearea += i->area();
 			}
 		}
-		printf("Source Area: %LG m^2\n",sourcearea);
+		printf("Source Area: %g m^2\n",sourcearea);
 	}
 };
 
@@ -227,7 +228,7 @@ public:
 	 * @param ActiveTime Duration for which the source shall be active
 	 * @param sourcefile File from which the STL solid shall be read
 	 */
-	TSTLVolumeSource(Doub ActiveTime, string sourcefile): TParticleSource(ActiveTime){
+	TSTLVolumeSource(const string ParticleName, double ActiveTime, string sourcefile): TParticleSource(ParticleName, ActiveTime){
 		kdtree.ReadFile(sourcefile.c_str(),0);
 		kdtree.Init();
 	}
@@ -244,15 +245,15 @@ public:
 	 * @param phi_v Generated initial azimuth angle of velocity vector, isotropically distributed
 	 * @param theta_v Generated initial polar angle of velocity vector, isotropically distributed
 	 */
-	void RandomSourcePoint(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v){
+	void RandomSourcePoint(TMCGenerator &mc, long double &t, long double &Ekin, long double &x, long double &y, long double &z, long double &phi_v, long double &theta_v){
 		t = mc.UniformDist(0, fActiveTime);
-		Doub p[3];
+		double p[3];
 		for(;;){
 			p[0] = mc.UniformDist(kdtree.tree.bbox().xmin(),kdtree.tree.bbox().xmax()); // random point
 			p[1] = mc.UniformDist(kdtree.tree.bbox().ymin(),kdtree.tree.bbox().ymax()); // random point
 			p[2] = mc.UniformDist(kdtree.tree.bbox().zmin(),kdtree.tree.bbox().zmax()); // random point
 			if (kdtree.InSolid(p)){
-				mc.IsotropicDist(phi_v, theta_v);
+				mc.AngularDist(fParticleName, phi_v, theta_v);
 				x = p[0];
 				y = p[1];
 				z = p[2];
@@ -280,7 +281,7 @@ public:
 	 * @param sourcefile STL solid in which the surface should lie.
 	 * @param E_normal Give particles starting at this source a velocity boost normal to the surface.
 	 */
-	TSTLSurfaceSource(Doub ActiveTime, TGeometry &geometry, string sourcefile, Doub E_normal): TSurfaceSource(ActiveTime, E_normal){
+	TSTLSurfaceSource(const string ParticleName, double ActiveTime, TGeometry &geometry, string sourcefile, double E_normal): TSurfaceSource(ParticleName, ActiveTime, E_normal){
 		TTriangleMesh mesh;
 		mesh.ReadFile(sourcefile.c_str(),0);
 		mesh.Init();
@@ -291,7 +292,7 @@ public:
 				sourcearea += i->area();
 			}
 		}
-		printf("Source Area: %LG m^2\n",sourcearea);
+		printf("Source Area: %g m^2\n",sourcearea);
 	}
 };
 
@@ -299,10 +300,10 @@ public:
  * Class which can produce random particle starting points from different sources.
  *
  * There are four source modes which can be specified in the [SOURCE] section of the configuration file:
- * "volume" - random points inside a STL solid are created;
- * "surface" - random points on triangles COMPLETELY surrounded by a STL solid are created;
- * "customvol" - random points in a cylindrical coordinate range are created;
- * "customsurf"	- random points on triangles COMPLETELY inside a cylindrical coordinate range are created
+ * "STLvolume" - random points inside a STL solid are created;
+ * "STLsurface" - random points on triangles COMPLETELY surrounded by a STL solid are created;
+ * "cylvolume" - random points in a cylindrical coordinate range are created;
+ * "cylsurface"	- random points on triangles COMPLETELY inside a cylindrical coordinate range are created
  */
 struct TSource{
 public:
@@ -319,32 +320,34 @@ public:
 	TSource(TConfig &geometryconf, TGeometry &geom, TFieldManager &field): source(NULL){
 		sourcemode = geometryconf["SOURCE"].begin()->first; // only first source in geometry.in is read in
 		istringstream sourceconf(geometryconf["SOURCE"].begin()->second);
+		string ParticleName;
+		sourceconf >> ParticleName;
 
-		Doub ActiveTime;
-		if (sourcemode == "customvol"){
-			Doub r_min, r_max, phi_min, phi_max, z_min, z_max;
+		double ActiveTime;
+		if (sourcemode == "cylvolume"){
+			double r_min, r_max, phi_min, phi_max, z_min, z_max;
 			sourceconf >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime;
 			if (sourceconf)
-				source = new TCylindricalVolumeSource(ActiveTime, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max);
+				source = new TCylindricalVolumeSource(ParticleName, ActiveTime, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max);
 		}
-		else if (sourcemode == "volume"){
+		else if (sourcemode == "STLvolume"){
 			string sourcefile;
 			sourceconf >> sourcefile >> ActiveTime;
 			if (sourceconf)
-				source = new TSTLVolumeSource(ActiveTime, sourcefile);
+				source = new TSTLVolumeSource(ParticleName, ActiveTime, sourcefile);
 		}
-		else if (sourcemode == "customsurf"){
-			Doub r_min, r_max, phi_min, phi_max, z_min, z_max, E_normal;
+		else if (sourcemode == "cylsurface"){
+			double r_min, r_max, phi_min, phi_max, z_min, z_max, E_normal;
 			sourceconf >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime >> E_normal;
 			if (sourceconf)
-				source = new TCylindricalSurfaceSource(ActiveTime, geom, E_normal, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max);
+				source = new TCylindricalSurfaceSource(ParticleName, ActiveTime, geom, E_normal, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max);
 		}
-		else if (sourcemode == "surface"){
+		else if (sourcemode == "STLsurface"){
 			string sourcefile;
-			Doub E_normal;
+			double E_normal;
 			sourceconf >> sourcefile >> ActiveTime >> E_normal;
 			if (sourceconf)
-				source = new TSTLSurfaceSource(ActiveTime, geom, sourcefile, E_normal);
+				source = new TSTLSurfaceSource(ParticleName, ActiveTime, geom, sourcefile, E_normal);
 		}
 
 		if (!source){
@@ -382,7 +385,7 @@ public:
 	 * @param phi_v Returns azimuth of velocity vector
 	 * @param theta_v Returns polar angle of velocity vector
 	 */
-	void RandomPointInSourceVolume(TMCGenerator &mc, Doub &t, Doub &Ekin, Doub &x, Doub &y, Doub &z, Doub &phi_v, Doub &theta_v){
+	void RandomPointInSourceVolume(TMCGenerator &mc, long double &t, long double &Ekin, long double &x, long double &y, long double &z, long double &phi_v, long double &theta_v){
 		source->RandomSourcePoint(mc, t, Ekin, x, y, z, phi_v, theta_v);
 	};
 };

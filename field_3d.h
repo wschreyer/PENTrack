@@ -294,8 +294,8 @@ class TabField3: public TField{
 					}
 					Spline_interp spli(x,y); // splineinterpolate field values F in x-direction
 					for (int xi = 0; xi < xl-1; xi++)
-						Tab1[xi][yi][zi] = (y[xi+1] - y[xi])/xdist - (spli.y2[xi+1] - spli.y2[xi])*xdist/6 - spli.y2[xi]*xdist/2; // get dF/dx from spline coefficients spli.y2
-					Tab1[xl-1][yi][zi] = (y[xl-1] - y[xl-2])/xdist - (spli.y2[xl-1] - spli.y2[xl-2])*xdist/6 + spli.y2[xl-1]*xdist/2;
+						Tab1[xi][yi][zi] = (y[xi+1] - y[xi  ])/xdist - (spli.y2[xi+1] - spli.y2[xi  ])*xdist/6 - spli.y2[xi  ]*xdist/2; // get dF/dx from spline coefficients spli.y2
+					Tab1[xl-1][yi][zi]   = (y[xl-1] - y[xl-2])/xdist - (spli.y2[xl-1] - spli.y2[xl-2])*xdist/6 + spli.y2[xl-1]*xdist/2;
 				}
 			}
 
@@ -309,8 +309,8 @@ class TabField3: public TField{
 					}
 					Spline_interp spli(x,y); // splineinterpolate field values F in y-diretion
 					for (int yi = 0; yi < yl-1; yi++)
-						Tab2[xi][yi][zi] = (y[yi+1] - y[yi])/ydist - (spli.y2[yi+1] - spli.y2[yi])*ydist/6 - spli.y2[yi]*ydist/2; // get dF/dy from spline coefficients spli.y2
-					Tab2[xi][yl-1][zi] = (y[yl-1] - y[yl-2])/ydist - (spli.y2[yl-1] - spli.y2[yl-2])*ydist/6 + spli.y2[yl-1]*ydist/2;
+						Tab2[xi][yi][zi] = (y[yi+1] - y[yi  ])/ydist - (spli.y2[yi+1] - spli.y2[yi  ])*ydist/6 - spli.y2[yi  ]*ydist/2; // get dF/dy from spline coefficients spli.y2
+					Tab2[xi][yl-1][zi]   = (y[yl-1] - y[yl-2])/ydist - (spli.y2[yl-1] - spli.y2[yl-2])*ydist/6 + spli.y2[yl-1]*ydist/2;
 				}
 			}
 
@@ -324,8 +324,8 @@ class TabField3: public TField{
 					}
 					Spline_interp spli(x,y); // splineinterpolate field values F in z-diretion
 					for (int zi = 0; zi < zl-1; zi++)
-						Tab3[xi][yi][zi] = (y[zi+1] - y[zi])/zdist - (spli.y2[zi+1] - spli.y2[zi])*zdist/6 - spli.y2[zi]*zdist/2; // get dF/dz from spline coefficients spli.y2
-					Tab3[xi][yi][zl-1] = (y[zl-1] - y[zl-2])/zdist - (spli.y2[zl-1] - spli.y2[zl-2])*zdist/6 + spli.y2[zl-1]*zdist/2;
+						Tab3[xi][yi][zi] = (y[zi+1] - y[zi  ])/zdist - (spli.y2[zi+1] - spli.y2[zi  ])*zdist/6 - spli.y2[zi  ]*zdist/2; // get dF/dz from spline coefficients spli.y2
+					Tab3[xi][yi][zl-1]   = (y[zl-1] - y[zl-2])/zdist - (spli.y2[zl-1] - spli.y2[zl-2])*zdist/6 + spli.y2[zl-1]*zdist/2;
 				}
 			}
 
@@ -339,8 +339,8 @@ class TabField3: public TField{
 					}
 					Spline_interp spli(x,y); // splineinterpolate dF/dx in y direction
 					for (int yi = 0; yi < yl-1; yi++)
-						Tab12[xi][yi][zi] = (y[yi+1] - y[yi])/ydist - (spli.y2[yi+1] - spli.y2[yi])*ydist/6 - spli.y2[yi]*ydist/2; // get cross derivatives d2F/dxdy from spline coefficients
-					Tab12[xi][yl-1][zi] = (y[yl-1] - y[yl-2])/ydist - (spli.y2[yl-1] - spli.y2[yl-2])*ydist/6 + spli.y2[yl-1]*ydist/2;
+						Tab12[xi][yi][zi] = (y[yi+1] - y[yi  ])/ydist - (spli.y2[yi+1] - spli.y2[yi  ])*ydist/6 - spli.y2[yi  ]*ydist/2; // get cross derivatives d2F/dxdy from spline coefficients
+					Tab12[xi][yl-1][zi]   = (y[yl-1] - y[yl-2])/ydist - (spli.y2[yl-1] - spli.y2[yl-2])*ydist/6 + spli.y2[yl-1]*ydist/2;
 				}
 			}
 
@@ -354,8 +354,8 @@ class TabField3: public TField{
 					}
 					Spline_interp spli(x,y); // splineinterpolate dF/dx in z direction
 					for (int zi = 0; zi < zl-1; zi++)
-						Tab13[xi][yi][zi] = (y[zi+1] - y[zi])/zdist - (spli.y2[zi+1] - spli.y2[zi])*zdist/6 - spli.y2[zi]*zdist/2; // get cross derivatives d2F/dxdz from spline coefficients
-					Tab13[xi][yi][zl-1] = (y[zl-1] - y[zl-2])/zdist - (spli.y2[zl-1] - spli.y2[zl-2])*zdist/6 + spli.y2[zl-1]*zdist/2;
+						Tab13[xi][yi][zi] = (y[zi+1] - y[zi  ])/zdist - (spli.y2[zi+1] - spli.y2[zi  ])*zdist/6 - spli.y2[zi  ]*zdist/2; // get cross derivatives d2F/dxdz from spline coefficients
+					Tab13[xi][yi][zl-1]   = (y[zl-1] - y[zl-2])/zdist - (spli.y2[zl-1] - spli.y2[zl-2])*zdist/6 + spli.y2[zl-1]*zdist/2;
 				}
 			}
 
@@ -367,8 +367,8 @@ class TabField3: public TField{
 					}
 					Spline_interp spli(x,y); // splineinterpolate dF/dy in z direction
 					for (int zi = 0; zi < zl-1; zi++)
-						Tab23[xi][yi][zi] = (y[zi+1] - y[zi])/zdist - (spli.y2[zi+1] - spli.y2[zi])*zdist/6 - spli.y2[zi]*zdist/2; // get cross derivatives d2F/dydz from spline coefficients
-					Tab23[xi][yi][zl-1] = (y[zl-1] - y[zl-2])/zdist - (spli.y2[zl-1] - spli.y2[zl-2])*zdist/6 + spli.y2[zl-1]*zdist/2;
+						Tab23[xi][yi][zi] = (y[zi+1] - y[zi  ])/zdist - (spli.y2[zi+1] - spli.y2[zi  ])*zdist/6 - spli.y2[zi  ]*zdist/2; // get cross derivatives d2F/dydz from spline coefficients
+					Tab23[xi][yi][zl-1]   = (y[zl-1] - y[zl-2])/zdist - (spli.y2[zl-1] - spli.y2[zl-2])*zdist/6 + spli.y2[zl-1]*zdist/2;
 				}
 			}
 
@@ -380,8 +380,8 @@ class TabField3: public TField{
 					}
 					Spline_interp spli(x,y); // splineinterpolate d2F/dxdy in z direction
 					for (int zi = 0; zi < zl-1; zi++)
-						Tab123[xi][yi][zi] = (y[zi+1] - y[zi])/zdist - (spli.y2[zi+1] - spli.y2[zi])*zdist/6 - spli.y2[zi]*zdist/2; // get cross derivatives d3F/dxdydz from spline coefficients
-					Tab123[xi][yi][zl-1] = (y[zl-1] - y[zl-2])/zdist - (spli.y2[zl-1] - spli.y2[zl-2])*zdist/6 + spli.y2[zl-1]*zdist/2;
+						Tab123[xi][yi][zi] = (y[zi+1] - y[zi  ])/zdist - (spli.y2[zi+1] - spli.y2[zi  ])*zdist/6 - spli.y2[zi  ]*zdist/2; // get cross derivatives d3F/dxdydz from spline coefficients
+					Tab123[xi][yi][zl-1]   = (y[zl-1] - y[zl-2])/zdist - (spli.y2[zl-1] - spli.y2[zl-2])*zdist/6 + spli.y2[zl-1]*zdist/2;
 				}
 			}
 
@@ -413,76 +413,76 @@ class TabField3: public TField{
 					for (indz=0; indz < zl-1; indz++){
 						// fill cube with values and derivatives
 						// order: see Lekien, Marsden: "Tricubic interpolation in three dimensions"
-						yyy[0] = Tab[indx][indy][indz];
-						yyy[1] = Tab[indx+1][indy][indz];
-						yyy[2] = Tab[indx][indy+1][indz];
-						yyy[3] = Tab[indx+1][indy+1][indz];
-						yyy[4] = Tab[indx][indy][indz+1];
-						yyy[5] = Tab[indx+1][indy][indz+1];
-						yyy[6] = Tab[indx][indy+1][indz+1];
+						yyy[0] = Tab[indx  ][indy  ][indz  ];
+						yyy[1] = Tab[indx+1][indy  ][indz  ];
+						yyy[2] = Tab[indx  ][indy+1][indz  ];
+						yyy[3] = Tab[indx+1][indy+1][indz  ];
+						yyy[4] = Tab[indx  ][indy  ][indz+1];
+						yyy[5] = Tab[indx+1][indy  ][indz+1];
+						yyy[6] = Tab[indx  ][indy+1][indz+1];
 						yyy[7] = Tab[indx+1][indy+1][indz+1];
 
-						yyy1[0] = Tab1[indx][indy][indz]*xdist;
-						yyy1[1] = Tab1[indx+1][indy][indz]*xdist;
-						yyy1[2] = Tab1[indx][indy+1][indz]*xdist;
-						yyy1[3] = Tab1[indx+1][indy+1][indz]*xdist;
-						yyy1[4] = Tab1[indx][indy][indz+1]*xdist;
-						yyy1[5] = Tab1[indx+1][indy][indz+1]*xdist;
-						yyy1[6] = Tab1[indx][indy+1][indz+1]*xdist;
+						yyy1[0] = Tab1[indx  ][indy  ][indz  ]*xdist;
+						yyy1[1] = Tab1[indx+1][indy  ][indz  ]*xdist;
+						yyy1[2] = Tab1[indx  ][indy+1][indz  ]*xdist;
+						yyy1[3] = Tab1[indx+1][indy+1][indz  ]*xdist;
+						yyy1[4] = Tab1[indx  ][indy  ][indz+1]*xdist;
+						yyy1[5] = Tab1[indx+1][indy  ][indz+1]*xdist;
+						yyy1[6] = Tab1[indx  ][indy+1][indz+1]*xdist;
 						yyy1[7] = Tab1[indx+1][indy+1][indz+1]*xdist;
 
-						yyy2[0] = Tab2[indx][indy][indz]*ydist;
-						yyy2[1] = Tab2[indx+1][indy][indz]*ydist;
-						yyy2[2] = Tab2[indx][indy+1][indz]*ydist;
-						yyy2[3] = Tab2[indx+1][indy+1][indz]*ydist;
-						yyy2[4] = Tab2[indx][indy][indz+1]*ydist;
-						yyy2[5] = Tab2[indx+1][indy][indz+1]*ydist;
-						yyy2[6] = Tab2[indx][indy+1][indz+1]*ydist;
+						yyy2[0] = Tab2[indx  ][indy  ][indz  ]*ydist;
+						yyy2[1] = Tab2[indx+1][indy  ][indz  ]*ydist;
+						yyy2[2] = Tab2[indx  ][indy+1][indz  ]*ydist;
+						yyy2[3] = Tab2[indx+1][indy+1][indz  ]*ydist;
+						yyy2[4] = Tab2[indx  ][indy  ][indz+1]*ydist;
+						yyy2[5] = Tab2[indx+1][indy  ][indz+1]*ydist;
+						yyy2[6] = Tab2[indx  ][indy+1][indz+1]*ydist;
 						yyy2[7] = Tab2[indx+1][indy+1][indz+1]*ydist;
 
-						yyy3[0] = Tab3[indx][indy][indz]*zdist;
-						yyy3[1] = Tab3[indx+1][indy][indz]*zdist;
-						yyy3[2] = Tab3[indx][indy+1][indz]*zdist;
-						yyy3[3] = Tab3[indx+1][indy+1][indz]*zdist;
-						yyy3[4] = Tab3[indx][indy][indz+1]*zdist;
-						yyy3[5] = Tab3[indx+1][indy][indz+1]*zdist;
-						yyy3[6] = Tab3[indx][indy+1][indz+1]*zdist;
+						yyy3[0] = Tab3[indx  ][indy  ][indz  ]*zdist;
+						yyy3[1] = Tab3[indx+1][indy  ][indz  ]*zdist;
+						yyy3[2] = Tab3[indx  ][indy+1][indz  ]*zdist;
+						yyy3[3] = Tab3[indx+1][indy+1][indz  ]*zdist;
+						yyy3[4] = Tab3[indx  ][indy  ][indz+1]*zdist;
+						yyy3[5] = Tab3[indx+1][indy  ][indz+1]*zdist;
+						yyy3[6] = Tab3[indx  ][indy+1][indz+1]*zdist;
 						yyy3[7] = Tab3[indx+1][indy+1][indz+1]*zdist;
 
-						yyy12[0] = Tab12[indx][indy][indz]*xdist*ydist;
-						yyy12[1] = Tab12[indx+1][indy][indz]*xdist*ydist;
-						yyy12[2] = Tab12[indx][indy+1][indz]*xdist*ydist;
-						yyy12[3] = Tab12[indx+1][indy+1][indz]*xdist*ydist;
-						yyy12[4] = Tab12[indx][indy][indz+1]*xdist*ydist;
-						yyy12[5] = Tab12[indx+1][indy][indz+1]*xdist*ydist;
-						yyy12[6] = Tab12[indx][indy+1][indz+1]*xdist*ydist;
+						yyy12[0] = Tab12[indx  ][indy  ][indz  ]*xdist*ydist;
+						yyy12[1] = Tab12[indx+1][indy  ][indz  ]*xdist*ydist;
+						yyy12[2] = Tab12[indx  ][indy+1][indz  ]*xdist*ydist;
+						yyy12[3] = Tab12[indx+1][indy+1][indz  ]*xdist*ydist;
+						yyy12[4] = Tab12[indx  ][indy  ][indz+1]*xdist*ydist;
+						yyy12[5] = Tab12[indx+1][indy  ][indz+1]*xdist*ydist;
+						yyy12[6] = Tab12[indx  ][indy+1][indz+1]*xdist*ydist;
 						yyy12[7] = Tab12[indx+1][indy+1][indz+1]*xdist*ydist;
 
-						yyy13[0] = Tab13[indx][indy][indz]*xdist*zdist;
-						yyy13[1] = Tab13[indx+1][indy][indz]*xdist*zdist;
-						yyy13[2] = Tab13[indx][indy+1][indz]*xdist*zdist;
-						yyy13[3] = Tab13[indx+1][indy+1][indz]*xdist*zdist;
-						yyy13[4] = Tab13[indx][indy][indz+1]*xdist*zdist;
-						yyy13[5] = Tab13[indx+1][indy][indz+1]*xdist*zdist;
-						yyy13[6] = Tab13[indx][indy+1][indz+1]*xdist*zdist;
+						yyy13[0] = Tab13[indx  ][indy  ][indz  ]*xdist*zdist;
+						yyy13[1] = Tab13[indx+1][indy  ][indz  ]*xdist*zdist;
+						yyy13[2] = Tab13[indx  ][indy+1][indz  ]*xdist*zdist;
+						yyy13[3] = Tab13[indx+1][indy+1][indz  ]*xdist*zdist;
+						yyy13[4] = Tab13[indx  ][indy  ][indz+1]*xdist*zdist;
+						yyy13[5] = Tab13[indx+1][indy  ][indz+1]*xdist*zdist;
+						yyy13[6] = Tab13[indx  ][indy+1][indz+1]*xdist*zdist;
 						yyy13[7] = Tab13[indx+1][indy+1][indz+1]*xdist*zdist;
 
-						yyy23[0] = Tab23[indx][indy][indz]*ydist*zdist;
-						yyy23[1] = Tab23[indx+1][indy][indz]*ydist*zdist;
-						yyy23[2] = Tab23[indx][indy+1][indz]*ydist*zdist;
-						yyy23[3] = Tab23[indx+1][indy+1][indz]*ydist*zdist;
-						yyy23[4] = Tab23[indx][indy][indz+1]*ydist*zdist;
-						yyy23[5] = Tab23[indx+1][indy][indz+1]*ydist*zdist;
-						yyy23[6] = Tab23[indx][indy+1][indz+1]*ydist*zdist;
+						yyy23[0] = Tab23[indx  ][indy  ][indz  ]*ydist*zdist;
+						yyy23[1] = Tab23[indx+1][indy  ][indz  ]*ydist*zdist;
+						yyy23[2] = Tab23[indx  ][indy+1][indz  ]*ydist*zdist;
+						yyy23[3] = Tab23[indx+1][indy+1][indz  ]*ydist*zdist;
+						yyy23[4] = Tab23[indx  ][indy  ][indz+1]*ydist*zdist;
+						yyy23[5] = Tab23[indx+1][indy  ][indz+1]*ydist*zdist;
+						yyy23[6] = Tab23[indx  ][indy+1][indz+1]*ydist*zdist;
 						yyy23[7] = Tab23[indx+1][indy+1][indz+1]*ydist*zdist;
 
-						yyy123[0] = Tab123[indx][indy][indz]*xdist*ydist*zdist;
-						yyy123[1] = Tab123[indx+1][indy][indz]*xdist*ydist*zdist;
-						yyy123[2] = Tab123[indx][indy+1][indz]*xdist*ydist*zdist;
-						yyy123[3] = Tab123[indx+1][indy+1][indz]*xdist*ydist*zdist;
-						yyy123[4] = Tab123[indx][indy][indz+1]*xdist*ydist*zdist;
-						yyy123[5] = Tab123[indx+1][indy][indz+1]*xdist*ydist*zdist;
-						yyy123[6] = Tab123[indx][indy+1][indz+1]*xdist*ydist*zdist;
+						yyy123[0] = Tab123[indx  ][indy  ][indz  ]*xdist*ydist*zdist;
+						yyy123[1] = Tab123[indx+1][indy  ][indz  ]*xdist*ydist*zdist;
+						yyy123[2] = Tab123[indx  ][indy+1][indz  ]*xdist*ydist*zdist;
+						yyy123[3] = Tab123[indx+1][indy+1][indz  ]*xdist*ydist*zdist;
+						yyy123[4] = Tab123[indx  ][indy  ][indz+1]*xdist*ydist*zdist;
+						yyy123[5] = Tab123[indx+1][indy  ][indz+1]*xdist*ydist*zdist;
+						yyy123[6] = Tab123[indx  ][indy+1][indz+1]*xdist*ydist*zdist;
 						yyy123[7] = Tab123[indx+1][indy+1][indz+1]*xdist*ydist*zdist;
 
 						// determine coefficients of interpolation
