@@ -112,12 +112,12 @@ public:
 			double vtangential = sqrt(Ekin)*sin(theta_v);
 			theta_v = atan2(vtangential, vnormal); // update angle
 			Ekin = vnormal*vnormal + vtangential*vtangential; // update energy
-			long double v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
-			RotateVector(v,n);
-
-			phi_v = atan2(v[1],v[0]);
-			theta_v = acos(v[2]);
 		}
+
+		long double v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
+		RotateVector(v,n);
+		phi_v = atan2(v[1],v[0]);
+		theta_v = acos(v[2]);
 	}
 };
 
