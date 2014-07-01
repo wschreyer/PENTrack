@@ -1,9 +1,9 @@
 SRC = main.c
 OBJ=$(SRC:.c=.o)
 
-CGAL_INCLUDE= #-I$(HOME)/CGAL-4.3/include # point gcc's -I option to CGAL include directory if you have compiled CGAL manually without installing it
-CGAL_LIB= #-L$(HOME)/CGAL-4.3/lib # point gcc's -L option to CGAL lib directory if you have compiled CGAL manually without installing it
-CGAL_SHAREDLIB= #-Wl,-rpath=$(HOME)/CGAL-4.3/lib # point gcc's -Wl,-rpath= option to CGAL shared library if you have compiled CGAL manually without installing it
+CGAL_INCLUDE= #-I$(HOME)/CGAL-4.4/include # point gcc's -I option to CGAL include directory if you have compiled CGAL manually without installing it
+CGAL_LIB= #-L$(HOME)/CGAL-4.4/lib # point gcc's -L option to CGAL lib directory if you have compiled CGAL manually without installing it
+CGAL_SHAREDLIB= #-Wl,-rpath=$(HOME)/CGAL-4.4/lib # point gcc's -Wl,-rpath= option to CGAL shared library if you have compiled CGAL manually without installing it
 
 MUPARSER_INCLUDE= #-I$(HOME)/muparser_v2_2_3/include/ # point gcc's -I option to muparser include directory if you have compiled muparser manually without installing it
 MUPARSER_LIB= #-L$(HOME)/muparser_v2_2_3/lib/ # point gcc's -L option to muparser lib directory if you have compiled muparser manually without installing it
@@ -15,7 +15,7 @@ LDFLAGS=-lrt -lboost_system $(CGAL_LIB) -lCGAL $(MUPARSER_LIB) -lmuparser
 RM=rm
 EXE=PENTrack
 
-ADDSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp globals.cpp trianglemesh.cpp geometry.cpp
+ADDSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp
 ADDOBJ = $(ADDSRC:.cpp=.o)
 
 .PHONY: all

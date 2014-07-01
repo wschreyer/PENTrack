@@ -11,11 +11,9 @@
 #define ID_DECAYED -4 ///< kennz flag for particles which reached TParticle::tau
 #define ID_INITIAL_NOT_FOUND -5 ///< kennz flag for particles which had a too low total energy to find a initial spot in the source volume
 
-#define NEUTRON 1 ///< set particletype in configuration to this value to simulate neutrons
-#define PROTON 2 ///< set particletype in configuration to this value to simulate only protons
+#define PARTICLE 1 ///< set particletype in configuration to this value to simulate particles
 #define BF_ONLY 3 ///< set particletype in configuration to this value to print out a ramp heating analysis
 #define BF_CUT 4 ///< set particletype in configuration to this value to print out a planar slice through electric/magnetic fields
-#define ELECTRON 6 ///< set particletype in configuration to this value to simulate only electrons
 #define GEOMETRY 7 ///< set particletype in configuration to this value to print out a sampling of the geometry
 
 // physical constants

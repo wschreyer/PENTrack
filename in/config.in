@@ -1,7 +1,7 @@
 # config file for PENTrack program
 # put comments after #
 [global]
-# simtype: 1 => neutrons, 2 => protons, 3 => Bfield, 4 => cut through BField, 6 => electrons, 7 => print geometry
+# simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry
 simtype 1
 # output neutron spatial distribution?
 neutdist 0

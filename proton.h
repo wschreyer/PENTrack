@@ -19,45 +19,26 @@ static const char* NAME_PROTON = "proton";
 struct TProton: TParticle{
 public:
 	/**
-	 * Proton constructor, set start values randomly according to *.in files.
+	 * Create proton
 	 *
-	 * Sets start time TParticle::tstart according to [SOURCE] in geometry.in.
-	 * Sets start energy according to TMCGenerator::Spectrum.
-	 * Then tries to find a position according to [SOURCE] in geometry.in.
+	 * Wraps basic TParticle constructor
 	 *
 	 * @param number Particle number
-	 * @param ageometry TGeometry in which the particle will be simulated
-	 * @param src TSource in which particle should be generated
-	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TFieldManager used to calculate energies (can be NULL)
+	 * @param t Starting time
+	 * @param x Initial x coordinate
+	 * @param y Initial y coordinate
+	 * @param z Initial z coordinate
+	 * @param E Initial kinetic energy
+	 * @param phi Initial azimuth of velocity vector
+	 * @param theta Initial polar angle of velocity vector
+	 * @param amc Random number generator
+	 * @param geometry Experiment geometry
+	 * @param field Optional fields (can be NULL)
 	 */
-	TProton(int number, TGeometry &ageometry, TSource &src,
-				TMCGenerator &mcgen, TFieldManager *afield): TParticle(NAME_PROTON, ele_e, m_p, 0, 0){
-		Init(number, ageometry, src, mcgen, afield);
-	};
+	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
+			: TParticle(NAME_PROTON, ele_e, m_p, 0, 0, number, t, x, y, z, E, phi, theta, amc, geometry, afield){
 
-	/**
-	 * Generic proton constructor
-	 *
-	 * @param number Particle number
-	 * @param t Start time
-	 * @param atau Life time
-	 * @param x Start x coordinate
-	 * @param y Start y coordinate
-	 * @param z Start z coordinate
-	 * @param vx Velocity x component
-	 * @param vy Velocity y component
-	 * @param vz Velocity z component
-	 * @param pol Start polarisation
-	 * @param trajl Max. simulated trajectory length
-	 * @param ageometry TGeometry in which the particle will be simulated
-	 * @param afield Electric and magnetic fields (needed to determine total energy)
-	 */
-	TProton(int number, long double t, long double atau, long double x, long double y, long double z,
-			long double vx, long double vy, long double vz, int pol, long double trajl,
-			TGeometry &ageometry, TFieldManager *afield): TParticle(NAME_PROTON, ele_e, m_p, 0, 0){
-		InitV(number, t, atau, x, y, z, vx, vy, vz, pol, trajl, ageometry, afield);
-	}
+	};
 
 protected:
 	/**

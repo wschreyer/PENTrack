@@ -10,6 +10,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 #include <sys/time.h>
 
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
@@ -19,7 +20,6 @@ static const double RELATIVISTIC_THRESHOLD = 0.01; ///< threshold (v/c) above wh
 #include "fields.h"
 #include "mc.h"
 #include "geometry.h"
-#include "source.h"
 #include "bruteforce.h"
 #include "ndist.h"
 #include "adiabacity.h"
@@ -154,11 +154,42 @@ struct TParticle{
 		 * @param mm Mass
 		 * @param mumu Magnetic dipole moment
 		 * @param agamma Gyromagnetic ratio
+		 * @param number Particle number
+		 * @param t Starting time
+		 * @param x Initial x coordinate
+		 * @param y Initial y coordinate
+		 * @param z Initial z coordinate
+		 * @param E Initial kinetic energy
+		 * @param phi Azimuth of initial velocity vector
+		 * @param theta Polar angle of initial velocity vector
+		 * @param amc Random number generator
+		 * @param geometry Experiment geometry
+		 * @param afield Optional fields (can be NULL)
 		 */
-		TParticle(const char *aname, const long double qq, const long double mm, const long double mumu, const long double agamma)
-				: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), tstart(0), field(NULL), ID(0), mc(NULL), polend(0), maxtraj(0),
-				  tau(0), particlenumber(0), tend(0), geom(NULL), Nhit(0), Hmax(0), Nstep(0), refltime(0), stepper(NULL), inttime(0),
-				  lend(0), polstart(0), Nspinflip(0), noflipprob(1) { };
+		TParticle(const char *aname, const long double qq, const long double mm, const long double mumu, const long double agamma, int number,
+				double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
+				: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN), tstart(t), tend(t),
+				  Nhit(0), Hmax(0), Nstep(0), refltime(0), stepper(NULL), inttime(0), lend(0), polstart(0), Nspinflip(0), noflipprob(1),
+				  field(afield), mc(&amc), geom(&geometry){
+			long double Eoverm = E/m/c_0/c_0;
+			long double vstart;
+			if (Eoverm < 0.0001)
+				vstart = c_0*(sqrt(2*Eoverm) - 3*pow(Eoverm, 1.5L)/2/sqrt(2) + 23*pow(Eoverm, 2.5L)/16/sqrt(2));
+			else
+				vstart = c_0 * sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1))));
+
+			yend[0] = ystart[0] = x;
+			yend[1] = ystart[1] = y;
+			yend[2] = ystart[2] = z;
+			yend[3] = ystart[3] = vstart*cos(phi)*sin(theta);
+			yend[4] = ystart[4] = vstart*sin(phi)*sin(theta);
+			yend[5] = ystart[5] = vstart*cos(theta);
+			polstart = polend = mc->DicePolarisation(name);
+			Hmax = Hstart();
+			maxtraj = mc->MaxTrajLength(name);
+			tau = mc->LifeTime(name);
+			geom->GetSolids(t, ystart, currentsolids);
+		};
 
 		/**
 		 * Destructor, deletes secondaries
@@ -381,110 +412,6 @@ struct TParticle{
 			return it->first;
 		}
 
-		/**
-		 * Initialize particle, set start values randomly according to *.in files.
-		 *
-		 * Sets start time TParticle::tstart according to [SOURCE] in geometry.in.
-		 * Sets start energy according to TMCGenerator::Spectrum.
-		 * Then tries to find a position according to [SOURCE] in geometry.in.
-		 *
-		 * @param number Particle number
-		 * @param ageometry TGeometry in which the particle will be simulated
-		 * @param src TSource in which particle should be generated
-		 * @param mcgen TMCGenerator used to dice inital values
-		 * @param afield TFieldManager used to calculate energies (can be NULL)
-		 */
-		void Init(int number, TGeometry &ageometry, TSource &src,
-					TMCGenerator &mcgen, TFieldManager *afield){
-			long double t;
-			long double E = mcgen.Spectrum(name);
-			long double phi, theta;
-			long double p[3];
-			src.RandomPointInSourceVolume(mcgen, t, E, p[0], p[1], p[2], phi, theta);
-
-			InitE(number, t, mcgen.LifeTime(name), p[0], p[1], p[2],
-				E, phi, theta, mcgen.DicePolarisation(name), mcgen.MaxTrajLength(name), ageometry, afield);
-		};
-
-
-		/**
-		 * Initialze all values
-		 *
-		 * Initialize particle using start energy, calls TParticle::InitV
-		 *
-		 * @param number Particle number
-		 * @param t Start time
-		 * @param atau Life time
-		 * @param x Start x coordinate
-		 * @param y Start y coordinate
-		 * @param z Start z coordinate
-		 * @param Ekin Kinetic start energy
-		 * @param phi Azimuth of velocity vector
-		 * @param theta Polar angle of velocity vector
-		 * @param pol Start polarisation
-		 * @param trajl Max. simulated trajectory length
-		 * @param ageometry TGeometry in which the particle will be simulated
-		 * @param afield Electric and magnetic fields (needed to determine total energy)
-		 */
-		void InitE(int number, long double t, long double atau, long double x, long double y, long double z,
-				long double Ekin, long double phi, long double theta, int pol, long double trajl,
-				TGeometry &ageometry, TFieldManager *afield){
-			long double gammarel = Ekin/m/c_0/c_0 + 1;
-			long double vstart;
-			if (gammarel < 1.0001)
-				vstart = sqrt(2*Ekin/m);
-			else
-				vstart = c_0 * sqrt(1-(1/(gammarel*gammarel)));
-			InitV(number, t, atau, x, y, z,
-					vstart*cos(phi)*sin(theta), vstart*sin(phi)*sin(theta), vstart*cos(theta),
-					pol, trajl, ageometry, afield);
-		}
-
-		/**
-		 * Initialize all values
-		 *
-		 * This should be called by every constructor
-		 *
-		 * @param number Particle number
-		 * @param t Start time
-		 * @param atau Life time
-		 * @param x Start x coordinate
-		 * @param y Start y coordinate
-		 * @param z Start z coordinate
-		 * @param vx Velocity x component
-		 * @param vy Velocity y component
-		 * @param vz Velocity z component
-		 * @param pol Start polarisation
-		 * @param trajl Max. simulated trajectory length
-		 * @param ageometry TGeometry in which the particle will be simulated
-		 * @param afield Electric and magnetic fields (needed to determine total energy)
-		 */
-		void InitV(int number, long double t, long double atau, long double x, long double y, long double z,
-				long double vx, long double vy, long double vz, int pol, long double trajl,
-				TGeometry &ageometry, TFieldManager *afield){
-			ID = ID_UNKNOWN;
-			inttime = refltime = 0;
-			geom = &ageometry;
-			mc = NULL;
-			field = afield;
-			stepper = NULL;
-
-			particlenumber = number;
-			tau = atau;
-			maxtraj = trajl;
-			lend = 0;
-			tend = tstart = t;
-			yend[0] = ystart[0] = x;
-			yend[1] = ystart[1] = y;
-			yend[2] = ystart[2] = z;
-			yend[3] = ystart[3] = vx;
-			yend[4] = ystart[4] = vy;
-			yend[5] = ystart[5] = vz;
-			polend = polstart = pol;
-			Hmax = Hstart();
-			if (currentsolids.empty())
-				geom->GetSolids(t, ystart, currentsolids);
-		}
 
 		/**
 		 * Equations of motion dy/dx = f(x,y).

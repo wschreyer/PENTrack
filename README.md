@@ -12,7 +12,6 @@ External libraries
 
 To compile the code, you need to copy some files from [Numerical Recipes] (http://www.nr.com) (v3.00 to v3.04 should work fine) into the /nr/ directory:
 * nr3.h (main header, one minor modification needed, patch file is provided)
-* ran.h (random number generator)
 * interp_1d.h (cubic spline interpolation)
 * interp_linear.h (linear interpolation)
 * interp_2d.h (bicubic interpolation, some modifications needed, patch file is provided)
@@ -33,7 +32,11 @@ Numerical Recipes forces us to put almost all code into header files, which make
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
 Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the CGAL_INCLUDE, CGAL_LIB and CGAL_SHAREDLIB paths in the Makefile.
 
-CGAL v4.1 - v4.3 have been tested.
+CGAL v4.1 - v4.4 have been tested.
+
+### Boost
+
+The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator included in Boost 1.47.0 and newer.
 
 ### muparser
 

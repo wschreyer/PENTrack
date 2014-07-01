@@ -29,6 +29,7 @@
 #include "nr/stepper.h"
 #include "nr/stepperdopr853.h"
 
+#include "particle.h"
 #include "neutron.h"
 #include "proton.h"
 #include "electron.h"
@@ -49,7 +50,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom); // do many random coll
 
 long double SimTime = 1500.; ///< max. simulation time
 int simcount = 1; ///< number of particles for MC simulation (read from config)
-int simtype = NEUTRON; ///< type of particle which shall be simulated (read from config)
+int simtype = PARTICLE; ///< type of particle which shall be simulated (read from config)
 int secondaries = 1; ///< should secondary particles be simulated? (read from config)
 long double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
@@ -116,7 +117,7 @@ int main(int argc, char **argv){
 	// read config.in
 	ConfigInit(configin);
 
-	if(simtype == NEUTRON){
+	if(simtype == PARTICLE){
 		if (neutdist == 1) prepndist(); // prepare for neutron distribution-calculation
 	}
 	
@@ -190,20 +191,10 @@ int main(int argc, char **argv){
 		infile >> ws;
 	}
 */
-	for (int iMC = 1; iMC <= simcount; iMC++)
-	{      
-		if (simtype == NEUTRON || simtype == PROTON || simtype == ELECTRON){ // if proton or neutron shall be simulated
-			TParticle *p;
-			if (simtype == NEUTRON) // create particle according to protneut
-				p = new TNeutron(iMC, geom, source, mc, &field);
-			else if (simtype == PROTON)
-				p = new TProton(iMC, geom, source, mc, &field);
-			else if (simtype == ELECTRON)
-				p = new TElectron(iMC, geom, source, mc, &field);
-			else{
-				printf("\nDon't know simtype %i! Exiting...\n",simtype);
-				exit(-1);
-			}
+	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
+		for (int iMC = 1; iMC <= simcount; iMC++)
+		{
+			TParticle *p = source.CreateParticle(mc, geom, &field);
 			p->Integrate(SimTime, geom, mc, &field, particlein[p->name], output[p->name]); // integrate particle
 			ID_counter[p->name][p->ID]++; // increment counters
 			ntotalsteps += p->Nstep;
@@ -223,6 +214,11 @@ int main(int argc, char **argv){
 			delete p;
 		}
 	}
+	else{
+		printf("\nDon't know simtype %i! Exiting...\n",simtype);
+		exit(-1);
+	}
+
 
 
 	OutputCodes(ID_counter); // print particle IDs
@@ -251,7 +247,7 @@ int main(int argc, char **argv){
  */
 void ConfigInit(TConfig &config){
 	/* setting default values */
-	simtype = NEUTRON;
+	simtype = PARTICLE;
 	neutdist = 0;
 	simcount = 1;
 	/*end default values*/
@@ -366,7 +362,7 @@ void PrintBField(const char *outfile, TFieldManager &field){
 	int E;
 	const int Emax = 108;
 	long double dr = 0.1, dz = 0.1;
-	long double VolumeB[Emax];
+	long double VolumeB[Emax + 1];
 	for (E = 0; E <= Emax; E++) VolumeB[E] = 0;
 	
 	long double EnTest, B[4][4];

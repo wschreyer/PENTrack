@@ -12,11 +12,8 @@ static const char* NAME_NEUTRON = "neutron";
 
 #include "globals.h"
 #include "particle.h"
-#include "source.h"
 #include "proton.h"
 #include "electron.h"
-
-static const int MAX_DICE_ROLL = 42000000; ///< number of tries to find neutron start point
 
 /**
  * Neutron particle class.
@@ -27,60 +24,25 @@ static const int MAX_DICE_ROLL = 42000000; ///< number of tries to find neutron 
 struct TNeutron: TParticle{
 public:
 	/**
-	 * Constructor, create neutron, set start values randomly according to particle.in.
+	 * Create neutron
 	 *
-	 * Sets start time TParticle::tstart according to [SOURCE] in geometry.in.
-	 * Sets start TParticle::polarisation according to particle.in.
-	 * Sets start energy according to TMCGenerator::NeutronSpectrum.
-	 * Then tries to find a position according to [SOURCE] in geometry.in.
-	 * For volume sources the total energy TParticle::Hstart is diced by TMCGenerator::NeutronSpectrum
-	 * and the position search is repeated until the kinetic energy TParticle::Estart is >0.
-	 * Additionally the kinetic energy spectrum is weighted by sqrt(Estart) (see Golub/Richardson/Lamoreaux p. 82).
-	 * For surface sources the kinetic energy TParticle::Estart is diced and all positions are allowed.
+	 * Wraps basic TParticle constructor
 	 *
 	 * @param number Particle number
-	 * @param ageometry Geomtry in which the particle will be simulated
-	 * @param src TSource in which particle should be generated
-	 * @param mcgen TMCGenerator used to dice inital values
-	 * @param afield TFieldManager used to calculate energies
+	 * @param t Starting time
+	 * @param x Initial x coordinate
+	 * @param y Initial y coordinate
+	 * @param z Initial z coordinate
+	 * @param E Initial kinetic energy
+	 * @param phi Initial azimuth of velocity vector
+	 * @param theta Initial polar angle of velocity vector
+	 * @param amc Random number generator
+	 * @param geometry Experiment geometry
+	 * @param field Optional fields (can be NULL)
 	 */
-	TNeutron(int number, TGeometry &ageometry, TSource &src, TMCGenerator &mcgen, TFieldManager *afield)
-			: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n){
-		long double t;
-		int polarisation = mcgen.DicePolarisation(name);
-		long double H = mcgen.Spectrum(name);
-		long double E;
-		long double p[3];
+	TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
+			: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, amc, geometry, afield){
 
-		cout << "Dice starting position for E_neutron = " << H*1e9 << " neV ";
-		long double phi, theta;
-		for (int nroll = 0; nroll <= MAX_DICE_ROLL; nroll++){ // try to create particle only MAX_DICE_ROLL times
-			if (nroll % 1000000 == 0){
-				printf("."); // print progress
-			}
-			src.RandomPointInSourceVolume(mcgen, t, H, p[0], p[1], p[2], phi, theta);
-			ageometry.GetSolids(t, p, currentsolids);
-			if (src.sourcemode == "volume" || src.sourcemode == "customvol"){ // dice H for volume source
-				E = H - Epot(t, p, polarisation, afield, currentsolids);
-				if (mcgen.UniformDist(0,1) > sqrt(E/H))
-					E = -1; // correct weighting of phase space (see Golub/Richardson/Lamoreaux p. 82)
-			}
-			else{ // dice E for surface source
-				E = H;
-				H = E + Epot(t, p, polarisation, afield, currentsolids);
-			}
-			if (E >= 0){
-				printf(" Found! %i dice(s) rolled\n", nroll+1);
-				break;
-			}
-			else if (nroll >= MAX_DICE_ROLL){
-				ID = ID_INITIAL_NOT_FOUND;
-				printf(" ABORT: Failed %i times to find a compatible spot!! NO particle will be simulated!!\n\n", MAX_DICE_ROLL);
-				return;
-			}
-		}
-		InitE(number, t, mcgen.LifeTime(name), p[0], p[1], p[2],
-			E, phi, theta, polarisation, mcgen.MaxTrajLength(name), ageometry, afield);
 	};
 
 protected:
@@ -268,16 +230,12 @@ protected:
 	 * Create decay proton and electron and add them to secondaries list
 	 */
 	void Decay(){
-		long double v_p[3], v_e[3];
+		double E_p, E_e, phi_p, phi_e, theta_p, theta_e;
 		TParticle *p;
-		mc->NeutronDecay(&yend[3], v_p, v_e);
-		p = new TProton(particlenumber, tend, mc->LifeTime("proton"),
-							yend[0], yend[1], yend[2], v_p[0], v_p[1], v_p[2],
-							mc->DicePolarisation("proton"), mc->MaxTrajLength("proton"), *geom, field);
+		mc->NeutronDecay(&yend[3], E_p, E_e, phi_p, phi_e, theta_p, theta_e);
+		p = new TProton(particlenumber, tend, yend[0], yend[1], yend[2], E_p, phi_p, theta_p, *mc, *geom, field);
 		secondaries.push_back(p);
-		p = new TElectron(particlenumber, tend, mc->LifeTime("electron"),
-							yend[0], yend[1], yend[2], v_e[0], v_e[1], v_e[2],
-							mc->DicePolarisation("electron"), mc->MaxTrajLength("electron"), *geom, field);
+		p = new TElectron(particlenumber, tend, yend[0], yend[1], yend[2], E_e, phi_e, theta_e,	*mc, *geom, field);
 		secondaries.push_back(p);
 	};
 
