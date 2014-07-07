@@ -349,10 +349,15 @@ struct TParticle{
 						lastsave = x2;
 					}
 
-					long double noflip = BFint.Integrate(x1, y1, x2, y2, field, output.spinout);
-					if (mc->UniformDist(0,1) > noflip)
-						polarisation *= -1;
-					noflipprob *= noflip; // accumulate no-spin-flip probability
+					if (field){
+						long double B1[4][4], B2[4][4];
+						field->BField(y1[0], y1[1], y1[2], x1, B1);
+						field->BField(y2[0], y2[1], y2[2], x2, B2);
+						long double noflip = BFint.Integrate(x1, y1, B1, x2, y2, B2, output.spinout);
+						if (mc->UniformDist(0,1) > noflip)
+							polarisation *= -1;
+						noflipprob *= noflip; // accumulate no-spin-flip probability
+					}
 
 					x1 = x2;
 					for (int i = 0; i < 6; i++)
