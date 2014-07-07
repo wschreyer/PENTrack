@@ -34,9 +34,9 @@ static const long double lengthconv = 0.01; ///< length conversion factor cgs ->
 static const long double Bconv = 1e-4; ///< magnetic field conversion factor cgs -> SI [G -> T]
 static const long double Econv = 1e2; ///< electric field conversion factor cgs -> SI [V/cm -> V/m]
 
-static long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
-static std::string inpath = "."; ///< path to configuration files, read from command line paramters
-static std::string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
+extern long long int jobnumber; ///< job number, read from command line paramters, used for parallel calculations
+extern std::string inpath; ///< path to configuration files, read from command line paramters
+extern std::string outpath; ///< path where the log file should be saved to, read from command line parameters
 
 /**
  * Print progress bar.

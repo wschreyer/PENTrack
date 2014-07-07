@@ -4,6 +4,10 @@
 
 #include "globals.h"
 
+long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
+std::string inpath = "."; ///< path to configuration files, read from command line paramters
+std::string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
+
 // print progress in percent
 void PrintPercent(double percentage, int &lastprint){
 	// write status to console
