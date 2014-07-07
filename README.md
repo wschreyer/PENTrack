@@ -36,7 +36,7 @@ CGAL v4.1 - v4.4 have been tested.
 
 ### Boost
 
-The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator included in Boost 1.47.0 and newer.
+The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and a Runge-Kutta integrator included in Boost 1.53.0 and newer.
 
 ### muparser
 
