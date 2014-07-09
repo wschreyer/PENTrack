@@ -16,7 +16,6 @@
 #include <boost/numeric/odeint.hpp>
 
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
-static const double RELATIVISTIC_THRESHOLD = 0.01; ///< threshold (v/c) above which kinetic energy is calculated relativisticly
 
 #include "globals.h"
 #include "fields.h"
@@ -179,12 +178,14 @@ protected:
 				: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN), tstart(t), tend(t),
 				  Nhit(0), Hmax(0), Nstep(0), refltime(0), inttime(0), lend(0), polstart(0), Nspinflip(0), noflipprob(1),
 				  field(afield), mc(&amc), geom(&geometry){
-			long double Eoverm = E/m/c_0/c_0;
-			long double vstart;
-			if (Eoverm < 0.0001)
-				vstart = c_0*(sqrt(2*Eoverm) - 3*pow(Eoverm, 1.5L)/2/sqrt(2) + 23*pow(Eoverm, 2.5L)/16/sqrt(2));
+			value_type Eoverm = E/m/c_0/c_0; // gamma - 1
+			value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
+			value_type vstart;
+//			cout << "(E/m)^3.5 = " << pow(Eoverm, 3.5L) << "; err_beta = " << numeric_limits<typeof(beta)>::epsilon()/(1 - beta) << '\n';
+			if (pow(Eoverm, 3.5L) < numeric_limits<typeof(beta)>::epsilon()/(1 - beta)) // if error in series O((E/m)^3.5) is smaller than rounding error in beta
+				vstart = c_0*(sqrt(2*Eoverm) - 3*pow(Eoverm, 1.5L)/2/sqrt(2) + 23*pow(Eoverm, 2.5L)/16/sqrt(2)); // use series expansion
 			else
-				vstart = c_0 * sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1))));
+				vstart = c_0 * beta;
 
 			ystart.resize(6);
 			yend.resize(6);
@@ -812,12 +813,13 @@ protected:
 		 * @return Kinetic energy [eV]
 		 */
 		value_type Ekin(value_type v[3]){
-			value_type vend = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-			value_type beta = vend/c_0;
-			if (beta < RELATIVISTIC_THRESHOLD) // use series expansion for energy calculation with small beta
-				return 0.5*m*vend*vend + (3.0/8.0*m + 5.0/16.0*m*beta*beta + 35.0/128.0*beta*beta*beta*beta)*vend*vend*beta*beta;
+			value_type v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+			value_type beta2 = v2/c_0/c_0;
+			value_type gammarel = 1/sqrt(1 - beta2); // use relativistic formula for larger beta
+//			cout << "beta^8 = " << beta2*beta2*beta2*beta2 << "; err_gamma = " << numeric_limits<typeof(gammarel)>::epsilon()/(gammarel - 1) << '\n';
+			if (beta2*beta2*beta2*beta2 < numeric_limits<typeof(gammarel)>::epsilon()/(gammarel - 1)) // if error in series expansion O(beta^8) is smaller than rounding error in gamma factor
+				return 0.5*m*v2 + (3.0/8.0*m + (5.0/16.0*m + 35.0/128.0*beta2)*beta2)*beta2*v2; // use series expansion for energy calculation with small beta
 			else{
-				value_type gammarel = 1/sqrt(1 - beta*beta); // use relativistic formula for larger beta
 				return c_0*c_0*m*(gammarel - 1);
 			}
 		}
