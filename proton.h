@@ -57,8 +57,8 @@ protected:
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	void OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
-				const long double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
 		traversed = true;
 		trajectoryaltered = false;
 	};
@@ -76,7 +76,7 @@ protected:
 	 * @param currentsolid Solid in which the proton is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], solid currentsolid){
+	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid){
 		if (currentsolid.ID != geom->defaultsolid.ID){
 			x2 = x1;
 			for (int i = 0; i < 6; i++)

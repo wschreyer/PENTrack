@@ -63,7 +63,7 @@ TGeometry::TGeometry(TConfig &geometryin){
 			exit(-1);
 		}
 
-		long double ignorestart, ignoreend;
+		double ignorestart, ignoreend;
 		while (ss){
 			ss >> ignorestart;
 			if (!ss) // no more ignore times found
@@ -91,15 +91,15 @@ TGeometry::TGeometry(TConfig &geometryin){
 }
 
 
-bool TGeometry::GetCollisions(const long double x1, const long double p1[3], const long double h, const long double p2[3], map<TCollision, bool> &colls){
+bool TGeometry::GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], map<TCollision, bool> &colls){
 	set<TCollision> c;
 	mesh.Collision(p1,p2,c);
 	colls.clear();
 	for (set<TCollision>::iterator it = c.begin(); it != c.end(); it++){
 		colls[*it] = false;
-		std::vector<long double> *times = &solids[it->sldindex].ignoretimes;
+		std::vector<double> *times = &solids[it->sldindex].ignoretimes;
 		if (!times->empty()){
-			long double x = x1 + h*it->s;
+			double x = x1 + (x2 - x1)*it->s;
 			for (unsigned int i = 0; i < times->size(); i += 2){
 				if (x >= (*times)[i] && x < (*times)[i+1]){
 					colls[*it] = true; // set ignored flag if collision should be ignored according to geometry.in
@@ -112,8 +112,8 @@ bool TGeometry::GetCollisions(const long double x1, const long double p1[3], con
 }
 
 
-void TGeometry::GetSolids(const long double t, const long double p[3], std::map<solid, bool> &currentsolids){
-	long double p2[3] = {p[0], p[1], mesh.tree.bbox().zmin() - REFLECT_TOLERANCE};
+void TGeometry::GetSolids(const double t, const double p[3], std::map<solid, bool> &currentsolids){
+	double p2[3] = {p[0], p[1], mesh.tree.bbox().zmin() - REFLECT_TOLERANCE};
 	map<TCollision, bool> c;
 	currentsolids.clear();
 	currentsolids[defaultsolid] = false;

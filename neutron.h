@@ -65,16 +65,16 @@ protected:
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	void OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
-				const long double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
-		long double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-		long double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
+	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+		value_type vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+		value_type Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 		bool refl = false;
 		trajectoryaltered = false;
 		traversed = true;
-		long double prob = mc->UniformDist(0,1);
+		value_type prob = mc->UniformDist(0,1);
 
-		long double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+		value_type Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
 //		cout << "Leaving " << leaving->ID << " Entering " << entering->ID << " Enormal = " << Enormal << " Estep = " << Estep;
 		if (Enormal > Estep){ // transmission only possible if E > Estep
 			long double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
@@ -91,10 +91,10 @@ protected:
 				refl = true;
 		}
 		else{
-			long double k1 = sqrt(Enormal); // wavenumber in first solid (only real part)
-			complex<long double> iEstep(Estep, -entering->mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
-			complex<long double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
-			long double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
+			double k1 = sqrt(Enormal); // wavenumber in first solid (only real part)
+			complex<double> iEstep(Estep, -entering->mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
+			complex<double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
+			double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
 //			cout << " ReflProb = " << reflprob << '\n';
 			if (prob > reflprob){ // -> absorption on reflection
 				ID = entering->ID; // set ID to absorbing solid
@@ -108,8 +108,8 @@ protected:
 				refl = true;
 		}
 
-		long double phi_r = 0, theta_r = 0;
-		long double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
+		value_type phi_r = 0, theta_r = 0;
+		value_type vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 		if (refl){
 			//particle was neither transmitted nor absorbed, so it has to be reflected
 			prob = mc->UniformDist(0,1);
@@ -164,17 +164,17 @@ protected:
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], solid currentsolid){
+	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid){
 		bool result = false;
 		if (currentsolid.mat.FermiImag > 0){
-			long double prob = mc->UniformDist(0,1);
+			double prob = mc->UniformDist(0,1);
 			complex<long double> E(0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
 			complex<long double> k = sqrt(2*m_n*E)*ele_e/hbar; // wave vector
 			long double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
 			if (prob > exp(-imag(k)*l)){ // exponential probability decay
 				x2 = x1 + mc->UniformDist(0,1)*(x2 - x1); // if absorbed, chose a random time between x1 and x2
 				for (int i = 0; i < 6; i++)
-					y2[i] = stepper->dense_out(i, x2, stepper->hdid); // set y2 to position at random time
+					stepper.calc_state(x2, y2);
 				ID = currentsolid.ID;
 				printf("Absorption!\n");
 				result = true; // stop integration
@@ -183,7 +183,7 @@ protected:
 
 		// do special calculations for neutrons (spinflipcheck, snapshots, etc)
 		if (neutdist == 1)
-			fillndist(x1, y1, x2, y2); // write spatial neutron distribution
+			fillndist(x1, &y1[0], x2, &y2[0]); // write spatial neutron distribution
 /*
 		if (field){
 			long double B[4][4];
@@ -251,7 +251,7 @@ protected:
 	 *
 	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
-	long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field, map<solid, bool> &solids){
+	value_type Epot(value_type t, state_type y, int polarisation, TFieldManager *field, map<solid, bool> &solids){
 		map<solid, bool>::iterator sld = solids.begin();
 		while (sld->second)
 			sld++;

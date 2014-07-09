@@ -100,8 +100,8 @@ public:
 	 *
 	 * @return Probability, that NO spin flip occured (usually close to 1).
 	 */
-	long double Integrate(double x1, long double y1[6], long double B1[4][4],
-						double x2, long double y2[6], long double B2[4][4], std::ofstream *&spinout);
+	long double Integrate(double x1, double y1[6], long double B1[4][4],
+						double x2, double y2[6], long double B2[4][4], std::ofstream *&spinout);
 };
 
 #endif // BRUTEFORCE_H_

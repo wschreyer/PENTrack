@@ -13,6 +13,8 @@
 #include <iomanip>
 #include <sys/time.h>
 
+#include <boost/numeric/odeint.hpp>
+
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
 static const double RELATIVISTIC_THRESHOLD = 0.01; ///< threshold (v/c) above which kinetic energy is calculated relativisticly
 
@@ -76,6 +78,12 @@ struct TOutput{
  * Optionally, derived particles can also re-implement TParticle::Epot, TParticle::PrintStartEnd, TParticle::PrintTrack, TParticle::PrintSnapshots, TParticle::PrintHits and define its own constructors.
  */
 struct TParticle{
+protected:
+	typedef double value_type;
+	typedef vector<value_type> state_type;
+	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_type;
+	typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type;
+	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type;
 	public:
 		const char *name; ///< particle name (has to be initialized in all derived classes!)
 		const long double q; ///< charge [C] (has to be initialized in all derived classes!)
@@ -84,22 +92,22 @@ struct TParticle{
 		const long double gamma; ///< gyromagnetic ratio [rad/(s T)] (has to be initialized in all derived classes!)
 		int ID; ///< particle fate (0: not classified; >0: Absorption in solid with according ID; -1: survived until end of simulation; -2: hit outer boundaries; -3: numerical error; -4: decayed; -5: did not find initial position)
 		int particlenumber; ///< particle number
-		long double tau; ///< particle life time
-		long double maxtraj; ///< max. simulated trajectory length
-		long double inttime; ///< integration computing time
-		long double refltime; ///< reflection computing time
+		double tau; ///< particle life time
+		double maxtraj; ///< max. simulated trajectory length
+		double inttime; ///< integration computing time
+		double refltime; ///< reflection computing time
 
 		/// start time
-		long double tstart;
+		value_type tstart;
 
 		/// stop time
-		long double tend;
+		value_type tend;
 
 		/// state vector before integration
-		long double ystart[6];
+		state_type ystart;
 
 		/// state vector after integration)
-		long double yend[6];
+		state_type yend;
 
 		/// initial polarisation of particle (-1,0,1)
 		int polstart;
@@ -108,26 +116,26 @@ struct TParticle{
 		int polend;
 
 		/// total start energy
-		long double Hstart(){
+		value_type Hstart(){
 			map<solid, bool> solids;
-			geom->GetSolids(tstart, ystart, solids);
+			geom->GetSolids(tstart, &ystart[0], solids);
 			return Ekin(&ystart[3]) + Epot(tstart, ystart, polstart, field, solids);
 		};
 
 		/// total end energy
-		long double Hend(){ return Ekin(&yend[3]) + Epot(tend, yend, polend, field, currentsolids); };
+		value_type Hend(){ return Ekin(&yend[3]) + Epot(tend, yend, polend, field, currentsolids); };
 
 		/// max total energy
-		long double Hmax;
+		value_type Hmax;
 
 		/// kinetic start energy
-		long double Estart(){ return Ekin(&ystart[3]); };
+		value_type Estart(){ return Ekin(&ystart[3]); };
 
 		/// kinetic end energy
-		long double Eend(){ return Ekin(&yend[3]); };
+		value_type Eend(){ return Ekin(&yend[3]); };
 
 		/// trajectory length
-		long double lend;
+		double lend;
 
 		/// number of material boundary hits
 		int Nhit;
@@ -166,10 +174,10 @@ struct TParticle{
 		 * @param geometry Experiment geometry
 		 * @param afield Optional fields (can be NULL)
 		 */
-		TParticle(const char *aname, const long double qq, const long double mm, const long double mumu, const long double agamma, int number,
+		TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, int number,
 				double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 				: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN), tstart(t), tend(t),
-				  Nhit(0), Hmax(0), Nstep(0), refltime(0), stepper(NULL), inttime(0), lend(0), polstart(0), Nspinflip(0), noflipprob(1),
+				  Nhit(0), Hmax(0), Nstep(0), refltime(0), inttime(0), lend(0), polstart(0), Nspinflip(0), noflipprob(1),
 				  field(afield), mc(&amc), geom(&geometry){
 			long double Eoverm = E/m/c_0/c_0;
 			long double vstart;
@@ -178,6 +186,8 @@ struct TParticle{
 			else
 				vstart = c_0 * sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1))));
 
+			ystart.resize(6);
+			yend.resize(6);
 			yend[0] = ystart[0] = x;
 			yend[1] = ystart[1] = y;
 			yend[2] = ystart[2] = z;
@@ -188,7 +198,7 @@ struct TParticle{
 			Hmax = Hstart();
 			maxtraj = mc->MaxTrajLength(name);
 			tau = mc->LifeTime(name);
-			geom->GetSolids(t, ystart, currentsolids);
+			geom->GetSolids(t, &ystart[0], currentsolids);
 		};
 
 		/**
@@ -209,7 +219,7 @@ struct TParticle{
 		 * @param y State vector (position + velocity)
 		 * @param dydx Returns derivatives of y with respect to t
 		 */
-		void operator()(const Doub x, VecDoub_I &y, VecDoub_O &dydx){
+		void operator()(state_type y, state_type &dydx, value_type x){
 			derivs(x,y,dydx);
 		};
 		
@@ -229,25 +239,25 @@ struct TParticle{
 		 * @param conf Option map containing particle specific options from particle.in
 		 * @param output TOutput struct containing output options and streams
 		 */
-		void Integrate(long double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, map<string, string> &conf, TOutput &output){
+		void Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, map<string, string> &conf, TOutput &output){
 			geom = &geometry;
 			if (currentsolids.empty())
-				geom->GetSolids(tend, yend, currentsolids);
+				geom->GetSolids(tend, &yend[0], currentsolids);
 			mc = &mcgen;
 			field = afield;
 			timespec clock_start, clock_end, refl_start, refl_end;
 
 			int perc = 0;
 			cout << "Particle no.: " << particlenumber << " particle type: " << name << '\n';
-			cout << "x: " << yend[0] << " y: " << yend[1] << " z: " << yend[2]
-			     << " E: " << Eend() << " t: " << tend << " tau: " << tau << " lmax: " << maxtraj << '\n';
+			cout << "x: " << yend[0] << "m y: " << yend[1] << "m z: " << yend[2]
+			     << "m E: " << Eend() << "eV t: " << tend << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
 		
 			// set initial values for integrator
-			long double x = tend, x1, x2;
-			VecDoub y(6, yend), dydx(6);
-			long double y1[6], y2[6];
+			value_type x = tend, x1, x2;
+			state_type y = yend, dydx;
+			state_type y1(6), y2(6);
 			int polarisation = polend;
-			long double h = 0.001/sqrt(yend[3]*yend[3] + yend[4]*yend[4] + yend[5]*yend[5]); // first guess for stepsize
+			value_type h = 0.001/sqrt(yend[3]*yend[3] + yend[4]*yend[4] + yend[5]*yend[5]); // first guess for stepsize
 
 			bool resetintegration = true;
 
@@ -267,7 +277,7 @@ struct TParticle{
 				PrintTrack(output.trackout, tend, yend, polend);
 			double trackloginterval = 1e-3;
 			istringstream(conf["trackloginterval"]) >> trackloginterval;
-			long double lastsave = x;
+			value_type lastsave = x;
 
 			bool hitlog = false;
 			istringstream(conf["hitlog"]) >> hitlog;
@@ -276,57 +286,53 @@ struct TParticle{
 			istringstream(conf["flipspin"]) >> flipspin;
 			TBFIntegrator BFint(gamma, name, conf);
 
+			stepper = boost::numeric::odeint::make_dense_output(1e-13, 0, stepper_type());
+
 			while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 				if (resetintegration){
-					if (stepper != NULL)
-						delete stepper;
-					derivs(x,y,dydx);
-					// create integrator class (stepperdopr853 = 8th order Runge Kutta)
-					stepper = new StepperDopr853<TParticle>(y, dydx, x, 1e-13, 0, true);// y, dydx, x, atol, rtol, dense output
+					stepper.initialize(y, x, h);
 				}
 				x1 = x; // save point before next step
-				for (int i = 0; i < 6; i++)
-					y1[i] = y[i];
-				
-				if (x + h > tstart + tau)
-					h = tstart + tau - x;	//If stepsize can overshoot, decrease.
-				if (x + h > tmax)
-					h = tmax - x;
+				y1 = y;
 				
 				clock_gettime(CLOCK_REALTIME, &clock_start); // start computing time measure
 				try{
-					stepper->step(h, *this); // integrate one step
-					h = stepper->hnext; // set suggested stepsize for next step
+					stepper.do_step(boost::ref(*this));
+					x = stepper.current_time();
+					y = stepper.current_state();
+					h = stepper.current_time_step();
 					Nstep++;
 				}
 				catch(...){ // catch Exceptions thrown by numerical recipes routines
 					ID = ID_NRERROR;
 				}
 				clock_gettime(CLOCK_REALTIME, &clock_end);
-				inttime += clock_end.tv_sec - clock_start.tv_sec + (long double)(clock_end.tv_nsec - clock_start.tv_nsec)/1e9;
+				inttime += clock_end.tv_sec - clock_start.tv_sec + (double)(clock_end.tv_nsec - clock_start.tv_nsec)/1e9;
 				
+				if (stepper.current_time() > tstart + tau)
+					stepper.calc_state(tstart + tau, y);	//If stepsize overshot, decrease.
+				if (stepper.current_time() > tmax)
+					stepper.calc_state(tmax, y);
+
 				while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) with spatial length SAMPLE_DIST, go through all pieces
-					long double v1 = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
+					value_type v1 = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 					x2 = x1 + MAX_SAMPLE_DIST/v1; // time length = spatial length/velocity
 					if (x2 >= x){
 						x2 = x;
-						for (int i = 0; i < 6; i++)
-							y2[i] = y[i];
+						y2 = y;
 					}
 					else{
-						for (int i = 0; i < 6; i++)
-							y2[i] = stepper->dense_out(i, x2, stepper->hdid); // interpolate y2
+						stepper.calc_state(x2, y2);
 					}
 					
 					clock_gettime(CLOCK_REALTIME, &refl_start);
 					resetintegration = CheckHit(x1, y1, x2, y2, polarisation, hitlog, output.hitout); // check if particle hit a material boundary or was absorbed between y1 and y2
 					if (resetintegration){
 						x = x2; // if particle path was changed: reset integration end point
-						for (int i = 0; i < 6; i++)
-							y[i] = y2[i];
+						y = y2;
 					}
 					clock_gettime(CLOCK_REALTIME, &refl_end);
-					refltime += refl_end.tv_sec - refl_start.tv_sec + (long double)(refl_end.tv_nsec - refl_start.tv_nsec)/1e9;
+					refltime += refl_end.tv_sec - refl_start.tv_sec + (double)(refl_end.tv_nsec - refl_start.tv_nsec)/1e9;
 				
 					lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
 					Hmax = max(Ekin(&y2[3]) + Epot(x, y2, polarisation, field, currentsolids), Hmax);
@@ -334,9 +340,8 @@ struct TParticle{
 					// take snapshots at certain times
 					if (snapshotlog && snapshots.good()){
 						if (x1 <= nextsnapshot && x2 > nextsnapshot){
-							long double ysnap[6];
-							for (int i = 0; i < 6; i++)
-								ysnap[i] = stepper->dense_out(i, nextsnapshot, stepper->hdid);
+							state_type ysnap(6);
+							stepper.calc_state(nextsnapshot, ysnap);
 							cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
 							Print(output.snapshotout, nextsnapshot, ysnap, polarisation, "snapshot.out");
@@ -353,7 +358,7 @@ struct TParticle{
 						long double B1[4][4], B2[4][4];
 						field->BField(y1[0], y1[1], y1[2], x1, B1);
 						field->BField(y2[0], y2[1], y2[2], x2, B2);
-						long double noflip = BFint.Integrate(x1, y1, B1, x2, y2, B2, output.spinout);
+						long double noflip = BFint.Integrate(x1, &y1[0], B1, x2, &y2[0], B2, output.spinout);
 						if (mc->UniformDist(0,1) > noflip)
 							polarisation *= -1;
 						noflipprob *= noflip; // accumulate no-spin-flip probability
@@ -380,9 +385,6 @@ struct TParticle{
 			polend = polarisation;
 			Print(output.endout, tend, yend, polend);
 
-			delete stepper;
-			stepper = NULL;
-			
 			if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
 				cout << "Decayed!\n";
 				Decay();
@@ -408,7 +410,7 @@ struct TParticle{
 		TGeometry *geom; ///< TGeometry structure passed by "Integrate"
 		TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
 		TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
-		StepperDopr853<TParticle> *stepper; ///< ODE integrator
+		dense_stepper_type stepper; ///< ODE integrator
 
 		solid GetCurrentsolid(){
 			map<solid, bool>::iterator it = currentsolids.begin();
@@ -428,11 +430,11 @@ struct TParticle{
 		 * @param y	State vector (position and velocity)
 		 * @param dydx Returns derivatives of y with respect to x
 		 */
-		void derivs(const Doub x, VecDoub_I &y, VecDoub_O &dydx){
+		void derivs(value_type x, state_type y, state_type &dydx){
 			dydx[0] = y[3]; // time derivatives of position = velocity
 			dydx[1] = y[4];
 			dydx[2] = y[5];
-			long double F[3] = {0,0,0}; // Force in lab frame
+			value_type F[3] = {0,0,0}; // Force in lab frame
 			if (m != 0)
 				F[2] += -gravconst*m*ele_e; // add gravitation to force
 			if (field){
@@ -452,14 +454,14 @@ struct TParticle{
 					F[2] += polend*mu*B[3][3];
 				}
 			}
-			long double rel = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0))/m/ele_e; // relativstic factor 1/gamma/m
+			value_type rel = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0))/m/ele_e; // relativstic factor 1/gamma/m
 			dydx[3] = rel*(F[0] - (y[3]*y[3]*F[0] + y[3]*y[4]*F[1] + y[3]*y[5]*F[2])/c_0/c_0); // general relativstic equation of motion
 			dydx[4] = rel*(F[1] - (y[4]*y[3]*F[0] + y[4]*y[4]*F[1] + y[4]*y[5]*F[2])/c_0/c_0); // dv/dt = 1/gamma/m*(F - v * v^T * F / c^2)
 			dydx[5] = rel*(F[2] - (y[5]*y[3]*F[0] + y[5]*y[4]*F[1] + y[5]*y[5]*F[2])/c_0/c_0);
 		};
 		
 
-		bool CheckHitError(solid *hitsolid, long double distnormal){
+		bool CheckHitError(solid *hitsolid, double distnormal){
 			if (distnormal < 0){ // particle is entering solid
 				if (currentsolids.find(*hitsolid) != currentsolids.end()){ // if solid already is in currentsolids list something went wrong
 					cout << "Particle entering " << hitsolid->name.c_str() << " which it did enter before! Stopping it! Did you define overlapping solids with equal priorities?\n";
@@ -499,15 +501,15 @@ struct TParticle{
 		 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 		 * @return Returns true if particle was reflected/absorbed
 		 */
-		bool CheckHit(long double &x1, long double y1[6], long double &x2, long double y2[6], int &pol, bool hitlog, ofstream *&hitout, int iteration = 1){
-			if (!geom->CheckSegment(y1,y2)){ // check if start point is inside bounding box of the simulation geometry
-				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x2,y2[0],y2[1],y2[2]);
+		bool CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &pol, bool hitlog, ofstream *&hitout, int iteration = 1){
+			if (!geom->CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
+				printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
 				ID = ID_HIT_BOUNDARIES;
 				return true;
 			}
 
 			map<TCollision, bool> colls;
-			if (geom->GetCollisions(x1, y1, stepper->hdid, y2, colls)){	// if there is a collision with a wall
+			if (geom->GetCollisions(x1, &y1[0], x2, &y2[0], colls)){	// if there is a collision with a wall
 				map<TCollision, bool>::iterator coll = colls.begin();
 				if ((abs(coll->first.s*coll->first.distnormal) < REFLECT_TOLERANCE
 					&& (1 - coll->first.s)*abs(coll->first.distnormal) < REFLECT_TOLERANCE) // if first collision is closer to y1 and y2 than REFLECT_TOLERANCE
@@ -587,21 +589,19 @@ struct TParticle{
 				else{
 					// else cut integration step right before and after first collision point
 					// and call ReflectOrAbsorb again for each smaller step (quite similar to bisection algorithm)
-					long double xnew, xbisect1 = x1, xbisect2 = x1;
-					long double ybisect1[6];
-					long double ybisect2[6];
-					for (int i = 0; i < 6; i++)
-						ybisect1[i] = ybisect2[i] = y1[i];
+					value_type xnew, xbisect1 = x1, xbisect2 = x1;
+					state_type ybisect1(6);
+					state_type ybisect2(6);
+					ybisect1 = ybisect2 = y1;
 
 					xnew = x1 + (x2 - x1)*(coll->first.s - 0.01*iteration); // cut integration right before collision point
 					if (xnew > x1 && xnew < x2){ // check that new line segment is in correct time interval
 						xbisect1 = xbisect2 = xnew;
-						for (int i = 0; i < 6; i++)
-							ybisect1[i] = ybisect2[i] = stepper->dense_out(i, xbisect1, stepper->hdid); // get point at cut time
+						stepper.calc_state(xbisect1, ybisect1);
+						ybisect2 = ybisect1;
 						if (CheckHit(x1, y1, xbisect1, ybisect1, pol, hitlog, hitout, iteration+1)){ // recursive call for step before coll. point
 							x2 = xbisect1;
-							for (int i = 0; i < 6; i++)
-								y2[i] = ybisect1[i];
+							y2 = ybisect1;
 							return true;
 						}
 					}
@@ -609,12 +609,10 @@ struct TParticle{
 					xnew = x1 + (x2 - x1)*(coll->first.s + 0.01*iteration); // cut integration right after collision point
 					if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
 						xbisect2 = xnew;
-						for (int i = 0; i < 6; i++)
-							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
+						stepper.calc_state(xbisect2, ybisect2);
 						if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, pol, hitlog, hitout, iteration+1)){ // recursive call for step over coll. point
 							x2 = xbisect2;
-							for (int i = 0; i < 6; i++)
-								y2[i] = ybisect2[i];
+							y2 = ybisect2;
 							return true;
 						}
 					}
@@ -647,8 +645,8 @@ struct TParticle{
 		 * @param trajectoryaltered Returns true if the particle trajectory was altered
 		 * @param travered Returns true if the material boundary was traversed by the particle
 		 */
-		virtual void OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
-							const long double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed) = 0;
+		virtual void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+							const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed) = 0;
 
 
 		/**
@@ -664,7 +662,7 @@ struct TParticle{
 		 * @param currentsolid Solid through which the particle is moving
 		 * @return Returns true if particle path was changed
 		 */
-		virtual bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], solid currentsolid) = 0;
+		virtual bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid) = 0;
 
 
 		/**
@@ -685,7 +683,7 @@ struct TParticle{
 		 * @param polarisation Current polarisation
 		 * @param filesuffix Optional suffix added to the file name (default: "end.out")
 		 */
-		virtual void Print(ofstream *&file, long double x, long double y[6], int polarisation, string filesuffix = "end.out"){
+		virtual void Print(ofstream *&file, value_type x, state_type y, int polarisation, string filesuffix = "end.out"){
 			if (!file){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << filesuffix;
@@ -706,7 +704,7 @@ struct TParticle{
 				file->precision(10);
 			}
 			cout << "Printing status\n";
-			long double E = Ekin(&y[3]);
+			value_type E = Ekin(&y[3]);
 			*file	<<	jobnumber << " " << particlenumber << " "
 					<<	tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 					<<	ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
@@ -728,7 +726,7 @@ struct TParticle{
 		 * @param y Current state vector
 		 * @param polarisation Current polarisation
 		 */
-		virtual void PrintTrack(ofstream *&trackfile, long double x, long double y[6], int polarisation){
+		virtual void PrintTrack(ofstream *&trackfile, value_type x, state_type y, int polarisation){
 			if (!trackfile){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
@@ -753,8 +751,8 @@ struct TParticle{
 				field->BField(y[0],y[1],y[2],x,B);
 				field->EField(y[0],y[1],y[2],x,V,E);
 			}
-			long double Ek = Ekin(&y[3]);
-			long double H = Ek + Epot(x, y, polarisation, field, currentsolids);
+			value_type Ek = Ekin(&y[3]);
+			value_type H = Ek + Epot(x, y, polarisation, field, currentsolids);
 
 			*trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
 						<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
@@ -781,7 +779,7 @@ struct TParticle{
 		 * @param leaving Material which is left at this boundary
 		 * @param entering Material which is entered at this boundary
 		 */
-		virtual void PrintHit(ofstream *&hitfile, long double x, long double *y1, long double *y2, int pol1, int pol2, const long double *normal, solid *leaving, solid *entering){
+		virtual void PrintHit(ofstream *&hitfile, value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
 			if (!hitfile){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
@@ -813,13 +811,13 @@ struct TParticle{
 		 *
 		 * @return Kinetic energy [eV]
 		 */
-		long double Ekin(const long double v[3]){
-			long double vend = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-			long double beta = vend/c_0;
+		value_type Ekin(value_type v[3]){
+			value_type vend = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+			value_type beta = vend/c_0;
 			if (beta < RELATIVISTIC_THRESHOLD) // use series expansion for energy calculation with small beta
-				return 0.5*m*vend*vend + (3/8*m + 5/16*m*beta*beta + 35/128*beta*beta*beta*beta)*vend*vend*beta*beta;
+				return 0.5*m*vend*vend + (3.0/8.0*m + 5.0/16.0*m*beta*beta + 35.0/128.0*beta*beta*beta*beta)*vend*vend*beta*beta;
 			else{
-				long double gammarel = 1/sqrt(1 - beta*beta); // use relativistic formula for larger beta
+				value_type gammarel = 1/sqrt(1 - beta*beta); // use relativistic formula for larger beta
 				return c_0*c_0*m*(gammarel - 1);
 			}
 		}
@@ -835,8 +833,8 @@ struct TParticle{
 		 *
 		 * @return Returns potential energy [eV]
 		 */
-		virtual long double Epot(const long double t, const long double y[3], int polarisation, TFieldManager *field, map<solid, bool> &solids){
-			long double result = 0;
+		virtual value_type Epot(value_type t, state_type y, int polarisation, TFieldManager *field, map<solid, bool> &solids){
+			value_type result = 0;
 			if ((q != 0 || mu != 0) && field){
 				long double B[4][4], E[3], V;
 				if (mu != 0){

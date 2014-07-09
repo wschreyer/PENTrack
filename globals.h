@@ -53,7 +53,7 @@ void PrintPercent(double percentage, int &lastprint);
  *
  * Rotate vector into new coordinate system whose z-axis lies on NORMALIZED vector n (active transformation)
  */
-void RotateVector(long double v[3], const long double n[3]);
+void RotateVector(double v[3], const double n[3]);
 
 /**
  * Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta.
@@ -63,7 +63,7 @@ void RotateVector(long double v[3], const long double n[3]);
  * @param beta Vector v/c of moving reference frame
  * @param p Four-vector
  */
-void BOOST(long double beta[3], long double p[4]);
+void BOOST(double beta[3], double p[4]);
 
 /**
  * Energy distribution of protons from free neutron beta decay (0 < E < 750 eV)

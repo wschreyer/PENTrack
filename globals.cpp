@@ -23,12 +23,12 @@ void PrintPercent(double percentage, int &lastprint){
 }
 
 // rotate vector into new coordinate sys whose z-axis lies on NORMALIZED vector n (active transformation)
-void RotateVector(long double v[3], const long double n[3])
+void RotateVector(double v[3], const double n[3])
 {
-	long double cosalpha = n[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
+	double cosalpha = n[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
 	if (sinalpha > 1e-30){ // when normal not parallel to z-axis rotate new velocity into the coordinate system where the normal is the z-axis
-		long double a[2] = {-n[1]/sinalpha, n[0]/sinalpha};	// rotation axis (z cross n), a[2] = 0
-		long double vtemp[3] = {v[0],v[1],v[2]};
+		double a[2] = {-n[1]/sinalpha, n[0]/sinalpha};	// rotation axis (z cross n), a[2] = 0
+		double vtemp[3] = {v[0],v[1],v[2]};
 		// rotate velocity vector
 		v[0] = (cosalpha + a[0]*a[0]*(1 - cosalpha))*	vtemp[0] +  a[0]*a[1]*(1 - cosalpha)*				vtemp[1] + a[1]*sinalpha*	vtemp[2];
 		v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
@@ -42,12 +42,12 @@ void RotateVector(long double v[3], const long double n[3])
 }
 
 //======== Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta ======================================================
-void BOOST(long double beta[3], long double p[4]){
+void BOOST(double beta[3], double p[4]){
    //Boost this Lorentz vector (copy&paste from ROOT)
-   long double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
-   long double gamma = 1.0 / sqrt(1.0 - b2);
-   long double bp = beta[0]*p[1] + beta[1]*p[2] + beta[2]*p[3];
-   long double gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
+   double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
+   double gamma = 1.0 / sqrt(1.0 - b2);
+   double bp = beta[0]*p[1] + beta[1]*p[2] + beta[2]*p[3];
+   double gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
 
    p[1] = (p[1] + gamma2*bp*beta[0] + gamma*beta[0]*p[0]);
    p[2] = (p[2] + gamma2*bp*beta[1] + gamma*beta[1]*p[0]);

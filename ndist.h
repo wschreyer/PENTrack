@@ -15,22 +15,22 @@ void prepndist()
 }
 
 /// fill neutron density histogram
-void fillndist(long double x1, long double y1[6], long double x2, long double y2[6])
+void fillndist(double x1, double y1[6], double x2, double y2[6])
 {
-	long double r1 = sqrt(y1[0]*y1[0] + y1[1]*y1[1]);
-	long double z1 = y1[2];
-	long double r2 = sqrt(y2[0]*y2[0] + y2[1]*y2[1]);
-	long double z2 = y2[2];
+	double r1 = sqrt(y1[0]*y1[0] + y1[1]*y1[1]);
+	double z1 = y1[2];
+	double r2 = sqrt(y2[0]*y2[0] + y2[1]*y2[1]);
+	double z2 = y2[2];
 	int ir1 = int((r1 - rmin)/size);
 	int iz1 = int((y1[2] - zmin)/size);
 	int ir2 = int((r2 - rmin)/size);
 	int iz2 = int((y2[2] - zmin)/size);
 	while (ir1 != ir2 || iz1 != iz2){
-		long double s_left = (ir1*size + rmin - r1)/(r2 - r1);
-		long double s_right = ((ir1+1)*size + rmin - r1)/(r2 - r1);
-		long double s_bottom = (iz1*size + zmin - z1)/(z2 - z1);
-		long double s_top = ((iz1+1)*size + zmin - z1)/(z2 - z1);
-		long double s;
+		double s_left = (ir1*size + rmin - r1)/(r2 - r1);
+		double s_right = ((ir1+1)*size + rmin - r1)/(r2 - r1);
+		double s_bottom = (iz1*size + zmin - z1)/(z2 - z1);
+		double s_top = ((iz1+1)*size + zmin - z1)/(z2 - z1);
+		double s;
 		int newir = ir1, newiz = iz1;
 		if (s_left > 0){
 			if (s_bottom > 0){

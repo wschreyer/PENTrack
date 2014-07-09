@@ -143,8 +143,8 @@ public:
 			Ekin = vnormal*vnormal + vtangential*vtangential; // update energy
 		}
 
-		long double v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
-		long double n[3] = {nv[0], nv[1], nv[2]};
+		double v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
+		double n[3] = {nv[0], nv[1], nv[2]};
 		RotateVector(v, n);
 		phi_v = atan2(v[1],v[0]);
 		theta_v = acos(v[2]);
@@ -198,7 +198,7 @@ public:
 	TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, TFieldManager *field){
 		double t = mc.UniformDist(0, fActiveTime);
 		double E = mc.Spectrum(fParticleName);
-		long double phi_v, theta_v;
+		double phi_v, theta_v;
 		mc.AngularDist(fParticleName, phi_v, theta_v);
 		int polarisation = mc.DicePolarisation(fParticleName);
 		double x, y, z;
