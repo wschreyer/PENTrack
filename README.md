@@ -45,6 +45,11 @@ Most Linux distributions include libmuparser-dev or muparser-devel packages. It 
 
 Only v2.2.3 has been tested so far.
 
+### interp2d and GSL
+
+[interp2d](http://github.com/diazona/interp2d.git) provides a bicubic interpolation routine based on the [GNU Scientific Library](https://www.gnu.org/software/gsl/).
+The interp2d code is included in the repository. The libgsl package should be available for all major Linux distributions.
+
 ### libtricubic
 
 [Lekien and Marsden] (http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.

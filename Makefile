@@ -1,5 +1,8 @@
 SRC = main.c
-OBJ=$(SRC:.c=.o)
+CSRC = interp2d/interp2d.c interp2d/bicubic.c
+COBJ=$(CSRC:.c=.o)
+CPPSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp
+CPPOBJ = $(CPPSRC:.cpp=.o)
 
 CGAL_INCLUDE= #-I$(HOME)/CGAL-4.4/include # point gcc's -I option to CGAL include directory if you have compiled CGAL manually without installing it
 CGAL_LIB= #-L$(HOME)/CGAL-4.4/lib # point gcc's -L option to CGAL lib directory if you have compiled CGAL manually without installing it
@@ -11,20 +14,20 @@ MUPARSER_SHAREDLIB= #-Wl,-rpath=$(HOME)/muparser_v2_2_3/lib/ # point gcc's -Wl,-
 
 CC=g++
 CFLAGS=-O2 -frounding-math -Wall -Wno-reorder -Wno-parentheses -Wno-strict-aliasing $(CGAL_INCLUDE) $(CGAL_SHAREDLIB) $(MUPARSER_INCLUDE) $(MUPARSER_SHAREDLIB) #-O2: optimize, -Wno-*: suppress warnings from external libraries
-LDFLAGS=-lrt -lboost_system $(CGAL_LIB) -lCGAL $(MUPARSER_LIB) -lmuparser
+LDFLAGS=-lrt -lboost_system $(CGAL_LIB) -lgsl -lgslcblas -lCGAL $(MUPARSER_LIB) -lmuparser
 RM=rm
 EXE=PENTrack
 
-ADDSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp
-ADDOBJ = $(ADDSRC:.cpp=.o)
-
 .PHONY: all
-all: $(SRC) $(ADDOBJ)
-	$(CC) -o $(EXE) $(SRC) $(ADDOBJ) $(CFLAGS) $(LDFLAGS)
+all: $(SRC) $(COBJ) $(CPPOBJ)
+	$(CC) -o $(EXE) $(SRC) $(COBJ) $(CPPOBJ) $(CFLAGS) $(LDFLAGS)
 	
 %.o:%.cpp
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+%.o:%.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 .PHONY: clean
 clean:
-	$(RM) $(EXE) $(ADDOBJ)
+	$(RM) $(EXE) $(COBJ) $(CPPOBJ)

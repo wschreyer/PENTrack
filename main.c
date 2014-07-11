@@ -24,10 +24,6 @@
 #include "nr/nr3.h"
 #include "nr/interp_1d.h"
 #include "nr/interp_linear.h"
-#include "nr/interp_2d.h"
-#include "nr/odeint.h"
-#include "nr/stepper.h"
-#include "nr/stepperdopr853.h"
 
 #include "particle.h"
 #include "neutron.h"
