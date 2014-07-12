@@ -21,9 +21,7 @@
 #include <numeric>
 #include <sys/time.h>
 
-#include "nr/nr3.h"
-#include "nr/interp_1d.h"
-#include "nr/interp_linear.h"
+using namespace std;
 
 #include "particle.h"
 #include "neutron.h"

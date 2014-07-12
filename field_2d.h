@@ -8,7 +8,7 @@
 
 #include "field.h"
 
-#include "../interp2d/interp2d.h"
+#include "interp2d/interp2d.h"
 
 /**
  * Translate VECTOR (not point) components from cylindrical to cartesian coordinates.

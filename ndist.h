@@ -1,6 +1,8 @@
 #ifndef NDIST_H_
 #define NDIST_H_
 
+#include "nr/nr3.h"
+
 int neutdist = 0;
 MatDoub ndist;	// matrix for neutron density histogram
 int n_r = 350, n_z = 1000;	// number of bins
