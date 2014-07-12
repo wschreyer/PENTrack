@@ -1,7 +1,6 @@
-SRC = main.c
-CSRC = interp2d/interp2d.c interp2d/bicubic.c
+CSRC = main.c interp2d/interp2d.c interp2d/bicubic.c
 COBJ=$(CSRC:.c=.o)
-CPPSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp
+CPPSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp electron.cpp proton.cpp ndist.cpp source.cpp
 CPPOBJ = $(CPPSRC:.cpp=.o)
 
 CGAL_INCLUDE= #-I$(HOME)/CGAL-4.4/include # point gcc's -I option to CGAL include directory if you have compiled CGAL manually without installing it
@@ -13,14 +12,14 @@ MUPARSER_LIB= #-L$(HOME)/muparser_v2_2_3/lib/ # point gcc's -L option to muparse
 MUPARSER_SHAREDLIB= #-Wl,-rpath=$(HOME)/muparser_v2_2_3/lib/ # point gcc's -Wl,-rpath= option to muparser shared library if you have compiled muparser manually without installing it
 
 CC=g++
-CFLAGS=-O2 -frounding-math -Wall -Wno-reorder -Wno-parentheses -Wno-strict-aliasing $(CGAL_INCLUDE) $(CGAL_SHAREDLIB) $(MUPARSER_INCLUDE) $(MUPARSER_SHAREDLIB) #-O2: optimize, -Wno-*: suppress warnings from external libraries
+CFLAGS=-O2 -frounding-math -Wall $(CGAL_INCLUDE) $(CGAL_SHAREDLIB) $(MUPARSER_INCLUDE) $(MUPARSER_SHAREDLIB) #-O2: optimize, -Wno-*: suppress warnings from external libraries
 LDFLAGS=-lrt -lboost_system $(CGAL_LIB) -lgsl -lgslcblas -lCGAL $(MUPARSER_LIB) -lmuparser
 RM=rm
 EXE=PENTrack
 
 .PHONY: all
-all: $(SRC) $(COBJ) $(CPPOBJ)
-	$(CC) -o $(EXE) $(SRC) $(COBJ) $(CPPOBJ) $(CFLAGS) $(LDFLAGS)
+all: $(COBJ) $(CPPOBJ)
+	$(CC) -o $(EXE) $(COBJ) $(CPPOBJ) $(CFLAGS) $(LDFLAGS)
 	
 %.o:%.cpp
 	$(CC) -c -o $@ $< $(CFLAGS)

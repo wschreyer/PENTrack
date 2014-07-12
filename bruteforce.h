@@ -30,12 +30,12 @@ private:
 //	stepper_type stepper;
 
 	value_type gamma; ///< Particle's gyromagnetic ration
+	std::string particlename; ///< Name of particle whose spin is to be tracked, needed for logging.
 	double Bmax; ///< Spin tracking is only done when absolut magnetic field drops below this value.
 	std::vector<double> BFtimes; ///< Pairs of absolute time in between which spin tracking shall be done.
 	double BFBminmem; ///< Stores minimum field during one spin track for information
 	bool spinlog; ///< Should the tracking be logged to file?
 	double spinloginterval; ///< Time interval between log file entries.
-	std::string particlename; ///< Name of particle whose spin is to be tracked, needed for logging.
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream *fspinout; ///< file to log into
 	double starttime; ///< time of last integration start

@@ -6,7 +6,7 @@
 #ifndef PROTON_H_
 #define PROTON_H_
 
-static const char* NAME_PROTON = "proton";
+extern const char* NAME_PROTON;
 
 #include "globals.h"
 #include "particle.h"
@@ -35,10 +35,7 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param field Optional fields (can be NULL)
 	 */
-	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
-			: TParticle(NAME_PROTON, ele_e, m_p, 0, 0, number, t, x, y, z, E, phi, theta, amc, geometry, afield){
-
-	};
+	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
 	/**
@@ -58,10 +55,7 @@ protected:
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
 	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
-				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
-		traversed = true;
-		trajectoryaltered = false;
-	};
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 
 	/**
@@ -76,25 +70,13 @@ protected:
 	 * @param currentsolid Solid in which the proton is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid){
-		if (currentsolid.ID != geom->defaultsolid.ID){
-			x2 = x1;
-			for (int i = 0; i < 6; i++)
-				y2[i] = y1[i];
-			ID = currentsolid.ID;
-			printf("Absorption!\n");
-			return true;
-		}
-		return false;
-	};
+	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid);
 
 
 	/**
 	 * Proton decay (not used)
 	 */
-	void Decay(){
-
-	};
+	void Decay();
 
 };
 
