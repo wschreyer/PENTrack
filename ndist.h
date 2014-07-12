@@ -1,19 +1,19 @@
 #ifndef NDIST_H_
 #define NDIST_H_
 
-#include "nr/nr3.h"
+#include <gsl/gsl_matrix.h>
 
 int neutdist = 0;
-MatDoub ndist;	// matrix for neutron density histogram
+gsl_matrix *ndist;	// matrix for neutron density histogram
 int n_r = 350, n_z = 1000;	// number of bins
-long double size = 0.002, rmin = 0, zmin = -0.8;	// size of bins, position of first bin
+double size = 0.002, rmin = 0, zmin = -0.8;	// size of bins, position of first bin
 
 
 // prepare neutron density histogram matrix
 void prepndist()
 {
-	printf("Reserving space for neutron distribution matrix (%f MB)\n",(float)(n_r*n_z*sizeof(long double))/1024/1024);
-	ndist.assign(n_r,n_z,0);
+	printf("Reserving space for neutron distribution matrix (%f MB)\n",(float)(n_r*n_z*sizeof(double))/1024/1024);
+	ndist = gsl_matrix_calloc(n_r, n_z);
 }
 
 /// fill neutron density histogram
@@ -58,20 +58,20 @@ void fillndist(double x1, double y1[6], double x2, double y2[6])
 				s = min(s_right, s_top);
 			}
 		}
-		if(ir1 >= ndist.nrows() || iz1 >= ndist.ncols())
-			printf("Ndist Error %d %d not in %d %d\n",ir1,iz1,ndist.nrows(),ndist.ncols());
+		if(ir1 >= n_r || iz1 >= n_z)
+			printf("Ndist Error %d %d not in %d %d\n",ir1,iz1,n_r,n_z);
 		else
-			ndist[ir1][iz1] += s*(x2-x1);
+			gsl_matrix_set(ndist, ir1, iz1, gsl_matrix_get(ndist, ir1, iz1) + s*(x2-x1));
 		ir1 = newir;
 		iz1 = newiz;
 		r1 += (r2 - r1)*s;
 		z1 += (z2 - z1)*s;
 		x1 += (x2 - x1)*s;
 	}
-	if(ir2 >= ndist.nrows() || iz2 >= ndist.ncols())
-		printf("Ndist Error %d %d not in %d %d\n",ir2,iz2,ndist.nrows(),ndist.ncols());
+	if(ir2 >= n_r || iz2 >= n_z)
+		printf("Ndist Error %d %d not in %d %d\n",ir2,iz2,n_r,n_z);
 	else
-		ndist[ir2][iz2] += x2-x1;
+		gsl_matrix_set(ndist, ir2, iz2, gsl_matrix_get(ndist, ir2, iz2) + (x2-x1));
 }
 
 // print neutron density distribution in ndist.out
@@ -87,13 +87,14 @@ void outndist(const char *ndistfile)
 	fprintf(NDIST,"Rindex Zindex Rmtlpkt Zmtlpkt Whk Treffer\n");
 	for(int i=0; i<n_r; i++){
 		for(int j=0; j<n_z; j++){
-			if (ndist[i][j] != 0) Treffer =1;
-			if (ndist[i][j] == 0) Treffer =0;
-			fprintf(NDIST,"%i %i %.5LG %.5LG %.17LG %i\n",i,j, i*size + rmin + size/2, j*size + zmin + size/2, ndist[i][j], Treffer);
+			double val = gsl_matrix_get(ndist, i, j);
+			if (val != 0) Treffer =1;
+			if (val == 0) Treffer =0;
+			fprintf(NDIST,"%i %i %.5G %.5G %.17G %i\n",i,j, i*size + rmin + size/2, j*size + zmin + size/2, val, Treffer);
 		}
 	}
 	fclose(NDIST);
-	ndist.resize(0,0);
+	gsl_matrix_free(ndist);
 }
 
 #endif

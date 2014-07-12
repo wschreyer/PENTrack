@@ -1,5 +1,4 @@
 PENTrack
-nr/*.h
 out/*.out
 doc/
 *.o

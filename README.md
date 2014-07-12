@@ -8,25 +8,6 @@ If you just want to do simulations, you should check out the stable releases, wh
 External libraries
 -----------
 
-### Numerical recipes
-
-To compile the code, you need to copy some files from [Numerical Recipes] (http://www.nr.com) (v3.00 to v3.04 should work fine) into the /nr/ directory:
-* nr3.h (main header, one minor modification needed, patch file is provided)
-* interp_1d.h (cubic spline interpolation)
-* interp_linear.h (linear interpolation)
-* interp_2d.h (bicubic interpolation, some modifications needed, patch file is provided)
-* odeint.h (ODE integration main header, one minor midification needed, patch file is provided)
-* stepper.h (ODE integration step control
-* stepperdopr853.h (8th order Runge Kutta method)
-
-Patch files can be applied by executing:  
-`patch originalheader.h patchfile.diff`
-
-You may have to change the nr file format from DOS/MAC to UNIX text file format by executing:  
-`dos2unix originalheader.h`
-
-Numerical Recipes forces us to put almost all code into header files, which makes it less easy to read but it also avoids duplicate work in code- and header-files.
-
 ### CGAL
 
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
@@ -40,7 +21,7 @@ The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGA
 
 ### muparser
 
-[muparser](http://muparser.beltoforion.de/) is a fast formula parser and is used to interpret energy distributions etc. given by the user in particle.in
+[muparser](http://muparser.beltoforion.de/) is a fast formula parser and is used to interpret energy distributions etc. given by the user in particle.in.
 Most Linux distributions include libmuparser-dev or muparser-devel packages. It can also be downloaded and installed manually from the website. In that case you may have to adjust the MUPARSER_INCLUDE, MUPARSER_LIB and MUPARSER_SHAREDLIB paths in the Makefile.
 
 Only v2.2.3 has been tested so far.
@@ -48,7 +29,7 @@ Only v2.2.3 has been tested so far.
 ### interp2d and GSL
 
 [interp2d](http://github.com/diazona/interp2d.git) provides a bicubic interpolation routine based on the [GNU Scientific Library](https://www.gnu.org/software/gsl/).
-The interp2d code is included in the repository. The libgsl package should be available for all major Linux distributions.
+The interp2d code is included in the repository. The libgsl-dev package should be available for all major Linux distributions.
 
 ### libtricubic
 
