@@ -29,7 +29,7 @@ Only v2.2.3 has been tested so far.
 ### interp2d and GSL
 
 [interp2d](http://github.com/diazona/interp2d.git) provides a bicubic interpolation routine based on the [GNU Scientific Library](https://www.gnu.org/software/gsl/).
-The interp2d code is included in the repository. The libgsl-dev package should be available for all major Linux distributions.
+The interp2d code is included in the repository. It can be downloaded by executing `git submodule init` and `git submodule update`. The libgsl-dev package should be available for all major Linux distributions.
 
 ### libtricubic
 
