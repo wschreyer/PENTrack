@@ -12,13 +12,13 @@
  * Virtual base class for all straight wire classes.
  */
 struct TConductorField: public TField{
-	long double I; ///< current through wire
+	double I; ///< current through wire
 	/**
 	 * Constructor
 	 *
 	 * Sets current through wire TConductorField::I
 	 */
-	TConductorField(long double aI);
+	TConductorField(double aI);
 
 	/**
 	 * Compute magnetic field.
@@ -31,7 +31,7 @@ struct TConductorField: public TField{
 	 * @param t Time
 	 * @param B Magnetic field components
 	 */
-	virtual void BField(long double x, long double y, long double z, long double t, long double B[4][4]) = 0;
+	virtual void BField(double x, double y, double z, double t, double B[4][4]) = 0;
 
 	/**
 	 * Adds no electric field.
@@ -43,7 +43,7 @@ struct TConductorField: public TField{
 	 * @param V Electric potential
 	 * @param Ei Electric field components
 	 */
-	void EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]){};
+	void EField(double x, double y, double z, double t, double &V, double Ei[3]){};
 };
 
 /**
@@ -51,19 +51,19 @@ struct TConductorField: public TField{
  */
 
 struct TFiniteWire: public TConductorField{
-	long double SW1x; ///< x coordinate of start point
-	long double SW1y; ///< y coordinate of start point
-	long double SW1z; ///< z coordinate of start point
-	long double SW2x; ///< x coordinate of end point
-	long double SW2y; ///< y coordinate of end point
-	long double SW2z; ///< z coordinate of end point
+	double SW1x; ///< x coordinate of start point
+	double SW1y; ///< y coordinate of start point
+	double SW1z; ///< z coordinate of start point
+	double SW2x; ///< x coordinate of end point
+	double SW2y; ///< y coordinate of end point
+	double SW2z; ///< z coordinate of end point
 
 	/**
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
-	TFiniteWire(long double SW1xx, long double SW1yy, long double SW1zz, long double SW2xx, long double SW2yy, long double SW2zz, long double aI);
+	TFiniteWire(double SW1xx, double SW1yy, double SW1zz, double SW2xx, double SW2yy, double SW2zz, double aI);
 
-	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]);
+	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
 
 /**
@@ -71,16 +71,16 @@ struct TFiniteWire: public TConductorField{
  */
 
 struct TFiniteWireX: public TConductorField{
-	long double SW1x; ///< x coordinate of start point
-	long double SW2x; ///< x coordinate of end point
-	long double SWz; ///< z coordinate of wire
+	double SW1x; ///< x coordinate of start point
+	double SW2x; ///< x coordinate of end point
+	double SWz; ///< z coordinate of wire
 
 	/**
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
-	TFiniteWireX(long double SW1xx, long double SW2xx, long double SWzz, long double aI);
+	TFiniteWireX(double SW1xx, double SW2xx, double SWzz, double aI);
 
-	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]);
+	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
 
 /**
@@ -88,16 +88,16 @@ struct TFiniteWireX: public TConductorField{
  */
 
 struct TFiniteWireY: public TConductorField{
-	long double SW1y; ///< y coordinate of start point
-	long double SW2y; ///< y coordinate of end point
-	long double SWz; ///< z coordinate of wire
+	double SW1y; ///< y coordinate of start point
+	double SW2y; ///< y coordinate of end point
+	double SWz; ///< z coordinate of wire
 
 	/**
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
-	TFiniteWireY(long double SW1yy, long double SW2yy, long double SWzz, long double aI);
+	TFiniteWireY(double SW1yy, double SW2yy, double SWzz, double aI);
 
-	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]);
+	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
 
 
@@ -105,17 +105,17 @@ struct TFiniteWireY: public TConductorField{
  * Calculates magnetic field by a vertical finite straight wire
  */
 struct TFiniteWireZ: public TConductorField{
-	long double SWx; ///< x coordinate of wire
-	long double SWy; ///< y coordintate of wire
-	long double SW1z; ///< z coordinate of start point
-	long double SW2z; ///< z coordinate of end point
+	double SWx; ///< x coordinate of wire
+	double SWy; ///< y coordintate of wire
+	double SW1z; ///< z coordinate of start point
+	double SW2z; ///< z coordinate of end point
 
 	/**
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
-	TFiniteWireZ(long double SWxx, long double SWyy, long double SW1zz, long double SW2zz, long double aI);
+	TFiniteWireZ(double SWxx, double SWyy, double SW1zz, double SW2zz, double aI);
 
-	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]);
+	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
 
 
@@ -123,15 +123,15 @@ struct TFiniteWireZ: public TConductorField{
  * Calculates magnetic field by a finite straight wire on z-axis
  */
 struct TFiniteWireZCenter: public TConductorField{
-	long double SW1z; ///< z coordinate of start point
-	long double SW2z; ///< z coordinate of end point
+	double SW1z; ///< z coordinate of start point
+	double SW2z; ///< z coordinate of end point
 
 	/**
 	 * Constructor, requires coordinates of start and end point of wire and current.
 	 */
-	TFiniteWireZCenter(long double SW1zz, long double SW2zz, long double aI);
+	TFiniteWireZCenter(double SW1zz, double SW2zz, double aI);
 
-	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]);
+	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
 
 
@@ -142,16 +142,16 @@ struct TFiniteWireZCenter: public TConductorField{
  * meeting at z-axis, with bottom SW1z and top SW2z and width SWr
  */
 struct TFullRacetrack: public TConductorField{
-	long double SW1z; ///< z coordinate of coil bottoms
-	long double SW2z; ///< z coordinate of coil tops
-	long double SWr; ///< width of coils
+	double SW1z; ///< z coordinate of coil bottoms
+	double SW2z; ///< z coordinate of coil tops
+	double SWr; ///< width of coils
 
 	/**
 	 * Constructor, requires coordinates, size and current.
 	 */
-	TFullRacetrack(long double SW1zz, long double SW2zz, long double SWrr, long double aI);
+	TFullRacetrack(double SW1zz, double SW2zz, double SWrr, double aI);
 
-	void BField(long double x, long double y, long double z, long double t, long double B[4][4]);
+	void BField(double x, double y, double z, double t, double B[4][4]);
 };
 
 
@@ -159,15 +159,15 @@ struct TFullRacetrack: public TConductorField{
  * Calculates magnetic field by an infinite straight wire parallel to z-axis
  */
 struct TInfiniteWireZ: public TConductorField{
-	long double lx; ///< x coordinate of wire
-	long double ly; ///< y coordinate of wire
+	double lx; ///< x coordinate of wire
+	double ly; ///< y coordinate of wire
 
 	/**
 	 * Constructor, requires coordinates and current.
 	 */
-	TInfiniteWireZ(long double lxx, long double lyy, long double aI);
+	TInfiniteWireZ(double lxx, double lyy, double aI);
 
-	void BField(long double x,long double y,long double z, long double t, long double B[4][4]);
+	void BField(double x,double y,double z, double t, double B[4][4]);
 };
 
 
@@ -178,9 +178,9 @@ struct TInfiniteWireZCenter: public TConductorField{
 	/**
 	 * Constructor, requires current.
 	 */
-	TInfiniteWireZCenter(long double aI);
+	TInfiniteWireZCenter(double aI);
 
-	void BField(const long double x, const long double y, const long double z, long double t, long double B[4][4]);
+	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
 
 #endif /*RACETRACK_H_*/

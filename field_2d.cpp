@@ -295,7 +295,7 @@ TabField::~TabField(){
 }
 
 
-void TabField::BField(long double x, long double y, long double z, long double t, long double B[4][4]){
+void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 	double r = sqrt(x*x+y*y);
 	double Bscale = BFieldScale(t);
 	if (Bscale != 0 && r >= rind[0] && r <= rind[m-1] && z >= zind[0] && z <= zind[n-1]){
@@ -338,7 +338,7 @@ void TabField::BField(long double x, long double y, long double z, long double t
 }
 
 
-void TabField::EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]){
+void TabField::EField(double x, double y, double z, double t, double &V, double Ei[3]){
 	double Vloc, dVdrj[3];
 	if (VTab.size() > 0){ // prefer E-field from potential over pure E-field interpolation
 		double r = sqrt(x*x+y*y);

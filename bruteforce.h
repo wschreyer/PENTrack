@@ -56,7 +56,7 @@ public:
 	 * @param aparticlename Particle name.
 	 * @param conf Option map containing particle specific spin tracking options.
 	 */
-	TBFIntegrator(long double agamma, std::string aparticlename, std::map<std::string, std::string> &conf);
+	TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf);
 private:
 	/**
 	 * Do cubic spline interpolation of magnetic field components with coefficients determined in TBFderivs::TBFderivs
@@ -100,8 +100,8 @@ public:
 	 *
 	 * @return Probability, that NO spin flip occured (usually close to 1).
 	 */
-	long double Integrate(double x1, double y1[6], long double B1[4][4],
-						double x2, double y2[6], long double B2[4][4], std::ofstream *&spinout);
+	long double Integrate(double x1, double y1[6], double B1[4][4],
+						double x2, double y2[6], double B2[4][4], std::ofstream *&spinout);
 };
 
 #endif // BRUTEFORCE_H_

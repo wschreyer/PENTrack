@@ -17,13 +17,13 @@
 
 using namespace std;
 
-TFieldManager::TFieldManager(TConfig &conf, int aFieldOscillation, long double aOscillationFraction, long double aOscillationFrequency):
+TFieldManager::TFieldManager(TConfig &conf, int aFieldOscillation, double aOscillationFraction, double aOscillationFrequency):
 			FieldOscillation(aFieldOscillation), OscillationFraction(aOscillationFraction), OscillationFrequency(aOscillationFrequency){
 	for (map<string, string>::iterator i = conf["FIELDS"].begin(); i != conf["FIELDS"].end(); i++){
 		string type;
 		string ft;
-		long double Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime;
-		long double Ibar, p1, p2, p3, p4, p5, p6;
+		double Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime;
+		double Ibar, p1, p2, p3, p4, p5, p6;
 		TField *f = NULL;
 		istringstream ss(i->second);
 
@@ -94,12 +94,12 @@ TFieldManager::~TFieldManager(){
 }
 
 
-void TFieldManager::BField (long double x, long double y, long double z, long double t, long double B[4][4]){      //B-Feld am Ort des Teilchens berechnen
+void TFieldManager::BField (double x, double y, double z, double t, double B[4][4]){      //B-Feld am Ort des Teilchens berechnen
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			B[i][j] = 0;
 
-	long double BFeldSkal = BFieldScale(t);
+	double BFeldSkal = BFieldScale(t);
 	if (BFeldSkal != 0){
 		for (vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++){
 			(*i)->BField(x, y, z, t, B);
@@ -121,7 +121,7 @@ void TFieldManager::BField (long double x, long double y, long double z, long do
 }
 
 
-void TFieldManager::EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]){
+void TFieldManager::EField(double x, double y, double z, double t, double &V, double Ei[3]){
 	Ei[0] = Ei[1] = Ei[2] = V = 0;
 	for (vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++){
 		(*i)->EField(x, y, z, t, V, Ei);
@@ -129,7 +129,7 @@ void TFieldManager::EField(long double x, long double y, long double z, long dou
 }
 
 
-long double TFieldManager::BFieldScale(long double t){
+double TFieldManager::BFieldScale(double t){
 	if (FieldOscillation==1)
 		return 1 + OscillationFraction*sin(OscillationFrequency*2*pi*t);
 	return 1;

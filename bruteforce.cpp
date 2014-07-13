@@ -1,7 +1,7 @@
 #include "bruteforce.h"
 #include "globals.h"
 
-TBFIntegrator::TBFIntegrator(long double agamma, std::string aparticlename, std::map<std::string, std::string> &conf)
+TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
 				  spinlog(false), spinloginterval(5e-7), intsteps(0), fspinout(NULL), starttime(0), t1(0), t2(0){
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
@@ -62,8 +62,8 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 			<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws << '\n';
 }
 
-long double TBFIntegrator::Integrate(double x1, double y1[6], long double B1[4][4],
-					double x2, double y2[6], long double B2[4][4], std::ofstream *&spinout){
+long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
+					double x2, double y2[6], double B2[4][4], std::ofstream *&spinout){
 	if (gamma == 0)
 		return 1;
 

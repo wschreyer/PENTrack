@@ -218,7 +218,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 			}
 
 			if (field){
-				long double B1[4][4], B2[4][4];
+				double B1[4][4], B2[4][4];
 				field->BField(y1[0], y1[1], y1[2], x1, B1);
 				field->BField(y2[0], y2[1], y2[2], x2, B2);
 				long double noflip = BFint.Integrate(x1, &y1[0], B1, x2, &y2[0], B2, output.spinout);
@@ -284,7 +284,7 @@ void TParticle::derivs(value_type x, state_type y, state_type &dydx){
 	if (m != 0)
 		F[2] += -gravconst*m*ele_e; // add gravitation to force
 	if (field){
-		long double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
+		double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
 		if (q != 0 || (mu != 0 && polend != 0))
 			field->BField(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
 		if (q != 0)
@@ -506,9 +506,9 @@ void TParticle::PrintTrack(ofstream *&trackfile, value_type x, state_type y, int
 	}
 
 	cout << "-";
-	long double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-	long double E[3] = {0,0,0};
-	long double V = 0;
+	double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+	double E[3] = {0,0,0};
+	double V = 0;
 	if (field){
 		field->BField(y[0],y[1],y[2],x,B);
 		field->EField(y[0],y[1],y[2],x,V,E);
@@ -567,7 +567,7 @@ double TParticle::Ekin(value_type v[3]){
 double TParticle::Epot(value_type t, state_type y, int polarisation, TFieldManager *field, map<solid, bool> &solids){
 	value_type result = 0;
 	if ((q != 0 || mu != 0) && field){
-		long double B[4][4], E[3], V;
+		double B[4][4], E[3], V;
 		if (mu != 0){
 			field->BField(y[0],y[1],y[2],t,B);
 			result += -polarisation*mu/ele_e*B[3][0];

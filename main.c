@@ -307,7 +307,7 @@ void PrintBFieldCut(const char *outfile, TFieldManager &field){
 	fprintf(cutfile, "x y z Bx dBxdx dBxdy dBxdz By dBydx dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n");
 	
 	double Pp[3];
-	long double B[4][4],Ei[3],V;
+	double B[4][4],Ei[3],V;
 	float start = clock(); // do some time statistics
 	// sample field BCutPlaneSmapleCount1 times in u-direction and BCutPlaneSampleCount2 time in v-direction
 	for (int i = 0; i < BCutPlaneSampleCount1; i++) {
@@ -320,10 +320,10 @@ void PrintBFieldCut(const char *outfile, TFieldManager &field){
 			field.BField(Pp[0], Pp[1], Pp[2], 0, B);
 			for (int k = 0; k < 4; k++)
 				for (int l = 0; l < 4; l++)
-					fprintf(cutfile, "%LG ",B[k][l]);
+					fprintf(cutfile, "%G ",B[k][l]);
 
 			field.EField(Pp[0], Pp[1], Pp[2], 0, V, Ei);
-			fprintf(cutfile, "%LG %LG %LG %LG\n",
+			fprintf(cutfile, "%G %G %G %G\n",
 							  Ei[0],Ei[1],Ei[2],V);
 		}
 	}
@@ -361,14 +361,14 @@ void PrintBField(const char *outfile, TFieldManager &field){
 	for (E = 0; E <= Emax; E++) VolumeB[E] = 0;
 	
 	double EnTest;
-	long double B[4][4];
+	double B[4][4];
 	// sample space in cylindrical pattern
 	for (double r = rmin; r <= rmax; r += dr){
 		for (double z = zmin; z <= zmax; z += dz){
 			field.BField(r, 0, z, 500.0, B); // evaluate field
 			// print field values
-			fprintf(bfile,"%g %g %g %LG %LG %LG %G %G %LG \n",r,0.0,z,B[0][0],B[1][0],B[2][0],0.0,0.0,B[3][0]);
-			printf("r=%g, z=%g, Br=%LG T, Bz=%LG T\n",r,z,B[0][0],B[2][0]);
+			fprintf(bfile,"%g %g %g %G %G %G %G %G %G \n",r,0.0,z,B[0][0],B[1][0],B[2][0],0.0,0.0,B[3][0]);
+			printf("r=%g, z=%g, Br=%G T, Bz=%G T\n",r,z,B[0][0],B[2][0]);
 			
 			// Ramp Heating Analysis
 			for (E = 0; E <= Emax; E++){

@@ -405,8 +405,8 @@ TabField3::TabField3(const char *tabfile, double Bscale, double Escale,
 }
 
 
-void TabField3::BField(long double x, long double y, long double z, long double t, long double B[4][4]){
-	long double Bscale = BFieldScale(t);
+void TabField3::BField(double x, double y, double z, double t, double B[4][4]){
+	double Bscale = BFieldScale(t);
 	// get coordinate index
 	int indx = (int)floor((x - x_mi)/xdist);
 	int indy = (int)floor((y - y_mi)/ydist);
@@ -440,7 +440,7 @@ void TabField3::BField(long double x, long double y, long double z, long double 
 }
 
 
-void TabField3::EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]){
+void TabField3::EField(double x, double y, double z, double t, double &V, double Ei[3]){
 	if (Vc.size() > 0 &&
 		(x - x_mi)/xdist > 0 && (x - x_mi - xl*xdist)/xdist < 0 &&
 		(y - y_mi)/ydist > 0 && (y - y_mi - yl*ydist)/ydist < 0 &&

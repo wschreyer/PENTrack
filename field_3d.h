@@ -134,7 +134,7 @@ class TabField3: public TField{
 		 * @param t Time
 		 * @param B Returns magnetic field components B[0..2][0], their derivatives B[0..2][1..3], the absolute value B[3][0] and its derivatives B[3][1..3]
 		 */
-		void BField(long double x, long double y, long double z, long double t, long double B[4][4]);
+		void BField(double x, double y, double z, double t, double B[4][4]);
 
 
 		/**
@@ -150,7 +150,7 @@ class TabField3: public TField{
 		 * @param V Returns electric potential
 		 * @param Ei Returns electric field (negative spatial derivatives of V)
 		 */
-		void EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]);
+		void EField(double x, double y, double z, double t, double &V, double Ei[3]);
 };
 
 #endif // FIELD_3D_H_

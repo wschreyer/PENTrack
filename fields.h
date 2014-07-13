@@ -21,8 +21,8 @@ struct TFieldManager{
 	public:
 		std::vector<TField*> fields; ///< list of fields
 		int FieldOscillation; ///< If =1 field oscillation is turned on
-		long double OscillationFraction; ///< Field oscillation amplitude
-		long double OscillationFrequency; ///< Field oscillation frequency
+		double OscillationFraction; ///< Field oscillation amplitude
+		double OscillationFrequency; ///< Field oscillation frequency
 		
 		/**
 		 * Constructor.
@@ -34,7 +34,7 @@ struct TFieldManager{
 		 * @param aOscillationFraction Amplitude of field oscillation
 		 * @param aOscillationFrequency Frequency of field oscillation
 		 */
-		TFieldManager(TConfig &conf, int aFieldOscillation = 0, long double aOscillationFraction = 0, long double aOscillationFrequency = 0);
+		TFieldManager(TConfig &conf, int aFieldOscillation = 0, double aOscillationFraction = 0, double aOscillationFrequency = 0);
 
 		
 		/**
@@ -59,7 +59,7 @@ struct TFieldManager{
 		 * @param t Time
 		 * @param B Returns magnetic field component matrix
 		 */
-		void BField (long double x, long double y, long double z, long double t, long double B[4][4]);
+		void BField (double x, double y, double z, double t, double B[4][4]);
 
 		
 		/**
@@ -74,7 +74,7 @@ struct TFieldManager{
 		 * @param V Return electric potential (!=0 only if a map with potential was loaded)
 		 * @param Ei Returns electric field vector
 		 */
-		void EField(long double x, long double y, long double z, long double t, long double &V, long double Ei[3]);
+		void EField(double x, double y, double z, double t, double &V, double Ei[3]);
 
 	private:
 
@@ -83,7 +83,7 @@ struct TFieldManager{
 		 *
 		 * @param t Time
 		 */
-		long double BFieldScale(long double t);
+		double BFieldScale(double t);
 		
 };
 
