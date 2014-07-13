@@ -149,7 +149,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 	istringstream(conf["flipspin"]) >> flipspin;
 	TBFIntegrator BFint(gamma, name, conf);
 
-	stepper = boost::numeric::odeint::make_dense_output(1e-13, 0, stepper_type());
+	stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
 
 	while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 		if (resetintegration){
