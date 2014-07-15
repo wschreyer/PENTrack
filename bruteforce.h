@@ -146,7 +146,7 @@ struct TBFIntegrator{
 	 *
 	 * @return Probability, that NO spin flip occured (usually close to 1).
 	 */
-	long double Integrate(long double x1, long double y1[6], long double x2, long double y2[6], TFieldManager *field, ofstream *&spinout){
+	long double Integrate(long double x1, long double y1[6], long double x2, long double y2[6], TFieldManager *field, ofstream &spinout){
 		if (gamma == 0)
 			return 1;
 
@@ -214,19 +214,19 @@ struct TBFIntegrator{
 	 * @param out Output struct of Odeint integrator.
 	 * @param BFderivs Magnetic field interpolator to print field values.
 	 */
-	void PrintBFStep(ofstream *&spinout, Output &out, TBFderivs &BFderivs){
+	void PrintBFStep(ofstream &spinout, Output &out, TBFderivs &BFderivs){
 		for (int i = 0; i < out.count; i++){
-			if (!spinout){
+			if (!spinout.is_open()){
 				ostringstream BFoutfile1;
 				BFoutfile1 << outpath << "/" << setw(12) << setfill('0') << jobnumber << setw(0) << particlename << "spin.out";
 				cout << "Creating " << BFoutfile1.str() << '\n';
-				spinout = new ofstream(BFoutfile1.str().c_str());
-				if(!spinout || !spinout->is_open())
+				spinout.open(BFoutfile1.str().c_str());
+				if(!spinout.is_open())
 				{
 					cout << "Could not open " << BFoutfile1.str() << '\n';
 					exit(-1);
 				}
-				*spinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz\n";
+				spinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz\n";
 			}
 
 			long double B[3];
@@ -238,7 +238,7 @@ struct TBFIntegrator{
 				BFlogpol = log10(0.5-BFpol);
 			else if (BFpol==0.5)
 				BFlogpol = 0.0;
-			*spinout << out.xsave[i] << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
+			spinout << out.xsave[i] << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
 					<< 2*out.ysave[0][i] << " " << 2*out.ysave[1][i] << " " << 2*out.ysave[2][i] << " "
 					<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws << '\n';
 		}

@@ -25,49 +25,6 @@ static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflect
 
 
 /**
- * Struct containing all output streams
- */
-struct TOutput{
-	ofstream *endout; ///< endlog file stream
-	ofstream *snapshotout; ///< snapshot file stream
-	ofstream *trackout; ///< tracklog file stream
-	ofstream *hitout; ///< hitlog file stream
-	ofstream *spinout; ///< spinlog file stream
-	
-	/**
-	 * Constructor: initializes empty streams
-	 */
-	TOutput(): endout(NULL), snapshotout(NULL), trackout(NULL), hitout(NULL), spinout(NULL) { };
-
-	/**
-	 * Destructor, close open streams.
-	 */
-	~TOutput(){
-		if (endout){
-			endout->close();
-			delete endout;
-		}
-		if (snapshotout){
-			snapshotout->close();
-			delete snapshotout;
-		}
-		if (trackout){
-			trackout->close();
-			delete trackout;
-		}
-		if (hitout){
-			hitout->close();
-			delete hitout;
-		}
-		if (spinout){
-			spinout->close();
-			delete spinout;
-		}
-	}
-};
-
-
-/**
  * Basic particle class (virtual).
  *
  * Includes all functionality (integration, file output).
@@ -230,7 +187,7 @@ struct TParticle{
 		 * @param conf Option map containing particle specific options from particle.in
 		 * @param output TOutput struct containing output options and streams
 		 */
-		void Integrate(long double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, map<string, string> &conf, TOutput &output){
+		void Integrate(long double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, map<string, string> &conf){
 			geom = &geometry;
 			if (currentsolids.empty())
 				geom->GetSolids(tend, yend, currentsolids);
@@ -265,7 +222,7 @@ struct TParticle{
 			bool tracklog = false;
 			istringstream(conf["tracklog"]) >> tracklog;
 			if (tracklog)
-				PrintTrack(output.trackout, tend, yend, polend);
+				PrintTrack(tend, yend, polend);
 			double trackloginterval = 1e-3;
 			istringstream(conf["trackloginterval"]) >> trackloginterval;
 			long double lastsave = x;
@@ -320,7 +277,7 @@ struct TParticle{
 					}
 					
 					clock_gettime(CLOCK_REALTIME, &refl_start);
-					resetintegration = CheckHit(x1, y1, x2, y2, polarisation, hitlog, output.hitout); // check if particle hit a material boundary or was absorbed between y1 and y2
+					resetintegration = CheckHit(x1, y1, x2, y2, polarisation, hitlog); // check if particle hit a material boundary or was absorbed between y1 and y2
 					if (resetintegration){
 						x = x2; // if particle path was changed: reset integration end point
 						for (int i = 0; i < 6; i++)
@@ -340,17 +297,17 @@ struct TParticle{
 								ysnap[i] = stepper->dense_out(i, nextsnapshot, stepper->hdid);
 							cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
-							Print(output.snapshotout, nextsnapshot, ysnap, polarisation, "snapshot.out");
+							PrintSnapshot(nextsnapshot, ysnap, polarisation);
 							snapshots >> nextsnapshot;
 						}
 					}
 
 					if (tracklog && x2 - lastsave > trackloginterval/v1){
-						PrintTrack(output.trackout, x2, y2, polarisation);
+						PrintTrack(x2, y2, polarisation);
 						lastsave = x2;
 					}
 
-					long double noflip = BFint.Integrate(x1, y1, x2, y2, field, output.spinout);
+					long double noflip = BFint.Integrate(x1, y1, x2, y2, field, GetSpinOut());
 					if (mc->UniformDist(0,1) > noflip)
 						polarisation *= -1;
 					noflipprob *= noflip; // accumulate no-spin-flip probability
@@ -374,7 +331,7 @@ struct TParticle{
 			for (int i = 0; i < 6; i++)
 				yend[i] = y[i];
 			polend = polarisation;
-			Print(output.endout, tend, yend, polend);
+			Print(tend, yend, polend);
 
 			delete stepper;
 			stepper = NULL;
@@ -495,7 +452,7 @@ struct TParticle{
 		 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 		 * @return Returns true if particle was reflected/absorbed
 		 */
-		bool CheckHit(long double &x1, long double y1[6], long double &x2, long double y2[6], int &pol, bool hitlog, ofstream *&hitout, int iteration = 1){
+		bool CheckHit(long double &x1, long double y1[6], long double &x2, long double y2[6], int &pol, bool hitlog, int iteration = 1){
 			if (!geom->CheckSegment(y1,y2)){ // check if start point is inside bounding box of the simulation geometry
 				printf("\nParticle has hit outer boundaries: Stopping it! t=%LG x=%LG y=%LG z=%LG\n",x2,y2[0],y2[1],y2[2]);
 				ID = ID_HIT_BOUNDARIES;
@@ -563,7 +520,7 @@ struct TParticle{
 
 						if (hit){
 							if (hitlog)
-								PrintHit(hitout, x1, y1, y2, prevpol, pol, coll->first.normal, &leaving, &entering);
+								PrintHit(x1, y1, y2, prevpol, pol, coll->first.normal, &leaving, &entering);
 							Nhit++;
 						}
 					}
@@ -594,7 +551,7 @@ struct TParticle{
 						xbisect1 = xbisect2 = xnew;
 						for (int i = 0; i < 6; i++)
 							ybisect1[i] = ybisect2[i] = stepper->dense_out(i, xbisect1, stepper->hdid); // get point at cut time
-						if (CheckHit(x1, y1, xbisect1, ybisect1, pol, hitlog, hitout, iteration+1)){ // recursive call for step before coll. point
+						if (CheckHit(x1, y1, xbisect1, ybisect1, pol, hitlog, iteration+1)){ // recursive call for step before coll. point
 							x2 = xbisect1;
 							for (int i = 0; i < 6; i++)
 								y2[i] = ybisect1[i];
@@ -607,7 +564,7 @@ struct TParticle{
 						xbisect2 = xnew;
 						for (int i = 0; i < 6; i++)
 							ybisect2[i] = stepper->dense_out(i, xbisect2, stepper->hdid); // get point at cut time
-						if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, pol, hitlog, hitout, iteration+1)){ // recursive call for step over coll. point
+						if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, pol, hitlog, iteration+1)){ // recursive call for step over coll. point
 							x2 = xbisect2;
 							for (int i = 0; i < 6; i++)
 								y2[i] = ybisect2[i];
@@ -615,7 +572,7 @@ struct TParticle{
 						}
 					}
 
-					if (CheckHit(xbisect2, ybisect2, x2, y2, pol, hitlog, hitout, iteration+1)) // recursive call for step after coll. point
+					if (CheckHit(xbisect2, ybisect2, x2, y2, pol, hitlog, iteration+1)) // recursive call for step after coll. point
 						return true;
 				}
 			}
@@ -669,11 +626,76 @@ struct TParticle{
 		virtual void Decay() = 0;
 
 
+		/**
+		 * Write the particle's start properties and current values into a file.
+		 *
+		 * This is a purely virtual function that has to be implemented by all derived classes.
+		 * It can e.g. simply call the simple prototype TParticle::Print below.
+		 *
+		 * @param x Current time
+		 * @param y Current state vector
+		 * @param polarisation Current polarisation
+		 */
+		virtual void Print(long double x, long double y[6], int polarisation) = 0;
+
+
+		/**
+		 * Write the particle's start properties and current values into a file.
+		 *
+		 * This is a purely virtual function that has to be implemented by all derived classes.
+		 * It can e.g. simply call the simple prototype TParticle::Print below.
+		 *
+		 * @param x Current time
+		 * @param y Current state vector
+		 * @param polarisation Current polarisation
+		 */
+		virtual void PrintSnapshot(long double x, long double y[6], int polarisation) = 0;
+
+
+		/**
+		 * Write the particle's trajectory into a file.
+		 *
+		 * This is a purely virtual function that has to be implemented by all derived classes.
+		 * It can e.g. simply call the simple prototype TParticle::PrintTrack below.
+		 *
+		 * @param x Current time
+		 * @param y Current state vector
+		 * @param polarisation Current polarisation
+		 */
+		virtual void PrintTrack(long double x, long double y[6], int polarisation) = 0;
+
+
+		/**
+		 * Write the particle properties into a file, before and after it hit a material boundary.
+		 *
+		 * This is a purely virtual function that has to be implemented by all derived classes.
+		 * It can e.g. simply call the simple prototype TParticle::PrintHit below.
+		 *
+		 * @param x Time of material hit
+		 * @param y1 State vector before material hit
+		 * @param y2 State vector after material hit
+		 * @param pol1 Polarisation before material hit
+		 * @param pol2 Polarisation after material hit
+		 * @param normal Normal vector of hit surface
+		 * @param leaving Material which is left at this boundary
+		 * @param entering Material which is entered at this boundary
+		 */
+		virtual void PrintHit(long double x, long double *y1, long double *y2, int pol1, int pol2, const long double *normal, solid *leaving, solid *entering) = 0;
+
+
+		/**
+		 * Get spin log stream.
+		 *
+		 * Has to be derived by all derived classes.
+		 *
+		 * @return Reference to spin log stream
+		 */
+		virtual ofstream& GetSpinOut() = 0;
 
 		/**
 		 * Print start and current values to a stream.
 		 *
-		 * This is a virtual function and can be overwritten by derived particle classes.
+		 * This is a simple prototype that can be called by derived particle classes.
 		 *
 		 * @param file stream to print into
 		 * @param x Current time
@@ -681,17 +703,17 @@ struct TParticle{
 		 * @param polarisation Current polarisation
 		 * @param filesuffix Optional suffix added to the file name (default: "end.out")
 		 */
-		virtual void Print(ofstream *&file, long double x, long double y[6], int polarisation, string filesuffix = "end.out"){
-			if (!file){
+		void Print(ofstream &file, long double x, long double y[6], int polarisation, string filesuffix = "end.out"){
+			if (!file.is_open()){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << filesuffix;
 				cout << "Creating " << filename.str() << '\n';
-				file = new ofstream(filename.str().c_str());
-				if (!file || !file->is_open()){
+				file.open(filename.str().c_str());
+				if (!file.is_open()){
 					cout << "Could not create" << filename.str() << '\n';
 					exit(-1);
 				}
-				*file <<	"jobnumber particle "
+				file <<	"jobnumber particle "
 	                		"tstart xstart ystart zstart "
 	                		"vxstart vystart vzstart "
 	                		"polstart Hstart Estart "
@@ -699,11 +721,11 @@ struct TParticle{
 	                		"vxend vyend vzend "
 	                		"polend Hend Eend stopID Nspinflip spinflipprob "
 	                		"ComputingTime Nhit Nstep trajlength Hmax\n";
-				file->precision(10);
+				file.precision(10);
 			}
 			cout << "Printing status\n";
 			long double E = Ekin(&y[3]);
-			*file	<<	jobnumber << " " << particlenumber << " "
+			file	<<	jobnumber << " " << particlenumber << " "
 					<<	tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 					<<	ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
 					<< polstart << " " << Hstart() << " " << Estart() << " "
@@ -717,28 +739,28 @@ struct TParticle{
 		/**
 		 * Print current track point into stream to allow visualization of the particle's trajectory.
 		 *
-		 * This is a virtual function and can be overwritten by derived particle classes.
+		 * This is a simple prototype that can be called by derived particle classes.
 		 *
 		 * @param trackfile Stream to print into
 		 * @param x Current time
 		 * @param y Current state vector
 		 * @param polarisation Current polarisation
 		 */
-		virtual void PrintTrack(ofstream *&trackfile, long double x, long double y[6], int polarisation){
-			if (!trackfile){
+		void PrintTrack(ofstream &trackfile, long double x, long double y[6], int polarisation){
+			if (!trackfile.is_open()){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
 				cout << "Creating " << filename.str() << '\n';
-				trackfile = new ofstream(filename.str().c_str());
-				if (!trackfile || !trackfile->is_open()){
+				trackfile.open(filename.str().c_str());
+				if (!trackfile.is_open()){
 					cout << "Could not create" << filename.str() << '\n';
 					exit(-1);
 				}
-				*trackfile << 	"jobnumber particle polarisation "
+				trackfile << 	"jobnumber particle polarisation "
 								"t x y z vx vy vz "
 								"H E Bx dBxdx dBxdy dBxdz By dBydx "
 								"dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n";
-				trackfile->precision(10);
+				trackfile.precision(10);
 			}
 
 			cout << "-";
@@ -752,20 +774,20 @@ struct TParticle{
 			long double Ek = Ekin(&y[3]);
 			long double H = Ek + Epot(x, y, polarisation, field, currentsolids);
 
-			*trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
+			trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
 						<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
 						<< H << " " << Ek << " ";
 			for (int i = 0; i < 4; i++)
 				for (int j = 0; j < 4; j++)
-					*trackfile << B[i][j] << " ";
-			*trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
+					trackfile << B[i][j] << " ";
+			trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
 		};
 
 
 		/**
 		 * Print material boundary hits into stream.
 		 *
-		 * This is a virtual function and can be overwritten by derived particle classes.
+		 * This is a simple prototype that can be called by derived particle classes.
 		 *
 		 * @param hitfile stream to print into
 		 * @param x Time of material hit
@@ -777,25 +799,25 @@ struct TParticle{
 		 * @param leaving Material which is left at this boundary
 		 * @param entering Material which is entered at this boundary
 		 */
-		virtual void PrintHit(ofstream *&hitfile, long double x, long double *y1, long double *y2, int pol1, int pol2, const long double *normal, solid *leaving, solid *entering){
-			if (!hitfile){
+		void PrintHit(ofstream &hitfile, long double x, long double *y1, long double *y2, int pol1, int pol2, const long double *normal, solid *leaving, solid *entering){
+			if (!hitfile.is_open()){
 				ostringstream filename;
 				filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
 				cout << "Creating " << filename.str() << '\n';
-				hitfile = new ofstream(filename.str().c_str());
-				if (!hitfile || !hitfile->is_open()){
+				hitfile.open(filename.str().c_str());
+				if (!hitfile.is_open()){
 					cout << "Could not create" << filename.str() << '\n';
 					exit(-1);
 				}
-				*hitfile << "jobnumber particle "
+				hitfile << "jobnumber particle "
 							"t x y z v1x v1y v1z pol1 "
 							"v2x v2y v2z pol2 "
 							"nx ny nz solid1 solid2\n";
-				hitfile->precision(10);
+				hitfile.precision(10);
 			}
 
 			cout << ":";
-			*hitfile << jobnumber << " " << particlenumber << " "
+			hitfile << jobnumber << " " << particlenumber << " "
 					<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << pol1 << " "
 					<< y2[3] << " " << y2[4] << " " << y2[5] << " " << pol2 << " "
 					<< normal[0] << " " << normal[1] << " " << normal[2] << " " << leaving->ID << " " << entering->ID << '\n';

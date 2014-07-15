@@ -42,6 +42,12 @@ public:
 	};
 
 protected:
+	static ofstream endout; ///< endlog file stream
+	static ofstream snapshotout; ///< snapshot file stream
+	static ofstream trackout; ///< tracklog file stream
+	static ofstream hitout; ///< hitlog file stream
+	static ofstream spinout; ///< spinlog file stream
+
 	/**
 	 * This method is executed, when a particle crosses a material boundary.
 	 *
@@ -115,8 +121,83 @@ protected:
 
 	}
 
+	/**
+	 * Write the particle's start properties and current values into a file.
+	 *
+	 * Calls the simple prototype TParticle::Print.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	void Print(long double x, long double y[6], int polarisation){
+		TParticle::Print(endout, x, y, polarisation);
+	};
+
+
+	/**
+	 * Write the particle's start properties and current values into a file.
+	 *
+	 * Calls the simple prototype TParticle::Print.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	virtual void PrintSnapshot(long double x, long double y[6], int polarisation){
+		TParticle::Print(snapshotout, x, y, polarisation, "snapshot.out");
+	};
+
+
+	/**
+	 * Write the particle's trajectory into a file.
+	 *
+	 * Calls the simple prototype TParticle::PrintTrack.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	virtual void PrintTrack(long double x, long double y[6], int polarisation){
+		TParticle::PrintTrack(trackout, x, y, polarisation);
+	};
+
+
+	/**
+	 * Write the particle properties into a file, before and after it hit a material boundary.
+	 *
+	 * Calls the simple prototype TParticle::PrintHit.
+	 *
+	 * @param x Time of material hit
+	 * @param y1 State vector before material hit
+	 * @param y2 State vector after material hit
+	 * @param pol1 Polarisation before material hit
+	 * @param pol2 Polarisation after material hit
+	 * @param normal Normal vector of hit surface
+	 * @param leaving Material which is left at this boundary
+	 * @param entering Material which is entered at this boundary
+	 */
+	virtual void PrintHit(long double x, long double *y1, long double *y2, int pol1, int pol2, const long double *normal, solid *leaving, solid *entering){
+		TParticle::PrintHit(hitout, x, y1, y2, pol1, pol2, normal, leaving, entering);
+	};
+
+
+	/**
+	 * Get spin log stream.
+	 *
+	 * @return Returns static spinout stream to use same stream for all TNeutrons
+	 */
+	ofstream& GetSpinOut(){
+		return spinout;
+	};
+
 };
 
+ofstream TElectron::endout; ///< endlog file stream
+ofstream TElectron::snapshotout; ///< snapshot file stream
+ofstream TElectron::trackout; ///< tracklog file stream
+ofstream TElectron::hitout; ///< hitlog file stream
+ofstream TElectron::spinout; ///< spinlog file stream
 
 
 #endif // ELECTRON_H_
