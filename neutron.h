@@ -38,6 +38,12 @@ public:
 	TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
+	static ofstream endout; ///< endlog file stream
+	static ofstream snapshotout; ///< snapshot file stream
+	static ofstream trackout; ///< tracklog file stream
+	static ofstream hitout; ///< hitlog file stream
+	static ofstream spinout; ///< spinlog file stream
+
 	/**
 	 * Check for reflection on surfaces.
 	 *
@@ -99,6 +105,76 @@ protected:
 	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
 	value_type Epot(value_type t, state_type y, int polarisation, TFieldManager *field, map<solid, bool> &solids);
+
+	/**
+	 * Write the particle's start properties and current values into a file.
+	 *
+	 * Calls the simple prototype TParticle::Print.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	void Print(value_type x, state_type y, int polarisation){
+		TParticle::Print(endout, x, y, polarisation);
+	};
+
+
+	/**
+	 * Write the particle's start properties and current values into a file.
+	 *
+	 * Calls the simple prototype TParticle::Print.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	virtual void PrintSnapshot(value_type x, state_type y, int polarisation){
+		TParticle::Print(snapshotout, x, y, polarisation, "snapshot.out");
+	};
+
+
+	/**
+	 * Write the particle's trajectory into a file.
+	 *
+	 * Calls the simple prototype TParticle::PrintTrack.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	virtual void PrintTrack(value_type x, state_type y, int polarisation){
+		TParticle::PrintTrack(trackout, x, y, polarisation);
+	};
+
+
+	/**
+	 * Write the particle properties into a file, before and after it hit a material boundary.
+	 *
+	 * Calls the simple prototype TParticle::PrintHit.
+	 *
+	 * @param x Time of material hit
+	 * @param y1 State vector before material hit
+	 * @param y2 State vector after material hit
+	 * @param pol1 Polarisation before material hit
+	 * @param pol2 Polarisation after material hit
+	 * @param normal Normal vector of hit surface
+	 * @param leaving Material which is left at this boundary
+	 * @param entering Material which is entered at this boundary
+	 */
+	virtual void PrintHit(value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
+		TParticle::PrintHit(hitout, x, y1, y2, pol1, pol2, normal, leaving, entering);
+	};
+
+
+	/**
+	 * Get spin log stream.
+	 *
+	 * @return Returns static spinout stream to use same stream for all TNeutrons
+	 */
+	ofstream& GetSpinOut(){
+		return spinout;
+	};
 
 };
 

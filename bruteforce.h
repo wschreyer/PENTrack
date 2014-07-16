@@ -37,7 +37,7 @@ private:
 	bool spinlog; ///< Should the tracking be logged to file?
 	double spinloginterval; ///< Time interval between log file entries.
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
-	std::ofstream *fspinout; ///< file to log into
+	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
 
 	value_type t1; ///< field interpolation start time
@@ -56,7 +56,7 @@ public:
 	 * @param aparticlename Particle name.
 	 * @param conf Option map containing particle specific spin tracking options.
 	 */
-	TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf);
+	TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout);
 private:
 	/**
 	 * Do cubic spline interpolation of magnetic field components with coefficients determined in TBFderivs::TBFderivs
@@ -101,7 +101,8 @@ public:
 	 * @return Probability, that NO spin flip occured (usually close to 1).
 	 */
 	long double Integrate(double x1, double y1[6], double B1[4][4],
-						double x2, double y2[6], double B2[4][4], std::ofstream *&spinout);
+						double x2, double y2[6], double B2[4][4]);
+
 };
 
 #endif // BRUTEFORCE_H_

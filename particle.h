@@ -20,27 +20,6 @@ using namespace std;
 
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
 
-/**
- * Struct containing all output streams
- */
-struct TOutput{
-	std::ofstream *endout; ///< endlog file stream
-	std::ofstream *snapshotout; ///< snapshot file stream
-	std::ofstream *trackout; ///< tracklog file stream
-	std::ofstream *hitout; ///< hitlog file stream
-	std::ofstream *spinout; ///< spinlog file stream
-	
-	/**
-	 * Constructor: initializes empty streams
-	 */
-	TOutput();
-
-	/**
-	 * Destructor, close open streams.
-	 */
-	~TOutput();
-};
-
 
 /**
  * Basic particle class (virtual).
@@ -178,7 +157,7 @@ public:
 	 * @param conf Option map containing particle specific options from particle.in
 	 * @param output TOutput struct containing output options and streams
 	 */
-	void Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, std::map<std::string, std::string> &conf, TOutput &output);
+	void Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, std::map<std::string, std::string> &conf);
 
 protected:
 	std::map<solid, bool> currentsolids; ///< solids in which particle is currently inside
@@ -201,7 +180,7 @@ protected:
 	 * @param dydx Returns derivatives of y with respect to x
 	 */
 	void derivs(value_type x, state_type y, state_type &dydx);
-	
+
 
 	bool CheckHitError(solid *hitsolid, double distnormal);
 
@@ -225,7 +204,7 @@ protected:
 	 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 	 * @return Returns true if particle was reflected/absorbed
 	 */
-	bool CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &pol, bool hitlog, std::ofstream *&hitout, int iteration = 1);
+	bool CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &pol, bool hitlog, int iteration = 1);
 
 
 	/**
@@ -271,11 +250,77 @@ protected:
 	virtual void Decay() = 0;
 
 
+	/**
+	 * Write the particle's start properties and current values into a file.
+	 *
+	 * This is a purely virtual function that has to be implemented by all derived classes.
+	 * It can e.g. simply call the simple prototype TParticle::Print below.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	virtual void Print(value_type x, state_type y, int polarisation) = 0;
+
+
+	/**
+	 * Write the particle's start properties and current values into a file.
+	 *
+	 * This is a purely virtual function that has to be implemented by all derived classes.
+	 * It can e.g. simply call the simple prototype TParticle::Print below.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	virtual void PrintSnapshot(value_type x, state_type y, int polarisation) = 0;
+
+
+	/**
+	 * Write the particle's trajectory into a file.
+	 *
+	 * This is a purely virtual function that has to be implemented by all derived classes.
+	 * It can e.g. simply call the simple prototype TParticle::PrintTrack below.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 */
+	virtual void PrintTrack(value_type x, state_type y, int polarisation) = 0;
+
+
+	/**
+	 * Write the particle properties into a file, before and after it hit a material boundary.
+	 *
+	 * This is a purely virtual function that has to be implemented by all derived classes.
+	 * It can e.g. simply call the simple prototype TParticle::PrintHit below.
+	 *
+	 * @param x Time of material hit
+	 * @param y1 State vector before material hit
+	 * @param y2 State vector after material hit
+	 * @param pol1 Polarisation before material hit
+	 * @param pol2 Polarisation after material hit
+	 * @param normal Normal vector of hit surface
+	 * @param leaving Material which is left at this boundary
+	 * @param entering Material which is entered at this boundary
+	 */
+	virtual void PrintHit(value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering) = 0;
+
+
+	/**
+	 * Get spin log stream.
+	 *
+	 * Has to be derived by all derived classes.
+	 *
+	 * @return Reference to spin log stream
+	 */
+	virtual ofstream& GetSpinOut() = 0;
+
 
 	/**
 	 * Print start and current values to a stream.
 	 *
-	 * This is a virtual function and can be overwritten by derived particle classes.
+	 * This is a simple prototype that can be called by derived particle classes.
 	 *
 	 * @param file stream to print into
 	 * @param x Current time
@@ -283,26 +328,26 @@ protected:
 	 * @param polarisation Current polarisation
 	 * @param filesuffix Optional suffix added to the file name (default: "end.out")
 	 */
-	virtual void Print(std::ofstream *&file, value_type x, state_type y, int polarisation, std::string filesuffix = "end.out");
+	void Print(std::ofstream &file, value_type x, state_type y, int polarisation, std::string filesuffix = "end.out");
 
 
 	/**
 	 * Print current track point into stream to allow visualization of the particle's trajectory.
 	 *
-	 * This is a virtual function and can be overwritten by derived particle classes.
+	 * This is a simple prototype that can be called by derived particle classes.
 	 *
 	 * @param trackfile Stream to print into
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
 	 */
-	virtual void PrintTrack(std::ofstream *&trackfile, value_type x, state_type y, int polarisation);
+	void PrintTrack(std::ofstream &trackfile, value_type x, state_type y, int polarisation);
 
 
 	/**
 	 * Print material boundary hits into stream.
 	 *
-	 * This is a virtual function and can be overwritten by derived particle classes.
+	 * This is a simple prototype that can be called by derived particle classes.
 	 *
 	 * @param hitfile stream to print into
 	 * @param x Time of material hit
@@ -314,7 +359,7 @@ protected:
 	 * @param leaving Material which is left at this boundary
 	 * @param entering Material which is entered at this boundary
 	 */
-	virtual void PrintHit(std::ofstream *&hitfile, value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering);
+	void PrintHit(std::ofstream &hitfile, value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering);
 
 
 	/**

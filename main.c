@@ -49,7 +49,6 @@ int secondaries = 1; ///< should secondary particles be simulated? (read from co
 double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
 int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
-map<string, TOutput> output; ///< map assigning each simulated particle type a TOutput struct
 
 /**
  * Catch signals.
@@ -189,7 +188,7 @@ int main(int argc, char **argv){
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			TParticle *p = source.CreateParticle(mc, geom, &field);
-			p->Integrate(SimTime, geom, mc, &field, particlein[p->name], output[p->name]); // integrate particle
+			p->Integrate(SimTime, geom, mc, &field, particlein[p->name]); // integrate particle
 			ID_counter[p->name][p->ID]++; // increment counters
 			ntotalsteps += p->Nstep;
 			IntegratorTime += p->inttime;
@@ -197,7 +196,7 @@ int main(int argc, char **argv){
 
 			if (secondaries == 1){
 				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
-					(*i)->Integrate(SimTime, geom, mc, &field, particlein[(*i)->name], output[(*i)->name]); // integrate secondary particles
+					(*i)->Integrate(SimTime, geom, mc, &field, particlein[(*i)->name]); // integrate secondary particles
 					ID_counter[(*i)->name][(*i)->ID]++;
 					ntotalsteps += (*i)->Nstep;
 					IntegratorTime += (*i)->inttime;

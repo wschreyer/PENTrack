@@ -8,6 +8,13 @@
 
 const char* NAME_ELECTRON = "electron";
 
+ofstream TElectron::endout; ///< endlog file stream
+ofstream TElectron::snapshotout; ///< snapshot file stream
+ofstream TElectron::trackout; ///< tracklog file stream
+ofstream TElectron::hitout; ///< hitlog file stream
+ofstream TElectron::spinout; ///< spinlog file stream
+
+
 TElectron::TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, amc, geometry, afield){
 

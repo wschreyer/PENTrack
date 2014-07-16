@@ -14,31 +14,6 @@
 #include "particle.h"
 #include "bruteforce.h"
 
-TOutput::TOutput(): endout(NULL), snapshotout(NULL), trackout(NULL), hitout(NULL), spinout(NULL) { };
-
-TOutput::~TOutput(){
-	if (endout){
-		endout->close();
-		delete endout;
-	}
-	if (snapshotout){
-		snapshotout->close();
-		delete snapshotout;
-	}
-	if (trackout){
-		trackout->close();
-		delete trackout;
-	}
-	if (hitout){
-		hitout->close();
-		delete hitout;
-	}
-	if (spinout){
-		spinout->close();
-		delete spinout;
-	}
-}
-
 
 double TParticle::Hstart(){
 	map<solid, bool> solids;
@@ -102,7 +77,7 @@ void TParticle::operator()(state_type y, state_type &dydx, value_type x){
 }
 
 
-void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, map<string, string> &conf, TOutput &output){
+void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, map<string, string> &conf){
 	geom = &geometry;
 	if (currentsolids.empty())
 		geom->GetSolids(tend, &yend[0], currentsolids);
@@ -137,7 +112,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 	bool tracklog = false;
 	istringstream(conf["tracklog"]) >> tracklog;
 	if (tracklog)
-		PrintTrack(output.trackout, tend, yend, polend);
+		PrintTrack(tend, yend, polend);
 	double trackloginterval = 1e-3;
 	istringstream(conf["trackloginterval"]) >> trackloginterval;
 	value_type lastsave = x;
@@ -147,7 +122,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 
 	bool flipspin;
 	istringstream(conf["flipspin"]) >> flipspin;
-	TBFIntegrator BFint(gamma, name, conf);
+	TBFIntegrator BFint(gamma, name, conf, GetSpinOut());
 
 	stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
 
@@ -189,7 +164,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 			}
 
 			clock_gettime(CLOCK_REALTIME, &refl_start);
-			resetintegration = CheckHit(x1, y1, x2, y2, polarisation, hitlog, output.hitout); // check if particle hit a material boundary or was absorbed between y1 and y2
+			resetintegration = CheckHit(x1, y1, x2, y2, polarisation, hitlog); // check if particle hit a material boundary or was absorbed between y1 and y2
 			if (resetintegration){
 				x = x2; // if particle path was changed: reset integration end point
 				y = y2;
@@ -207,13 +182,13 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 					stepper.calc_state(nextsnapshot, ysnap);
 					cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
-					Print(output.snapshotout, nextsnapshot, ysnap, polarisation, "snapshot.out");
+					PrintSnapshot(nextsnapshot, ysnap, polarisation);
 					snapshots >> nextsnapshot;
 				}
 			}
 
 			if (tracklog && x2 - lastsave > trackloginterval/v1){
-				PrintTrack(output.trackout, x2, y2, polarisation);
+				PrintTrack(x2, y2, polarisation);
 				lastsave = x2;
 			}
 
@@ -221,7 +196,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 				double B1[4][4], B2[4][4];
 				field->BField(y1[0], y1[1], y1[2], x1, B1);
 				field->BField(y2[0], y2[1], y2[2], x2, B2);
-				long double noflip = BFint.Integrate(x1, &y1[0], B1, x2, &y2[0], B2, output.spinout);
+				long double noflip = BFint.Integrate(x1, &y1[0], B1, x2, &y2[0], B2);
 				if (mc->UniformDist(0,1) > noflip)
 					polarisation *= -1;
 				noflipprob *= noflip; // accumulate no-spin-flip probability
@@ -246,7 +221,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 	for (int i = 0; i < 6; i++)
 		yend[i] = y[i];
 	polend = polarisation;
-	Print(output.endout, tend, yend, polend);
+	Print(tend, yend, polend);
 
 	if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
 		cout << "Decayed!\n";
@@ -328,7 +303,7 @@ bool TParticle::CheckHitError(solid *hitsolid, double distnormal){
 }
 
 
-bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &pol, bool hitlog, ofstream *&hitout, int iteration){
+bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &pol, bool hitlog, int iteration){
 	if (!geom->CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
 		printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
 		ID = ID_HIT_BOUNDARIES;
@@ -396,7 +371,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 
 				if (hit){
 					if (hitlog)
-						PrintHit(hitout, x1, y1, y2, prevpol, pol, coll->first.normal, &leaving, &entering);
+						PrintHit(x1, y1, y2, prevpol, pol, coll->first.normal, &leaving, &entering);
 					Nhit++;
 				}
 			}
@@ -426,7 +401,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 				xbisect1 = xbisect2 = xnew;
 				stepper.calc_state(xbisect1, ybisect1);
 				ybisect2 = ybisect1;
-				if (CheckHit(x1, y1, xbisect1, ybisect1, pol, hitlog, hitout, iteration+1)){ // recursive call for step before coll. point
+				if (CheckHit(x1, y1, xbisect1, ybisect1, pol, hitlog, iteration+1)){ // recursive call for step before coll. point
 					x2 = xbisect1;
 					y2 = ybisect1;
 					return true;
@@ -437,14 +412,14 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 			if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
 				xbisect2 = xnew;
 				stepper.calc_state(xbisect2, ybisect2);
-				if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, pol, hitlog, hitout, iteration+1)){ // recursive call for step over coll. point
+				if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, pol, hitlog, iteration+1)){ // recursive call for step over coll. point
 					x2 = xbisect2;
 					y2 = ybisect2;
 					return true;
 				}
 			}
 
-			if (CheckHit(xbisect2, ybisect2, x2, y2, pol, hitlog, hitout, iteration+1)) // recursive call for step after coll. point
+			if (CheckHit(xbisect2, ybisect2, x2, y2, pol, hitlog, iteration+1)) // recursive call for step after coll. point
 				return true;
 		}
 	}
@@ -455,17 +430,17 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 }
 
 
-void TParticle::Print(ofstream *&file, value_type x, state_type y, int polarisation, string filesuffix){
-	if (!file){
+void TParticle::Print(ofstream &file, value_type x, state_type y, int polarisation, string filesuffix){
+	if (!file.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << filesuffix;
 		cout << "Creating " << filename.str() << '\n';
-		file = new ofstream(filename.str().c_str());
-		if (!file || !file->is_open()){
+		file.open(filename.str().c_str());
+		if (!file.is_open()){
 			cout << "Could not create" << filename.str() << '\n';
 			exit(-1);
 		}
-		*file <<	"jobnumber particle "
+		file <<	"jobnumber particle "
 					"tstart xstart ystart zstart "
 					"vxstart vystart vzstart "
 					"polstart Hstart Estart "
@@ -473,11 +448,11 @@ void TParticle::Print(ofstream *&file, value_type x, state_type y, int polarisat
 					"vxend vyend vzend "
 					"polend Hend Eend stopID Nspinflip spinflipprob "
 					"ComputingTime Nhit Nstep trajlength Hmax\n";
-		file->precision(10);
+		file.precision(10);
 	}
 	cout << "Printing status\n";
 	value_type E = Ekin(&y[3]);
-	*file	<<	jobnumber << " " << particlenumber << " "
+	file	<<	jobnumber << " " << particlenumber << " "
 			<<	tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 			<<	ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
 			<< polstart << " " << Hstart() << " " << Estart() << " "
@@ -488,21 +463,21 @@ void TParticle::Print(ofstream *&file, value_type x, state_type y, int polarisat
 }
 
 
-void TParticle::PrintTrack(ofstream *&trackfile, value_type x, state_type y, int polarisation){
-	if (!trackfile){
+void TParticle::PrintTrack(ofstream &trackfile, value_type x, state_type y, int polarisation){
+	if (!trackfile.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
 		cout << "Creating " << filename.str() << '\n';
-		trackfile = new ofstream(filename.str().c_str());
-		if (!trackfile || !trackfile->is_open()){
+		trackfile.open(filename.str().c_str());
+		if (!trackfile.is_open()){
 			cout << "Could not create" << filename.str() << '\n';
 			exit(-1);
 		}
-		*trackfile << 	"jobnumber particle polarisation "
+		trackfile << 	"jobnumber particle polarisation "
 						"t x y z vx vy vz "
 						"H E Bx dBxdx dBxdy dBxdz By dBydx "
 						"dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n";
-		trackfile->precision(10);
+		trackfile.precision(10);
 	}
 
 	cout << "-";
@@ -516,35 +491,35 @@ void TParticle::PrintTrack(ofstream *&trackfile, value_type x, state_type y, int
 	value_type Ek = Ekin(&y[3]);
 	value_type H = Ek + Epot(x, y, polarisation, field, currentsolids);
 
-	*trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
+	trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
 				<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
 				<< H << " " << Ek << " ";
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
-			*trackfile << B[i][j] << " ";
-	*trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
+			trackfile << B[i][j] << " ";
+	trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
 }
 
 
-void TParticle::PrintHit(ofstream *&hitfile, value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
-	if (!hitfile){
+void TParticle::PrintHit(ofstream &hitfile, value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
+	if (!hitfile.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
 		cout << "Creating " << filename.str() << '\n';
-		hitfile = new ofstream(filename.str().c_str());
-		if (!hitfile || !hitfile->is_open()){
+		hitfile.open(filename.str().c_str());
+		if (!hitfile.is_open()){
 			cout << "Could not create" << filename.str() << '\n';
 			exit(-1);
 		}
-		*hitfile << "jobnumber particle "
+		hitfile << "jobnumber particle "
 					"t x y z v1x v1y v1z pol1 "
 					"v2x v2y v2z pol2 "
 					"nx ny nz solid1 solid2\n";
-		hitfile->precision(10);
+		hitfile.precision(10);
 	}
 
 	cout << ":";
-	*hitfile << jobnumber << " " << particlenumber << " "
+	hitfile << jobnumber << " " << particlenumber << " "
 			<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << pol1 << " "
 			<< y2[3] << " " << y2[4] << " " << y2[5] << " " << pol2 << " "
 			<< normal[0] << " " << normal[1] << " " << normal[2] << " " << leaving->ID << " " << entering->ID << '\n';

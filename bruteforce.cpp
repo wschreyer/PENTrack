@@ -1,9 +1,9 @@
 #include "bruteforce.h"
 #include "globals.h"
 
-TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf)
+TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
-				  spinlog(false), spinloginterval(5e-7), intsteps(0), fspinout(NULL), starttime(0), t1(0), t2(0){
+				  spinlog(false), spinloginterval(5e-7), intsteps(0), fspinout(spinout), starttime(0), t1(0), t2(0){
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -34,18 +34,18 @@ void TBFIntegrator::operator()(state_type y, state_type &dydx, value_type x){
 void TBFIntegrator::operator()(const state_type &y, value_type x){
 	if (!spinlog)
 		return;
-	if (!fspinout){
+	if (!fspinout.is_open()){
 		std::ostringstream BFoutfile1;
 		BFoutfile1 << outpath << "/" << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << particlename << "spin.out ";
 		std::cout << "Creating " << BFoutfile1.str() << '\n';
-		fspinout = new std::ofstream(BFoutfile1.str().c_str());
-		if(!fspinout || !fspinout->is_open())
+		fspinout.open(BFoutfile1.str().c_str());
+		if(!fspinout.is_open())
 		{
 			std::cout << "Could not open " << BFoutfile1.str() << '\n';
 			exit(-1);
 		}
-		fspinout->precision(10);
-		*fspinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz\n";
+		fspinout.precision(10);
+		fspinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz\n";
 	}
 
 	value_type B[3];
@@ -57,17 +57,15 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 		BFlogpol = log10(0.5-BFpol);
 	else if (BFpol==0.5)
 		BFlogpol = 0.0;
-	*fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
+	fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
 			<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
 			<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws << '\n';
 }
 
 long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
-					double x2, double y2[6], double B2[4][4], std::ofstream *&spinout){
+					double x2, double y2[6], double B2[4][4]){
 	if (gamma == 0)
 		return 1;
-
-	fspinout = spinout;
 
 	bool BruteForce1 = false, BruteForce2 = false;;
 	for (unsigned int i = 0; i < BFtimes.size(); i += 2){
@@ -131,8 +129,6 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
 			intsteps += boost::numeric::odeint::integrate_times(
 					stepper, boost::ref(*this), I_n, times.begin(),
 					times.end(), static_cast<value_type>(1e-9), boost::ref(*this));
-
-			spinout = fspinout;
 
 			if (B2[3][0] > Bmax || !BruteForce2){
 				// output of polarisation after BF int completed
