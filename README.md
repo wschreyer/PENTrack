@@ -5,6 +5,7 @@ PENTrack - a simulation tool for ultra-cold neutrons, protons and electrons
 
 If you just want to do simulations, you should check out the stable releases, which have been tested. If you want the latest and greatest features and probably some bugs, or even want to contribute, you should check out the latest revision from master branch.
 
+
 External libraries
 -----------
 
@@ -32,7 +33,7 @@ Numerical Recipes forces us to put almost all code into header files, which make
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
 Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the CGAL_INCLUDE, CGAL_LIB and CGAL_SHAREDLIB paths in the Makefile.
 
-CGAL v4.1 - v4.4 have been tested.
+CGAL v4.1 - v4.5 have been tested.
 
 ### Boost
 
@@ -48,6 +49,7 @@ Only v2.2.3 has been tested so far.
 ### libtricubic
 
 [Lekien and Marsden] (http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.
+
 
 Defining your experiment
 ------------------------
@@ -81,16 +83,19 @@ You can also define analytic fields from straight, finite conductors.
 
 Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the particle.in file.
 
+
 Run the simulation
 ------------------
 
 Type "make" to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
 Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
 
+
 Physics
 -------
 
 All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and the Lambert model for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
+
 
 Writing your own simulation
 ---------------------------
@@ -102,10 +107,11 @@ You can modify the simulation on four different levels:
 3. Implement your own particles, sources or fields by inheriting from the corresponding base classes and fill the virtual routines with the corresponding physics
 4. Make low level changes to the existing classes
 
+
 Output
 -------
 
-Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be completely disabled for each particle type individually by adding corresponding variables in “particle.in”. All output files are tables with space separated columns; the first line contains the column name.
+Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be completely disabled for each particle type individually by adding corresponding variables in particle.in. All output files are tables with space separated columns; the first line contains the column name.
 
 Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 
@@ -146,7 +152,7 @@ The endlog keeps track of the starting and end parameters of the particles simul
 
 ### Snapshotlog
 
-Switching on snapshotlog in "particle.in" will output the particle parameters at additional “snapshot times” (also defined in "particle.in") in the snapshotlog. It contains the same data fields as the endlog.
+Switching on snapshotlog in "particle.in" will output the particle parameters at additional snapshot times (also defined in "particle.in") in the snapshotlog. It contains the same data fields as the endlog.
 
 ### Tracklog
 
