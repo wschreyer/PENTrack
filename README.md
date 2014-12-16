@@ -5,6 +5,7 @@ PENTrack - a simulation tool for ultra-cold neutrons, protons and electrons
 
 If you just want to do simulations, you should check out the stable releases, which have been tested. If you want the latest and greatest features and probably some bugs, or even want to contribute, you should check out the latest revision from master branch.
 
+
 External libraries
 -----------
 
@@ -13,11 +14,13 @@ External libraries
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
 Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the CGAL_INCLUDE, CGAL_LIB and CGAL_SHAREDLIB paths in the Makefile.
 
-CGAL v4.1 - v4.4 have been tested.
+CGAL v4.1 - v4.5 have been tested.
 
 ### Boost
 
 The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and a Runge-Kutta integrator included in Boost 1.53.0 and newer.
+
+Boost 1.53.0 - 1.57.0 have been tested. 1.56.0 and newer seem to require a C++11 capable compiler (i.e. GCC 4.9.0+) and possibly the option -std=c++11 in the CFLAGS in the Makefile.
 
 ### muparser
 
@@ -34,6 +37,15 @@ The interp2d code is included in the repository. It can be downloaded by executi
 ### libtricubic
 
 [Lekien and Marsden] (http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.
+
+
+Run the simulation
+------------------
+
+Download the interp2d submodule by executing `git submodule init` and `git submodule update`.
+Type "make" to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
+Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
+
 
 Defining your experiment
 ------------------------
@@ -67,16 +79,12 @@ You can also define analytic fields from straight, finite conductors.
 
 Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the particle.in file.
 
-Run the simulation
-------------------
-
-Type "make" to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
-Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
 
 Physics
 -------
 
 All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and the Lambert model for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
+
 
 Writing your own simulation
 ---------------------------
@@ -87,6 +95,7 @@ You can modify the simulation on four different levels:
 2. Modify the code in main.c and combine TParticle-, TGeometry-, TField-, TSource-classes etc. into your own simulation (you can generate a Doxygen documentation by typing `doxygen doxygen.config`)
 3. Implement your own particles, sources or fields by inheriting from the corresponding base classes and fill the virtual routines with the corresponding physics
 4. Make low level changes to the existing classes
+
 
 Output
 -------

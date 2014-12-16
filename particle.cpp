@@ -44,8 +44,8 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
 	value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
 	value_type vstart;
-//			cout << "(E/m)^3.5 = " << pow(Eoverm, 3.5L) << "; err_beta = " << numeric_limits<typeof(beta)>::epsilon()/(1 - beta) << '\n';
-	if (pow(Eoverm, 3.5L) < numeric_limits<typeof(beta)>::epsilon()/(1 - beta)) // if error in series O((E/m)^3.5) is smaller than rounding error in beta
+//			cout << "(E/m)^3.5 = " << pow(Eoverm, 3.5L) << "; err_beta = " << numeric_limits<value_tyoe>::epsilon()/(1 - beta) << '\n';
+	if (pow(Eoverm, 3.5L) < numeric_limits<value_type>::epsilon()/(1 - beta)) // if error in series O((E/m)^3.5) is smaller than rounding error in beta
 		vstart = c_0*(sqrt(2*Eoverm) - 3*pow(Eoverm, 1.5L)/2/sqrt(2) + 23*pow(Eoverm, 2.5L)/16/sqrt(2)); // use series expansion
 	else
 		vstart = c_0 * beta;
@@ -530,8 +530,8 @@ double TParticle::Ekin(value_type v[3]){
 	value_type v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
 	value_type beta2 = v2/c_0/c_0;
 	value_type gammarel = 1/sqrt(1 - beta2); // use relativistic formula for larger beta
-//			cout << "beta^8 = " << beta2*beta2*beta2*beta2 << "; err_gamma = " << numeric_limits<typeof(gammarel)>::epsilon()/(gammarel - 1) << '\n';
-	if (beta2*beta2*beta2*beta2 < numeric_limits<typeof(gammarel)>::epsilon()/(gammarel - 1)) // if error in series expansion O(beta^8) is smaller than rounding error in gamma factor
+//			cout << "beta^8 = " << beta2*beta2*beta2*beta2 << "; err_gamma = " << numeric_limits<value_type>::epsilon()/(gammarel - 1) << '\n';
+	if (beta2*beta2*beta2*beta2 < numeric_limits<value_type>::epsilon()/(gammarel - 1)) // if error in series expansion O(beta^8) is smaller than rounding error in gamma factor
 		return 0.5*m*v2 + (3.0/8.0*m + (5.0/16.0*m + 35.0/128.0*beta2)*beta2)*beta2*v2; // use series expansion for energy calculation with small beta
 	else{
 		return c_0*c_0*m*(gammarel - 1);
