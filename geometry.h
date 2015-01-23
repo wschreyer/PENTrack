@@ -27,6 +27,9 @@ struct material{
 	double FermiImag; ///< Imaginary part of Fermi potential
 	double DiffProb; ///< Diffuse reflection probability
 	double SpinflipProb; ///< Probability for spin flip on reflection
+	double RMSRoughness; ///< RMS roughness of surface, for MicroRoughness model reflections
+	double CorrelLength; ///< Correlation length of surface roughness, for MicroRoughness model reflections
+	bool UseMRModel; ///< Choose MicroRoughness model for reflections
 };
 
 

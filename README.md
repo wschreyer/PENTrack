@@ -29,6 +29,12 @@ Most Linux distributions include libmuparser-dev or muparser-devel packages. It 
 
 Only v2.2.3 has been tested so far.
 
+### ALGLIB
+
+[ALGLIB](http://www.alglib.net) provides numerical optimization and integration routines required for the MicroRoughness model for UCN interaction with matter.
+
+ALGLIB 3.8.2 has been tested.
+
 ### interp2d and GSL
 
 [interp2d](http://github.com/diazona/interp2d.git) provides a bicubic interpolation routine based on the [GNU Scientific Library](https://www.gnu.org/software/gsl/).
@@ -83,7 +89,7 @@ Particle sources can be defined using STL files or manual parameter ranges. Part
 Physics
 -------
 
-All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and the Lambert model for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
+All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and either the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23–29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
 
 
 Writing your own simulation

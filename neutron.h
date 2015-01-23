@@ -8,6 +8,8 @@
 
 #include "particle.h"
 
+#include "optimization.h"
+
 extern const char* NAME_NEUTRON;
 
 /**
@@ -45,12 +47,10 @@ protected:
 	static ofstream spinout; ///< spinlog file stream
 
 	/**
-	 * Check for reflection on surfaces.
+	 * Check for reflection/transmission/absorption on surfaces.
 	 *
 	 * Uses Fermi-potential formalism to calculate reflection/transmission probabilities.
-	 * Each reflection has a certain chance of being diffuse.
-	 * Diffuse reflection angles are cosine-distributed around the normal vector of the surface.
-	 * Logs surface hits if reflectlog is set in config.in.
+	 * Diffuse reflection can be done according to Lambert model or Micro Roughness model.
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -64,6 +64,36 @@ protected:
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
 	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
+
+
+	/**
+	 * Transmit neutron through surface.
+	 *
+	 * Refracts or scatters the neutron according to Micro Roughness model.
+	 * For parameter documentation see ::OnHit.
+	 */
+	void Transmit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
+
+
+	/**
+	 * Reflect neutron from surface.
+	 *
+	 * Reflects or scatters the neutron according to Lambert or Micro Roughness model.
+	 * For parameter documentation see ::OnHit.
+	 */
+	void Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
+
+
+	/**
+	 * Absorb neutron at surface.
+	 *
+	 * Sets stopping point to point right before collision (x1, y1) and sets ID accordingly.
+	 * For parameter documentation see ::OnHit.
+	 */
+	void Absorb(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 
@@ -176,6 +206,91 @@ protected:
 		return spinout;
 	};
 
+private:
+	/**
+	 * Check if the MicroRoughness is model is applicable to the current interaction
+	 *
+	 * @param y State vector right before hitting the material
+	 * @param normal normal vector of the material boundary
+	 * @param leaving Material that the particle is leaving through the boundary
+	 * @param entering Material, that the particle entering through the boundary
+	 *
+	 * @return Returns true, if the MicroRoughness model can be used.
+	 */
+	bool MRValid(state_type y, const double normal[3], solid *leaving, solid *entering);
+
+	/**
+	 * Return MicroRoughness model distribution for scattering angles
+	 *
+	 * @param transmit True if the particle is transmitted through the surface, false if it is reflected
+	 * @param integral Compute total probability of diffuse scattering according to MicroRoughness model
+	 * @param y State vector of neutron right before hit surface
+	 * @param normal Normal vector of hit surface
+	 * @param leaving Solid, which the neutron would leave if it were transmitted
+	 * @param entering Solid, which the neutron would enter if it were transmitted
+	 * @param theta_r Polar angle of scattered velocity vector (0 < theta_r < pi/2), ignored if integral == true
+	 * @param phi_r Azimuthal angle of scattered velocity vector (0 < phi_r < 2*pi), ignored if integral == true
+	 *
+	 * @return Returns probability of reflection/transmission, in direction (theta_r, phi_r) or total if integral == true
+	 */
+	double MRDist(bool transmit, bool integral, state_type y, const double normal[3], solid *leaving, solid *entering, double theta, double phi);
+
+	/**
+	 * Struct containing parameters for MRDist and NegMRDist wrapper functions.
+	 */
+	struct TMRParams{
+		TNeutron *n;
+		bool transmit, integral;
+		state_type y;
+		const double *normal;
+		solid *leaving, *entering;
+	};
+
+	/**
+	 * Wrapper function to allow ALGLIB integration of MicroRoughness model distribution
+	 *
+	 * @param theta Polar angle of reflected/transmitted velocity
+	 * @param xminusa Required by ALGLIB???
+	 * @param bminusx Required by ALGLIB???
+	 * @param params Contains TMRParams struct
+	 *
+	 * @return Returns value of MRDist at (theta, phi = 0) with given params
+	 */
+	static void MRDist(double theta, double xminusa, double bminusx, double &y, void *params);
+
+	/**
+	 * Wrapper function to allow ALGLIB maximization of MicroRoughness model distribution
+	 *
+	 * @param x Array of x1,x2,... values. Contains only single variable theta in this case.
+	 * @param f NEGATIVE value of distribution at (theta = x[0], phi = 0)
+	 * @param params Contains TMRParams struct
+	 */
+	static void NegMRDist(const alglib::real_1d_array &x, double &f, void *params);
+
+	/**
+	 * Calculate total diffuse scattering probability according to MicroRoughness model
+	 *
+	 * @param transmit True if the particle is transmitted through the surface, false if it is reflected
+	 * @param y State vector of neutron right before hit surface
+	 * @param normal Normal vector of hit surface
+	 * @param leaving Solid, which the neutron would leave if it were transmitted
+	 * @param entering Solid, which the neutron would enter if it were transmitted
+	 *
+	 * @return Returns probability of reflection/transmission, in direction (theta_r, phi_r) or total if integral == true
+	 */
+	double MRProb(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering);
+
+	/*
+	 * Calculate maximum of MicroRoughness model distribution
+	 *
+	 * @param transmit True, if the particle is transmitted through the material boundary
+	 * @param normal Normal vector of material boundary
+	 * @param leaving Material, that the particle is leaving at this material boundary
+	 * @param entering Material, that the particle is entering at this material boundary
+	 *
+	 * @return Returns maximal value of MicroRoughness model distribution in range (theta = 0..pi/2, phi = 0..2pi)
+	 */
+	double MRDistMax(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering);
 };
 
 

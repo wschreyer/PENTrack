@@ -51,9 +51,9 @@ void PrintPercent(double percentage, int &lastprint);
 /**
  * Rotate a vector.
  *
- * Rotate vector into new coordinate system whose z-axis lies on NORMALIZED vector n (active transformation)
+ * Rotate vector into new coordinate with basis vectors x and z (active transformation)
  */
-void RotateVector(double v[3], const double n[3]);
+void RotateVector(double v[3], const double z[3], const double x[3] = NULL);
 
 /**
  * Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta.
