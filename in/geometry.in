@@ -29,6 +29,7 @@ UCNdet		0.1			1			0				0	0	0	0
 [SOURCE]
 ############ sourcemodes ###############
 # STLvolume: source volume is given by a STL file, particles are created in the space completely surrounded by the STL-surface
+# boxvolume: particle starting values are diced in the given parameter range (x,y,z)
 # cylvolume: particle starting values are diced in the given parameter range (r,phi,z)
 # For volume sources, the initial particle density can be weighted by the available phase space.
 # In that case, the given particle's energy spectrum is interpreted as a total energy spectrum.
@@ -42,6 +43,9 @@ UCNdet		0.1			1			0				0	0	0	0
 
 #cylvolume	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
 #cylvolume	neutron		0.125	0.495	0		360			0.005	1.145	0			1
+
+#boxvolume	particles	x_min	x_max	y_min	y_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
+#boxvolume	neutron		0		1		0		1			0		1		0			0
 
 #STLsurface	particles 	STL-file		ActiveTime	Enormal
 STLsurface 	neutron		in/source.STL	200			0

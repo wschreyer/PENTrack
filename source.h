@@ -140,6 +140,39 @@ public:
 };
 
 /**
+ * Volume source generating points in a cuboid coordinate range
+ */
+class TCuboidVolumeSource: public TVolumeSource{
+private:
+	double xmin, xmax, ymin, ymax, zmin, zmax;
+public:
+	/**
+	 * Constructor.
+	 *
+	 * @param ActiveTime Duration for which the source shall be active
+	 * @param x_min Minimal radial coordinate range
+	 * @param x_max Maximal radial coordinate range
+	 * @param y_min Minimal azimuthal coordinate range
+	 * @param y_max Maximal azimuthal coordinate range
+	 * @param z_min Minimal axial coordinate range
+	 * @param z_max Maximal axial coordinate range
+	 */
+	TCuboidVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max);
+
+
+	/**
+	 * Produce random point in the source volume
+	 *
+	 * @param mc Random number generator
+	 * @param x Returns x coordinate
+	 * @param y Returns y coordinate
+	 * @param z Returns z coordinate
+	 */
+	virtual void RandomPointInSourceVolume(TMCGenerator &mc, double &x, double &y, double &z);
+};
+
+
+/**
  * Volume source generating points in a cylindrical coordinate range
  */
 class TCylindricalVolumeSource: public TVolumeSource{

@@ -128,6 +128,21 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 }
 
 
+
+TCuboidVolumeSource::TCuboidVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max)
+	: TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting), xmin(x_min), xmax(x_max), ymin(y_min), ymax(y_max), zmin(z_min), zmax(z_max){
+
+}
+
+
+void TCuboidVolumeSource::RandomPointInSourceVolume(TMCGenerator &mc, double &x, double &y, double &z){
+	x = mc.UniformDist(xmin, xmax);
+	y = mc.UniformDist(ymin, ymax);
+	z = mc.UniformDist(zmin, zmax);
+}
+
+
+
 TCylindricalVolumeSource::TCylindricalVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max)
 	: TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
 
@@ -209,7 +224,13 @@ TSource::TSource(TConfig &geometryconf, TGeometry &geom, TFieldManager &field): 
 
 	double ActiveTime;
 	bool PhaseSpaceWeighting;
-	if (sourcemode == "cylvolume"){
+	if (sourcemode == "boxvolume"){
+		double x_min, x_max, y_min, y_max, z_min, z_max;
+		sourceconf >> x_min >> x_max >> y_min >> y_max >> z_min >> z_max >> ActiveTime >> PhaseSpaceWeighting;
+		if (sourceconf)
+			source = new TCuboidVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, x_min, x_max, y_min, y_max, z_min, z_max);
+	}
+	else if (sourcemode == "cylvolume"){
 		double r_min, r_max, phi_min, phi_max, z_min, z_max;
 		sourceconf >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime >> PhaseSpaceWeighting;
 		if (sourceconf)
