@@ -11,8 +11,10 @@
 #include "electron.h"
 #include "ndist.h"
 
-#include "optimization.h"
-#include "integration.h"
+#include <boost/math/special_functions/bessel.hpp>
+
+#include "alglib-3.9.0/cpp/src/optimization.h"
+#include "alglib-3.9.0/cpp/src/integration.h"
 
 const char* NAME_NEUTRON = "neutron";
 
@@ -151,10 +153,8 @@ void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type
 	bool UseMRModel = mat->UseMRModel && MRValid(y1, normal, leaving, entering);
 	if (UseMRModel)
 		diffprob = MRProb(true, y1, normal, leaving, entering);
-	else{
+	else
 		diffprob = mat->DiffProb;
-		cout << "MicroRoughness model not applicable! Falling back to Lambert model.\n"
-	}
 //	cout << "prob: " << diffprob << '\n';
 	if (prob >= diffprob){
 		// specular transmission (refraction)

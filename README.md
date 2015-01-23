@@ -27,13 +27,13 @@ Boost 1.53.0 - 1.57.0 have been tested. 1.56.0 and newer seem to require a C++11
 [muparser](http://muparser.beltoforion.de/) is a fast formula parser and is used to interpret energy distributions etc. given by the user in particle.in.
 Most Linux distributions include libmuparser-dev or muparser-devel packages. It can also be downloaded and installed manually from the website. In that case you may have to adjust the MUPARSER_INCLUDE, MUPARSER_LIB and MUPARSER_SHAREDLIB paths in the Makefile.
 
-Only v2.2.3 has been tested so far.
+v2.2.3 and v2.2.4 have been tested so far.
 
 ### ALGLIB
 
 [ALGLIB](http://www.alglib.net) provides numerical optimization and integration routines required for the MicroRoughness model for UCN interaction with matter.
 
-ALGLIB 3.8.2 has been tested.
+It is included in the repository.
 
 ### interp2d and GSL
 
@@ -89,7 +89,7 @@ Particle sources can be defined using STL files or manual parameter ranges. Part
 Physics
 -------
 
-All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and either the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23–29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
+All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and either the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
 
 
 Writing your own simulation
@@ -106,7 +106,7 @@ You can modify the simulation on four different levels:
 Output
 -------
 
-Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be completely disabled for each particle type individually by adding corresponding variables in “particle.in”. All output files are tables with space separated columns; the first line contains the column name.
+Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be completely disabled for each particle type individually by adding corresponding variables in 'particle.in'. All output files are tables with space separated columns; the first line contains the column name.
 
 Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 
@@ -147,7 +147,7 @@ The endlog keeps track of the starting and end parameters of the particles simul
 
 ### Snapshotlog
 
-Switching on snapshotlog in "particle.in" will output the particle parameters at additional “snapshot times” (also defined in "particle.in") in the snapshotlog. It contains the same data fields as the endlog.
+Switching on snapshotlog in "particle.in" will output the particle parameters at additional 'snapshot times' (also defined in "particle.in") in the snapshotlog. It contains the same data fields as the endlog.
 
 ### Tracklog
 

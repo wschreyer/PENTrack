@@ -8,7 +8,7 @@
 
 #include "particle.h"
 
-#include "optimization.h"
+#include "alglib-3.9.0/cpp/src/optimization.h"
 
 extern const char* NAME_NEUTRON;
 

@@ -43,9 +43,9 @@ void RotateVector(double v[3], const double n[3], const double x[3])
 	zv = zv/sqrt(zv.squared_length());
 	CGAL::Vector_3<K> yv = CGAL::cross_product(zv, xv); // new y-axis corresponds to cross product of normal and velocity
 	CGAL::Aff_transformation_3<K> rotmatrix(xv.x(), yv.x(), zv.x(), xv.y(), yv.y(), zv.y(), xv.z(), yv.z(), zv.z());
-	std::cout << "(" << xv << "," << yv << "," << zv << ") + " << vv << " = ";
+//	std::cout << "(" << xv << "," << yv << "," << zv << ") + " << vv << " = ";
 	vv = vv.transform(rotmatrix); // transform v into new coordinate system
-	std::cout << vv << std::endl;
+//	std::cout << vv << std::endl;
 	v[0] = vv.x();
 	v[1] = vv.y();
 	v[2] = vv.z();
