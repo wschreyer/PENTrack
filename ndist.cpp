@@ -1,10 +1,10 @@
+#include <cstdio>
 #include <cmath>
 #include <algorithm>
-
-#include <gsl/gsl_matrix.h>
+#include <vector>
 
 int neutdist = 0;
-gsl_matrix *ndist;	// matrix for neutron density histogram
+std::vector<std::vector<double> > ndist;
 int n_r = 350, n_z = 1000;	// number of bins
 double size = 0.002, rmin = 0, zmin = -0.8;	// size of bins, position of first bin
 
@@ -13,7 +13,9 @@ double size = 0.002, rmin = 0, zmin = -0.8;	// size of bins, position of first b
 void prepndist()
 {
 	printf("Reserving space for neutron distribution matrix (%f MB)\n",(float)(n_r*n_z*sizeof(double))/1024/1024);
-	ndist = gsl_matrix_calloc(n_r, n_z);
+	ndist.resize(n_r);
+	for (int i = 0; i < n_r; i++)
+		ndist[i].resize(n_z);
 }
 
 /// fill neutron density histogram
@@ -61,7 +63,7 @@ void fillndist(double x1, double y1[6], double x2, double y2[6])
 		if(ir1 >= n_r || iz1 >= n_z)
 			printf("Ndist Error %d %d not in %d %d\n",ir1,iz1,n_r,n_z);
 		else
-			gsl_matrix_set(ndist, ir1, iz1, gsl_matrix_get(ndist, ir1, iz1) + s*(x2-x1));
+			ndist[ir1][iz1] += s*(x2 - x1);
 		ir1 = newir;
 		iz1 = newiz;
 		r1 += (r2 - r1)*s;
@@ -71,7 +73,7 @@ void fillndist(double x1, double y1[6], double x2, double y2[6])
 	if(ir2 >= n_r || iz2 >= n_z)
 		printf("Ndist Error %d %d not in %d %d\n",ir2,iz2,n_r,n_z);
 	else
-		gsl_matrix_set(ndist, ir2, iz2, gsl_matrix_get(ndist, ir2, iz2) + (x2-x1));
+		ndist[ir2][iz2] += x2 - x1;
 }
 
 // print neutron density distribution in ndist.out
@@ -87,12 +89,12 @@ void outndist(const char *ndistfile)
 	fprintf(NDIST,"Rindex Zindex Rmtlpkt Zmtlpkt Whk Treffer\n");
 	for(int i=0; i<n_r; i++){
 		for(int j=0; j<n_z; j++){
-			double val = gsl_matrix_get(ndist, i, j);
+			double val = ndist[i][j];
 			if (val != 0) Treffer =1;
 			if (val == 0) Treffer =0;
 			fprintf(NDIST,"%i %i %.5G %.5G %.17G %i\n",i,j, i*size + rmin + size/2, j*size + zmin + size/2, val, Treffer);
 		}
 	}
 	fclose(NDIST);
-	gsl_matrix_free(ndist);
+	ndist.clear();
 }

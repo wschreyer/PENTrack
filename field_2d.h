@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "interp2d/interp2d.h"
+#include "alglib-3.9.0/cpp/src/interpolation.h"
 
 #include "field.h"
 
@@ -24,8 +24,8 @@ class TabField: public TField{
 	private:
 		int m; ///< radial size of the table file
 		int n; ///< axial size of the arrays
-		std::vector<double> rind, zind, BrTab, BphiTab, BzTab, ErTab, EphiTab, EzTab, VTab;
-		interp2d *Brc, *Bphic, *Bzc, *Erc, *Ephic, *Ezc, *Vc;
+		alglib::real_1d_array rind, zind, BrTab, BphiTab, BzTab, ErTab, EphiTab, EzTab, VTab;
+		alglib::spline2dinterpolant Brc, Bphic, Bzc, Erc, Ephic, Ezc, Vc;
 		double NullFieldTime; ///< Time before magnetic field is ramped (passed by constructor)
 		double RampUpTime; ///< field is ramped linearly from 0 to 100% in this time (passed by constructor)
 		double FullFieldTime; ///< Time the field stays at 100% (passed by constructor)

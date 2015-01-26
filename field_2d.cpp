@@ -39,8 +39,8 @@ void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
 	int intval;
 	string line;
 	FIN >> m >> intval >> n;
-	rind.resize(m);
-	zind.resize(n);
+	rind.setlength(m);
+	zind.setlength(n);
 
 	getline(FIN,line);
 	getline(FIN,line);
@@ -51,33 +51,33 @@ void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
 	if (!skipy) getline(FIN,line);
 
 	if (line.find("RBX") != string::npos){
-		BrTab.resize(m*n);
+		BrTab.setlength(m*n);
 		getline(FIN,line);
 	}
 	if (line.find("RBY") != string::npos){
-		BphiTab.resize(m*n);
+		BphiTab.setlength(m*n);
 		getline(FIN,line);
 	}
 	if (line.find("RBZ") != string::npos){
-		BzTab.resize(m*n);
+		BzTab.setlength(m*n);
 		getline(FIN,line);
 	}
 
 	if (line.find("EX") != string::npos){
-		ErTab.resize(m*n);
+		ErTab.setlength(m*n);
 		getline(FIN,line);
 	}
 	if (line.find("EY") != string::npos){
-		EphiTab.resize(m*n);
+		EphiTab.setlength(m*n);
 		getline(FIN,line);
 	}
 	if (line.find("EZ") != string::npos){
-		EzTab.resize(m*n);
+		EzTab.setlength(m*n);
 		getline(FIN,line);
 	}
 
 	if (line.find("RV") != string::npos){	// file contains potential?
-		VTab.resize(m*n);
+		VTab.setlength(m*n);
 		getline(FIN,line);
 	}
 
@@ -104,34 +104,35 @@ void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
 		// status if read is displayed
 		PrintPercent((float)zi*ri/(n*m), perc);
 
+
 		rind[ri] = r;
 		zind[zi] = z;
-		int i2 = INDEX_2D(ri, zi, m, n);
-		if (BrTab.size() > 0){
+		int i2 = zi * m + ri;
+		if (BrTab.length() > 0){
 			FIN >> val;
 			BrTab[i2] = val*Bconv*Bscale;
 		}
-		if (BphiTab.size() > 0){
+		if (BphiTab.length() > 0){
 			FIN >> val;
 			BphiTab[i2] = val*Bconv*Bscale;
 		}
-		if (BzTab.size() > 0){
+		if (BzTab.length() > 0){
 			FIN >> val;
 			BzTab[i2] = val*Bconv*Bscale;
 		}
-		if (ErTab.size() > 0){
+		if (ErTab.length() > 0){
 			FIN >> val;
 			ErTab[i2] = val*Econv*Escale;
 		}
-		if (EphiTab.size() > 0){
+		if (EphiTab.length() > 0){
 			FIN >> val;
 			EphiTab[i2] = val*Econv*Escale;
 		}
-		if (EzTab.size() > 0){
+		if (EzTab.length() > 0){
 			FIN >> val;
 			EzTab[i2] = val*Econv*Escale;
 		}
-		if (VTab.size() > 0){
+		if (VTab.length() > 0){
 			FIN >> val;
 			VTab[i2] = val*Escale;
 		}
@@ -139,15 +140,15 @@ void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
 	}
 
 	if (Bscale == 0){
-		BrTab.clear();
-		BphiTab.clear();
-		BzTab.clear();
+		BrTab.setlength(0);
+		BphiTab.setlength(0);
+		BzTab.setlength(0);
 	}
 	if (Escale == 0){
-		ErTab.clear();
-		EphiTab.clear();
-		EzTab.clear();
-		VTab.clear();
+		ErTab.setlength(0);
+		EphiTab.setlength(0);
+		EzTab.setlength(0);
+		VTab.setlength(0);
 	}
 
 	printf("\n");
@@ -173,13 +174,13 @@ void TabField::CheckTab(){
 		for (int k=0; k < n; k++)
 		{
 			Babs = 0;
-			int i2 = INDEX_2D(j,k,m,n);
-			if (BrTab.size() > 0) Babs += BrTab[i2]*BrTab[i2];
-			if (BphiTab.size() > 0) Babs += BphiTab[i2]*BphiTab[i2];
-			if (BzTab.size() > 0) Babs += BzTab[i2]*BzTab[i2];
+			int i2 = k*m + j;
+			if (BrTab.length() > 0) Babs += BrTab[i2]*BrTab[i2];
+			if (BphiTab.length() > 0) Babs += BphiTab[i2]*BphiTab[i2];
+			if (BzTab.length() > 0) Babs += BzTab[i2]*BzTab[i2];
 			Babsmax = max(sqrt(Babs),Babsmax);
 			Babsmin = min(sqrt(Babs),Babsmin);
-			if (VTab.size() > 0)
+			if (VTab.length() > 0)
 			{
 				Vmax = max(VTab[i2],Vmax);
 				Vmin = min(VTab[i2],Vmin);
@@ -227,71 +228,47 @@ TabField::TabField(const char *tabfile, double Bscale, double Escale,
 	CheckTab(); // print some info
 
 	printf("Starting Preinterpolation ... ");
-	if (BrTab.size() > 0){
+	if (BrTab.length() > 0){
 		cout << "Br ... ";
 		cout.flush();
-		Brc = interp2d_alloc(interp2d_bicubic, m, n);
-		interp2d_init(Brc, &rind[0], &zind[0], &BrTab[0], m, n);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, BrTab, 1, Brc);
 	}
-	if (BphiTab.size() > 0){
+	if (BphiTab.length() > 0){
 		cout << "Bhi ... ";
 		cout.flush();
-		Bphic = interp2d_alloc(interp2d_bicubic, m, n);
-		interp2d_init(Bphic, &rind[0], &zind[0], &BphiTab[0], m, n);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, BphiTab, 1, Bphic);
 	}
-	if (BzTab.size() > 0){
+	if (BzTab.length() > 0){
 		cout << "Bz ... ";
 		cout.flush();
-		Bzc = interp2d_alloc(interp2d_bicubic, m, n);
-		interp2d_init(Bzc, &rind[0], &zind[0], &BzTab[0], m, n);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, BzTab, 1, Bzc);
 	}
-	if (VTab.size() > 0){
+	if (VTab.length() > 0){
 		cout << "V ... ";
 		cout.flush();
-		Vc = interp2d_alloc(interp2d_bicubic, m, n);
-		interp2d_init(Vc, &rind[0], &zind[0], &VTab[0], m, n);
-		ErTab.clear(); // if there is a potential, we don't need the E-vector
-		EphiTab.clear();
-		EzTab.clear();
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, VTab, 1, Vc);
+		ErTab.setlength(0); // if there is a potential, we don't need the E-vector
+		EphiTab.setlength(0);
+		EzTab.setlength(0);
 	}
-	if (ErTab.size() > 0){
+	if (ErTab.length() > 0){
 		cout << "Er ... ";
 		cout.flush();
-		Erc = interp2d_alloc(interp2d_bicubic, m, n);
-		interp2d_init(Erc, &rind[0], &zind[0], &ErTab[0], m, n);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, ErTab, 1, Erc);
 	}
-	if (EphiTab.size() > 0){
+	if (EphiTab.length() > 0){
 		cout << "Ephi ... ";
 		cout.flush();
-		Ephic = interp2d_alloc(interp2d_bicubic, m, n);
-		interp2d_init(Ephic, &rind[0], &zind[0], &EphiTab[0], m, n);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, EphiTab, 1, Ephic);
 	}
-	if (EzTab.size() > 0){
+	if (EzTab.length() > 0){
 		cout << "Ez ... ";
 		cout.flush();
-		Ezc = interp2d_alloc(interp2d_bicubic, m, n);
-		interp2d_init(Ezc, &rind[0], &zind[0], &EzTab[0], m, n);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, EzTab, 1, Ezc);
 	}
-	printf("Done (%.f MB)\n\n", 4*float(BrTab.size() + BphiTab.size() + BzTab.size()
-								 + ErTab.size() + EzTab.size() + VTab.size())
-								*sizeof(double)/1024/1024);
 }
 
 TabField::~TabField(){
-	if (BrTab.size() > 0)
-		interp2d_free(Brc);
-	if (BphiTab.size() > 0)
-		interp2d_free(Bphic);
-	if (BzTab.size() > 0)
-		interp2d_free(Bzc);
-	if (ErTab.size() > 0)
-		interp2d_free(Erc);
-	if (EphiTab.size() > 0)
-		interp2d_free(Ephic);
-	if (EzTab.size() > 0)
-		interp2d_free(Ezc);
-	if (VTab.size() > 0)
-		interp2d_free(Vc);
 }
 
 
@@ -302,16 +279,13 @@ void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 		// bicubic interpolation
 		double Br = 0, dBrdr = 0, dBrdz = 0, Bphi = 0, dBphidr = 0, dBphidz = 0, dBzdr = 0;
 		double Bx = 0, By = 0, Bz = 0, dBxdz = 0, dBydz = 0, dBzdz = 0;
+		double dummy;
 		double phi = atan2(y,x);
-		if (BrTab.size() > 0){
-			Br = interp2d_eval(Brc, &rind[0], &zind[0], &BrTab[0], r, z, NULL, NULL);
-			dBrdr = interp2d_eval_deriv_x(Brc, &rind[0], &zind[0], &BrTab[0], r, z, NULL, NULL);
-			dBrdz = interp2d_eval_deriv_y(Brc, &rind[0], &zind[0], &BrTab[0], r, z, NULL, NULL);
+		if (BrTab.length() > 0){
+			alglib::spline2ddiff(Brc, r, z, Br, dBrdr, dBrdz, dummy);
 		}
-		if (BphiTab.size() > 0){
-			Bphi = interp2d_eval(Bphic, &rind[0], &zind[0], &BphiTab[0], r, z, NULL, NULL);
-			dBphidr = interp2d_eval_deriv_x(Bphic, &rind[0], &zind[0], &BphiTab[0], r, z, NULL, NULL);
-			dBphidz = interp2d_eval_deriv_y(Bphic, &rind[0], &zind[0], &BphiTab[0], r, z, NULL, NULL);
+		if (BphiTab.length() > 0){
+			alglib::spline2ddiff(Bphic, r, z, Bphi, dBphidr, dBphidz, dummy);
 		}
 		CylToCart(Br,Bphi,phi,Bx,By);
 		B[0][0] += Bx*Bscale;
@@ -325,10 +299,8 @@ void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 		CylToCart(dBrdz,dBphidz,phi,dBxdz,dBydz);
 		B[0][3] += dBxdz*Bscale;
 		B[1][3] += dBydz*Bscale;
-		if (BzTab.size() > 0){
-			Bz = interp2d_eval(Bzc, &rind[0], &zind[0], &BzTab[0], r, z, NULL, NULL);
-			dBzdr = interp2d_eval_deriv_x(Bzc, &rind[0], &zind[0], &BzTab[0], r, z, NULL, NULL);
-			dBzdz = interp2d_eval_deriv_y(Bzc, &rind[0], &zind[0], &BzTab[0], r, z, NULL, NULL);
+		if (BzTab.length() > 0){
+			alglib::spline2ddiff(Bzc, r, z, Bz, dBzdr, dBzdz, dummy);
 		}
 		B[2][0] += Bz*Bscale;
 		B[2][1] += dBzdr*cos(phi)*Bscale;
@@ -339,14 +311,12 @@ void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 
 
 void TabField::EField(double x, double y, double z, double t, double &V, double Ei[3]){
-	double Vloc, dVdrj[3];
-	if (VTab.size() > 0){ // prefer E-field from potential over pure E-field interpolation
+	double Vloc, dVdrj[3], dummy;
+	if (VTab.length() > 0){ // prefer E-field from potential over pure E-field interpolation
 		double r = sqrt(x*x+y*y);
 		if (r >= rind[0] && r <= rind[m-1] && z >= zind[0] && z <= zind[n-1]){
 			// bicubic interpolation
-			Vloc = interp2d_eval(Vc, &rind[0], &zind[0], &VTab[0], r, z, NULL, NULL);
-			dVdrj[0] = interp2d_eval_deriv_x(Vc, &rind[0], &zind[0], &VTab[0], r, z, NULL, NULL);
-			dVdrj[2] = interp2d_eval_deriv_y(Vc, &rind[0], &zind[0], &VTab[0], r, z, NULL, NULL);
+			alglib::spline2ddiff(Vc, r, z, Vloc, dVdrj[0], dVdrj[2], dummy);
 			double phi = atan2(y,x);
 			V += Vloc;
 			Ei[0] += -dVdrj[0]*cos(phi);
@@ -354,18 +324,18 @@ void TabField::EField(double x, double y, double z, double t, double &V, double 
 			Ei[2] += -dVdrj[2];
 		}
 	}
-	else if (ErTab.size() > 0 || EphiTab.size() > 0 || EzTab.size() > 0){
+	else if (ErTab.length() > 0 || EphiTab.length() > 0 || EzTab.length() > 0){
 		double r = sqrt(x*x+y*y);
 		if (r >= rind[0] && r <= rind[m-1] && z >= zind[0] && z <= zind[n-1]){
 			// bicubic interpolation
 			double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0;
 			double phi = atan2(y,x);
-			if (ErTab.size() > 0)
-				Er = interp2d_eval(Erc, &rind[0], &zind[0], &ErTab[0], r, z, NULL, NULL);
-			if (EphiTab.size() > 0)
-				Ephi = interp2d_eval(Ephic, &rind[0], &zind[0], &EphiTab[0], r, z, NULL, NULL);
-			if (EzTab.size() > 0)
-				Ez = interp2d_eval(Ezc, &rind[0], &zind[0], &EzTab[0], r, z, NULL, NULL);
+			if (ErTab.length() > 0)
+				Er = alglib::spline2dcalc(Erc, r, z);
+			if (EphiTab.length() > 0)
+				Ephi = alglib::spline2dcalc(Ephic, r, z);
+			if (EzTab.length() > 0)
+				Ez = alglib::spline2dcalc(Ezc, r, z);
 			CylToCart(Er,Ephi,phi,Ex,Ey);
 			Ei[0] += Ex;
 			Ei[1] += Ey;

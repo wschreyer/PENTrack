@@ -31,14 +31,10 @@ v2.2.3 and v2.2.4 have been tested so far.
 
 ### ALGLIB
 
-[ALGLIB](http://www.alglib.net) provides numerical optimization and integration routines required for the MicroRoughness model for UCN interaction with matter.
+[ALGLIB](http://www.alglib.net) is used to do 1D and 2D interpolation for field calculations.
+It also provides numerical optimization and integration routines required for the MicroRoughness model for UCN interaction with matter.
 
 It is included in the repository.
-
-### interp2d and GSL
-
-[interp2d](http://github.com/diazona/interp2d.git) provides a bicubic interpolation routine based on the [GNU Scientific Library](https://www.gnu.org/software/gsl/).
-The interp2d code is included in the repository. It can be downloaded by executing `git submodule init` and `git submodule update`. The libgsl-dev package should be available for all major Linux distributions.
 
 ### libtricubic
 
@@ -48,7 +44,6 @@ The interp2d code is included in the repository. It can be downloaded by executi
 Run the simulation
 ------------------
 
-Download the interp2d submodule by executing `git submodule init` and `git submodule update`.
 Type "make" to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
 Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
 

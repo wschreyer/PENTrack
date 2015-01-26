@@ -1,4 +1,4 @@
-CSRC = main.c interp2d/interp2d.c interp2d/bicubic.c
+CSRC = main.c
 COBJ=$(CSRC:.c=.o)
 CPPSRC = libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp \
 		field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp electron.cpp proton.cpp ndist.cpp source.cpp \
@@ -14,8 +14,8 @@ MUPARSER_LIB= #-L$(HOME)/muparser_v2_2_4/lib/ # point gcc's -L option to muparse
 MUPARSER_SHAREDLIB= #-Wl,-rpath=$(HOME)/muparser_v2_2_4/lib/ # point gcc's -Wl,-rpath= option to muparser shared library if you have compiled muparser manually without installing it
 
 CC=g++
-CFLAGS=-O2 -frounding-math -Wall $(CGAL_INCLUDE) $(CGAL_SHAREDLIB) $(shell gsl-config --cflags) $(MUPARSER_INCLUDE) $(MUPARSER_SHAREDLIB) #-O2: optimize, -Wno-*: suppress warnings from external libraries
-LDFLAGS=-lrt -lboost_system $(CGAL_LIB) -lCGAL $(shell gsl-config --libs) $(MUPARSER_LIB) -lmuparser
+CFLAGS=-O2 -frounding-math -Wall $(CGAL_INCLUDE) $(CGAL_SHAREDLIB) $(MUPARSER_INCLUDE) $(MUPARSER_SHAREDLIB) #-O2: optimize, -Wno-*: suppress warnings from external libraries
+LDFLAGS=-lrt -lboost_system $(CGAL_LIB) -lCGAL $(MUPARSER_LIB) -lmuparser
 RM=rm
 EXE=PENTrack
 

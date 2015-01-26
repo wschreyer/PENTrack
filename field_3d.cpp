@@ -6,8 +6,7 @@
 #include <fstream>
 #include <cmath>
 
-#include <gsl/gsl_interp.h>
-#include <gsl/gsl_spline.h>
+#include "alglib-3.9.0/cpp/src/interpolation.h"
 
 #include "field_3d.h"
 #include "libtricubic/tricubic.h"
@@ -178,82 +177,80 @@ void TabField3::CheckTab(vector<double> &BxTab, vector<double> &ByTab, vector<do
 void TabField3::CalcDerivs(vector<double> &Tab, vector<double> &Tab1, vector<double> &Tab2, vector<double> &Tab3,
 				vector<double> &Tab12, vector<double> &Tab13, vector<double> &Tab23, vector<double> &Tab123)
 {
-	vector<double> x(xl), y(xl);
+	alglib::real_1d_array x, y, diff;
+
+	x.setlength(xl);
+	y.setlength(xl);
+	diff.setlength(xl);
 	for (int zi = 0; zi < zl; zi++){
 		for (int yi = 0; yi < yl; yi++){
 			for (int xi = 0; xi < xl; xi++){
 				x[xi] = x_mi + xi*xdist;
-				y[xi] = Tab[INDEX_3D(xi, yi, zi, xl, yl, zl)];
+				y[xi] = Tab[INDEX_3D(xi, yi, zi, xl, yl, zl)]; // get derivatives dF/dx from spline interpolation
 			}
-			gsl_spline *spline = gsl_spline_alloc(gsl_interp_cspline, xl);
-			gsl_spline_init(spline, &x[0], &y[0], xl);
+			alglib::spline1dgriddiffcubic(x, y, diff);
 			for (int xi = 0; xi < xl; xi++)
-				Tab1[INDEX_3D(xi, yi, zi, xl, yl, zl)] = gsl_spline_eval_deriv(spline, x[xi], NULL); // get derivatives dF/dx from spline interpolation
-			gsl_spline_free(spline);
+				Tab1[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[xi];
 		}
 	}
 
-	x.resize(yl);
-	y.resize(yl);
+	x.setlength(yl);
+	y.setlength(yl);
+	diff.setlength(yl);
 	for (int xi = 0; xi < xl; xi++){
 		for (int zi = 0; zi < zl; zi++){
 			for (int yi = 0; yi < yl; yi++){
 				x[yi] = y_mi + yi*ydist;
-				y[yi] = Tab[INDEX_3D(xi, yi, zi, xl, yl, zl)];
+				y[yi] = Tab[INDEX_3D(xi, yi, zi, xl, yl, zl)]; // get derivatives dF/dy from spline interpolation
 			}
-			gsl_spline *spline = gsl_spline_alloc(gsl_interp_cspline, yl);
-			gsl_spline_init(spline, &x[0], &y[0], yl);
+			alglib::spline1dgriddiffcubic(x, y, diff);
 			for (int yi = 0; yi < yl; yi++)
-				Tab2[INDEX_3D(xi, yi, zi, xl, yl, zl)] = gsl_spline_eval_deriv(spline, x[yi], NULL); // get derivatives dF/dy from spline interpolation
-			gsl_spline_free(spline);
+				Tab2[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[yi];
 		}
 	}
 
-	x.resize(zl);
-	y.resize(zl);
+	x.setlength(zl);
+	y.setlength(zl);
+	diff.setlength(zl);
 	for (int xi = 0; xi < xl; xi++){
 		for (int yi = 0; yi < yl; yi++){
 			for (int zi = 0; zi < zl; zi++){
 				x[zi] = z_mi + zi*zdist;
 				y[zi] = Tab[INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
-			gsl_spline *spline = gsl_spline_alloc(gsl_interp_cspline, zl);
-			gsl_spline_init(spline, &x[0], &y[0], zl);
+			alglib::spline1dgriddiffcubic(x, y, diff); // get derivatives dF/dz from spline interpolation
 			for (int zi = 0; zi < zl; zi++)
-				Tab3[INDEX_3D(xi, yi, zi, xl, yl, zl)] = gsl_spline_eval_deriv(spline, x[zi], NULL); // get derivatives dF/dz from spline interpolation
-			gsl_spline_free(spline);
+				Tab3[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
 		}
 	}
 
-	x.resize(yl);
-	y.resize(yl);
+	x.setlength(yl);
+	y.setlength(yl);
+	diff.setlength(yl);
 	for (int xi = 0; xi < xl; xi++){
 		for (int zi = 0; zi < zl; zi++){
 			for (int yi = 0; yi < yl; yi++){
 				x[yi] = y_mi + yi*ydist;
 				y[yi] = Tab1[INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
-			gsl_spline *spline = gsl_spline_alloc(gsl_interp_cspline, yl);
-			gsl_spline_init(spline, &x[0], &y[0], yl);
+			alglib::spline1dgriddiffcubic(x, y, diff); // get cross derivatives d2F/dxdy from spline interpolation
 			for (int yi = 0; yi < yl; yi++)
-				Tab12[INDEX_3D(xi, yi, zi, xl, yl, zl)] = gsl_spline_eval_deriv(spline, x[yi], NULL); // get cross derivatives d2F/dxdy from spline coefficients
-			gsl_spline_free(spline);
+				Tab12[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[yi];
 		}
 	}
 
-	x.resize(zl);
-	y.resize(zl);
+	x.setlength(zl);
+	y.setlength(zl);
+	diff.setlength(zl);
 	for (int xi = 0; xi < xl; xi++){
 		for (int yi = 0; yi < yl; yi++){
 			for (int zi = 0; zi < zl; zi++){
 				x[zi] = z_mi + zi*zdist;
 				y[zi] = Tab1[INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
-			gsl_spline *spline = gsl_spline_alloc(gsl_interp_cspline, zl);
-			gsl_spline_init(spline, &x[0], &y[0], zl);
+			alglib::spline1dgriddiffcubic(x, y, diff); // get cross derivatives d2F/dxdz from spline interpolation
 			for (int zi = 0; zi < zl; zi++)
-				Tab13[INDEX_3D(xi, yi, zi, xl, yl, zl)] = gsl_spline_eval_deriv(spline, x[zi], NULL); // get cross derivatives d2F/dxdz from spline coefficients
-			gsl_spline_free(spline);
+				Tab13[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
 		}
 	}
 
@@ -263,11 +260,9 @@ void TabField3::CalcDerivs(vector<double> &Tab, vector<double> &Tab1, vector<dou
 				x[zi] = z_mi + zi*zdist;
 				y[zi] = Tab2[INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
-			gsl_spline *spline = gsl_spline_alloc(gsl_interp_cspline, zl);
-			gsl_spline_init(spline, &x[0], &y[0], zl); // splineinterpolate dF/dy in z direction
+			alglib::spline1dgriddiffcubic(x, y, diff); // get cross derivatives d2F/dydz from spline interpolation
 			for (int zi = 0; zi < zl; zi++)
-				Tab23[INDEX_3D(xi, yi, zi, xl, yl, zl)] = gsl_spline_eval_deriv(spline, x[zi], NULL); // get cross derivatives d2F/dydz from spline coefficients
-			gsl_spline_free(spline);
+				Tab23[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
 		}
 	}
 
@@ -277,11 +272,9 @@ void TabField3::CalcDerivs(vector<double> &Tab, vector<double> &Tab1, vector<dou
 				x[zi] = z_mi + zi*zdist;
 				y[zi] = Tab12[INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
-			gsl_spline *spline = gsl_spline_alloc(gsl_interp_cspline, zl);
-			gsl_spline_init(spline, &x[0], &y[0], zl); // splineinterpolate d2F/dxdy in z direction
+			alglib::spline1dgriddiffcubic(x, y, diff); // get cross derivatives d3F/dxdydz from spline interpolation
 			for (int zi = 0; zi < zl; zi++)
-				Tab123[INDEX_3D(xi, yi, zi, xl, yl, zl)] = gsl_spline_eval_deriv(spline, x[zi], NULL); // get cross derivatives d3F/dxdydz from spline coefficients
-			gsl_spline_free(spline);
+				Tab123[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
 		}
 	}
 
