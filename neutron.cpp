@@ -13,8 +13,8 @@
 
 #include <boost/math/special_functions/bessel.hpp>
 
-#include "alglib-3.9.0/cpp/src/optimization.h"
-#include "alglib-3.9.0/cpp/src/integration.h"
+#include "optimization.h"
+#include "integration.h"
 
 const char* NAME_NEUTRON = "neutron";
 

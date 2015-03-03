@@ -25,9 +25,8 @@ Boost 1.53.0 - 1.57.0 have been tested. 1.56.0 and newer seem to require a C++11
 ### muparser
 
 [muparser](http://muparser.beltoforion.de/) is a fast formula parser and is used to interpret energy distributions etc. given by the user in particle.in.
-Most Linux distributions include libmuparser-dev or muparser-devel packages. It can also be downloaded and installed manually from the website. In that case you may have to adjust the MUPARSER_INCLUDE, MUPARSER_LIB and MUPARSER_SHAREDLIB paths in the Makefile.
 
-v2.2.3 and v2.2.4 have been tested so far.
+It is included in the repository.
 
 ### ALGLIB
 

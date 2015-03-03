@@ -7,7 +7,7 @@
 #include <iostream>
 #include <cmath>
 
-#include "alglib-3.9.0/cpp/src/interpolation.h"
+#include "interpolation.h"
 
 #include "field_3d.h"
 #include "libtricubic/tricubic.h"

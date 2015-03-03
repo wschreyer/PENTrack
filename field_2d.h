@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "alglib-3.9.0/cpp/src/interpolation.h"
+#include "interpolation.h"
 
 #include "field.h"
 
