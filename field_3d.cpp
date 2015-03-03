@@ -4,6 +4,7 @@
  */
 
 #include <fstream>
+#include <iostream>
 #include <cmath>
 
 #include "alglib-3.9.0/cpp/src/interpolation.h"
@@ -352,11 +353,12 @@ double TabField3::BFieldScale(double t){
 
 
 TabField3::TabField3(const char *tabfile, double Bscale, double Escale,
-		double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime){
+		double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime, double aBoundaryWidth){
 	NullFieldTime = aNullFieldTime;
 	RampUpTime = aRampUpTime;
 	FullFieldTime = aFullFieldTime;
 	RampDownTime = aRampDownTime;
+	BoundaryWidth = aBoundaryWidth;
 
 	vector<double> BxTab, ByTab, BzTab;	// Bx/By/Bz values
 	vector<double> VTab; // potential values
@@ -406,32 +408,100 @@ void TabField3::BField(double x, double y, double z, double t, double B[4][4]){
 	int indz = (int)floor((z - z_mi)/zdist);
 	if (Bscale != 0 && indx >= 0 && indx < xl - 1 && indy >= 0 && indy < yl - 1 && indz >= 0 && indz < zl - 1){
 		// scale coordinates to unit cube
-		x = (x - x_mi - indx*xdist)/xdist;
-		y = (y - y_mi - indy*ydist)/ydist;
-		z = (z - z_mi - indz*zdist)/zdist;
+		double xu = (x - x_mi - indx*xdist)/xdist;
+		double yu = (y - y_mi - indy*ydist)/ydist;
+		double zu = (z - z_mi - indz*zdist)/zdist;
 		int i3 = INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
+		double Bres[4][4];
 		// tricubic interpolation
 		if (Bxc.size() > 0){
-			B[0][0] += Bscale*tricubic_eval(&Bxc[i3][0], x, y, z);
-			B[0][1] += Bscale*tricubic_eval(&Bxc[i3][0], x, y, z, 1, 0, 0)/xdist;
-			B[0][2] += Bscale*tricubic_eval(&Bxc[i3][0], x, y, z, 0, 1, 0)/ydist;
-			B[0][3] += Bscale*tricubic_eval(&Bxc[i3][0], x, y, z, 0, 0, 1)/zdist;
+			Bres[0][0] = Bscale*tricubic_eval(&Bxc[i3][0], xu, yu, zu);
+			Bres[0][1] = Bscale*tricubic_eval(&Bxc[i3][0], xu, yu, zu, 1, 0, 0)/xdist;
+			Bres[0][2] = Bscale*tricubic_eval(&Bxc[i3][0], xu, yu, zu, 0, 1, 0)/ydist;
+			Bres[0][3] = Bscale*tricubic_eval(&Bxc[i3][0], xu, yu, zu, 0, 0, 1)/zdist;
 		}
 		if (Byc.size() > 0){
-			B[1][0] += Bscale*tricubic_eval(&Byc[i3][0], x, y, z);
-			B[1][1] += Bscale*tricubic_eval(&Byc[i3][0], x, y, z, 1, 0, 0)/xdist;
-			B[1][2] += Bscale*tricubic_eval(&Byc[i3][0], x, y, z, 0, 1, 0)/ydist;
-			B[1][3] += Bscale*tricubic_eval(&Byc[i3][0], x, y, z, 0, 0, 1)/zdist;
+			Bres[1][0] = Bscale*tricubic_eval(&Byc[i3][0], xu, yu, zu);
+			Bres[1][1] = Bscale*tricubic_eval(&Byc[i3][0], xu, yu, zu, 1, 0, 0)/xdist;
+			Bres[1][2] = Bscale*tricubic_eval(&Byc[i3][0], xu, yu, zu, 0, 1, 0)/ydist;
+			Bres[1][3] = Bscale*tricubic_eval(&Byc[i3][0], xu, yu, zu, 0, 0, 1)/zdist;
 		}
 		if (Bzc.size() > 0){
-			B[2][0] += Bscale*tricubic_eval(&Bzc[i3][0], x, y, z);
-			B[2][1] += Bscale*tricubic_eval(&Bzc[i3][0], x, y, z, 1, 0, 0)/xdist;
-			B[2][2] += Bscale*tricubic_eval(&Bzc[i3][0], x, y, z, 0, 1, 0)/ydist;
-			B[2][3] += Bscale*tricubic_eval(&Bzc[i3][0], x, y, z, 0, 0, 1)/zdist;
+			Bres[2][0] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu);
+			Bres[2][1] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu, 1, 0, 0)/xdist;
+			Bres[2][2] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu, 0, 1, 0)/ydist;
+			Bres[2][3] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu, 0, 0, 1)/zdist;
+		}
+
+		FieldSmthr(x, y, z, Bres);
+
+		for (int i = 0; i < 3; i++){
+			for (int j = 0; j < 4; j++)
+				B[i][j] += Bres[i][j];
 		}
 	}
 }
 
+void TabField3::FieldSmthr(double x, double y, double z, double F[4][4]){
+	if (BoundaryWidth != 0){ // skip, if BoundaryWidth is set to zero
+		double dxlo = (x - x_mi)/BoundaryWidth; // calculate distance to edges in units of BoundaryWidth
+		double dxhi = (x_mi + xdist*(xl - 1) - x)/BoundaryWidth;
+		double dylo = (y - y_mi)/BoundaryWidth;
+		double dyhi = (y_mi + ydist*(yl - 1) - y)/BoundaryWidth;
+		double dzlo = (z - z_mi)/BoundaryWidth;
+		double dzhi = (z_mi + zdist*(zl - 1) - z)/BoundaryWidth;
+
+		double Fscale = 1; // scale field and its derivatives by this factor
+		double dFadd[3] = {0, 0, 0}; // add these factors to x-, y- and z-derivatives, respectively
+
+		if (dxhi < 1) { // if point in positive x boundary (distance smaller than BoundaryWidth)
+			Fscale *= SmthrStp(dxhi); // scale field by value of smoother function
+			dFadd[0] = -F[0][0]*SmthrStpDer(dxhi)/BoundaryWidth; // add derivative of smoother function according to product rule
+		}
+		if (dyhi < 1){ // if point in positive y boundary
+			Fscale *= SmthrStp(dyhi);
+			dFadd[1] = -F[1][0]*SmthrStpDer(dyhi)/BoundaryWidth;
+		}
+
+		if (dzhi < 1){ // if point in positive z boundary
+			Fscale *= SmthrStp(dzhi);
+			dFadd[2] = -F[2][0]*SmthrStpDer(dzhi)/BoundaryWidth;
+		}
+
+		if (dxlo < 1){ // if point in negative x boundary
+			Fscale *= SmthrStp(dxlo);
+			dFadd[0] = F[0][0]*SmthrStpDer(dxlo)/BoundaryWidth;
+		}
+		if (dylo < 1){ // if point in negative y boundary
+			Fscale *= SmthrStp(dylo);
+			dFadd[1] = F[1][0]*SmthrStpDer(dylo)/BoundaryWidth;
+		}
+
+		if (dzlo < 1){ // if point in negative z boundary
+			Fscale *= SmthrStp(dzlo);
+			dFadd[2] = F[2][0]*SmthrStpDer(dzlo)/BoundaryWidth;
+		}
+
+		if (Fscale != 1){
+			for (int i = 0; i < 3; i++){
+				for (int j = 0; j < 4; j++){
+					F[i][j] *= Fscale; // scale field and its derivatives
+					if (j > 0)
+						F[i][j] += dFadd[j - 1]; // add derivatives of smoother function according to product rule
+				}
+			}
+		}
+
+	}
+}
+
+double TabField3::SmthrStp(double x) {
+	return 6*pow(x, 5) - 15*pow(x, 4) + 10*pow(x, 3);
+}
+
+double TabField3::SmthrStpDer(double x) {
+	return 30*pow(x, 4) - 60*pow(x, 3) + 30*pow(x,2);
+}
 
 void TabField3::EField(double x, double y, double z, double t, double &V, double Ei[3]){
 	if (Vc.size() > 0 &&

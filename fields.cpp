@@ -33,9 +33,10 @@ TFieldManager::TFieldManager(TConfig &conf, int aFieldOscillation, double aOscil
 				f = new TabField(ft.c_str(), Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime);
 		}
 		else if (i->first == "3Dtable"){
-			ss >> ft >> Bscale >> Escale >> NullFieldTime >> RampUpTime >> FullFieldTime >> RampDownTime;
+			double BoundaryWidth;
+			ss >> ft >> Bscale >> Escale >> NullFieldTime >> RampUpTime >> FullFieldTime >> RampDownTime >> BoundaryWidth;
 			if (ss)
-				f = new TabField3(ft.c_str(), Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime);
+				f = new TabField3(ft.c_str(), Bscale, Escale, NullFieldTime, RampUpTime, FullFieldTime, RampDownTime, BoundaryWidth);
 		}
 		else if (i->first == "InfiniteWireZ"){
 			ss >> Ibar >> p1 >> p2;

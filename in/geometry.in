@@ -54,8 +54,9 @@ STLsurface 	neutron		in/source.STL	200			0
 #STLvolume 	neutron		in/source.STL	0			1
 
 [FIELDS]
-#field 		table-file			BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime
+#field 		table-file			BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime	BoundaryWidth
 2Dtable 	in/42_0063_PF80fieldval.tab	1		1		400		100		200		100
+#3Dtable	in/3Dtable.tab			1		1		0		0		1000		0		0.05
 
 #InfiniteWireZ		I		x		y
 #InfiniteWireZCenter	I

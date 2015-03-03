@@ -36,7 +36,7 @@ class TabField3: public TField{
 		double RampUpTime; ///< field is ramped linearly from 0 to 100% in this time (passed by constructor)
 		double FullFieldTime; ///< Time the field stays at 100% (passed by constructor)
 		double RampDownTime; ///< field is ramped down linearly from 100% to 0 in this time (passed by constructor)
-
+		double BoundaryWidth; ///< if this is larger 0, the field will be smoothly reduced to 0 in this boundary around the tabulated field cuboid
 
 		/**
 		 * Reads an Opera table file.
@@ -104,6 +104,38 @@ class TabField3: public TField{
 		 * @return Returns magnetic field scale factor
 		 */
 		double BFieldScale(double t);
+
+
+		/**
+		 * Smoothly reduce the field at the edges of the tabulated region
+		 *
+		 * If coordinates are within BoundaryWidth of the edges of the tabulated field,
+		 * the field and its derivatives are scaled by the SmthrStp and SmthrStpDer functions.
+		 *
+		 * @param x x coordinate
+		 * @param y y coordinate
+		 * @param z z coordinate
+		 * @param F Field matrix
+		 */
+		void FieldSmthr(double x, double y, double z, double F[4][4]);
+
+		/**
+		 * Smooth function used to scale the field at the edges
+		 *
+		 * @param x function parameter (x = 0..1)
+		 *
+		 * @return Returns number between 0 and 1, smoothly rising with x
+		 */
+		double SmthrStp(double x);
+
+		/**
+		 * Derivative of SmthStpDer
+		 *
+		 * @param x function parameter (x = 0..1)
+		 *
+		 * @return Returns derivative of SmthrStp at parameter x
+		 */
+		double SmthrStpDer(double x);
 	public:
 		/**
 		 * Constructor.
@@ -116,10 +148,11 @@ class TabField3: public TField{
 		 * @param aNullFieldTime Sets TabField3::NullFieldTime
 		 * @param aRampUpTime Sets TabField3::RampUpTime
 		 * @param aFullFieldTime Sets TabField3::FullFieldTime
-		 * @param aRampDownTime Set TabField3::RampDownTime
+		 * @param aRampDownTime Sets TabField3::RampDownTime
+		 * @param aBoundaryWidth Sets TabField3::BoundaryWidth
 		 */
 		TabField3(const char *tabfile, double Bscale, double Escale,
-				double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime);
+				double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime, double aBoundaryWidth);
 
 
 		/**
