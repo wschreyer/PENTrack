@@ -452,39 +452,42 @@ void TabField3::FieldSmthr(double x, double y, double z, double &F, double dFdxi
 		double dzlo = (z - z_mi)/BoundaryWidth;
 		double dzhi = (z_mi + zdist*(zl - 1) - z)/BoundaryWidth;
 
-		double Fscale = 1; // scale field and its derivatives by this factor
-		double dFadd[3] = {0, 0, 0}; // add these values to x-, y- and z-derivatives
+		// F'(x,y,z) = F(x,y,z)*f(x)*f(y)*f(z)
+		// dF'/dx = dF/dx*f(x)*f(y)*f(z) + F*df(x)/dx*f(y)*f(z) --> similar for dF'/dy and dF'/dz
+
+		double Fscale = 1; // f(x)*f(y)*f(z)
+		double dFadd[3] = {0, 0, 0}; // F*df(x_i)/dx_i / f(x_i)
 
 		if (dxhi < 1) { // if point in upper x boundary (distance smaller than BoundaryWidth)
 			Fscale *= SmthrStp(dxhi); // scale field by value of smoother function
-			dFadd[0] = -F*SmthrStpDer(dxhi)/BoundaryWidth; // add derivative of smoother function according to product rule
+			dFadd[0] = -F*SmthrStpDer(dxhi)/BoundaryWidth/SmthrStp(dxhi); // add derivative of smoother function according to product rule
 		}
 		if (dyhi < 1){ // if point in upper y boundary
 			Fscale *= SmthrStp(dyhi);
-			dFadd[1] = -F*SmthrStpDer(dyhi)/BoundaryWidth;
+			dFadd[1] = -F*SmthrStpDer(dyhi)/BoundaryWidth/SmthrStp(dyhi);
 		}
 		if (dzhi < 1){ // if point in upper z boundary
 			Fscale *= SmthrStp(dzhi);
-			dFadd[2] = -F*SmthrStpDer(dzhi)/BoundaryWidth;
+			dFadd[2] = -F*SmthrStpDer(dzhi)/BoundaryWidth/SmthrStp(dzhi);
 		}
 
 		if (dxlo < 1){ // if point in lower x boundary
 			Fscale *= SmthrStp(dxlo);
-			dFadd[0] = F*SmthrStpDer(dxlo)/BoundaryWidth;
+			dFadd[0] = F*SmthrStpDer(dxlo)/BoundaryWidth/SmthrStp(dxlo);
 		}
 		if (dylo < 1){ // if point in lower y boundary
 			Fscale *= SmthrStp(dylo);
-			dFadd[1] = F*SmthrStpDer(dylo)/BoundaryWidth;
+			dFadd[1] = F*SmthrStpDer(dylo)/BoundaryWidth/SmthrStp(dylo);
 		}
 		if (dzlo < 1){ // if point in lower z boundary
 			Fscale *= SmthrStp(dzlo);
-			dFadd[2] = F*SmthrStpDer(dzlo)/BoundaryWidth;
+			dFadd[2] = F*SmthrStpDer(dzlo)/BoundaryWidth/SmthrStp(dzlo);
 		}
 
 		if (Fscale != 1){
 			F *= Fscale; // scale field value
 			for (int i = 0; i < 3; i++){
-				dFdxi[i] = dFdxi[i]*Fscale + dFadd[i]; // scale derivatives according to product rule
+				dFdxi[i] = dFdxi[i]*Fscale + dFadd[i]*Fscale; // scale derivatives according to product rule
 			}
 		}
 
