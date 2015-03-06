@@ -433,7 +433,8 @@ void TabField3::BField(double x, double y, double z, double t, double B[4][4]){
 			Bres[2][3] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu, 0, 0, 1)/zdist;
 		}
 
-		FieldSmthr(x, y, z, Bres);
+		for (int i = 0; i < 3; i++)
+			FieldSmthr(x, y, z, Bres[i][0], &Bres[i][1]); // apply field smoothing to each component
 
 		for (int i = 0; i < 3; i++){
 			for (int j = 0; j < 4; j++)
@@ -442,8 +443,8 @@ void TabField3::BField(double x, double y, double z, double t, double B[4][4]){
 	}
 }
 
-void TabField3::FieldSmthr(double x, double y, double z, double F[4][4]){
-	if (BoundaryWidth != 0){ // skip, if BoundaryWidth is set to zero
+void TabField3::FieldSmthr(double x, double y, double z, double &F, double dFdxi[3]){
+	if (BoundaryWidth != 0 && F != 0){ // skip, if BoundaryWidth is set to zero
 		double dxlo = (x - x_mi)/BoundaryWidth; // calculate distance to edges in units of BoundaryWidth
 		double dxhi = (x_mi + xdist*(xl - 1) - x)/BoundaryWidth;
 		double dylo = (y - y_mi)/BoundaryWidth;
@@ -452,43 +453,38 @@ void TabField3::FieldSmthr(double x, double y, double z, double F[4][4]){
 		double dzhi = (z_mi + zdist*(zl - 1) - z)/BoundaryWidth;
 
 		double Fscale = 1; // scale field and its derivatives by this factor
-		double dFadd[3] = {0, 0, 0}; // add these factors to x-, y- and z-derivatives, respectively
+		double dFadd[3] = {0, 0, 0}; // add these values to x-, y- and z-derivatives
 
-		if (dxhi < 1) { // if point in positive x boundary (distance smaller than BoundaryWidth)
+		if (dxhi < 1) { // if point in upper x boundary (distance smaller than BoundaryWidth)
 			Fscale *= SmthrStp(dxhi); // scale field by value of smoother function
-			dFadd[0] = -F[0][0]*SmthrStpDer(dxhi)/BoundaryWidth; // add derivative of smoother function according to product rule
+			dFadd[0] = -F*SmthrStpDer(dxhi)/BoundaryWidth; // add derivative of smoother function according to product rule
 		}
-		if (dyhi < 1){ // if point in positive y boundary
+		if (dyhi < 1){ // if point in upper y boundary
 			Fscale *= SmthrStp(dyhi);
-			dFadd[1] = -F[1][0]*SmthrStpDer(dyhi)/BoundaryWidth;
+			dFadd[1] = -F*SmthrStpDer(dyhi)/BoundaryWidth;
 		}
-
-		if (dzhi < 1){ // if point in positive z boundary
+		if (dzhi < 1){ // if point in upper z boundary
 			Fscale *= SmthrStp(dzhi);
-			dFadd[2] = -F[2][0]*SmthrStpDer(dzhi)/BoundaryWidth;
+			dFadd[2] = -F*SmthrStpDer(dzhi)/BoundaryWidth;
 		}
 
-		if (dxlo < 1){ // if point in negative x boundary
+		if (dxlo < 1){ // if point in lower x boundary
 			Fscale *= SmthrStp(dxlo);
-			dFadd[0] = F[0][0]*SmthrStpDer(dxlo)/BoundaryWidth;
+			dFadd[0] = F*SmthrStpDer(dxlo)/BoundaryWidth;
 		}
-		if (dylo < 1){ // if point in negative y boundary
+		if (dylo < 1){ // if point in lower y boundary
 			Fscale *= SmthrStp(dylo);
-			dFadd[1] = F[1][0]*SmthrStpDer(dylo)/BoundaryWidth;
+			dFadd[1] = F*SmthrStpDer(dylo)/BoundaryWidth;
 		}
-
-		if (dzlo < 1){ // if point in negative z boundary
+		if (dzlo < 1){ // if point in lower z boundary
 			Fscale *= SmthrStp(dzlo);
-			dFadd[2] = F[2][0]*SmthrStpDer(dzlo)/BoundaryWidth;
+			dFadd[2] = F*SmthrStpDer(dzlo)/BoundaryWidth;
 		}
 
 		if (Fscale != 1){
+			F *= Fscale; // scale field value
 			for (int i = 0; i < 3; i++){
-				for (int j = 0; j < 4; j++){
-					F[i][j] *= Fscale; // scale field and its derivatives
-					if (j > 0)
-						F[i][j] += dFadd[j - 1]; // add derivatives of smoother function according to product rule
-				}
+				dFdxi[i] = dFdxi[i]*Fscale + dFadd[i]; // scale derivatives according to product rule
 			}
 		}
 

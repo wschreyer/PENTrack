@@ -115,9 +115,10 @@ class TabField3: public TField{
 		 * @param x x coordinate
 		 * @param y y coordinate
 		 * @param z z coordinate
-		 * @param F Field matrix
+		 * @param F Field value at (x,y,z)
+		 * @param dFdxi Field derivatives at (x,y,z)
 		 */
-		void FieldSmthr(double x, double y, double z, double F[4][4]);
+		void FieldSmthr(double x, double y, double z, double &F, double dFdxi[3]);
 
 		/**
 		 * Smooth function used to scale the field at the edges
