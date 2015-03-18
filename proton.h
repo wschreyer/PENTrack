@@ -6,7 +6,7 @@
 #ifndef PROTON_H_
 #define PROTON_H_
 
-static const char* NAME_PROTON = "proton";
+extern const char* NAME_PROTON;
 
 #include "globals.h"
 #include "particle.h"
@@ -35,10 +35,7 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param field Optional fields (can be NULL)
 	 */
-	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
-			: TParticle(NAME_PROTON, ele_e, m_p, 0, 0, number, t, x, y, z, E, phi, theta, amc, geometry, afield){
-
-	};
+	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
 	static ofstream endout; ///< endlog file stream
@@ -63,11 +60,8 @@ protected:
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	void OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
-				const long double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
-		traversed = true;
-		trajectoryaltered = false;
-	};
+	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 
 	/**
@@ -82,25 +76,13 @@ protected:
 	 * @param currentsolid Solid in which the proton is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], solid currentsolid){
-		if (currentsolid.ID != geom->defaultsolid.ID){
-			x2 = x1;
-			for (int i = 0; i < 6; i++)
-				y2[i] = y1[i];
-			ID = currentsolid.ID;
-			printf("Absorption!\n");
-			return true;
-		}
-		return false;
-	};
+	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid);
 
 
 	/**
 	 * Proton decay (not used)
 	 */
-	void Decay(){
-
-	};
+	void Decay();
 
 	/**
 	 * Write the particle's start properties and current values into a file.
@@ -111,7 +93,7 @@ protected:
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
 	 */
-	void Print(long double x, long double y[6], int polarisation){
+	void Print(value_type x, state_type y, int polarisation){
 		TParticle::Print(endout, x, y, polarisation);
 	};
 
@@ -125,7 +107,7 @@ protected:
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
 	 */
-	virtual void PrintSnapshot(long double x, long double y[6], int polarisation){
+	virtual void PrintSnapshot(value_type x, state_type y, int polarisation){
 		TParticle::Print(snapshotout, x, y, polarisation, "snapshot.out");
 	};
 
@@ -139,7 +121,7 @@ protected:
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
 	 */
-	virtual void PrintTrack(long double x, long double y[6], int polarisation){
+	virtual void PrintTrack(value_type x, state_type y, int polarisation){
 		TParticle::PrintTrack(trackout, x, y, polarisation);
 	};
 
@@ -158,7 +140,7 @@ protected:
 	 * @param leaving Material which is left at this boundary
 	 * @param entering Material which is entered at this boundary
 	 */
-	virtual void PrintHit(long double x, long double *y1, long double *y2, int pol1, int pol2, const long double *normal, solid *leaving, solid *entering){
+	virtual void PrintHit(value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
 		TParticle::PrintHit(hitout, x, y1, y2, pol1, pol2, normal, leaving, entering);
 	};
 
@@ -173,11 +155,5 @@ protected:
 	};
 
 };
-
-ofstream TProton::endout; ///< endlog file stream
-ofstream TProton::snapshotout; ///< snapshot file stream
-ofstream TProton::trackout; ///< tracklog file stream
-ofstream TProton::hitout; ///< hitlog file stream
-ofstream TProton::spinout; ///< spinlog file stream
 
 #endif // PROTON_H_

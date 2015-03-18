@@ -2,6 +2,8 @@
 #include <fstream>
 #include <cmath>
 
+#include <CGAL/Simple_cartesian.h>
+
 #include "globals.h"
 
 long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
@@ -22,32 +24,40 @@ void PrintPercent(double percentage, int &lastprint){
 	}
 }
 
-// rotate vector into new coordinate sys whose z-axis lies on NORMALIZED vector n (active transformation)
-void RotateVector(long double v[3], const long double n[3])
+// rotate vector into new coordinate whose z axis is parallel to n and whose x axis is defined by the projection of x onto the plane defined by n (active transformation)
+void RotateVector(double v[3], const double n[3], const double x[3])
 {
-	long double cosalpha = n[2], sinalpha = sqrt(1 - cosalpha*cosalpha);	// rotation angle (angle between z and n)
-	if (sinalpha > 1e-30){ // when normal not parallel to z-axis rotate new velocity into the coordinate system where the normal is the z-axis
-		long double a[2] = {-n[1]/sinalpha, n[0]/sinalpha};	// rotation axis (z cross n), a[2] = 0
-		long double vtemp[3] = {v[0],v[1],v[2]};
-		// rotate velocity vector
-		v[0] = (cosalpha + a[0]*a[0]*(1 - cosalpha))*	vtemp[0] +  a[0]*a[1]*(1 - cosalpha)*				vtemp[1] + a[1]*sinalpha*	vtemp[2];
-		v[1] =  a[1]*a[0]*(1 - cosalpha)*				vtemp[0] + (cosalpha + a[1]*a[1]*(1 - cosalpha))*	vtemp[1] - a[0]*sinalpha*	vtemp[2];
-		v[2] = -a[1]*sinalpha*							vtemp[0] +  a[0]*sinalpha*							vtemp[1] + cosalpha*		vtemp[2];
+	typedef CGAL::Simple_cartesian<double> K;
+	CGAL::Vector_3<K> vv(v[0], v[1], v[2]), xv, zv(n[0], n[1], n[2]);
+	CGAL::Plane_3<K> plane(CGAL::ORIGIN, zv);
+	if (x == NULL) // if no x is given, choose random vector on plane as x
+		xv = plane.base1();
+	else{
+		CGAL::Point_3<K> xp(x[0], x[1], x[2]);
+		xp = plane.projection(xp); // project x onto plane defined by normal n
+		xv = xp - CGAL::ORIGIN;
+		if (xv.squared_length() < 1e-30)
+			xv = plane.base1(); // if x is parallel to n choose some random vector on plane as x axis
 	}
-	else if (cosalpha < 0){
-		v[0] = -v[0];
-		v[1] = -v[1];
-		v[2] = -v[2];
-	}
+	xv = xv/sqrt(xv.squared_length()); // build orthonormal basis of new coordinate system
+	zv = zv/sqrt(zv.squared_length());
+	CGAL::Vector_3<K> yv = CGAL::cross_product(zv, xv); // new y-axis corresponds to cross product of normal and velocity
+	CGAL::Aff_transformation_3<K> rotmatrix(xv.x(), yv.x(), zv.x(), xv.y(), yv.y(), zv.y(), xv.z(), yv.z(), zv.z());
+//	std::cout << "(" << xv << "," << yv << "," << zv << ") + " << vv << " = ";
+	vv = vv.transform(rotmatrix); // transform v into new coordinate system
+//	std::cout << vv << std::endl;
+	v[0] = vv.x();
+	v[1] = vv.y();
+	v[2] = vv.z();
 }
 
 //======== Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta ======================================================
-void BOOST(long double beta[3], long double p[4]){
+void BOOST(double beta[3], double p[4]){
    //Boost this Lorentz vector (copy&paste from ROOT)
-   long double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
-   long double gamma = 1.0 / sqrt(1.0 - b2);
-   long double bp = beta[0]*p[1] + beta[1]*p[2] + beta[2]*p[3];
-   long double gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
+   double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
+   double gamma = 1.0 / sqrt(1.0 - b2);
+   double bp = beta[0]*p[1] + beta[1]*p[2] + beta[2]*p[3];
+   double gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
 
    p[1] = (p[1] + gamma2*bp*beta[0] + gamma*beta[0]*p[0]);
    p[2] = (p[2] + gamma2*bp*beta[1] + gamma*beta[1]*p[0]);

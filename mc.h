@@ -91,7 +91,7 @@ public:
 	 * @param phi Azimuth
 	 * @param theta Polar angle
 	 */
-	void IsotropicDist(long double &phi, long double &theta);
+	void IsotropicDist(double &phi, double &theta);
 	
 
 	/// energy distribution of UCNs
@@ -110,7 +110,7 @@ public:
 	 * @param phi_v Returns velocity azimuth
 	 * @param theta_v Returns velocity polar angle
 	 */
-	void AngularDist(const std::string &particlename, long double &phi_v, long double &theta_v);
+	void AngularDist(const std::string &particlename, double &phi_v, double &theta_v);
 
 	/**
 	 * Lifetime of different particles
@@ -175,7 +175,7 @@ public:
 	 * @param theta_p Returns polar angle of proton velocity vector
 	 * @param theta_e Returns polar angle of electron velocity vector
 	 */
-	void NeutronDecay(long double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e);
+	void NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e);
 };
 
 #endif /*MC_H_*/

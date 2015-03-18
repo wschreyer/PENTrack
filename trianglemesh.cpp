@@ -50,7 +50,7 @@ void TTriangleMesh::Init(){
 }
 
 // test segment p1->p2 for collision with triangles and return a list of all found collisions
-bool TTriangleMesh::Collision(const long double p1[3], const long double p2[3], std::set<TCollision> &colls){
+bool TTriangleMesh::Collision(const double p1[3], const double p2[3], std::set<TCollision> &colls){
 	CPoint point1(p1[0], p1[1], p1[2]);
 	CPoint point2(p2[0], p2[1], p2[2]);
 	CSegment segment(point1, point2);

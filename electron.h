@@ -6,11 +6,9 @@
 #ifndef ELECTRON_H_
 #define ELECTRON_H_
 
-static const char* NAME_ELECTRON = "electron";
-
-
-#include "globals.h"
 #include "particle.h"
+
+extern const char* NAME_ELECTRON;
 
 /**
  * Electron particle class.
@@ -36,10 +34,7 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param field Optional fields (can be NULL)
 	 */
-	TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
-			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, amc, geometry, afield){
-
-	};
+	TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
 	static ofstream endout; ///< endlog file stream
@@ -64,11 +59,8 @@ protected:
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param travered Returns true if the material boundary was traversed by the particle
 	 */
-	void OnHit(long double x1, long double y1[6], long double &x2, long double y2[6], int &polarisation,
-				const long double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
-		traversed = true;
-		trajectoryaltered = false;
-	};
+	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 
 	/**
@@ -83,43 +75,13 @@ protected:
 	 * @param currentsolid Solid in which the electron is at the moment
 	 * @return Returns true if particle trajectory was altered
 	 */
-	bool OnStep(long double x1, long double y1[6], long double &x2, long double y2[6], solid currentsolid){
-		if (currentsolid.ID != geom->defaultsolid.ID){
-			x2 = x1;
-			for (int i = 0; i < 6; i++)
-				y2[i] = y1[i];
-			ID = currentsolid.ID;
-			printf("Absorption!\n");
-			return true;
-		}
-/*		else{
-			long double v = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-			long double s = sqrt(pow(y2[0]- y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
-			long double Ekin = m*c_0*c_0*(1/sqrt(1 - v*v/c_0/c_0) - 1);
-			double Eloss, theta;
-			int index;
-			long double n = (1e-3*100)/(1.3806488e-23)/(77); // number density of rest gas (P [Pa])/(k [J/K])/(T [K])
-			eH2(Ekin, s, n, &Eloss, &theta, &index); // did scattering happen?
-			if (index != 0){
-				printf("\nScattering %d, Eloss = %f\n",index,Eloss);
-				double v_scat[3] = {y2[3], y2[4], y2[5]};
-				eH2velocity(Eloss, theta, v_scat); // change velocity accordingly
-				if (index == 3){ // on ionization create secondary electron
-					TElectron *e = new TElectron(particlenumber, x2, y2, &y2[3], polarisation, *mc, *field);
-					secondaries.push_back(e);
-				}
-			}
-		}
-*/		return false;
-	};
+	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid);
 
 
 	/**
 	 * Electron decay (not used)
 	 */
-	void Decay(){
-
-	}
+	void Decay();
 
 	/**
 	 * Write the particle's start properties and current values into a file.
@@ -130,7 +92,7 @@ protected:
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
 	 */
-	void Print(long double x, long double y[6], int polarisation){
+	void Print(value_type x, state_type y, int polarisation){
 		TParticle::Print(endout, x, y, polarisation);
 	};
 
@@ -144,7 +106,7 @@ protected:
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
 	 */
-	virtual void PrintSnapshot(long double x, long double y[6], int polarisation){
+	virtual void PrintSnapshot(value_type x, state_type y, int polarisation){
 		TParticle::Print(snapshotout, x, y, polarisation, "snapshot.out");
 	};
 
@@ -158,7 +120,7 @@ protected:
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
 	 */
-	virtual void PrintTrack(long double x, long double y[6], int polarisation){
+	virtual void PrintTrack(value_type x, state_type y, int polarisation){
 		TParticle::PrintTrack(trackout, x, y, polarisation);
 	};
 
@@ -177,7 +139,7 @@ protected:
 	 * @param leaving Material which is left at this boundary
 	 * @param entering Material which is entered at this boundary
 	 */
-	virtual void PrintHit(long double x, long double *y1, long double *y2, int pol1, int pol2, const long double *normal, solid *leaving, solid *entering){
+	virtual void PrintHit(value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
 		TParticle::PrintHit(hitout, x, y1, y2, pol1, pol2, normal, leaving, entering);
 	};
 
@@ -192,12 +154,5 @@ protected:
 	};
 
 };
-
-ofstream TElectron::endout; ///< endlog file stream
-ofstream TElectron::snapshotout; ///< snapshot file stream
-ofstream TElectron::trackout; ///< tracklog file stream
-ofstream TElectron::hitout; ///< hitlog file stream
-ofstream TElectron::spinout; ///< spinlog file stream
-
 
 #endif // ELECTRON_H_

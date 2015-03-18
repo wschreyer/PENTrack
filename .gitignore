@@ -1,6 +1,6 @@
 PENTrack
-nr/*.h
 out/*.out
 doc/
 *.o
 libtricubic/*.o
+interp2d/*.o

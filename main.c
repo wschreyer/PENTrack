@@ -21,13 +21,7 @@
 #include <numeric>
 #include <sys/time.h>
 
-#include "nr/nr3.h"
-#include "nr/interp_1d.h"
-#include "nr/interp_linear.h"
-#include "nr/interp_2d.h"
-#include "nr/odeint.h"
-#include "nr/stepper.h"
-#include "nr/stepperdopr853.h"
+using namespace std;
 
 #include "particle.h"
 #include "neutron.h"
@@ -48,11 +42,11 @@ void PrintBField(const char *outfile, TFieldManager &field);
 void PrintGeometry(const char *outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
 
 
-long double SimTime = 1500.; ///< max. simulation time
+double SimTime = 1500.; ///< max. simulation time
 int simcount = 1; ///< number of particles for MC simulation (read from config)
 int simtype = PARTICLE; ///< type of particle which shall be simulated (read from config)
 int secondaries = 1; ///< should secondary particles be simulated? (read from config)
-long double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
+double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
 int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
 
@@ -299,8 +293,8 @@ void OutputCodes(map<string, map<int, int> > &ID_counter){
  */
 void PrintBFieldCut(const char *outfile, TFieldManager &field){
 	// get directional vectors from points on plane by u = p2-p1, v = p3-p1
-	long double u[3] = {BCutPlanePoint[3] - BCutPlanePoint[0], BCutPlanePoint[4] - BCutPlanePoint[1], BCutPlanePoint[5] - BCutPlanePoint[2]};
-	long double v[3] = {BCutPlanePoint[6] - BCutPlanePoint[0], BCutPlanePoint[7] - BCutPlanePoint[1], BCutPlanePoint[8] - BCutPlanePoint[2]};
+	double u[3] = {BCutPlanePoint[3] - BCutPlanePoint[0], BCutPlanePoint[4] - BCutPlanePoint[1], BCutPlanePoint[5] - BCutPlanePoint[2]};
+	double v[3] = {BCutPlanePoint[6] - BCutPlanePoint[0], BCutPlanePoint[7] - BCutPlanePoint[1], BCutPlanePoint[8] - BCutPlanePoint[2]};
 	
 	// open output file
 	FILE *cutfile = fopen(outfile, "w");
@@ -311,7 +305,8 @@ void PrintBFieldCut(const char *outfile, TFieldManager &field){
 	// print file header
 	fprintf(cutfile, "x y z Bx dBxdx dBxdy dBxdz By dBydx dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n");
 	
-	long double Pp[3],B[4][4],Ei[3],V;
+	double Pp[3];
+	double B[4][4],Ei[3],V;
 	float start = clock(); // do some time statistics
 	// sample field BCutPlaneSmapleCount1 times in u-direction and BCutPlaneSampleCount2 time in v-direction
 	for (int i = 0; i < BCutPlaneSampleCount1; i++) {
@@ -319,15 +314,15 @@ void PrintBFieldCut(const char *outfile, TFieldManager &field){
 			for (int k = 0; k < 3; k++)
 				Pp[k] = BCutPlanePoint[k] + i*u[k]/BCutPlaneSampleCount1 + j*v[k]/BCutPlaneSampleCount2;
 			// print B-/E-Field to file
-			fprintf(cutfile, "%LG %LG %LG ", Pp[0],Pp[1],Pp[2]);
+			fprintf(cutfile, "%g %g %g ", Pp[0],Pp[1],Pp[2]);
 			
 			field.BField(Pp[0], Pp[1], Pp[2], 0, B);
 			for (int k = 0; k < 4; k++)
 				for (int l = 0; l < 4; l++)
-					fprintf(cutfile, "%LG ",B[k][l]);
+					fprintf(cutfile, "%G ",B[k][l]);
 
 			field.EField(Pp[0], Pp[1], Pp[2], 0, V, Ei);
-			fprintf(cutfile, "%LG %LG %LG %LG\n",
+			fprintf(cutfile, "%G %G %G %G\n",
 							  Ei[0],Ei[1],Ei[2],V);
 		}
 	}
@@ -357,21 +352,22 @@ void PrintBField(const char *outfile, TFieldManager &field){
 	}
 
 	fprintf(bfile,"r phi z Bx By Bz 0 0 Babs\n");
-	long double rmin = 0.12, rmax = 0.5, zmin = 0, zmax = 1.2;
+	double rmin = 0.12, rmax = 0.5, zmin = 0, zmax = 1.2;
 	int E;
 	const int Emax = 108;
-	long double dr = 0.1, dz = 0.1;
-	long double VolumeB[Emax + 1];
+	double dr = 0.1, dz = 0.1;
+	double VolumeB[Emax + 1];
 	for (E = 0; E <= Emax; E++) VolumeB[E] = 0;
 	
-	long double EnTest, B[4][4];
+	double EnTest;
+	double B[4][4];
 	// sample space in cylindrical pattern
-	for (long double r = rmin; r <= rmax; r += dr){
-		for (long double z = zmin; z <= zmax; z += dz){
+	for (double r = rmin; r <= rmax; r += dr){
+		for (double z = zmin; z <= zmax; z += dz){
 			field.BField(r, 0, z, 500.0, B); // evaluate field
 			// print field values
-			fprintf(bfile,"%LG %G %LG %LG %LG %LG %G %G %LG \n",r,0.0,z,B[0][0],B[1][0],B[2][0],0.0,0.0,B[3][0]);
-			printf("r=%LG, z=%LG, Br=%LG T, Bz=%LG T\n",r,z,B[0][0],B[2][0]);
+			fprintf(bfile,"%g %g %g %G %G %G %G %G %G \n",r,0.0,z,B[0][0],B[1][0],B[2][0],0.0,0.0,B[3][0]);
+			printf("r=%g, z=%g, Br=%G T, Bz=%G T\n",r,z,B[0][0],B[2][0]);
 			
 			// Ramp Heating Analysis
 			for (E = 0; E <= Emax; E++){
@@ -387,12 +383,12 @@ void PrintBField(const char *outfile, TFieldManager &field){
 	// for investigating ramp heating of neutrons, volume accessible to neutrons with and
 	// without B-field is calculated and the heating approximated by thermodynamical means
 	printf("\nEnergie [neV], Volumen ohne B-Feld, mit B-Feld, 'Erwaermung'");
-	long double Volume;
+	double Volume;
 	for (E = 0; E <= Emax; E++) 
 	{
 		Volume = ((E * 1.0e-9 / (m_n * gravconst))) * pi * (rmax*rmax-rmin*rmin);
 		// isentropische zustandsnderung, kappa=5/3
-		printf("\n%i %.17LG %.17LG %.17LG",E,Volume,VolumeB[E],E * pow((Volume/VolumeB[E]),(2.0L/3.0)) - E);
+		printf("\n%i %.17g %.17g %.17g",E,Volume,VolumeB[E],E * pow((Volume/VolumeB[E]),(2.0/3.0)) - E);
 	}
 }
 
@@ -407,8 +403,8 @@ void PrintBField(const char *outfile, TFieldManager &field){
  * @param geom TGeometry structure which shall be sampled
  */
 void PrintGeometry(const char *outfile, TGeometry &geom){
-    long double p1[3], p2[3];
-    long double theta, phi;
+    double p1[3], p2[3];
+    double theta, phi;
     // create count line segments with length raylength
     unsigned count = 1000000, collcount = 0, raylength = 1;
 
@@ -422,10 +418,10 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 	for (unsigned i = 0; i < count; i++){
     	// random segment start point
         for (int j = 0; j < 3; j++)
-        	p1[j] = (long double)rand()/RAND_MAX * (geom.mesh.tree.bbox().max(j) - geom.mesh.tree.bbox().min(j)) + geom.mesh.tree.bbox().min(j);
+        	p1[j] = (double)rand()/RAND_MAX * (geom.mesh.tree.bbox().max(j) - geom.mesh.tree.bbox().min(j)) + geom.mesh.tree.bbox().min(j);
 		// random segment direction
-        theta = (long double)rand()/RAND_MAX*pi;
-		phi = (long double)rand()/RAND_MAX*2*pi;
+        theta = (double)rand()/RAND_MAX*pi;
+		phi = (double)rand()/RAND_MAX*2*pi;
 		// translate direction and length into segment end point
 		p2[0] = p1[0] + raylength*sin(theta)*cos(phi);
 		p2[1] = p1[1] + raylength*sin(theta)*sin(phi);

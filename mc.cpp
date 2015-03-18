@@ -82,7 +82,7 @@ double TMCGenerator::SqrtDist(double min, double max){
 	return pow((pow(max, 1.5) - pow(min, 1.5))*UniformDist(0,1) + pow(min, 1.5), 2.0/3.0);
 }
 
-void TMCGenerator::IsotropicDist(long double &phi, long double &theta){
+void TMCGenerator::IsotropicDist(double &phi, double &theta){
 	phi = UniformDist(0,2*pi);
 	theta = SinDist(0,pi);
 }
@@ -226,7 +226,7 @@ double TMCGenerator::Spectrum(const std::string &particlename){
 	return 0;
 }
 
-void TMCGenerator::AngularDist(const std::string &particlename, long double &phi_v, long double &theta_v){
+void TMCGenerator::AngularDist(const std::string &particlename, double &phi_v, double &theta_v){
 	double y;
 	TParticleConfig *pconfig = &pconfigs[particlename];
 	for (;;){
@@ -283,12 +283,12 @@ int TMCGenerator::DicePolarisation(const std::string &particlename){
 		return p;
 }
 
-void TMCGenerator::NeutronDecay(long double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e)
+void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e)
 {
-	long double m_nue = 1 / pow(c_0, 2); // [eV/c^2]
+	double m_nue = 1 / pow(c_0, 2); // [eV/c^2]
 
- 	long double pabs, beta1, beta2, delta1, delta2; // 3-momentums (abs+directions)
- 	long double p[4], e[4];
+ 	double pabs, beta1, beta2, delta1, delta2; // 3-momentums (abs+directions)
+ 	double p[4], e[4];
 
 //-------- Step 1 ----------------------------------------------------------------------------------------------------------
 /*
@@ -318,8 +318,8 @@ void TMCGenerator::NeutronDecay(long double v_n[3], double &E_p, double &E_e, do
 
 //-------- Step 3 ----------------------------------------------------------------------------------------------------------
 	// calculate intermediate virtual state via 4-momentum conservation
-	long double virt[4] = {m_n*c_0 - p[0], -p[1], -p[2], -p[3]}; // 4-momentum of intermediate virtual state (n - p)
-	long double m2_virt = virt[0]*virt[0] - virt[1]*virt[1] - virt[2]*virt[2] - virt[3]*virt[3]; // squared mass of virtual state
+	double virt[4] = {(double)m_n*(double)c_0 - p[0], -p[1], -p[2], -p[3]}; // 4-momentum of intermediate virtual state (n - p)
+	double m2_virt = virt[0]*virt[0] - virt[1]*virt[1] - virt[2]*virt[2] - virt[3]*virt[3]; // squared mass of virtual state
 
 
 //-------- Step 4 ----------------------------------------------------------------------------------------------------------
@@ -338,12 +338,12 @@ void TMCGenerator::NeutronDecay(long double v_n[3], double &E_p, double &E_e, do
 
 //-------- Step 6 ----------------------------------------------------------------------------------------------------------
 	// boost e into moving frame of virtual state
-	long double beta[3] = {virt[1]/virt[0], virt[2]/virt[0], virt[3]/virt[0]};
+	double beta[3] = {virt[1]/virt[0], virt[2]/virt[0], virt[3]/virt[0]};
 	BOOST(beta,e);
 
 //-------- Step 7 ----------------------------------------------------------------------------------------------------------
 	// get 4-momentum of neutrino via 4-momentum conservation
-	long double nue[4] = {virt[0] - e[0], virt[1] - e[1], virt[2] - e[2], virt[3] - e[3]};
+	double nue[4] = {virt[0] - e[0], virt[1] - e[1], virt[2] - e[2], virt[3] - e[3]};
 
 //-------- Step 8 ----------------------------------------------------------------------------------------------------------
 	// boost p,e,nu into moving frame of neutron
@@ -361,7 +361,7 @@ void TMCGenerator::NeutronDecay(long double v_n[3], double &E_p, double &E_e, do
 
 
 //-------- Finished --------------------------------------------------------------------------------------------------------
-	long double beta_p2 = (p[1]*p[1] + p[2]*p[2] + p[3]*p[3])/p[0]/p[0];
+	double beta_p2 = (p[1]*p[1] + p[2]*p[2] + p[3]*p[3])/p[0]/p[0];
 	E_p = m_p*c_0*c_0*beta_p2*(0.5 + beta_p2*(3./8. + beta_p2*(5./16.))); // use series expansion for low energy proton calculations
 	E_e = e[0]*c_0 - m_e*c_0*c_0; // use fully relativistic formula for high energy electron
 	phi_p = atan2(p[2], p[1]);

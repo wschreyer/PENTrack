@@ -145,10 +145,10 @@ typedef CGAL::AABB_tree<CTraits> CTree; ///< CGAL AABB tree type containing CPri
  * Structure that is returned by KDTree::Collision.
  */
 struct TCollision{
-	long double s; ///< parametric coordinate of intersection point (P = p1 + s*(p2 - p1))
-	long double normal[3]; ///< normal (length = 1) of intersected surface
+	double s; ///< parametric coordinate of intersection point (P = p1 + s*(p2 - p1))
+	double normal[3]; ///< normal (length = 1) of intersected surface
 	int sldindex; ///< index of solid to which the intersected surface belongs
-	long double distnormal; ///< distance between start- and endpoint of colliding segment, projected onto normal direction
+	double distnormal; ///< distance between start- and endpoint of colliding segment, projected onto normal direction
 
 	/**
 	 * Overloaded operator, needed for sorting
@@ -183,7 +183,7 @@ class TTriangleMesh{
          *
          * @return Returns true if at least one collision was found
          */
-        bool Collision(const long double p1[3], const long double p2[3], std::set<TCollision> &colls);
+        bool Collision(const double p1[3], const double p2[3], std::set<TCollision> &colls);
 
         /**
          * Test if point is inside an object
@@ -194,8 +194,8 @@ class TTriangleMesh{
          */
         template<typename T> bool InSolid(const T p[3]){
         	std::set<TCollision> colls;
-        	long double p1[3] = {p[0], p[1], p[2]};
-        	long double p2[3] = {p[0], p[1], tree.bbox().min(2) - 1};
+        	double p1[3] = {p[0], p[1], p[2]};
+        	double p2[3] = {p[0], p[1], tree.bbox().min(2) - 1};
         	return Collision(p1, p2, colls) && (colls.size() & 1); // return true if collided with surface and number of collisions is odd
         }
 

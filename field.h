@@ -28,7 +28,7 @@ public:
 	 * @param t Time
 	 * @param B Magnetic field component matrix to which the values are added
 	 */
-	virtual void BField (long double x, long double y, long double z, long double t, long double B[4][4]) = 0;
+	virtual void BField (double x, double y, double z, double t, double B[4][4]) = 0;
 
 	/**
 	 * Add electric field and potential at a given position.
@@ -42,7 +42,7 @@ public:
 	 * @param V Return electric potential (!=0 only if a map with potential was loaded)
 	 * @param Ei Returns electric field vector
 	 */
-	virtual void EField (long double x, long double y, long double z, long double t, long double &V, long double Ei[3]) = 0;
+	virtual void EField (double x, double y, double z, double t, double &V, double Ei[3]) = 0;
 
 	/**
 	 * Virtual destructor

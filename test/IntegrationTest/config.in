@@ -1,0 +1,19 @@
+# config file for PENTrack program
+# put comments after #
+[global]
+# simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry
+simtype 1
+# output neutron spatial distribution?
+neutdist 0
+# number of primary particles to be simulated
+simcount 1000
+#simtime = max. simulation time
+simtime 10
+
+# secondaries: 1: secondary particles (e.g. from decay) will be simulated
+secondaries 0
+
+#cut through B-field (simtype == 4) *** (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2) 3 edges of cut plane, number of sample points in direction 1->2/1->3 ***
+BCutPlane 0 0 -0.1  0 0 0.1  0.1 6 -0.1  20 600
+
+[/global]

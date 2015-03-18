@@ -9,25 +9,6 @@ If you just want to do simulations, you should check out the stable releases, wh
 External libraries
 -----------
 
-### Numerical recipes
-
-To compile the code, you need to copy some files from [Numerical Recipes] (http://www.nr.com) (v3.00 to v3.04 should work fine) into the /nr/ directory:
-* nr3.h (main header, one minor modification needed, patch file is provided)
-* interp_1d.h (cubic spline interpolation)
-* interp_linear.h (linear interpolation)
-* interp_2d.h (bicubic interpolation, some modifications needed, patch file is provided)
-* odeint.h (ODE integration main header, one minor midification needed, patch file is provided)
-* stepper.h (ODE integration step control
-* stepperdopr853.h (8th order Runge Kutta method)
-
-Patch files can be applied by executing:  
-`patch originalheader.h patchfile.diff`
-
-You may have to change the nr file format from DOS/MAC to UNIX text file format by executing:  
-`dos2unix originalheader.h`
-
-Numerical Recipes forces us to put almost all code into header files, which makes it less easy to read but it also avoids duplicate work in code- and header-files.
-
 ### CGAL
 
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
@@ -37,18 +18,33 @@ CGAL v4.1 - v4.5 have been tested.
 
 ### Boost
 
-The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator included in Boost 1.47.0 and newer.
+The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and a Runge-Kutta integrator included in Boost 1.53.0 and newer.
+
+Boost 1.53.0 - 1.57.0 have been tested. 1.56.0 and newer seem to require a C++11 capable compiler (i.e. GCC 4.9.0+) and possibly the option -std=c++11 in the CFLAGS in the Makefile.
 
 ### muparser
 
-[muparser](http://muparser.beltoforion.de/) is a fast formula parser and is used to interpret energy distributions etc. given by the user in particle.in
-Most Linux distributions include libmuparser-dev or muparser-devel packages. It can also be downloaded and installed manually from the website. In that case you may have to adjust the MUPARSER_INCLUDE, MUPARSER_LIB and MUPARSER_SHAREDLIB paths in the Makefile.
+[muparser](http://muparser.beltoforion.de/) is a fast formula parser and is used to interpret energy distributions etc. given by the user in particle.in.
 
-Only v2.2.3 has been tested so far.
+It is included in the repository.
+
+### ALGLIB
+
+[ALGLIB](http://www.alglib.net) is used to do 1D and 2D interpolation for field calculations.
+It also provides numerical optimization and integration routines required for the MicroRoughness model for UCN interaction with matter.
+
+It is included in the repository.
 
 ### libtricubic
 
 [Lekien and Marsden] (http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.
+
+
+Run the simulation
+------------------
+
+Type "make" to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
+Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
 
 
 Defining your experiment
@@ -84,17 +80,11 @@ You can also define analytic fields from straight, finite conductors.
 Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the particle.in file.
 
 
-Run the simulation
-------------------
-
-Type "make" to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
-Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
-
-
 Physics
 -------
 
-All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and the Lambert model for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
+All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and either the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
+
 
 
 Writing your own simulation
@@ -111,7 +101,7 @@ You can modify the simulation on four different levels:
 Output
 -------
 
-Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be completely disabled for each particle type individually by adding corresponding variables in particle.in. All output files are tables with space separated columns; the first line contains the column name.
+Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be completely disabled for each particle type individually by adding corresponding variables in 'particle.in'. All output files are tables with space separated columns; the first line contains the column name.
 
 Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 
@@ -152,7 +142,7 @@ The endlog keeps track of the starting and end parameters of the particles simul
 
 ### Snapshotlog
 
-Switching on snapshotlog in "particle.in" will output the particle parameters at additional snapshot times (also defined in "particle.in") in the snapshotlog. It contains the same data fields as the endlog.
+Switching on snapshotlog in "particle.in" will output the particle parameters at additional 'snapshot times' (also defined in "particle.in") in the snapshotlog. It contains the same data fields as the endlog.
 
 ### Tracklog
 
