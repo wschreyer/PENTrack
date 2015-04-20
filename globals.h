@@ -4,12 +4,16 @@
 #include <string>
 #include <map>
 
-#define ID_UNKNOWN 0 ///< standard kennz flag for particles
-#define ID_NOT_FINISH -1 ///< kennz flag for particles which reached ::StorageTime
-#define ID_HIT_BOUNDARIES -2 ///< kennz flag for particles which left bounding box of TParticle::geom
-#define ID_NRERROR -3 ///< kennz flag for particles which produces a serious numerical error (step size underflow, missed reflection, ...)
-#define ID_DECAYED -4 ///< kennz flag for particles which reached TParticle::tau
-#define ID_INITIAL_NOT_FOUND -5 ///< kennz flag for particles which had a too low total energy to find a initial spot in the source volume
+#define ID_UNKNOWN 0 ///< standard flag for particles
+#define ID_NOT_FINISH -1 ///< flag for particles which reached ::StorageTime
+#define ID_HIT_BOUNDARIES -2 ///< flag for particles which left bounding box of TParticle::geom
+#define ID_ODEINT_ERROR -3 ///< flag for particles which produced a numerical error during ODe integration
+#define ID_DECAYED -4 ///< flag for particles which reached TParticle::tau
+#define ID_INITIAL_NOT_FOUND -5 ///< flag for particles which had a too low total energy to find a initial spot in the source volume
+#define ID_CGAL_ERROR -6 ///< flag for particles which produced an error during geometry collision checks
+#define ID_GEOMETRY_ERROR -7 ///< flag for particles which produced an error while tracking material boundaries along the trajectory
+#define ID_ABSORBED_IN_MATERIAL 1 ///< flag for particles that were absorbed inside a material
+#define ID_ABSORBED_ON_SURFACE 2 ///< flag for particles that were absorbed on a material surface
 
 #define PARTICLE 1 ///< set particletype in configuration to this value to simulate particles
 #define BF_ONLY 3 ///< set particletype in configuration to this value to print out a ramp heating analysis

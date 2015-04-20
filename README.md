@@ -117,21 +117,29 @@ The endlog keeps track of the starting and end parameters of the particles simul
 - polstart: initial polarization of the particle (-1,1)
 - Hstart: initial total energy of particle [eV]
 - Estart: initial kinetic energy of the particle [eV]
+- Bstart: magnetic field at starting point [T]
+- Ustart: electric potential at starting point [V]
+- solidstart: number of geometry part the particle started in, see geometry.in
 - tend: time at which particle simulation is stopped [s]
 - xend, yend, zend: coordinate at which the particle ends [m]
 - vxend, vyend, vzend: velocity with which the particle ends [m/s]
 - polend: final polarization of the particle (-1,1)
 - Hend: final total energy of particle [eV]
 - Eend: final kinetic energy of the particle [eV]
-- stopID: code which identifies how/in what geometry the particle ended 
+- Bend: magnetic field at stopping point [T]
+- Uend: electric potential at stopping point [V]
+- solidend: number of geometry part the particle stopped in, defined in geometry.in
+- stopID: code which identifies why the particle was stopped (defined in globals.h)
   - 0: not categorized
   - -1: did not finish (reached max. simulation time)
   - -2: hit outer poundaries
-  - -3: produced numerical error
+  - -3: produced error during trajectory integration
   - -4: decayed
   - -5: found no initial position
-  - 1: absorbed in default medium
-  - 2+: absorbed in geometry associated with number (as defined in geometry.in)
+  - -6: produced error during geometry collision detection
+  - -7: produced error during tracking of crossed material boundaries
+  - 1: absorbed in bulk material (see solidend)
+  - 2: absorbed on total reflection on surface (see solidend)
 - NSpinflip: number of spin flips that the particle underwent during simulation
 - spinflipprob: probability that the particle has undergone a spinflip, calculated by bruteforce integration of the Bloch equation
 - ComputingTime: Time that PENTrack required to compute and track the particle [s]

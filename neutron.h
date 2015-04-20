@@ -88,16 +88,6 @@ protected:
 
 
 	/**
-	 * Absorb neutron at surface.
-	 *
-	 * Sets stopping point to point right before collision (x1, y1) and sets ID accordingly.
-	 * For parameter documentation see ::OnHit.
-	 */
-	void Absorb(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
-				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
-
-
-	/**
 	 * Checks for absorption in solids using Fermi-potential formalism and does some additional calculations for neutrons
 	 *
 	 * Caclulates adiabacity condition (TNeutron::frac).

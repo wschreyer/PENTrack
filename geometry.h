@@ -71,12 +71,12 @@ struct TGeometry{
 
 
 		/**
-		 * Check if point is inside geometry bounding box.
+		 * Check if segment is intersecting with geometry bounding box.
 		 *
 		 * @param y1 Position vector of segment start
 		 * @param y2 Position vector of segment end
 		 *
-		 * @return Returns true if point is inside the bounding box
+		 * @return Returns true if segment is intersecting bounding box
 		 */
 		bool CheckSegment(const double y1[3], const double y2[3]){
 			return CGAL::do_intersect(mesh.tree.bbox(), CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
@@ -108,6 +108,19 @@ struct TGeometry{
 		 * @param currentsolids Map of solids in which the point is inside paired with information if it was ignored or not
 		 */
 		void GetSolids(const double t, const double p[3], map<solid, bool> &currentsolids);
+
+
+		/**
+		 * Get solid with highest priority in which the point p lies
+		 *
+		 * @param t Time
+		 * @param p Point to test
+		 * @param currentsolids Optional list of solids to choose from
+		 *
+		 * @return Returns solid with highest priority, that was not ignored at time t
+		 */
+		solid GetSolid(const double t, const double p[3]);
+		solid GetSolid(const double t, const double p[3], map<solid, bool> currentsolids);
 };
 
 #endif /*GEOMETRY_H_*/

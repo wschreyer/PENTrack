@@ -128,3 +128,15 @@ void TGeometry::GetSolids(const double t, const double p[3], std::map<solid, boo
 	}
 }
 
+solid TGeometry::GetSolid(const double t, const double p[3]){
+	std::map<solid, bool> currentsolids;
+	GetSolids(t, p, currentsolids);
+	return GetSolid(t, p, currentsolids);
+}
+
+solid TGeometry::GetSolid(const double t, const double p[3], map<solid, bool> currentsolids){
+	for (std::map<solid, bool>::iterator i = currentsolids.begin(); i != currentsolids.end(); i++)
+		if (!i->second)
+			return i->first;
+	return defaultsolid;
+}

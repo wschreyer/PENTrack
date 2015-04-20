@@ -42,7 +42,7 @@ public:
 	const long double mu; ///< magnetic moment [J/T] (has to be initialized in all derived classes!)
 	const long double gamma; ///< gyromagnetic ratio [rad/(s T)] (has to be initialized in all derived classes!)
 	int particlenumber; ///< particle number
-	int ID; ///< particle fate (0: not classified; >0: Absorption in solid with according ID; -1: survived until end of simulation; -2: hit outer boundaries; -3: numerical error; -4: decayed; -5: did not find initial position)
+	int ID; ///< particle fate (defined in globals.h)
 	double tau; ///< particle life time
 	double maxtraj; ///< max. simulated trajectory length
 	double inttime; ///< integration computing time
