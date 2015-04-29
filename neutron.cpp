@@ -94,14 +94,16 @@ double TNeutron::MRDist(bool transmit, bool integral, state_type y, const double
 	else if (!integral && transmit)
 		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta) - 2*ki*kt*sin(theta_i)*sin(theta)*cos(phi)));
 	else if (integral && !transmit) // if integral is set, precalculate phi-integral using modified Bessel function of first kind
-		Fmu = exp(-ki*ki*w*w/2*(sin(theta_i)*sin(theta_i) + sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, ki*ki*w*w*sin(theta_i)*sin(theta));
+		Fmu = exp(-w*w/2*ki*ki*(sin(theta_i)*sin(theta_i) + sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, w*w*ki*ki*sin(theta_i)*sin(theta));
 	else if (integral && transmit)
 		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, w*w*ki*kt*sin(theta_i)*sin(theta));
 	double factor = norm(kc)*norm(kc)*b*b*w*w/8/pi/costheta_i;
 	if (transmit)
 		factor *= kt/ki;
+	if (integral)
+		factor *= sin(theta); // integral over sin(theta) dtheta dphi
 	double result = factor*norm(Si)*norm(So)*Fmu;
-//	cout << integral << transmit << ' ' << theta_i << ' ' << theta << ' ' << phi << ' ' << ki << ' ' << kt << ' ' << kc << ' ' << factor << ' ' << Si << ' ' << So << ' ' << Fmu << ' ' << result << '\n';
+	//	cout << integral << transmit << ' ' << theta_i << ' ' << theta << ' ' << phi << ' ' << ki << ' ' << kt << ' ' << kc << ' ' << factor << ' ' << Si << ' ' << So << ' ' << Fmu << ' ' << result << '\n';
 	return result; // return probability
 }
 
