@@ -16,14 +16,12 @@
 
 
 double TParticle::Hstart(){
-	map<solid, bool> solids;
-	geom->GetSolids(tstart, &ystart[0], solids);
-	return Ekin(&ystart[3]) + Epot(tstart, ystart, polstart, field, solids);
+	return Ekin(&ystart[3]) + Epot(tstart, ystart, polstart, field, geom->GetSolid(tstart, &ystart[0]));
 }
 
 
 double TParticle::Hend(){
-	return Ekin(&yend[3]) + Epot(tend, yend, polend, field, currentsolids);
+	return Ekin(&yend[3]) + Epot(tend, yend, polend, field, geom->GetSolid(tend, &yend[0]));
 }
 
 
@@ -63,6 +61,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	maxtraj = mc->MaxTrajLength(name);
 	tau = mc->LifeTime(name);
 	geom->GetSolids(t, &ystart[0], currentsolids);
+	solidend = solidstart = GetCurrentsolid();
 }
 
 
@@ -77,12 +76,9 @@ void TParticle::operator()(state_type y, state_type &dydx, value_type x){
 }
 
 
-void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, map<string, string> &conf){
-	geom = &geometry;
+void TParticle::Integrate(double tmax, map<string, string> &conf){
 	if (currentsolids.empty())
 		geom->GetSolids(tend, &yend[0], currentsolids);
-	mc = &mcgen;
-	field = afield;
 	timespec clock_start, clock_end, refl_start, refl_end;
 
 	int perc = 0;
@@ -112,7 +108,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 	bool tracklog = false;
 	istringstream(conf["tracklog"]) >> tracklog;
 	if (tracklog)
-		PrintTrack(tend, yend, polend);
+		PrintTrack(tend, yend, polend, solidend);
 	double trackloginterval = 1e-3;
 	istringstream(conf["trackloginterval"]) >> trackloginterval;
 	value_type lastsave = x;
@@ -142,7 +138,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 			Nstep++;
 		}
 		catch(...){ // catch Exceptions thrown by numerical recipes routines
-			ID = ID_ODEINT_ERROR;
+			StopIntegration(ID_ODEINT_ERROR, x, y, polarisation, GetCurrentsolid());
 		}
 		clock_gettime(CLOCK_REALTIME, &clock_end);
 		inttime += clock_end.tv_sec - clock_start.tv_sec + (double)(clock_end.tv_nsec - clock_start.tv_nsec)/1e9;
@@ -173,7 +169,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 			refltime += refl_end.tv_sec - refl_start.tv_sec + (double)(refl_end.tv_nsec - refl_start.tv_nsec)/1e9;
 
 			lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
-			Hmax = max(Ekin(&y2[3]) + Epot(x, y2, polarisation, field, currentsolids), Hmax);
+			Hmax = max(Ekin(&y2[3]) + Epot(x, y2, polarisation, field, GetCurrentsolid()), Hmax);
 
 			// take snapshots at certain times
 			if (snapshotlog && snapshots.good()){
@@ -182,13 +178,13 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 					stepper.calc_state(nextsnapshot, ysnap);
 					cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
-					PrintSnapshot(nextsnapshot, ysnap, polarisation);
+					PrintSnapshot(nextsnapshot, ysnap, polarisation, GetCurrentsolid());
 					snapshots >> nextsnapshot;
 				}
 			}
 
 			if (tracklog && x2 - lastsave > trackloginterval/v1){
-				PrintTrack(x2, y2, polarisation);
+				PrintTrack(x2, y2, polarisation, GetCurrentsolid());
 				lastsave = x2;
 			}
 
@@ -212,16 +208,12 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 
 		// x >= tstart + tau?
 		if (ID == ID_UNKNOWN && x >= tstart + tau)
-			ID = ID_DECAYED;
+			StopIntegration(ID_DECAYED, x, y, polarisation, GetCurrentsolid());
 		else if (ID == ID_UNKNOWN && (x >= tmax || lend >= maxtraj))
-			ID = ID_NOT_FINISH;
+			StopIntegration(ID_NOT_FINISH, x, y, polarisation, GetCurrentsolid());
 	}
 
-	tend = x;
-	for (int i = 0; i < 6; i++)
-		yend[i] = y[i];
-	polend = polarisation;
-	Print(tend, yend, polend);
+	Print(tend, yend, polend, solidend);
 
 	if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
 		cout << "Decayed!\n";
@@ -304,9 +296,10 @@ bool TParticle::CheckHitError(solid *hitsolid, double distnormal){
 
 
 bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &pol, bool hitlog, int iteration){
+	solid currentsolid = GetCurrentsolid();
 	if (!geom->CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
 		printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
-		ID = ID_HIT_BOUNDARIES;
+		StopIntegration(ID_HIT_BOUNDARIES, x2, y2, pol, currentsolid);
 		return true;
 	}
 
@@ -316,7 +309,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 		collfound = geom->GetCollisions(x1, &y1[0], x2, &y2[0], colls);
 	}
 	catch(...){
-		ID = ID_CGAL_ERROR;
+		StopIntegration(ID_CGAL_ERROR, x2, y2, pol, currentsolid);
 		return true;
 	}
 
@@ -327,7 +320,6 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 			|| iteration > 99) // or if iteration counter reached a certain maximum value
 		{
 			int prevpol = pol;
-			solid currentsolid = GetCurrentsolid();
 			solid *hitsolid = &geom->defaultsolid;
 			coll = colls.end();
 			for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){
@@ -335,7 +327,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 					x2 = x1;
 					for (int i = 0; i < 6; i++)
 						y2[i] = y1[i];
-					ID = ID_GEOMETRY_ERROR;
+					StopIntegration(ID_GEOMETRY_ERROR, x2, y2, pol, currentsolid);
 					return true;
 				}
 				if (!it->second && (geom->solids[it->first.sldindex].ID > hitsolid->ID)){ // find non-ignored collision with highest priority
@@ -391,7 +383,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 
 			if (trajectoryaltered)
 				return true;
-			else if (OnStep(x1, y1, x2, y2, GetCurrentsolid())){ // check for absorption
+			else if (OnStep(x1, y1, x2, y2, pol, GetCurrentsolid())){ // check for absorption
 				printf("Absorption!\n");
 				return true;
 			}
@@ -432,14 +424,24 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 				return true;
 		}
 	}
-	else if (OnStep(x1, y1, x2, y2, GetCurrentsolid())){ // if there was no collision: just check for absorption in solid with highest priority
+	else if (OnStep(x1, y1, x2, y2, pol, GetCurrentsolid())){ // if there was no collision: just check for absorption in solid with highest priority
 		return true;
 	}
 	return false;
 }
 
 
-void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polarisation, std::string filesuffix){
+void TParticle::StopIntegration(int aID, value_type x, state_type y, int polarisation, solid sld){
+	ID = aID;
+	tend = x;
+	for (int i = 0; i < 6; i++)
+		yend[i] = y[i];
+	polend = polarisation;
+	solidend = sld;
+}
+
+
+void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polarisation, solid sld, std::string filesuffix){
 	if (!file.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << filesuffix;
@@ -464,32 +466,29 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 
 	value_type E = Ekin(&y[3]);
 	double B[4][4], Ei[3], V;
-	solid sld;
 
 	field->BField(ystart[0], ystart[1], ystart[2], tstart, B);
 	field->EField(ystart[0], ystart[1], ystart[2], tstart, V, Ei);
-	sld = geom->GetSolid(tstart, &ystart[0]);
 
 	file	<< jobnumber << " " << particlenumber << " "
 			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
 			<< polstart << " " << Hstart() << " " << Estart() << " "
-			<< B[3][3] << " " << V << " " << sld.ID << " ";
+			<< B[3][3] << " " << V << " " << solidstart.ID << " ";
 
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
-	sld = geom->GetSolid(x, &y[0], currentsolids);
 
 	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 			<< y[3] << " " << y[4] << " " << y[5] << " "
-			<< polarisation << " " << E + Epot(x, y, polarisation, field, currentsolids) << " " << E << " "
+			<< polarisation << " " << E + Epot(x, y, polarisation, field, GetCurrentsolid()) << " " << E << " " // use GetCurrentsolid() for Epot, since particle may not actually have entered sld
 			<< B[3][3] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
 			<< inttime << " " << Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
 }
 
 
-void TParticle::PrintTrack(std::ofstream &trackfile, value_type x, state_type y, int polarisation){
+void TParticle::PrintTrack(std::ofstream &trackfile, value_type x, state_type y, int polarisation, solid sld){
 	if (!trackfile.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
@@ -515,7 +514,7 @@ void TParticle::PrintTrack(std::ofstream &trackfile, value_type x, state_type y,
 		field->EField(y[0],y[1],y[2],x,V,E);
 	}
 	value_type Ek = Ekin(&y[3]);
-	value_type H = Ek + Epot(x, y, polarisation, field, currentsolids);
+	value_type H = Ek + Epot(x, y, polarisation, field, sld);
 
 	trackfile << jobnumber << " " << particlenumber << " " << polarisation << " "
 				<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
@@ -565,7 +564,7 @@ double TParticle::Ekin(value_type v[3]){
 }
 
 
-double TParticle::Epot(value_type t, state_type y, int polarisation, TFieldManager *field, map<solid, bool> &solids){
+double TParticle::Epot(value_type t, state_type y, int polarisation, TFieldManager *field, solid sld){
 	value_type result = 0;
 	if ((q != 0 || mu != 0) && field){
 		double B[4][4], E[3], V;

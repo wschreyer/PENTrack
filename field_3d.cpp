@@ -10,7 +10,7 @@
 #include "interpolation.h"
 
 #include "field_3d.h"
-#include "libtricubic/tricubic.h"
+#include "tricubic.h"
 #include "globals.h"
 
 using namespace std;

@@ -73,10 +73,11 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
+	 * @param polarisation Polarisation of particle, may be altered
 	 * @param currentsolid Solid in which the proton is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid);
+	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid);
 
 
 	/**
@@ -92,9 +93,10 @@ protected:
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
+	 * @param sld Solid in which the particle is currently.
 	 */
-	void Print(value_type x, state_type y, int polarisation){
-		TParticle::Print(endout, x, y, polarisation);
+	void Print(value_type x, state_type y, int polarisation, solid sld){
+		TParticle::Print(endout, x, y, polarisation, sld);
 	};
 
 
@@ -106,9 +108,10 @@ protected:
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
+	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintSnapshot(value_type x, state_type y, int polarisation){
-		TParticle::Print(snapshotout, x, y, polarisation, "snapshot.out");
+	virtual void PrintSnapshot(value_type x, state_type y, int polarisation, solid sld){
+		TParticle::Print(snapshotout, x, y, polarisation, sld, "snapshot.out");
 	};
 
 
@@ -120,9 +123,10 @@ protected:
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
+	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintTrack(value_type x, state_type y, int polarisation){
-		TParticle::PrintTrack(trackout, x, y, polarisation);
+	virtual void PrintTrack(value_type x, state_type y, int polarisation, solid sld){
+		TParticle::PrintTrack(trackout, x, y, polarisation, sld);
 	};
 
 

@@ -278,8 +278,10 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 		double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
 //			cout << " ReflProb = " << reflprob << '\n';
 		if (prob > reflprob){ // -> absorption on reflection
-			ID = ID_ABSORBED_ON_SURFACE; // set ID to absorbed
-			traversed = true;
+			x2 = x1;
+			y2 = y1; // set end point to point right before collision and set ID to absorbed
+			StopIntegration(ID_ABSORBED_ON_SURFACE, x2, y2, polarisation, *entering);
+			traversed = false;
 			trajectoryaltered = true;
 		}
 		else // no absorption -> reflection
@@ -289,7 +291,7 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 }
 
 
-bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid){
+bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid){
 	bool result = false;
 	if (currentsolid.mat.FermiImag > 0){
 		double prob = mc->UniformDist(0,1);
@@ -300,7 +302,7 @@ bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &
 			x2 = x1 + mc->UniformDist(0,1)*(x2 - x1); // if absorbed, chose a random time between x1 and x2
 			for (int i = 0; i < 6; i++)
 				stepper.calc_state(x2, y2);
-			ID = ID_ABSORBED_IN_MATERIAL;
+			StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, polarisation, currentsolid);
 			printf("Absorption!\n");
 			result = true; // stop integration
 		}
@@ -360,14 +362,6 @@ void TNeutron::Decay(){
 }
 
 
-double TNeutron::Epot(value_type t, state_type y, int polarisation, TFieldManager *field, map<solid, bool> &solids){
-	map<solid, bool>::iterator sld = solids.begin();
-	while (sld->second)
-		sld++;
-	if (ID == ID_ABSORBED_ON_SURFACE && t == tend){
-		sld++; // if particle was absorbed on surface do not add potential of corresponding material (since kinetic energy < Fermi potential)
-		while (sld->second)
-			sld++;
-	}
-	return TParticle::Epot(t, y, polarisation, field, solids) + sld->first.mat.FermiReal*1e-9;
+double TNeutron::Epot(value_type t, state_type y, int polarisation, TFieldManager *field, solid sld){
+	return TParticle::Epot(t, y, polarisation, field, sld) + sld.mat.FermiReal*1e-9;
 }

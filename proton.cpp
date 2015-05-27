@@ -28,12 +28,12 @@ void TProton::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2
 }
 
 
-bool TProton::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid){
+bool TProton::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid){
 	if (currentsolid.ID != geom->defaultsolid.ID){
 		x2 = x1;
 		for (int i = 0; i < 6; i++)
 			y2[i] = y1[i];
-		ID = ID_ABSORBED_IN_MATERIAL;
+		StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, polarisation, currentsolid);
 		printf("Absorption!\n");
 		return true;
 	}

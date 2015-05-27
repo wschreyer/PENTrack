@@ -188,7 +188,7 @@ int main(int argc, char **argv){
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			TParticle *p = source.CreateParticle(mc, geom, &field);
-			p->Integrate(SimTime, geom, mc, &field, particlein[p->name]); // integrate particle
+			p->Integrate(SimTime, particlein[p->name]); // integrate particle
 			ID_counter[p->name][p->ID]++; // increment counters
 			ntotalsteps += p->Nstep;
 			IntegratorTime += p->inttime;
@@ -196,7 +196,7 @@ int main(int argc, char **argv){
 
 			if (secondaries == 1){
 				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
-					(*i)->Integrate(SimTime, geom, mc, &field, particlein[(*i)->name]); // integrate secondary particles
+					(*i)->Integrate(SimTime, particlein[(*i)->name]); // integrate secondary particles
 					ID_counter[(*i)->name][(*i)->ID]++;
 					ntotalsteps += (*i)->Nstep;
 					IntegratorTime += (*i)->inttime;

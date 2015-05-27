@@ -66,6 +66,12 @@ public:
 	/// final polarisation of particle (-1,0,1)
 	int polend;
 
+	/// solid in which the particle started
+	solid solidstart;
+
+	/// solid in which particle stopped
+	solid solidend;
+
 	/// total start energy
 	double Hstart();
 
@@ -147,16 +153,13 @@ public:
 	 *
 	 * Takes inital state vector ystart and integrates the trajectory step by step.
 	 * If a step is longer than MAX_SAMPLE_DIST, the step is split by interpolating intermediate points.
-	 * On each step it checks for interaction with solids, prints snapshots and track into files and calls "OnEachStep".
-	 * The Integration stops if TParticle::tau or tmax are reached; or if something happens to the particle (absorption, numerical error)
+	 * On each step it checks for interaction with solids, prints snapshots and track into files and calls TParticle::OnStep.
+	 * TParticle::StopIntegration is called if TParticle::tau or tmax are reached; or if something happens to the particle (absorption, error, ...)
 	 *
 	 * @param tmax Max. absolute time at which integration will be stopped
-	 * @param geometry Integrator checks for collisions with walls defined in this TGeometry structure
-	 * @param mcgen Random number generator (e.g. used for reflection probability dicing)
-	 * @param afield Pointer to field which acts on particle (can be NULL)
 	 * @param conf Option map containing particle specific options from particle.in
 	 */
-	void Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, std::map<std::string, std::string> &conf);
+	void Integrate(double tmax, std::map<std::string, std::string> &conf);
 
 protected:
 	std::map<solid, bool> currentsolids; ///< solids in which particle is currently inside
@@ -248,10 +251,11 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
+	 * @param polarisation Polarisation of particle, may be altered
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle path was changed
 	 */
-	virtual bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid) = 0;
+	virtual bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid) = 0;
 
 
 	/**
@@ -261,16 +265,15 @@ protected:
 
 
 	/**
-	 * Write the particle's start properties and current values into a file.
+	 * Set all *end variables to given values and set ID to signal that integration should be stopped
 	 *
-	 * This is a purely virtual function that has to be implemented by all derived classes.
-	 * It can e.g. simply call the simple prototype TParticle::Print below.
-	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param polarisation Current polarisation
+	 * @param aID ID describing particle fate.
+	 * @param x Current time.
+	 * @param y Current state vector.
+	 * @param polarisation Current particle polarisation.
+	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void Print(value_type x, state_type y, int polarisation) = 0;
+	void StopIntegration(int aID, value_type x, state_type y, int polarisation, solid sld);
 
 
 	/**
@@ -282,8 +285,23 @@ protected:
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
+	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintSnapshot(value_type x, state_type y, int polarisation) = 0;
+	virtual void Print(value_type x, state_type y, int polarisation, solid sld) = 0;
+
+
+	/**
+	 * Write the particle's start properties and current values into a file.
+	 *
+	 * This is a purely virtual function that has to be implemented by all derived classes.
+	 * It can e.g. simply call the simple prototype TParticle::Print below.
+	 *
+	 * @param x Current time
+	 * @param y Current state vector
+	 * @param polarisation Current polarisation
+	 * @param sld Solid in which the particle is currently.
+	 */
+	virtual void PrintSnapshot(value_type x, state_type y, int polarisation, solid sld) = 0;
 
 
 	/**
@@ -295,8 +313,9 @@ protected:
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
+	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintTrack(value_type x, state_type y, int polarisation) = 0;
+	virtual void PrintTrack(value_type x, state_type y, int polarisation, solid sld) = 0;
 
 
 	/**
@@ -336,9 +355,10 @@ protected:
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
+	 * @param sld Solid in which the particle is currently.
 	 * @param filesuffix Optional suffix added to the file name (default: "end.out")
 	 */
-	void Print(std::ofstream &file, value_type x, state_type y, int polarisation, std::string filesuffix = "end.out");
+	void Print(std::ofstream &file, value_type x, state_type y, int polarisation, solid sld, std::string filesuffix = "end.out");
 
 
 	/**
@@ -350,8 +370,9 @@ protected:
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param polarisation Current polarisation
+	 * @param sld Solid in which the particle is currently.
 	 */
-	void PrintTrack(std::ofstream &trackfile, value_type x, state_type y, int polarisation);
+	void PrintTrack(std::ofstream &trackfile, value_type x, state_type y, int polarisation, solid sld);
 
 
 	/**
@@ -391,11 +412,11 @@ protected:
 	 * @param y Coordinate vector
 	 * @param polarisation Particle polarisation
 	 * @param field Pointer to TFieldManager structure for electric and magnetic potential
-	 * @param solids List of solids for optional material potential
+	 * @param sld Solid in which the particle is currently.
 	 *
 	 * @return Returns potential energy [eV]
 	 */
-	virtual double Epot(value_type t, state_type y, int polarisation, TFieldManager *field, std::map<solid, bool> &solids);
+	virtual double Epot(value_type t, state_type y, int polarisation, TFieldManager *field, solid sld);
 
 };
 
