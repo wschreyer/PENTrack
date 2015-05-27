@@ -30,11 +30,11 @@ static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflect
  */
 struct TParticle{
 protected:
-	typedef double value_type;
-	typedef std::vector<value_type> state_type;
-	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_type;
-	typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type;
-	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type;
+	typedef double value_type; ///< data type used for trajectory integration
+	typedef std::vector<value_type> state_type; ///< type representing current particle state
+	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_type; ///< basic integration stepper
+	typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type; ///< integration step length controller
+	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type; ///< integration step interpolator
 public:
 	const char *name; ///< particle name (has to be initialized in all derived classes!)
 	const long double q; ///< charge [C] (has to be initialized in all derived classes!)
@@ -155,7 +155,6 @@ public:
 	 * @param mcgen Random number generator (e.g. used for reflection probability dicing)
 	 * @param afield Pointer to field which acts on particle (can be NULL)
 	 * @param conf Option map containing particle specific options from particle.in
-	 * @param output TOutput struct containing output options and streams
 	 */
 	void Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen, TFieldManager *afield, std::map<std::string, std::string> &conf);
 
@@ -166,6 +165,10 @@ protected:
 	TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
 	dense_stepper_type stepper; ///< ODE integrator
 
+
+	/**
+	 * Return first non-ignored solid in TParticle::currentsolids list
+	 */
 	solid GetCurrentsolid();
 
 
@@ -182,6 +185,14 @@ protected:
 	void derivs(value_type x, state_type y, state_type &dydx);
 
 
+	/**
+	 * Check if current collision is consistent with list of current solids
+	 *
+	 * @param hitsolid Solid that was hit.
+	 * @param distnormal Distance to surface, can be positive (outgoing) or negative (incoming), depending on direction of particle velocity.
+	 *
+	 * @return Returns true, if an inconsistency was found.
+	 */
 	bool CheckHitError(solid *hitsolid, double distnormal);
 
 
@@ -200,7 +211,6 @@ protected:
 	 * @param y2 End point of line segment
 	 * @param pol Particle polarisation
 	 * @param hitlog Should hits be logged to file?
-	 * @param hitout File stream to which hits are logged.
 	 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 	 * @return Returns true if particle was reflected/absorbed
 	 */
@@ -222,7 +232,7 @@ protected:
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
-	 * @param travered Returns true if the material boundary was traversed by the particle
+	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
 	virtual void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 						const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed) = 0;
@@ -365,7 +375,9 @@ protected:
 	/**
 	 * Calculate kinetic energy.
 	 *
-	 * Kinetic energy is calculated by series expansion of rel. gamma factor, if v/c < ::RELATIVSTIC_THRESHOLD, else it is calculated exactly by (gamma-1)mc^2
+	 * Kinetic energy is calculated by series expansion of rel. gamma factor for small velocities, else it is calculated exactly by (gamma-1)mc^2
+	 *
+	 * @param v Velocity vector [m/s]
 	 *
 	 * @return Kinetic energy [eV]
 	 */

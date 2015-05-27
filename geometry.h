@@ -91,7 +91,7 @@ struct TGeometry{
 		 *
 		 * @param x1 Start time of line segment
 		 * @param p1 Start point of line segment
-		 * @param h Time length of line segment
+		 * @param x2 End time of line segment
 		 * @param p2 End point of line segment
 		 * @param colls List of collisions, paired with bool indicator it it should be ignored
 		 *

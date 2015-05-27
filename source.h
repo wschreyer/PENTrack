@@ -26,6 +26,7 @@ public:
 	/**
 	 * Constructor, should be called by every derived class
 	 *
+	 * @param ParticleName Name of particle type that the source should produce
 	 * @param ActiveTime Duration for which the source shall be active
 	 */
 	TParticleSource(const string ParticleName, double ActiveTime);
@@ -82,6 +83,7 @@ public:
 	/**
 	 * Constructor.
 	 *
+	 * @param ParticleName Name of particle type that the source should produce
 	 * @param ActiveTime Duration for which the source shall be active
 	 * @param E_normal Energy boost that should be given to particles starting from this surface source
 	 */
@@ -100,9 +102,16 @@ public:
 };
 
 
+
+/**
+ * Virtual base class for volume source.
+ *
+ * Can generate a particle in volume source, optionally weighted by available phase space.
+ * Derived sources need to implement the RandomPointInSourceVolume routine.
+ */
 class TVolumeSource: public TParticleSource{
 protected:
-	bool fPhaseSpaceWeighting;
+	bool fPhaseSpaceWeighting; ///< Tells source to weight particle density according to available phase space.
 
 	/**
 	 * Produce random point in the source volume
@@ -149,7 +158,9 @@ public:
 	/**
 	 * Constructor.
 	 *
+	 * @param ParticleName Name of particle type that the source should produce
 	 * @param ActiveTime Duration for which the source shall be active
+	 * @param PhaseSpaceWeighting If this is set true, the source will weight the particle density by available phase space
 	 * @param x_min Minimal radial coordinate range
 	 * @param x_max Maximal radial coordinate range
 	 * @param y_min Minimal azimuthal coordinate range
@@ -182,7 +193,9 @@ public:
 	/**
 	 * Constructor.
 	 *
+	 * @param ParticleName Name of particle type that the source should produce
 	 * @param ActiveTime Duration for which the source shall be active
+	 * @param PhaseSpaceWeighting If this is set true, the source will weight the particle density by available phase space
 	 * @param r_min Minimal radial coordinate range
 	 * @param r_max Maximal radial coordinate range
 	 * @param phi_min Minimal azimuthal coordinate range
@@ -222,6 +235,7 @@ public:
 	 *
 	 * Selects all triangles from TGeometry whose vertices are inside the cylindrical coordinate range
 	 *
+	 * @param ParticleName Name of particle type that the source should produce
 	 * @param ActiveTime Duration for which the source shall be active
 	 * @param geometry TGeometry class from which the surface triangles shall be taken
 	 * @param E_normal Optional energy boost for particles starting from this surface
@@ -247,7 +261,9 @@ public:
 	/**
 	 * Constructor.
 	 *
+	 * @param ParticleName Name of particle type that the source should produce
 	 * @param ActiveTime Duration for which the source shall be active
+	 * @param PhaseSpaceWeighting If this is set true, the source will weight the particle density by available phase space
 	 * @param sourcefile File from which the STL solid shall be read
 	 */
 	TSTLVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, string sourcefile);
@@ -277,6 +293,7 @@ public:
 	 *
 	 * Search for all triangles in geometry's mesh which are inside the STL solid given in sourcefile.
 	 *
+	 * @param ParticleName Name of particle type that the source should produce
 	 * @param ActiveTime Time for which the source is active.
 	 * @param geometry Experiment geometry from which the surface is taken.
 	 * @param sourcefile STL solid in which the surface should lie.

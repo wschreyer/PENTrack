@@ -1,6 +1,16 @@
+# ignore eclipse project files
+.cproject
+.project
+.settings/
+
+# ignore binaries
 PENTrack
-out/*.out
-doc/
 *.o
 libtricubic/*.o
-interp2d/*.o
+alglib-3.9.0/cpp/src/*.o
+muparser_v2_2_4/src/*.o
+
+# ignore output files
+out/*.out
+out/*.root
+doc/

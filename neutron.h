@@ -10,7 +10,7 @@
 
 #include "optimization.h"
 
-extern const char* NAME_NEUTRON;
+extern const char* NAME_NEUTRON; ///< name of TNeutron class
 
 /**
  * Neutron particle class.
@@ -35,7 +35,7 @@ public:
 	 * @param theta Initial polar angle of velocity vector
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
-	 * @param field Optional fields (can be NULL)
+	 * @param afield Optional fields (can be NULL)
 	 */
 	TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
@@ -71,7 +71,7 @@ protected:
 	 * Transmit neutron through surface.
 	 *
 	 * Refracts or scatters the neutron according to Micro Roughness model.
-	 * For parameter documentation see ::OnHit.
+	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void Transmit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
@@ -81,7 +81,7 @@ protected:
 	 * Reflect neutron from surface.
 	 *
 	 * Reflects or scatters the neutron according to Lambert or Micro Roughness model.
-	 * For parameter documentation see ::OnHit.
+	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
@@ -91,7 +91,7 @@ protected:
 	 * Absorb neutron at surface.
 	 *
 	 * Sets stopping point to point right before collision (x1, y1) and sets ID accordingly.
-	 * For parameter documentation see ::OnHit.
+	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void Absorb(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
@@ -236,7 +236,7 @@ private:
 	double MRDist(bool transmit, bool integral, state_type y, const double normal[3], solid *leaving, solid *entering, double theta, double phi);
 
 	/**
-	 * Struct containing parameters for MRDist and NegMRDist wrapper functions.
+	 * Struct containing parameters for TNeutron::MRDist and TNeutron::NegMRDist wrapper functions.
 	 */
 	struct TMRParams{
 		TNeutron *n;
@@ -254,7 +254,7 @@ private:
 	 * @param bminusx Required by ALGLIB???
 	 * @param params Contains TMRParams struct
 	 *
-	 * @return Returns value of MRDist at (theta, phi = 0) with given params
+	 * @return Returns value of TNeutron::MRDist at (theta, phi = 0) with given params
 	 */
 	static void MRDist(double theta, double xminusa, double bminusx, double &y, void *params);
 

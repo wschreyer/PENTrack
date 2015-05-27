@@ -16,6 +16,16 @@
 using namespace std;
 
 
+/**
+ * calculate consecutive index of entry with x-index xi, y-index yi and z-index zi
+ *
+ * @param xi x index
+ * @param yi y index
+ * @param zi z index
+ * @param xsize size of array in x dimension
+ * @param ysize size of array in y dimension
+ * @param zsize size of array in z dimension
+ */
 int INDEX_3D(int xi, int yi, int zi, int xsize, int ysize, int zsize){
 	return zi*xsize*ysize + yi*xsize + xi;
 }

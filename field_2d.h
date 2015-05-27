@@ -98,8 +98,7 @@ class TabField: public TField{
 		/**
 		 * Get magnetic field at a specific point.
 		 *
-		 * Searches the right interpolation coefficients by determining the indices from TabField::r_mi, TabField::rdist, TabField::z_mi, TabField::zdist
-		 * and evaluates the interpolation polynom ::bcuint.
+		 * Evaluates the interpolation polynoms and their derivatives for each field component.
 		 * These radial, axial und azimuthal components have to be rotated into cartesian coordinate system.
 		 *
 		 * @param x X coordinate where the field shall be evaluated
@@ -114,8 +113,7 @@ class TabField: public TField{
 		/**
 		 * Get electric field at a specific point.
 		 *
-		 * Searches the right interpolation coefficients by determining the indices from TabField::r_mi, TabField::rdist, TabField::z_mi, TabField::zdist
-		 * and evaluates the interpolation polynom ::bcuint.
+		 * Evaluates the interpolation polynoms for each field component or the potential and its derivatives.
 		 * These radial, axial und azimuthal components have to be rotated into cartesian coordinate system.
 		 *
 		 * @param x X coordinate where the field shall be evaluated

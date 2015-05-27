@@ -245,9 +245,9 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 
 solid TParticle::GetCurrentsolid(){
 	map<solid, bool>::iterator it = currentsolids.begin();
-	while (it->second)
+	while (it->second) // skip over ignored solids
 		it++;
-	return it->first;
+	return it->first; // return first non-ignored solid in list
 }
 
 
@@ -430,7 +430,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 }
 
 
-void TParticle::Print(ofstream &file, value_type x, state_type y, int polarisation, string filesuffix){
+void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polarisation, std::string filesuffix){
 	if (!file.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << filesuffix;
@@ -463,7 +463,7 @@ void TParticle::Print(ofstream &file, value_type x, state_type y, int polarisati
 }
 
 
-void TParticle::PrintTrack(ofstream &trackfile, value_type x, state_type y, int polarisation){
+void TParticle::PrintTrack(std::ofstream &trackfile, value_type x, state_type y, int polarisation){
 	if (!trackfile.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
@@ -501,7 +501,7 @@ void TParticle::PrintTrack(ofstream &trackfile, value_type x, state_type y, int 
 }
 
 
-void TParticle::PrintHit(ofstream &hitfile, value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
+void TParticle::PrintHit(std::ofstream &hitfile, value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
 	if (!hitfile.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
@@ -534,7 +534,7 @@ double TParticle::Ekin(value_type v[3]){
 	if (beta2*beta2*beta2*beta2 < numeric_limits<value_type>::epsilon()/(gammarel - 1)) // if error in series expansion O(beta^8) is smaller than rounding error in gamma factor
 		return 0.5*m*v2 + (3.0/8.0*m + (5.0/16.0*m + 35.0/128.0*beta2)*beta2)*beta2*v2; // use series expansion for energy calculation with small beta
 	else{
-		return c_0*c_0*m*(gammarel - 1);
+		return c_0*c_0*m*(gammarel - 1); // else use fully relativstic formula
 	}
 }
 

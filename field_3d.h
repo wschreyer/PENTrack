@@ -160,7 +160,7 @@ class TabField3: public TField{
 		 * Get magnetic field at a specific point.
 		 *
 		 * Searches the right interpolation coefficients by determining the indices from TabField3::x_mi, TabField3::xdist, TabField3::y_mi, TabField3::ydist, TabField3::z_mi, TabField3::zdist
-		 * and evaluates the interpolation polynom ::tricubic_eval.
+		 * and evaluates the interpolation polynom tricubic.h#tricubic_eval.
 		 *
 		 * @param x X coordinate where the field shall be evaluated
 		 * @param y Y coordinate where the field shall be evaluated
@@ -175,7 +175,7 @@ class TabField3: public TField{
 		 * Get electric field at a specific point.
 		 *
 		 * Searches the right interpolation coefficients by determining the indices from TabField3::x_mi, TabField3::xdist, TabField3::y_mi, TabField3::ydist, TabField3::z_mi, TabField3::zdist
-		 * and evaluates the interpolation polynom ::tricubic_eval.
+		 * and evaluates the interpolation polynom tricubic.h#tricubic_eval.
 		 *
 		 * @param x X coordinate where the field shall be evaluated
 		 * @param y Y coordinate where the field shall be evaluated

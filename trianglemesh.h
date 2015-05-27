@@ -56,7 +56,7 @@ struct TTriangle {
 	 * @param pa First triangle vertex
 	 * @param pb Second triangle vertex
 	 * @param pc Third triangle vertex
-	 * @param sld Index of the solid to which the triangle belongs
+	 * @param asldindex Index of the solid to which the triangle belongs
 	 */
 	TTriangle(CPoint pa, CPoint pb, CPoint pc, int asldindex): tri(CTriangle(pa, pb, pc)), sldindex(asldindex) {}
 

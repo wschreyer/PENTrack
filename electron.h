@@ -8,7 +8,7 @@
 
 #include "particle.h"
 
-extern const char* NAME_ELECTRON;
+extern const char* NAME_ELECTRON; ///< name of TElectron class
 
 /**
  * Electron particle class.
@@ -32,7 +32,7 @@ public:
 	 * @param theta Initial polar angle of velocity vector
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
-	 * @param field Optional fields (can be NULL)
+	 * @param afield Optional fields (can be NULL)
 	 */
 	TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
@@ -57,7 +57,7 @@ protected:
 	 * @param leaving Solid that the electron is leaving
 	 * @param entering Solid that the electron is entering
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
-	 * @param travered Returns true if the material boundary was traversed by the particle
+	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
 	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);

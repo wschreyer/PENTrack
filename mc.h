@@ -154,7 +154,7 @@ public:
 	 *     R-  ->  e-  +  nue
 	 * 
 	 * Procedure:
-	 * (1) Dice the energy of the decay proton according to #ProtonBetaSpectrum in the rest frame of the neutron and
+	 * (1) Dice the energy of the decay proton according to globals.h#ProtonBetaSpectrum in the rest frame of the neutron and
 	 *     calculate the proton momentum via the energy momentum relation.
 	 * (2) Dice isotropic orientation of the decay proton.
 	 * (3) Calculate 4-momentum of rest R- via 4-momentum conservation.
@@ -171,7 +171,7 @@ public:
 	 * @param E_p Returns proton kinetic energy
 	 * @param E_e Returns electron kinetic energy
 	 * @param phi_p Returns azimuth of proton velocity vector
-	 * @param phi_p Returns azimuth of electron velocity vector
+	 * @param phi_e Returns azimuth of electron velocity vector
 	 * @param theta_p Returns polar angle of proton velocity vector
 	 * @param theta_e Returns polar angle of electron velocity vector
 	 */

@@ -6,7 +6,7 @@
 #ifndef PROTON_H_
 #define PROTON_H_
 
-extern const char* NAME_PROTON;
+extern const char* NAME_PROTON; ///< name of TProton class
 
 #include "globals.h"
 #include "particle.h"
@@ -33,7 +33,7 @@ public:
 	 * @param theta Initial polar angle of velocity vector
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
-	 * @param field Optional fields (can be NULL)
+	 * @param afield Optional fields (can be NULL)
 	 */
 	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 

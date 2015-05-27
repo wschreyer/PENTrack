@@ -55,6 +55,7 @@ public:
 	 * @param agamma Gyromagnetic ration of particle whose spin is to be tracked.
 	 * @param aparticlename Particle name.
 	 * @param conf Option map containing particle specific spin tracking options.
+	 * @param spinout Stream to which spin track is written
 	 */
 	TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout);
 private:
@@ -93,10 +94,10 @@ public:
 	 *
 	 * @param x1 Time at first track point.
 	 * @param y1 State vector at first track point.
+	 * @param B1 Magnetic field at first track point.
 	 * @param x2 Time at second track point.
 	 * @param y2 State vector at second track point.
-	 * @param field TFieldManager to calculate magnetic field at track points.
-	 * @param spinout File stream to which spin tracking should be logged.
+	 * @param B2 Magnetic field at second track point.
 	 *
 	 * @return Probability, that NO spin flip occured (usually close to 1).
 	 */
