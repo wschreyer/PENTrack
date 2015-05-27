@@ -94,14 +94,16 @@ double TNeutron::MRDist(bool transmit, bool integral, state_type y, const double
 	else if (!integral && transmit)
 		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta) - 2*ki*kt*sin(theta_i)*sin(theta)*cos(phi)));
 	else if (integral && !transmit) // if integral is set, precalculate phi-integral using modified Bessel function of first kind
-		Fmu = exp(-ki*ki*w*w/2*(sin(theta_i)*sin(theta_i) + sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, ki*ki*w*w*sin(theta_i)*sin(theta));
+		Fmu = exp(-w*w/2*ki*ki*(sin(theta_i)*sin(theta_i) + sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, w*w*ki*ki*sin(theta_i)*sin(theta));
 	else if (integral && transmit)
 		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, w*w*ki*kt*sin(theta_i)*sin(theta));
 	double factor = norm(kc)*norm(kc)*b*b*w*w/8/pi/costheta_i;
 	if (transmit)
 		factor *= kt/ki;
+	if (integral)
+		factor *= sin(theta); // integral over sin(theta) dtheta dphi
 	double result = factor*norm(Si)*norm(So)*Fmu;
-//	cout << integral << transmit << ' ' << theta_i << ' ' << theta << ' ' << phi << ' ' << ki << ' ' << kt << ' ' << kc << ' ' << factor << ' ' << Si << ' ' << So << ' ' << Fmu << ' ' << result << '\n';
+	//	cout << integral << transmit << ' ' << theta_i << ' ' << theta << ' ' << phi << ' ' << ki << ' ' << kt << ' ' << kc << ' ' << factor << ' ' << Si << ' ' << So << ' ' << Fmu << ' ' << result << '\n';
 	return result; // return probability
 }
 
@@ -150,22 +152,21 @@ void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type
 	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
 	double prob = mc->UniformDist(0,1);
 	double diffprob;
+
+	// specular transmission (refraction)
+	value_type Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
+	value_type Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	long double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
+	long double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
+	for (int i = 0; i < 3; i++)
+		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
+
 	bool UseMRModel = mat->UseMRModel && MRValid(y1, normal, leaving, entering);
 	if (UseMRModel)
 		diffprob = MRProb(true, y1, normal, leaving, entering);
 	else
 		diffprob = mat->DiffProb;
-//	cout << "prob: " << diffprob << '\n';
-	if (prob >= diffprob){
-		// specular transmission (refraction)
-		value_type Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-		value_type Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
-		long double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-		long double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
-		for (int i = 0; i < 3; i++)
-			y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
-	}
-	else{
+	if (prob < diffprob){ // diffuse transmission
 		double theta_t, phi_t;
 		if (UseMRModel){
 			double MRmax = MRDistMax(true, y1, normal, leaving, entering);
@@ -250,17 +251,6 @@ void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 	trajectoryaltered = true;
 }
 
-void TNeutron::Absorb(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
-	ID = entering->ID; // set ID to absorbing solid
-	x2 = x1; // set stopping point to track point right before collision
-	for (int i = 0; i < 6; i++)
-		y2[i] = y1[i];
-	traversed = false;
-	trajectoryaltered = true;
-}
-
-
 void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
 	value_type vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
@@ -287,8 +277,11 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 		complex<double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
 		double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
 //			cout << " ReflProb = " << reflprob << '\n';
-		if (prob > reflprob) // -> absorption on reflection
-			Absorb(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
+		if (prob > reflprob){ // -> absorption on reflection
+			ID = ID_ABSORBED_ON_SURFACE; // set ID to absorbed
+			traversed = true;
+			trajectoryaltered = true;
+		}
 		else // no absorption -> reflection
 			Reflect(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
 	}
@@ -307,7 +300,7 @@ bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &
 			x2 = x1 + mc->UniformDist(0,1)*(x2 - x1); // if absorbed, chose a random time between x1 and x2
 			for (int i = 0; i < 6; i++)
 				stepper.calc_state(x2, y2);
-			ID = currentsolid.ID;
+			ID = ID_ABSORBED_IN_MATERIAL;
 			printf("Absorption!\n");
 			result = true; // stop integration
 		}
@@ -371,5 +364,10 @@ double TNeutron::Epot(value_type t, state_type y, int polarisation, TFieldManage
 	map<solid, bool>::iterator sld = solids.begin();
 	while (sld->second)
 		sld++;
+	if (ID == ID_ABSORBED_ON_SURFACE && t == tend){
+		sld++; // if particle was absorbed on surface do not add potential of corresponding material (since kinetic energy < Fermi potential)
+		while (sld->second)
+			sld++;
+	}
 	return TParticle::Epot(t, y, polarisation, field, solids) + sld->first.mat.FermiReal*1e-9;
 }

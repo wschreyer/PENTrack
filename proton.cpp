@@ -33,7 +33,7 @@ bool TProton::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y
 		x2 = x1;
 		for (int i = 0; i < 6; i++)
 			y2[i] = y1[i];
-		ID = currentsolid.ID;
+		ID = ID_ABSORBED_IN_MATERIAL;
 		printf("Absorption!\n");
 		return true;
 	}

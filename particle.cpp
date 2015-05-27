@@ -142,7 +142,7 @@ void TParticle::Integrate(double tmax, TGeometry &geometry, TMCGenerator &mcgen,
 			Nstep++;
 		}
 		catch(...){ // catch Exceptions thrown by numerical recipes routines
-			ID = ID_NRERROR;
+			ID = ID_ODEINT_ERROR;
 		}
 		clock_gettime(CLOCK_REALTIME, &clock_end);
 		inttime += clock_end.tv_sec - clock_start.tv_sec + (double)(clock_end.tv_nsec - clock_start.tv_nsec)/1e9;
@@ -311,7 +311,16 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 	}
 
 	map<TCollision, bool> colls;
-	if (geom->GetCollisions(x1, &y1[0], x2, &y2[0], colls)){	// if there is a collision with a wall
+	bool collfound = false;
+	try{
+		collfound = geom->GetCollisions(x1, &y1[0], x2, &y2[0], colls);
+	}
+	catch(...){
+		ID = ID_CGAL_ERROR;
+		return true;
+	}
+
+	if (collfound){	// if there is a collision with a wall
 		map<TCollision, bool>::iterator coll = colls.begin();
 		if ((abs(coll->first.s*coll->first.distnormal) < REFLECT_TOLERANCE
 			&& (1 - coll->first.s)*abs(coll->first.distnormal) < REFLECT_TOLERANCE) // if first collision is closer to y1 and y2 than REFLECT_TOLERANCE
@@ -326,7 +335,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 					x2 = x1;
 					for (int i = 0; i < 6; i++)
 						y2[i] = y1[i];
-					ID = ID_NRERROR;
+					ID = ID_GEOMETRY_ERROR;
 					return true;
 				}
 				if (!it->second && (geom->solids[it->first.sldindex].ID > hitsolid->ID)){ // find non-ignored collision with highest priority
@@ -442,23 +451,40 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 		}
 		file <<	"jobnumber particle "
 					"tstart xstart ystart zstart "
-					"vxstart vystart vzstart "
-					"polstart Hstart Estart "
+					"vxstart vystart vzstart polstart "
+					"Hstart Estart Bstart Ustart solidstart "
 					"tend xend yend zend "
-					"vxend vyend vzend "
-					"polend Hend Eend stopID Nspinflip spinflipprob "
+					"vxend vyend vzend polend "
+					"Hend Eend Bend Uend solidend "
+					"stopID Nspinflip spinflipprob "
 					"ComputingTime Nhit Nstep trajlength Hmax\n";
 		file.precision(10);
 	}
 	cout << "Printing status\n";
+
 	value_type E = Ekin(&y[3]);
-	file	<<	jobnumber << " " << particlenumber << " "
-			<<	tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
-			<<	ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
+	double B[4][4], Ei[3], V;
+	solid sld;
+
+	field->BField(ystart[0], ystart[1], ystart[2], tstart, B);
+	field->EField(ystart[0], ystart[1], ystart[2], tstart, V, Ei);
+	sld = geom->GetSolid(tstart, &ystart[0]);
+
+	file	<< jobnumber << " " << particlenumber << " "
+			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
+			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
 			<< polstart << " " << Hstart() << " " << Estart() << " "
-			<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
+			<< B[3][3] << " " << V << " " << sld.ID << " ";
+
+	field->BField(y[0], y[1], y[2], x, B);
+	field->EField(y[0], y[1], y[2], x, V, Ei);
+	sld = geom->GetSolid(x, &y[0], currentsolids);
+
+	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 			<< y[3] << " " << y[4] << " " << y[5] << " "
-			<< polarisation << " " << E + Epot(x, y, polarisation, field, currentsolids) << " " << E << " " << ID << " " << Nspinflip << " " << 1 - noflipprob << " "
+			<< polarisation << " " << E + Epot(x, y, polarisation, field, currentsolids) << " " << E << " "
+			<< B[3][3] << " " << V << " " << sld.ID << " "
+			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
 			<< inttime << " " << Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
 }
 

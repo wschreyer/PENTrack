@@ -268,16 +268,14 @@ void OutputCodes(map<string, map<int, int> > &ID_counter){
 	for (map<string, map<int, int> >::iterator i = ID_counter.begin(); i != ID_counter.end(); i++){
 		map<int, int> counts = i->second;
 		const char *name = i->first.c_str();
+		printf("%4i: %6i %10s(s) were absorbed on a surface\n",	 2, counts[ 2], name);
+		printf("%4i: %6i %10s(s) were absorbed in a material\n", 1, counts[ 1], name);
 		printf("%4i: %6i %10s(s) were not categorized\n",		 0, counts[ 0], name);
 		printf("%4i: %6i %10s(s) did not finish\n",				-1, counts[-1], name);
 		printf("%4i: %6i %10s(s) hit outer boundaries\n",		-2, counts[-2], name);
 		printf("%4i: %6i %10s(s) produced a numerical error\n", -3, counts[-3], name);
 		printf("%4i: %6i %10s(s) decayed\n",					-4, counts[-4], name);
 		printf("%4i: %6i %10s(s) found no initial position\n",	-5, counts[-5], name);
-		for (map<int, int>::iterator j = counts.begin(); j != counts.end(); j++){
-			if (j->first > 0)
-				printf("%4i: %6i %10s(s) were absorbed\n", j->first, j->second, name);
-		}
 		printf("\n");
 	}
 }
