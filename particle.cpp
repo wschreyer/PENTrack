@@ -36,7 +36,7 @@ double TParticle::Eend(){
 
 TParticle::TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, int number,
 		double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
-		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN), inttime(0), refltime(0),
+		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
 		  tstart(t), tend(t), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0),
 		  geom(&geometry), mc(&amc), field(afield){
 	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
@@ -79,7 +79,6 @@ void TParticle::operator()(state_type y, state_type &dydx, value_type x){
 void TParticle::Integrate(double tmax, map<string, string> &conf){
 	if (currentsolids.empty())
 		geom->GetSolids(tend, &yend[0], currentsolids);
-	timespec clock_start, clock_end, refl_start, refl_end;
 
 	int perc = 0;
 	cout << "Particle no.: " << particlenumber << " particle type: " << name << '\n';
@@ -129,7 +128,6 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 		x1 = x; // save point before next step
 		y1 = y;
 
-		clock_gettime(CLOCK_REALTIME, &clock_start); // start computing time measure
 		try{
 			stepper.do_step(boost::ref(*this));
 			x = stepper.current_time();
@@ -140,8 +138,6 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 		catch(...){ // catch Exceptions thrown by numerical recipes routines
 			StopIntegration(ID_ODEINT_ERROR, x, y, polarisation, GetCurrentsolid());
 		}
-		clock_gettime(CLOCK_REALTIME, &clock_end);
-		inttime += clock_end.tv_sec - clock_start.tv_sec + (double)(clock_end.tv_nsec - clock_start.tv_nsec)/1e9;
 
 		if (stepper.current_time() > tstart + tau){
 			x = tstart + tau;
@@ -163,14 +159,11 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 				stepper.calc_state(x2, y2);
 			}
 
-			clock_gettime(CLOCK_REALTIME, &refl_start);
 			resetintegration = CheckHit(x1, y1, x2, y2, polarisation, hitlog); // check if particle hit a material boundary or was absorbed between y1 and y2
 			if (resetintegration){
 				x = x2; // if particle path was changed: reset integration end point
 				y = y2;
 			}
-			clock_gettime(CLOCK_REALTIME, &refl_end);
-			refltime += refl_end.tv_sec - refl_start.tv_sec + (double)(refl_end.tv_nsec - refl_start.tv_nsec)/1e9;
 
 			lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
 			Hmax = max(Ekin(&y2[3]) + Epot(x, y2, polarisation, field, GetCurrentsolid()), Hmax);
@@ -233,7 +226,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 	cout << " l: " << lend;
 	cout << " hits: " << Nhit;
 	cout << " spinflips: " << Nspinflip << '\n';
-	cout << "Computation took " << Nstep << " steps, " << inttime << " s for integration and " << refltime << " s for geometry checks\n";
+	cout << "Computation took " << Nstep << " steps";
 	cout << "Done!!\n\n";
 //			cout.flush();
 }
@@ -463,7 +456,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 					"vxend vyend vzend polend "
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
-					"ComputingTime Nhit Nstep trajlength Hmax\n";
+					"Nhit Nstep trajlength Hmax\n";
 		file.precision(10);
 	}
 	cout << "Printing status\n";
@@ -488,7 +481,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 			<< polarisation << " " << E + Epot(x, y, polarisation, field, GetCurrentsolid()) << " " << E << " " // use GetCurrentsolid() for Epot, since particle may not actually have entered sld
 			<< B[3][3] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-			<< inttime << " " << Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
+			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
 }
 
 

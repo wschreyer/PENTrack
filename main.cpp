@@ -146,7 +146,7 @@ int main(int argc, char **argv){
 	TMCGenerator mc(string(inpath + "/particle.in").c_str());
 	
 	int ntotalsteps = 0;     // counters to determine average steps per integrator call
-	float InitTime = (1.*clock())/CLOCKS_PER_SEC, DiceTime = 0, IntegratorTime = 0, ReflTime = 0; // time statistics
+	float InitTime = (1.*clock())/CLOCKS_PER_SEC; // time statistics
 
 	// simulation time counter
 	timespec simstart, simend;
@@ -191,16 +191,12 @@ int main(int argc, char **argv){
 			p->Integrate(SimTime, particlein[p->name]); // integrate particle
 			ID_counter[p->name][p->ID]++; // increment counters
 			ntotalsteps += p->Nstep;
-			IntegratorTime += p->inttime;
-			ReflTime += p->refltime;
 
 			if (secondaries == 1){
 				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
 					(*i)->Integrate(SimTime, particlein[(*i)->name]); // integrate secondary particles
 					ID_counter[(*i)->name][(*i)->ID]++;
 					ntotalsteps += (*i)->Nstep;
-					IntegratorTime += (*i)->inttime;
-					ReflTime += (*i)->refltime;
 				}
 			}
 
@@ -220,8 +216,8 @@ int main(int argc, char **argv){
 	printf("The integrator made %d steps. \n", ntotalsteps);
 	clock_gettime(CLOCK_REALTIME, &simend);
 	float SimulationTime = simend.tv_sec - simstart.tv_sec + (float)(simend.tv_nsec - simstart.tv_nsec)/1e9;
-	printf("Init: %.2fs, Simulation: %.2fs, Integrator: %.2fs (%.2f%%), Reflection: %.2fs (%.f%%), Dicing: %.4fs\n",
-			InitTime, SimulationTime, IntegratorTime, IntegratorTime*100/SimulationTime, ReflTime, ReflTime*100/SimulationTime, DiceTime);
+	printf("Init: %.2fs, Simulation: %.2fs",
+			InitTime, SimulationTime);
 	printf("That's it... Have a nice day!\n");
 	
 

@@ -142,7 +142,6 @@ The endlog keeps track of the starting and end parameters of the particles simul
   - 2: absorbed on total reflection on surface (see solidend)
 - NSpinflip: number of spin flips that the particle underwent during simulation
 - spinflipprob: probability that the particle has undergone a spinflip, calculated by bruteforce integration of the Bloch equation
-- ComputingTime: Time that PENTrack required to compute and track the particle [s]
 - Nhit: number of times particle hit a geometry surface (e.g. wall of guidetube)
 - Nstep: number of steps that it took to simulate particle
 - trajlength: the total length of the particle trajectory from creation to finish [m]

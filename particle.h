@@ -45,8 +45,6 @@ public:
 	int ID; ///< particle fate (defined in globals.h)
 	double tau; ///< particle life time
 	double maxtraj; ///< max. simulated trajectory length
-	double inttime; ///< integration computing time
-	double refltime; ///< reflection computing time
 
 	/// start time
 	value_type tstart;
