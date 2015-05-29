@@ -143,10 +143,14 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 		clock_gettime(CLOCK_REALTIME, &clock_end);
 		inttime += clock_end.tv_sec - clock_start.tv_sec + (double)(clock_end.tv_nsec - clock_start.tv_nsec)/1e9;
 
-		if (stepper.current_time() > tstart + tau)
+		if (stepper.current_time() > tstart + tau){
+			x = tstart + tau;
 			stepper.calc_state(tstart + tau, y);	//If stepsize overshot, decrease.
-		if (stepper.current_time() > tmax)
+		}
+		if (stepper.current_time() > tmax){
+			x = tmax;
 			stepper.calc_state(tmax, y);
+		}
 
 		while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) with spatial length SAMPLE_DIST, go through all pieces
 			value_type v1 = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
