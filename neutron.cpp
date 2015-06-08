@@ -161,11 +161,12 @@ void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type
 	for (int i = 0; i < 3; i++)
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
-	bool UseMRModel = mat->UseMRModel && MRValid(y1, normal, leaving, entering);
+	bool UseMRModel = mat->UseMRModel && MRValid(y1, normal, leaving, entering); // check if MicroRoughness model should be applied
 	if (UseMRModel)
-		diffprob = MRProb(true, y1, normal, leaving, entering);
+		diffprob = MRProb(true, y1, normal, leaving, entering); // calculate probability of diffuse scattering using MR model
 	else
-		diffprob = mat->DiffProb;
+		diffprob = mat->DiffProb; // use fixed probability of diffuse scattering for simple Lambert model
+
 	if (prob < diffprob){ // diffuse transmission
 		double theta_t, phi_t;
 		if (UseMRModel){
@@ -297,8 +298,9 @@ bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &
 		double prob = mc->UniformDist(0,1);
 		complex<long double> E(0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
 		complex<long double> k = sqrt(2*m_n*E)*ele_e/hbar; // wave vector
-		long double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
-		if (prob > exp(-imag(k)*l)){ // exponential probability decay
+		double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
+		double survprob = exp(-2*imag(k)*l);
+		if (prob > survprob){ // exponential probability decay
 			x2 = x1 + mc->UniformDist(0,1)*(x2 - x1); // if absorbed, chose a random time between x1 and x2
 			for (int i = 0; i < 6; i++)
 				stepper.calc_state(x2, y2);

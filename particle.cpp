@@ -226,7 +226,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 	cout << " l: " << lend;
 	cout << " hits: " << Nhit;
 	cout << " spinflips: " << Nspinflip << '\n';
-	cout << "Computation took " << Nstep << " steps";
+	cout << "Computation took " << Nstep << " steps\n";
 	cout << "Done!!\n\n";
 //			cout.flush();
 }
