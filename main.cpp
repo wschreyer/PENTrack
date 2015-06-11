@@ -269,9 +269,11 @@ void OutputCodes(map<string, map<int, int> > &ID_counter){
 		printf("%4i: %6i %10s(s) were not categorized\n",		 0, counts[ 0], name);
 		printf("%4i: %6i %10s(s) did not finish\n",				-1, counts[-1], name);
 		printf("%4i: %6i %10s(s) hit outer boundaries\n",		-2, counts[-2], name);
-		printf("%4i: %6i %10s(s) produced a numerical error\n", -3, counts[-3], name);
+		printf("%4i: %6i %10s(s) produced integration error\n", -3, counts[-3], name);
 		printf("%4i: %6i %10s(s) decayed\n",					-4, counts[-4], name);
 		printf("%4i: %6i %10s(s) found no initial position\n",	-5, counts[-5], name);
+		printf("%4i: %6i %10s(s) encountered CGAL error\n",		-6, counts[-6], name);
+		printf("%4i: %6i %10s(s) encountered geometry error\n",	-7, counts[-7], name);
 		printf("\n");
 	}
 }
