@@ -153,7 +153,12 @@ struct TCollision{
 	/**
 	 * Overloaded operator, needed for sorting
 	 */
-	inline bool operator < (const TCollision c) const { return s < c.s; };
+	inline bool operator < (const TCollision c) const {
+		if (s == c.s)
+			return sldindex > c.sldindex;
+		else
+			return s < c.s;
+	};
 };
 
 /**
