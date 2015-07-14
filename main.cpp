@@ -80,9 +80,10 @@ int main(int argc, char **argv){
 	}
 
 	//Initialize signal-analizing
+	signal (SIGINT, catch_alarm);
 	signal (SIGUSR1, catch_alarm);
 	signal (SIGUSR2, catch_alarm);
-	signal (SIGXCPU, catch_alarm);   
+	signal (SIGXCPU, catch_alarm);
 	
 	jobnumber = 0;
 	outpath = "./out";
@@ -405,9 +406,8 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
     unsigned count = 1000000, collcount = 0, raylength = 1;
 
     ofstream f(outfile);
-    f << "x y z" << '\n'; // print file header
+    f << "x y z ID" << '\n'; // print file header
 
-    set<TCollision> c;
     srand(time(NULL));
 	timespec collstart,collend;
 	clock_gettime(CLOCK_REALTIME, &collstart);
@@ -423,16 +423,17 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 		p2[1] = p1[1] + raylength*sin(theta)*sin(phi);
 		p2[2] = p1[2] + raylength*cos(theta);
 
+	    set<TCollision> c;
 		if (geom.mesh.Collision(p1,p2,c)){ // check if segment intersected with surfaces
 			collcount++;
 			for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){ // print all intersection points into file
-				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << '\n';
+				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << " " << geom.solids[i->sldindex].ID << '\n';
 			}
 		}
     }
 	clock_gettime(CLOCK_REALTIME, &collend);
 	float colltimer = (collend.tv_sec - collstart.tv_sec)*1e9 + collend.tv_nsec - collstart.tv_nsec;
     // print some time statistics
-    printf("%u tests, %u collisions in %fms (%fms per Test, %fms per Collision)\n",count,collcount,colltimer,colltimer/count/1e6,colltimer/collcount/1e6);
+    printf("%u tests, %u collisions in %fms (%fms per Test, %fms per Collision)\n",count,collcount,colltimer/1e6,colltimer/count/1e6,colltimer/collcount/1e6);
     f.close();	
 }
