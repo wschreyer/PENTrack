@@ -311,71 +311,56 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 	}
 
 	if (collfound){	// if there is a collision with a wall
-		map<TCollision, bool>::iterator coll = colls.begin();
-		if ((abs(coll->first.s*coll->first.distnormal) < REFLECT_TOLERANCE
-			&& (1 - coll->first.s)*abs(coll->first.distnormal) < REFLECT_TOLERANCE) // if first collision is closer to y1 and y2 than REFLECT_TOLERANCE
+		TCollision coll = colls.begin()->first;
+		if ((abs(coll.s*coll.distnormal) < REFLECT_TOLERANCE
+			&& (1 - coll.s)*abs(coll.distnormal) < REFLECT_TOLERANCE) // if first collision is closer to y1 and y2 than REFLECT_TOLERANCE
 			|| iteration > 99) // or if iteration counter reached a certain maximum value
 		{
 			int prevpol = pol;
-			solid *hitsolid = &geom->defaultsolid;
-			coll = colls.end();
-			for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){
-				if (CheckHitError(&geom->solids[it->first.sldindex], it->first.distnormal)){ // check all hits for errors
-					x2 = x1;
-					for (int i = 0; i < 6; i++)
-						y2[i] = y1[i];
-					StopIntegration(ID_GEOMETRY_ERROR, x2, y2, pol, currentsolid);
-					return true;
-				}
-				if (!it->second && (geom->solids[it->first.sldindex].ID > hitsolid->ID)){ // find non-ignored collision with highest priority
-					coll = it;
-					hitsolid = &geom->solids[it->first.sldindex];
-				}
-			}
-
 			bool trajectoryaltered = false, traversed = true;
 
 			map<solid, bool> newsolids = currentsolids;
-			for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){ // compile list of solids after material boundary
-				if (it->first.distnormal < 0){
-					newsolids[geom->solids[it->first.sldindex]] = it->second;
-				}else{
-					newsolids.erase(geom->solids[it->first.sldindex]);
+			for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){ // go through list of collisions
+				solid sld = geom->solids[it->first.sldindex];
+				if (CheckHitError(&sld, it->first.distnormal)){ // check all hits for errors
+					x2 = x1;
+					for (int i = 0; i < 6; i++)
+						y2[i] = y1[i];
+					StopIntegration(ID_GEOMETRY_ERROR, x2, y2, pol, currentsolid); // stop trajectory integration if error found
+					return true;
+				}
+
+				if (it->first.distnormal < 0){ // if particle is entering hit surface
+//					cout << "-->" << sld.name << ' ';
+					newsolids[sld] = it->second; // add new solid to list
+				}
+				else{ // if particle is leaving hit surface
+//					cout << sld.name << "--> ";
+					newsolids.erase(sld); // remove solid from list of new solids
+				}
+
+				if (sld.ID > geom->solids[coll.sldindex].ID)
+					coll = it->first; // use geometry from collision with highest priority
+}
+//			cout << '\n';
+
+			solid leaving = currentsolid; // particle can only leave highest-priority solid
+			solid entering = geom->defaultsolid;
+			for (map<solid, bool>::iterator it = newsolids.begin(); it != newsolids.end(); it++){ // go through list of new solids
+				if (!it->second && it->first.ID > entering.ID){ // highest-priority solid in newsolids list will be entered in collisions
+					entering = it->first;
 				}
 			}
-
-			if (coll != colls.end()){ // if a non-ignored collision was found
-				solid leaving, entering;
-				bool hit = false;
-				if (coll->first.distnormal < 0){ // particle is entering solid
-					leaving = currentsolid;
-					entering = *hitsolid;
-					if (entering.ID > leaving.ID){ // check for reflection only if priority of entered solid is larger than that of current solid
-						hit = true;
-						OnHit(x1, y1, x2, y2, pol, coll->first.normal, &leaving, &entering, trajectoryaltered, traversed); // do particle specific things
-					}
-				}
-				else if (coll->first.distnormal > 0){ // particle is leaving solid
-					leaving = *hitsolid;
-					map<solid, bool>::iterator it = newsolids.begin();
-					while (it->second) // find first non-ignored solid in list of new solids
-						it++;
-					entering = it->first;
-					if (leaving.ID == currentsolid.ID){ // check for reflection only, if left solid is the solid with highest priority
-						hit = true;
-						OnHit(x1, y1, x2, y2, pol, coll->first.normal, &leaving, &entering, trajectoryaltered, traversed); // do particle specific things
-					}
-				}
-
-				if (hit){
-					if (hitlog)
-						PrintHit(x1, y1, y2, prevpol, pol, coll->first.normal, &leaving, &entering);
-					Nhit++;
-				}
+//			cout << "Leaving " << leaving.name << ", entering " << entering.name << ", currently " << currentsolid.name << '\n';
+			if (leaving.ID != entering.ID){ // if the particle actually traversed a material interface
+				OnHit(x1, y1, x2, y2, pol, coll.normal, &leaving, &entering, trajectoryaltered, traversed); // do particle specific things
+				if (hitlog)
+					PrintHit(x1, y1, y2, prevpol, pol, coll.normal, &leaving, &entering); // print collision to file if requested
+				Nhit++;
 			}
 
 			if (traversed){
-				currentsolids = newsolids; // if material boundary was traversed, replace current solids with list of new solids
+				currentsolids = newsolids; // if surface was traversed (even if it was  physically ignored) replace current solids with list of new solids
 			}
 
 			if (trajectoryaltered)
@@ -394,7 +379,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 			state_type ybisect2(6);
 			ybisect1 = ybisect2 = y1;
 
-			xnew = x1 + (x2 - x1)*(coll->first.s - 0.01*iteration); // cut integration right before collision point
+			xnew = x1 + (x2 - x1)*(coll.s - 0.01*iteration); // cut integration right before collision point
 			if (xnew > x1 && xnew < x2){ // check that new line segment is in correct time interval
 				xbisect1 = xbisect2 = xnew;
 				stepper.calc_state(xbisect1, ybisect1);
@@ -406,7 +391,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 				}
 			}
 
-			xnew = x1 + (x2 - x1)*(coll->first.s + 0.01*iteration); // cut integration right after collision point
+			xnew = x1 + (x2 - x1)*(coll.s + 0.01*iteration); // cut integration right after collision point
 			if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
 				xbisect2 = xnew;
 				stepper.calc_state(xbisect2, ybisect2);
