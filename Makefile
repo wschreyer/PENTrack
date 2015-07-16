@@ -9,12 +9,16 @@ ALGLIBOBJ = $(ALGLIBSRC:.cpp=.o)
 MUPARSERSRC = muparser_v2_2_4/src/muParser.cpp muparser_v2_2_4/src/muParserBase.cpp muparser_v2_2_4/src/muParserBytecode.cpp muparser_v2_2_4/src/muParserCallback.cpp muparser_v2_2_4/src/muParserError.cpp muparser_v2_2_4/src/muParserTokenReader.cpp
 MUPARSEROBJ = $(MUPARSERSRC:.cpp=.o)
 
+BOOST_INCLUDE = #-I$(HOME)/boost_1_55_0/include # point gcc's -I option to Boost include directory if you have compiled Boost manually without installing it
+BOOST_LIB = #-L$(HOME)/boost_1_55_0/stage/lib # point gcc's -L option to Boost lib directory if you have compiled Boost manually without installing it
+BOOST_SHAREDLIB = #-Wl,-rpath=$(HOME)/boost_1_55_0/stage/lib # point gcc's -Wl,-rpath= option to Boost shared library if you have compiled Boost manually without installing it
+
 CGAL_INCLUDE = #-I$(HOME)/CGAL-4.6/include # point gcc's -I option to CGAL include directory if you have compiled CGAL manually without installing it
 CGAL_LIB = #-L$(HOME)/CGAL-4.6/lib # point gcc's -L option to CGAL lib directory if you have compiled CGAL manually without installing it
 CGAL_SHAREDLIB = #-Wl,-rpath=$(HOME)/CGAL-4.6/lib # point gcc's -Wl,-rpath= option to CGAL shared library if you have compiled CGAL manually without installing it
 
 CC=g++
-LDFLAGS=-lrt -lboost_system $(CGAL_LIB) -lCGAL
+LDFLAGS=-lrt -lboost_system $(BOOST_LIB) $(CGAL_LIB) -lCGAL
 RM=rm
 EXE=PENTrack
 
@@ -22,7 +26,7 @@ EXE=PENTrack
 all: $(OBJ) $(TRICUBICOBJ) $(ALGLIBOBJ) $(MUPARSEROBJ)
 	$(CC) -o $(EXE) $(OBJ) $(TRICUBICOBJ) $(ALGLIBOBJ) $(MUPARSEROBJ) $(CFLAGS) $(LDFLAGS)
 	
-$(OBJ): CFLAGS = -O3 -frounding-math -Wall -Ilibtricubic -Ialglib-3.9.0/cpp/src -Imuparser_v2_2_4/include $(CGAL_INCLUDE) $(CGAL_SHAREDLIB) #-O2: optimize, -Wno-*: suppress warnings from external libraries
+$(OBJ): CFLAGS = -O3 -frounding-math -Wall -Ilibtricubic -Ialglib-3.9.0/cpp/src -Imuparser_v2_2_4/include $(BOOST_INCLUDE) $(BOOST_SHAREDLIB) $(CGAL_INCLUDE) $(CGAL_SHAREDLIB) #-O2: optimize, -Wno-*: suppress warnings from external libraries
 
 $(TRICUBICOBJ): CFLAGS = -O3 -Wall -Ilibtricubic
 
