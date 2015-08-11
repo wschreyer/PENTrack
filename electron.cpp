@@ -15,8 +15,8 @@ ofstream TElectron::hitout; ///< hitlog file stream
 ofstream TElectron::spinout; ///< spinlog file stream
 
 
-TElectron::TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
-			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, amc, geometry, afield){
+TElectron::TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
+			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
 }
 

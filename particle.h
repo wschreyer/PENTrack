@@ -121,12 +121,13 @@ public:
 	 * @param E Initial kinetic energy
 	 * @param phi Azimuth of initial velocity vector
 	 * @param theta Polar angle of initial velocity vector
+	 * @param polarisation polarisation of particle (+/- 1)
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
 	TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, int number,
-			double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+			double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 	/**
 	 * Destructor, deletes secondaries

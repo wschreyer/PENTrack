@@ -37,12 +37,10 @@ struct TParticleConfig{
  * Class to generate random numbers in several distributions.
  */
 class TMCGenerator{
-private:
+public:
 	boost::mt19937_64 rangen; ///< random number generator
 	double xvar; ///< x variable for formula parser
-	std::map<std::string, TParticleConfig> pconfigs;
-
-public:
+	std::map<std::string, TParticleConfig> pconfigs; ///< TParticleConfig for each particle type
 	uint64_t seed; ///< initial random seed
 
 	/**
@@ -84,6 +82,10 @@ public:
 	/// return sqrt(x) distributed random number in [min..max]
 	double SqrtDist(double min, double max);
 	
+
+	/// return normally distributed random number
+	double NormalDist(double mean, double sigma);
+
 
 	/**
 	 * Create isotropically distributed 3D angles.
@@ -174,8 +176,21 @@ public:
 	 * @param phi_e Returns azimuth of electron velocity vector
 	 * @param theta_p Returns polar angle of proton velocity vector
 	 * @param theta_e Returns polar angle of electron velocity vector
+	 * @param pol_p Returns polarisation of proton spin
+	 * @param pol_e Returns polarisation of electron spin
 	 */
-	void NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e);
+	void NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, int &pol_p, int &pol_e);
+
+
+	/**
+	 * Outputs velocity spectrum for TOF expt given a chosen energy spectrum
+	 * (guide is along y -axis)
+	 *
+	 * @param Ekin  - kinetic energy (does not get changed)
+	 * @param phi - azimuthal associated with velocity
+	 * @param theta - polar associated with velocity
+	 */
+	void tofDist(double &Ekin, double &phi, double &theta);
 };
 
 #endif /*MC_H_*/

@@ -138,14 +138,14 @@ int main(int argc, char **argv){
 		return 0;
 	}
 	
-	cout << "Loading source...\n";
-	// load source configuration from geometry.in
-	TSource source(geometryin, geom, field);
-	
 	cout << "Loading random number generator...\n";
 	// load random number generator from all3inone.in
 	TMCGenerator mc(string(inpath + "/particle.in").c_str());
 	
+	cout << "Loading source...\n";
+	// load source configuration from geometry.in
+	TSource source(geometryin, mc, geom, &field);
+
 	int ntotalsteps = 0;     // counters to determine average steps per integrator call
 	float InitTime = (1.*clock())/CLOCKS_PER_SEC; // time statistics
 
@@ -188,7 +188,7 @@ int main(int argc, char **argv){
 	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
-			TParticle *p = source.CreateParticle(mc, geom, &field);
+			TParticle *p = source.CreateParticle();
 			p->Integrate(SimTime, particlein[p->name]); // integrate particle
 			ID_counter[p->name][p->ID]++; // increment counters
 			ntotalsteps += p->Nstep;

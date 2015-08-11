@@ -25,8 +25,8 @@ ofstream TNeutron::hitout; ///< hitlog file stream
 ofstream TNeutron::spinout; ///< spinlog file stream
 
 
-TNeutron::TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
-		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, amc, geometry, afield){
+TNeutron::TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
+		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
 }
 
@@ -355,11 +355,12 @@ bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &
 
 void TNeutron::Decay(){
 	double E_p, E_e, phi_p, phi_e, theta_p, theta_e;
+	int pol_p, pol_e;
 	TParticle *p;
-	mc->NeutronDecay(&yend[3], E_p, E_e, phi_p, phi_e, theta_p, theta_e);
-	p = new TProton(particlenumber, tend, yend[0], yend[1], yend[2], E_p, phi_p, theta_p, *mc, *geom, field);
+	mc->NeutronDecay(&yend[3], E_p, E_e, phi_p, phi_e, theta_p, theta_e, pol_p, pol_e);
+	p = new TProton(particlenumber, tend, yend[0], yend[1], yend[2], E_p, phi_p, theta_p, pol_p, *mc, *geom, field);
 	secondaries.push_back(p);
-	p = new TElectron(particlenumber, tend, yend[0], yend[1], yend[2], E_e, phi_e, theta_e,	*mc, *geom, field);
+	p = new TElectron(particlenumber, tend, yend[0], yend[1], yend[2], E_e, phi_e, theta_e, pol_e, *mc, *geom, field);
 	secondaries.push_back(p);
 }
 

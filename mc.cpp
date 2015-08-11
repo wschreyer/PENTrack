@@ -82,6 +82,11 @@ double TMCGenerator::SqrtDist(double min, double max){
 	return pow((pow(max, 1.5) - pow(min, 1.5))*UniformDist(0,1) + pow(min, 1.5), 2.0/3.0);
 }
 
+double TMCGenerator::NormalDist(double mean, double sigma){
+	boost::random::normal_distribution<double> normaldist(mean, sigma);
+	return normaldist(rangen);
+}
+
 void TMCGenerator::IsotropicDist(double &phi, double &theta){
 	phi = UniformDist(0,2*pi);
 	theta = SinDist(0,pi);
@@ -283,7 +288,7 @@ int TMCGenerator::DicePolarisation(const std::string &particlename){
 		return p;
 }
 
-void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e)
+void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, int &pol_p, int &pol_e)
 {
 	double m_nue = 1 / pow(c_0, 2); // [eV/c^2]
 
@@ -368,4 +373,50 @@ void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double 
 	phi_e = atan2(e[2], e[1]);
 	theta_p = acos(p[3]/sqrt(p[1]*p[1] + p[2]*p[2] + p[3]*p[3]));
 	theta_e = acos(e[3]/sqrt(e[1]*e[1] + e[2]*e[2] + e[3]*e[3]));
+	pol_e = pol_p = UniformDist(0, 1) < 0.5 ? 1 : -1;
 }
+
+
+void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
+	long double v_x,v_y, v_tot, xz_ang, v_yaxis, v_xaxis, v_zaxis;
+	v_tot = sqrt(2*Ekin/m_n);
+//	int i =0;
+	for(;;){
+//		i++;
+		v_x = UniformDist(0, v_tot);
+		v_y = (1/(2.270*v_x + 0.0122*pow(v_x,2)))*exp(-pow((log(2.270/v_x +0.0122) +1.4137),2)/(2*pow(0.3420,2)));
+
+		if(UniformDist(0,0.04570423)<v_y){
+			v_yaxis = v_x;
+			xz_ang = UniformDist(0,2*pi);
+			v_xaxis = sqrt(pow(v_tot,2)-pow(v_yaxis,2))*cos(xz_ang);
+			v_zaxis = sqrt(pow(v_tot,2)-pow(v_yaxis,2))*sin(xz_ang);
+			phi = atan2(v_yaxis,v_xaxis);
+			theta = acos(v_zaxis/v_tot);
+			//check x component
+			if(v_xaxis - v_tot*cos(phi)*sin(theta) > 0.01){
+				std::cout<< "Il y a un problem avec la calculation du v_x \n";
+//					sleep(1);
+			}else if(v_yaxis - v_tot*sin(phi)*sin(theta) > 0.01){
+				std::cout<< "Il y a un problem avec la calculation du v_y \n";
+//					sleep(1);
+			}else if(v_zaxis - v_tot*cos(theta) > 0.01){
+				std::cout<< "Il y a un problem avec la calculation du v_z \n";
+//					sleep(1);
+			}
+			return;
+		}
+/*		if(i > 100){ //show that there is a problem by setting phi and theta to 100
+			phi = i;
+			theta = i;
+			return;
+		}
+*/
+
+	}
+
+
+
+};
+
+

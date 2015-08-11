@@ -115,11 +115,21 @@ struct TGeometry{
 		 *
 		 * @param t Time
 		 * @param p Point to test
-		 * @param currentsolids Optional list of solids to choose from
 		 *
 		 * @return Returns solid with highest priority, that was not ignored at time t
 		 */
 		solid GetSolid(const double t, const double p[3]);
+
+
+		/**
+		 * Get solid with highest priority in which the point p lies
+		 *
+		 * @param t Time
+		 * @param p Point to test
+		 * @param currentsolids list of solids to choose from
+		 *
+		 * @return Returns solid with highest priority, that was not ignored at time t
+		 */
 		solid GetSolid(const double t, const double p[3], map<solid, bool> currentsolids);
 };
 

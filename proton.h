@@ -31,11 +31,12 @@ public:
 	 * @param E Initial kinetic energy
 	 * @param phi Initial azimuth of velocity vector
 	 * @param theta Initial polar angle of velocity vector
+	 * @param polarisation polarisation of particle (+/-1)
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
 	static ofstream endout; ///< endlog file stream
