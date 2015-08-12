@@ -75,7 +75,6 @@ TParticle* TSurfaceSource::CreateParticle(){
 
 	double v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
 	double n[3] = {nv[0], nv[1], nv[2]};
-	cout << "Rotate" << endl;
 	RotateVector(v, n);
 	phi_v = atan2(v[1],v[0]);
 	theta_v = acos(v[2]);
