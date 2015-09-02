@@ -215,18 +215,18 @@ private:
 	bool MRValid(state_type y, const double normal[3], solid *leaving, solid *entering);
 
 	/**
-	 * Return MicroRoughness model distribution for scattering angles
+	 * Return MicroRoughness model probability distribution for scattering angles theta, phi
 	 *
 	 * @param transmit True if the particle is transmitted through the surface, false if it is reflected
-	 * @param integral Compute total probability of diffuse scattering according to MicroRoughness model
+	 * @param integral Compute phi-integral of diffuse scattering probability distribution
 	 * @param y State vector of neutron right before hit surface
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid, which the neutron would leave if it were transmitted
 	 * @param entering Solid, which the neutron would enter if it were transmitted
-	 * @param theta_r Polar angle of scattered velocity vector (0 < theta_r < pi/2), ignored if integral == true
-	 * @param phi_r Azimuthal angle of scattered velocity vector (0 < phi_r < 2*pi), ignored if integral == true
+	 * @param theta Polar angle of scattered velocity vector (0 < theta < pi/2)
+	 * @param phi Azimuthal angle of scattered velocity vector (0 < phi < 2*pi), ignored if integral == true
 	 *
-	 * @return Returns probability of reflection/transmission, in direction (theta_r, phi_r) or total if integral == true
+	 * @return Returns probability of reflection/transmission, in direction (theta, phi) or its integration over phi=0..2pi if integral == true
 	 */
 	double MRDist(bool transmit, bool integral, state_type y, const double normal[3], solid *leaving, solid *entering, double theta, double phi);
 
@@ -263,7 +263,7 @@ private:
 	static void NegMRDist(const alglib::real_1d_array &x, double &f, void *params);
 
 	/**
-	 * Calculate total diffuse scattering probability according to MicroRoughness model
+	 * Calculate total diffuse scattering probability according to MicroRoughness model by doing numerical theta-integration of MRDist with integral = true
 	 *
 	 * @param transmit True if the particle is transmitted through the surface, false if it is reflected
 	 * @param y State vector of neutron right before hit surface
@@ -271,12 +271,12 @@ private:
 	 * @param leaving Solid, which the neutron would leave if it were transmitted
 	 * @param entering Solid, which the neutron would enter if it were transmitted
 	 *
-	 * @return Returns probability of reflection/transmission, in direction (theta_r, phi_r) or total if integral == true
+	 * @return Returns probability of reflection/transmission
 	 */
 	double MRProb(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering);
 
 	/*
-	 * Calculate maximum of MicroRoughness model distribution
+	 * Calculate maximum of MicroRoughness model distribution by doing numerical minimization of TNeutron::NegMRDist
 	 *
 	 * @param transmit True, if the particle is transmitted through the material boundary
 	 * @param normal Normal vector of material boundary
