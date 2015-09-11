@@ -36,7 +36,7 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 		return;
 	if (!fspinout.is_open()){
 		std::ostringstream BFoutfile1;
-		BFoutfile1 << outpath << "/" << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << particlename << "spin.out ";
+		BFoutfile1 << outpath << "/" << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << particlename << "spin.out";
 		std::cout << "Creating " << BFoutfile1.str() << '\n';
 		fspinout.open(BFoutfile1.str().c_str());
 		if(!fspinout.is_open())
