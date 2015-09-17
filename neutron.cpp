@@ -174,7 +174,7 @@ void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type
 //			cout << "max: " << MRmax << '\n';
 			do{
 				phi_t = mc->UniformDist(0, 2*pi);
-				theta_t = mc->UniformDist(0, pi/2);
+				theta_t = mc->SinDist(0, pi/2);
 			}while (mc->UniformDist(0, MRmax) > MRDist(true, false, y1, normal, leaving, entering, theta_t, phi_t));
 		}
 		else{
@@ -224,7 +224,7 @@ void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 //			cout << "max: " << MRmax << '\n';
 			do{
 				phi_r = mc->UniformDist(0, 2*pi);
-				theta_r = mc->UniformDist(0, pi/2);
+				theta_r = mc->SinDist(0, pi/2);
 			}while (mc->UniformDist(0, MRmax) > MRDist(false, false, y1, normal, leaving, entering, theta_r, phi_r));
 		}
 		else{
