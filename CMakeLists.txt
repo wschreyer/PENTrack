@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project (PENTrack)
 
-include_directories("alglib/cpp/src")
+include_directories("alglib-3.9.0/cpp/src")
 add_library(alglib OBJECT alglib-3.9.0/cpp/src/alglibinternal.cpp 
 						alglib-3.9.0/cpp/src/dataanalysis.cpp alglib-3.9.0/cpp/src/integration.cpp 
 						alglib-3.9.0/cpp/src/optimization.cpp alglib-3.9.0/cpp/src/statistics.cpp 
@@ -20,13 +20,6 @@ set_target_properties(muparser PROPERTIES COMPILE_FLAGS "-Wno-switch")
 include_directories("libtricubic")
 add_library(libtricubic OBJECT libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp)
 
-set(CMAKE_CXX_FLAGS "-O3 -Wall -frounding-math")
-
-add_executable(PENTrack main.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp 
-						field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp 
-						electron.cpp proton.cpp ndist.cpp source.cpp
-						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)						
-
 find_package(Boost 1.53.0)
 if (Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
@@ -40,4 +33,12 @@ if (CGAL_CONFIG_LOADED)
 	message("-- CGAL version: " ${CGAL_MAJOR_VERSION} "." ${CGAL_MINOR_VERSION})
 endif()
 						
+set(CMAKE_CXX_FLAGS "-O3 -Wall -frounding-math")
+
+add_executable(PENTrack main.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp 
+						field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp 
+						electron.cpp proton.cpp ndist.cpp source.cpp
+						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)						
+set_target_properties(PENTrack PROPERTIES COMPILE_FLAGS "-Wno-unused-local-typedefs")
+
 target_link_libraries (PENTrack rt boost_system CGAL)

@@ -3,6 +3,14 @@
 .project
 .settings/
 
+# ignore cmake files
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
 # ignore binaries
 PENTrack
 *.o
