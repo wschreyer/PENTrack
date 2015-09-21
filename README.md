@@ -12,13 +12,13 @@ External libraries
 ### CGAL
 
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
-Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the CGAL_INCLUDE, CGAL_LIB and CGAL_SHAREDLIB paths in the Makefile.
+Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the cmake search path by setting the CGAL_DIR variable by calling `cmake -DCGAL_DIR=/path/to/CGAL .`.
 
 CGAL v4.1 - v4.6 have been tested.
 
 ### Boost
 
-The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and a Runge-Kutta integrator included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the BOOST_INCLUDE, BOOST_LIB and BOOST_SHAREDLIB paths in the Makefile.
+The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and a Runge-Kutta integrator included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the cmake search path by setting the BOOST_ROOT variable by calling `cmake -DBOOST_ROOT=/path/to/boost .`.
 
 Boost 1.53.0 - 1.55.0 are recommended. 1.56.0 and newer seem to require a C++11 capable compiler (i.e. GCC 4.9.0+) and possibly the option -std=c++11 in the CFLAGS in the Makefile.
 
@@ -43,7 +43,7 @@ It is included in the repository.
 Run the simulation
 ------------------
 
-Type "make" to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
+Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
 Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
 
 
