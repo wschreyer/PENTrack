@@ -120,15 +120,24 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
 			cz[2] = dBzdt1*h;
 			cz[3] = B1[2][0];
 
-			std::vector<value_type> times;
-			for (value_type x = x1; x < x2; x += spinloginterval)
-				times.push_back(x);
-			times.push_back(x2);
-			dense_stepper_type stepper = boost::numeric::odeint::make_controlled(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
-			// integrate(stepper, ODEsystem functor, initial state, start time, end time, initial time step, observer functor)
-			intsteps += boost::numeric::odeint::integrate_times(
-					stepper, boost::ref(*this), I_n, times.begin(),
-					times.end(), static_cast<value_type>(1e-9), boost::ref(*this));
+			if (spinlog){
+				std::vector<value_type> times;
+				for (value_type x = x1; x < x2; x += spinloginterval)
+					times.push_back(x);
+				times.push_back(x2);
+				// use dense output stepper if spin trajectory should be logged
+				dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
+				// integrate(ODEsystem functor, initial state, start time, end time, initial time step, observer functor)
+				intsteps += boost::numeric::odeint::integrate_times(
+						stepper, boost::ref(*this), I_n, times.begin(),
+						times.end(), static_cast<value_type>(1e-9), boost::ref(*this));
+			}
+			else{
+				// use simpler error controlling stepper when output not needed
+				controlled_stepper_type stepper = boost::numeric::odeint::make_controlled(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
+				// integrate(ODEsystem functor, initial state, start time, end time, initial time step, observer functor)
+				intsteps += boost::numeric::odeint::integrate_adaptive(stepper, boost::ref(*this), I_n, x1, x2, static_cast<value_type>(1e-9));
+			}
 
 			if (B2[3][0] > Bmax || !BruteForce2){
 				// output of polarisation after BF int completed

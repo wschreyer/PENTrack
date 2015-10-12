@@ -25,7 +25,8 @@ private:
 	typedef double value_type; ///< define floating point type for spin integration
 	typedef std::vector<value_type> state_type; ///< define type which contains spin state vector
 	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type, value_type> stepper_type; ///< define integration stepper type
-	typedef	boost::numeric::odeint::controlled_runge_kutta<stepper_type> dense_stepper_type;
+	typedef	boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type;
+	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type;
 	state_type I_n; ///< Spin vector
 //	stepper_type stepper;
 
