@@ -30,7 +30,7 @@ find_package(CGAL)
 if (CGAL_CONFIG_LOADED)
 	include_directories(${CGAL_INCLUDE_DIRS})
 	link_directories(${CGAL_LIBRARIES_DIR})
-	message("-- CGAL version: " ${CGAL_MAJOR_VERSION} "." ${CGAL_MINOR_VERSION})
+	message("-- CGAL version: " ${CGAL_VERSION})
 endif()
 						
 set(CMAKE_CXX_FLAGS "-O3 -Wall -frounding-math")
