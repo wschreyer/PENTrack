@@ -2,6 +2,7 @@
 .cproject
 .project
 .settings/
+*~
 
 # ignore cmake files
 CMakeCache.txt

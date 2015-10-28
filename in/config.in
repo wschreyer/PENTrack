@@ -1,8 +1,9 @@
 # config file for PENTrack program
 # put comments after #
 [global]
-# simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry
-simtype 1
+# simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry, 8 => print mr-drp for solid angle
+# 9 => print integrated mr-drp for incident theta vs energy
+simtype 9
 # output neutron spatial distribution?
 neutdist 0
 # number of primary particles to be simulated
@@ -15,5 +16,14 @@ secondaries 1
 
 #cut through B-field (simtype == 4) *** (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2) 3 edges of cut plane, number of sample points in direction 1->2/1->3 ***
 BCutPlane 0.3 0 0.047  0.3 0 0.047  0.3 0 0.049  1 20000
+
+#parameters to be used for generating a 2d histogram of the integrated diffuse reflection probabilitites of the incident angle vs energy of a neutron 
+#Parameter order: Fermi potential of the material, RMS roughness (in nm), Correlation length (nm), starting angle (0<x<pi/2), ending angle (0<x<pi/2), 
+#starting neutron energy (in neV with 0<E), ending neutron energy (in neV with 0<E)
+MRThetaIEnergy 90 1E-9 25E-9 0 1.570796327 0 1000
+
+#parameters to be used for generating a 2d histogram for the mr diffuse reflection probability into a solid angle 
+#Param order: Fermi pot. (neV), Neut energy (neV), RMS roughness (nm), correlation length (nm), theta_i 
+MRSolidAngleDRP 220 200 1E-9 25E-9 0.872664626 
 
 [/global]
