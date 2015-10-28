@@ -39,7 +39,20 @@ public:
 	 * @param afield Optional fields (can be NULL)
 	 */
 	TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
-
+	
+	/**
+ 	* If the integrate parameter is false then: get the MR diffuse reflection probability into a solid angle. 
+ 	* If the integrate parameter is true then: get total integrated MR diffuse reflection probability for a particular theta_i and neutron energy
+ 	* 
+ 	* @param integrate switch for obtaining either the integrated MR DRP for particular incident theta_i and neutron energy
+ 	* @param incNeutE incident neutron energy 
+ 	* @param solLeav solid that the neutron is leaving
+ 	* @param solEnter solid that the neutron is entering
+ 	* @param atheta_i incident neutron angle 
+ 	* @param theta_out outgoing polar angle (not used when integrate is true)
+ 	* @param phi_out outgoing azimuthal angle (not used when integrate is true)
+ 	*/
+	double getMRProb ( bool integrate, double incNeutE, solid *solLeav, solid *solEnter, double atheta_i, double theta_out, double phi_out);
 protected:
 	static ofstream endout; ///< endlog file stream
 	static ofstream snapshotout; ///< snapshot file stream
