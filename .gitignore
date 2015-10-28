@@ -21,4 +21,5 @@ muparser_v2_2_4/src/*.o
 # ignore output files
 out/*.out
 out/*.root
+out/*.txt*
 doc/

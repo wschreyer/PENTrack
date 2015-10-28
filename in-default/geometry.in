@@ -1,0 +1,70 @@
+[MATERIALS]
+#Define material properties for UCN: imaginary Fermi potential and diffuse reflectivity
+#Diffuse reflection is either modeled with the Lambert model (default) or the Micro Roughness model
+#see Neutron news 3.3 (1992): 26-37, Z. Physik 254, 169--188 (1972) and Eur. Phys. J. A 44, 23–29 (2010)
+#name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]	UseMRmodel
+default		0			0			0				0			0			0			0
+PolishedSteel	183.			0.0852			0.05				1e-4	2.6e-9	20e-9 1
+PE		-8.66			0.49			0.5				0	0	0	0
+Ti		-51.1			0.0432			0.2				1e-5	0	0	0
+Cu		171			0.0726			0.2				1e-5	0	0	0
+Al		54.1			0.00756			0.2				1e-5	0	0	0
+DLC		269			0.0625			0.01  				2e-6	0.9e-9	34e-9	1
+UCNdet		0.1			1			0				0	0	0	0
+
+[GEOMETRY]
+#solids the program will load, particle absorbed in the solid will be flagged with the ID of the solid
+#IDs have to be larger than 0 and unique, ID 1 will be assumed to be the default medium which is always present
+#the ID also defines the order in which overlapping solids are handled (highest ID will be considered first)
+#ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000
+#ID	STLfile				material_name		ignore_times
+1	ignored				default
+2	in/storagevol.STL		PolishedSteel
+3	in/guide.STL			PolishedSteel
+4	in/valve.STL			PolishedSteel		0-200 500-1000
+5	in/UCNdet.STL			UCNdet
+6	in/protdet.STL			Al
+7	in/absorber.STL			PE
+
+[SOURCE]
+############ sourcemodes ###############
+# STLvolume: source volume is given by a STL file, particles are created in the space completely surrounded by the STL-surface
+# boxvolume: particle starting values are diced in the given parameter range (x,y,z)
+# cylvolume: particle starting values are diced in the given parameter range (r,phi,z)
+# For volume sources, the initial particle density can be weighted by the available phase space.
+# In that case, the given particle's energy spectrum is interpreted as a total energy spectrum.
+#
+# STLsurface: starting values are on triangles whose vertices are all in the given STL-volume
+# cylsurface: starting values are on triangles which have at least one vertex in the given parameter range (r,phi,z)
+########################################
+
+#cylsurface	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	Enormal
+#cylsurface	electron	0.123	0.495	0		360			0.003	1.145	200			0
+
+#cylvolume	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
+#cylvolume	neutron		0.125	0.495	0		360			0.005	1.145	0			1
+
+#boxvolume	particles	x_min	x_max	y_min	y_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
+#boxvolume	neutron		0		1		0		1			0		1		0			0
+
+#STLsurface	particles 	STL-file		ActiveTime	Enormal
+STLsurface 	neutron		in/source.STL	200			0
+
+#STLvolume	particles	STL-file		ActiveTime	PhaseSpaceWeighting
+#STLvolume 	neutron		in/source.STL	0			1
+
+[FIELDS]
+#field 		table-file			BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime	BoundaryWidth
+2Dtable 	in/42_0063_PF80fieldval.tab	1		1		400		100		200		100
+#3Dtable	in/3Dtable.tab			1		1		0		0		1000		0		0.05
+
+#InfiniteWireZ		I		x		y
+#InfiniteWireZCenter	I
+#FiniteWire		I		x1		y1		z1		x2		y2		z2
+#FiniteWireX/Y/Z	I		x1/y1/z1	x2/y2/z2	z/z/z1		#/#/z2
+#FiniteWireZCenter	I		z1		z2
+#FullRacetrack		I		z1		z2		r
+
+#FullRacetrack		2250		-0.15		1.35		0.6
+
+FiniteWireZCenter	12500		-1		2
