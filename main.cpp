@@ -40,6 +40,8 @@ void OutputCodes(map<string, map<int, int> > &ID_counter); // print simulation s
 void PrintBFieldCut(const char *outfile, TFieldManager &field); // evaluate fields on given plane and write to outfile
 void PrintBField(const char *outfile, TFieldManager &field);
 void PrintGeometry(const char *outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
+void PrintMROutAngle ( const char *outfile, TMCGenerator &amc, TGeometry &geom, TFieldManager *afield); // produce a 3d table of the MR-DRP for each outgoing solid angle
+void PrintMRThetaIEnergy ( const char *outfile, TMCGenerator &amc, TGeometry &geom, TFieldManager *afield); // produce a 3d table of the total (integrated) MR-DRP for a given incident angle and energy
 
 
 double SimTime = 1500.; ///< max. simulation time
@@ -47,6 +49,8 @@ int simcount = 1; ///< number of particles for MC simulation (read from config)
 int simtype = PARTICLE; ///< type of particle which shall be simulated (read from config)
 int secondaries = 1; ///< should secondary particles be simulated? (read from config)
 double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
+double MRSolidAngleDRPParams[5]; ///< params to output the  MR-DRP values for given theta_inc and phi_inc [Fermi potential, incident neutron energy, b (nm), w (nm), theta_i] (read from config)
+double MRThetaIEnergyParams[7]; ///< params for which to output the integrated MR-DRP values [Fermi potential, b (nm), w (nm), theta_i_start, theta_i_end, neut_energy_start, neut_energy_end] (read from config.in)
 int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
 int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
 
@@ -160,6 +164,15 @@ int main(int argc, char **argv){
 	" ########################################################################\n");
 
 	map<string, map<int, int> > ID_counter; // 2D map to store number of each ID for each particle type
+	
+	switch(simtype)
+	{
+		case MR_THETA_OUT_ANGLE: PrintMROutAngle (string(outpath+"/MR-SolidAngleDRP").c_str(), mc, geom, &field); // estimate ramp heating
+						return 0;
+		case MR_THETA_I_ENERGY: PrintMRThetaIEnergy (string(outpath+"/MR-Tot-DRP").c_str(), mc, geom, &field); // print cut through B field
+						return 0;
+	}
+
 
 	/*
 	stringstream filename;
@@ -254,10 +267,117 @@ void ConfigInit(TConfig &config){
 													>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
 													>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
 													>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
+
+	istringstream(config["global"]["MRSolidAngleDRP"]) >> MRSolidAngleDRPParams[0] >> MRSolidAngleDRPParams[1] >> MRSolidAngleDRPParams[2] >> MRSolidAngleDRPParams[3]
+													>> MRSolidAngleDRPParams[4];
+
+	istringstream(config["global"]["MRThetaIEnergy"]) >> MRThetaIEnergyParams[0] >>  MRThetaIEnergyParams[1] >> MRThetaIEnergyParams[2] >> MRThetaIEnergyParams[3]
+										     >>	 MRThetaIEnergyParams[4] >> MRThetaIEnergyParams[5] >> MRThetaIEnergyParams[6];
 }
 
+/**
+ * 
+ * Output a table containing the MR diffuse reflection probability for the specified range of solid angles from the config.in file
+ *
+ * @param outfile, the file name of the file to which results will be printed
+ * @param amc, the mc generator used for neutron creation
+ * @param ageom, used for creating an instance of a neutron 
+ * @param afield, used for creating an instance of a neutron
+ *  
+ * Other params are read in from the config.in file
+*/
+void PrintMROutAngle ( const char *outfile, TMCGenerator &amc, TGeometry &ageom, TFieldManager *afield ) {
+	//Create an instance of a neutron which can be used to call the getMRProb function from the neutron.cpp class
+	TNeutron *n = new TNeutron (0, 0, 100.0, 100.0, 100.0, 10.0, 0.0, 0.0, 1, amc, ageom, afield); 
+	
+	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
+	material matEnter = { "reflection surface material" , MRSolidAngleDRPParams[0], 0, 0, 0, MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3], true }; 
+	material matLeav = { "vacuum material", 0, 0, 0, 0, 0, 0, true };
+	
+	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
+	solid solEnter = { "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
+	solid solLeav = { "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
+	
+	cout << "outfile: " << outfile << endl; 
+	//string filename = outfile + ".out"; 
+	//cout << "filename:" << filename << endl;
+	//const char *fileName = outfile + "-F-" + MRSolidAngleDRPParams[0] + "-En-" + MRSolidAngleDRPParams[1] + "-b-" + MRSolidAngleDRPParams[2] + "-w-" + MRSolidAngleDRPParams[3] + "-th-" + MRSolidAngleDRPParams[4] + ".out";
+	exit(-1);
+	FILE *mrproboutfile = fopen (outfile, "w");
+	if (!mrproboutfile) {
+		printf("Could not open %s!", outfile);
+		exit (-1);
+	} 
+
+	//print file header
+	fprintf (mrproboutfile, "phi_out theta_out mrdrp\n");
+	double theta_inc = MRSolidAngleDRPParams[4];
+	double mrprob=0;
+	
+	//write the mrprob values to the output file
+	for (double phi=-pi; phi<pi; phi+=(2*pi)/1000) {
+		
+		for (double theta=0; theta<pi/2; theta+=(pi/2)/1000) {
+			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
+			mrprob = (n->getMRProb( false, MRSolidAngleDRPParams[1], &solLeav, &solEnter, theta_inc, theta, phi ))*sin(theta);
+			fprintf(mrproboutfile, "%g %g %g\n", phi, theta, mrprob);				
+		}
+	}
+
+	delete n;
+} // end PrintMRThetaIEnergy
 
 /**
+ * 
+ * Output a table in root format giving the total MR DRP for a set of incident theta angles and neutron energy. 
+ *
+ * @param outfile, the file name to which the results will be printed 
+ * @param amc, the mc generator required to create an instance of the neutron that will be used to call getMRProb
+ * @param ageom, the geometry object required to create an instance of the neutron that will be used to call getMRProb
+ * @param afield the field object required to create an instance of the neutron that will be used to call getMRProb
+*/
+void PrintMRThetaIEnergy (const char *outfile, TMCGenerator &amc, TGeometry &ageom, TFieldManager *afield) {
+	//Create an instance of a neutron which can be used to call the getMRProb function from the neutron.cpp class
+        TNeutron *n = new TNeutron (0, 0, 100.0, 100.0, 100.0, 10.0, 0.0, 0.0, 1, amc, ageom, afield);
+	
+	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
+	material matEnter = { "reflection surface material", MRThetaIEnergyParams[0], 0, 0, 0, MRThetaIEnergyParams[1], MRThetaIEnergyParams[2], true };
+	material matLeav = { "reflection surface material", 0, 0, 0, 0, 0, 0, true  };
+
+	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
+	solid solEnter = { "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
+        solid solLeav = { "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
+
+	FILE *mroutfile = fopen(outfile, "w");
+        if (!mroutfile){
+                printf("Could not open %s!", outfile);
+                exit(-1);
+        }
+
+	fprintf( mroutfile, "theta_i neut_en totmrdrp\n" ); //print the header
+	
+	//define the min and max values of the following for loop
+	double theta_start = MRThetaIEnergyParams[3];
+	double theta_end = MRThetaIEnergyParams[4];
+	double neute_start = MRThetaIEnergyParams[5];
+        double neute_end = MRThetaIEnergyParams[6]; 
+	double totmrprob=0;
+
+ 	//write the integrated mrprob values to the output file 
+	for (double theta = theta_start; theta<theta_end; theta += (theta_end-theta_start)/1000) {
+
+                for (double energy = neute_start; energy<neute_end; energy += (neute_end-neute_start)/1000) {
+                        //the sin(theta) factor is needed to noramlize for different sizes of surface elements in spherical coordinates
+                        totmrprob = (n->getMRProb( true, energy, &solLeav, &solEnter, theta, 0, 0 ));
+                        fprintf(mroutfile, "%g %g %g\n", theta, energy, totmrprob);
+        	}
+	}
+
+	delete n;	
+} // end PrintMRThetaIEnergy
+
+
+/*i
  * Print final particles statistics.
  */
 void OutputCodes(map<string, map<int, int> > &ID_counter){
