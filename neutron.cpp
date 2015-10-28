@@ -30,6 +30,22 @@ TNeutron::TNeutron(int number, double t, double x, double y, double z, double E,
 
 }
 
+double TNeutron::getMRProb ( bool integrate, double incNeutE, solid *solLeav, solid *solEnter, double atheta_i, double theta_out, double phi_out ) {
+
+	//determine neutron velocity corresponding to the energy and create a state_type vector from it
+        double vnorm = sqrt(2*incNeutE*pow(10, -9)/m_n);
+        double vystate = vnorm*sin(atheta_i);
+        double vzstate = -vnorm*cos(atheta_i); // negative because vzstate has to face the surface
+        double aVec[] = {0,0,0, 0, vystate, vzstate};
+       	state_type astateVec (aVec, aVec+sizeof(aVec)/sizeof(aVec[0])); //create a state_type data type so that it can be passed to the MRDist function
+	double norm[] = { 0, 0, 1 };
+
+	if (!integrate)
+                return MRDist( false, false, astateVec, norm, solLeav, solEnter, theta_out, phi_out);
+        else
+                return MRProb( false, astateVec, norm, solLeav, solEnter);
+} //end getMRDRP
+
 bool TNeutron::MRValid(state_type y, const double normal[3], solid *leaving, solid *entering){
 	double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5]; // velocity squared
 	double vnormal = y[3]*normal[0] + y[4]*normal[1] + y[5]*normal[2]; // velocity projected onto surface normal
