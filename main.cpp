@@ -287,6 +287,9 @@ void ConfigInit(TConfig &config){
  * Other params are read in from the config.in file
 */
 void PrintMROutAngle ( const char *outfile, TMCGenerator &amc, TGeometry &ageom, TFieldManager *afield ) {
+	
+	cout << "\nGenerating table of MR diffuse reflection probability for all solid angles ..." << endl;	
+
 	//Create an instance of a neutron which can be used to call the getMRProb function from the neutron.cpp class
 	TNeutron *n = new TNeutron (0, 0, 100.0, 100.0, 100.0, 10.0, 0.0, 0.0, 1, amc, ageom, afield); 
 	
@@ -298,14 +301,13 @@ void PrintMROutAngle ( const char *outfile, TMCGenerator &amc, TGeometry &ageom,
 	solid solEnter = { "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
 	solid solLeav = { "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
 	
-	cout << "outfile: " << outfile << endl; 
-	//string filename = outfile + ".out"; 
-	//cout << "filename:" << filename << endl;
-	//const char *fileName = outfile + "-F-" + MRSolidAngleDRPParams[0] + "-En-" + MRSolidAngleDRPParams[1] + "-b-" + MRSolidAngleDRPParams[2] + "-w-" + MRSolidAngleDRPParams[3] + "-th-" + MRSolidAngleDRPParams[4] + ".out";
-	exit(-1);
-	FILE *mrproboutfile = fopen (outfile, "w");
+	ostringstream oss;
+	oss << outfile << "-F" << MRSolidAngleDRPParams[0] << "-En" << MRSolidAngleDRPParams[1] << "-b" << MRSolidAngleDRPParams[2] << "-w" << MRSolidAngleDRPParams[3] << "-th" << MRSolidAngleDRPParams[4] << ".out"; 
+ 	string fileName = oss.str();
+	
+	FILE *mrproboutfile = fopen (fileName.c_str(), "w");
 	if (!mrproboutfile) {
-		printf("Could not open %s!", outfile);
+		printf("Could not open %s!", fileName.c_str());
 		exit (-1);
 	} 
 
@@ -337,6 +339,9 @@ void PrintMROutAngle ( const char *outfile, TMCGenerator &amc, TGeometry &ageom,
  * @param afield the field object required to create an instance of the neutron that will be used to call getMRProb
 */
 void PrintMRThetaIEnergy (const char *outfile, TMCGenerator &amc, TGeometry &ageom, TFieldManager *afield) {
+	
+	cout << "\nGenerating table of integrated MR diffuse reflection probability for different incident angle and energy ..." << endl;	
+
 	//Create an instance of a neutron which can be used to call the getMRProb function from the neutron.cpp class
         TNeutron *n = new TNeutron (0, 0, 100.0, 100.0, 100.0, 10.0, 0.0, 0.0, 1, amc, ageom, afield);
 	
@@ -347,10 +352,14 @@ void PrintMRThetaIEnergy (const char *outfile, TMCGenerator &amc, TGeometry &age
 	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
 	solid solEnter = { "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
         solid solLeav = { "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
-
-	FILE *mroutfile = fopen(outfile, "w");
+	
+	ostringstream oss;
+	oss << outfile << "-F" << MRThetaIEnergyParams[0] << "-b" << MRThetaIEnergyParams[1] << "-w" << MRThetaIEnergyParams[2] << ".out"; 
+ 	string fileName = oss.str();	
+	
+	FILE *mroutfile = fopen(fileName.c_str(), "w");
         if (!mroutfile){
-                printf("Could not open %s!", outfile);
+                printf("Could not open %s!", fileName.c_str());
                 exit(-1);
         }
 
@@ -362,9 +371,16 @@ void PrintMRThetaIEnergy (const char *outfile, TMCGenerator &amc, TGeometry &age
 	double neute_start = MRThetaIEnergyParams[5];
         double neute_end = MRThetaIEnergyParams[6]; 
 	double totmrprob=0;
-
+	int progress=0, percentComplete=0;
+	
  	//write the integrated mrprob values to the output file 
 	for (double theta = theta_start; theta<theta_end; theta += (theta_end-theta_start)/1000) {
+		//since this part can be slow it is helpful to monitor the progress
+		progress=theta/theta_end*100;
+		if ( progress%5 == 0) {
+			cout << percentComplete << " percent complete. " << endl;
+			percentComplete+=5;
+		}
 
                 for (double energy = neute_start; energy<neute_end; energy += (neute_end-neute_start)/1000) {
                         //the sin(theta) factor is needed to noramlize for different sizes of surface elements in spherical coordinates
