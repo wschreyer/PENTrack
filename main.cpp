@@ -167,7 +167,7 @@ int main(int argc, char **argv){
 	
 	switch(simtype)
 	{
-		case MR_THETA_OUT_ANGLE: PrintMROutAngle (string(outpath+"/MR-SolidAngleDRP").c_str(), mc, geom, &field); // estimate ramp heating
+		case MR_THETA_OUT_ANGLE: PrintMROutAngle (string(outpath+"/MR-SldAngDRP").c_str(), mc, geom, &field); // estimate ramp heating
 						return 0;
 		case MR_THETA_I_ENERGY: PrintMRThetaIEnergy (string(outpath+"/MR-Tot-DRP").c_str(), mc, geom, &field); // print cut through B field
 						return 0;
@@ -371,15 +371,15 @@ void PrintMRThetaIEnergy (const char *outfile, TMCGenerator &amc, TGeometry &age
 	double neute_start = MRThetaIEnergyParams[5];
         double neute_end = MRThetaIEnergyParams[6]; 
 	double totmrprob=0;
-	int progress=0, percentComplete=0;
+	int progress=0, prevProg=0;
 	
  	//write the integrated mrprob values to the output file 
 	for (double theta = theta_start; theta<theta_end; theta += (theta_end-theta_start)/1000) {
 		//since this part can be slow it is helpful to monitor the progress
-		progress=theta/theta_end*100;
-		if ( progress%5 == 0) {
-			cout << percentComplete << " percent complete. " << endl;
-			percentComplete+=5;
+		progress=(theta-theta_start)/(theta_end-theta_start)*100;
+		if ( progress%5 == 0 && progress >= prevProg+5) {
+			prevProg=progress;
+			cout << progress << "% complete. " << endl;
 		}
 
                 for (double energy = neute_start; energy<neute_end; energy += (neute_end-neute_start)/1000) {
