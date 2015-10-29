@@ -59,6 +59,17 @@ public:
 	 * @param spinout Stream to which spin track is written
 	 */
 	TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout);
+	
+	//variables required for tracking larmor frequency
+	long double initialAngle; ///< initial phase angle of spin vector
+	long double phaseAngle; ///< azimuthal angle between Iy and Ix
+	long double newPhaseAngle; ///< the phase angle of the next integration step
+	long int numRotations; ///< number of turns the spin vector has made in the xy plane
+	long double deltaPhi;///< the total angle the spin vector has swept
+	long double prevDeltaPhi; ///< the total angle the spin vector swept in the previous iteration
+	long double larmFreq; ///< the larmor frequency obtained from the calculation using the above variables
+	long double deltaLarm; ///< the difference between the observed and theoretical larmor frequencies
+	long double blochPolar; ///< the polarization of the particle calculated using Bloch equations
 private:
 	/**
 	 * Do cubic spline interpolation of magnetic field components with coefficients determined in TBFderivs::TBFderivs
