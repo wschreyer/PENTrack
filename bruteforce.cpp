@@ -63,19 +63,19 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 	//calculate the larmor frequency
 	newPhaseAngle=atan2(y[1], y[0]); //calculate phase angle from the current iteration
 	
-	fspinout << std::setprecision(std::numeric_limits<double>::digits);	
+	fspinout << std::setprecision(std::numeric_limits<double>::digits); //to obtain maximum of larmFreq in log file	
 	
-	if ( initialAngle < phaseAngle && initialAngle >= newPhaseAngle ) 
+	if ( initialAngle < phaseAngle && initialAngle >= newPhaseAngle ) //when the phase angle has completed a revolution
 		numRotations+=1;
 	
-	deltaPhi = 2.0*pi*numRotations+fabs(initialAngle-newPhaseAngle);
+	deltaPhi = 2.0*pi*numRotations+fabs(initialAngle-newPhaseAngle); 
 	
-	if ( deltaPhi < prevDeltaPhi )
+	if ( deltaPhi < prevDeltaPhi ) //when the newPhaseAngle has come up "behind" the initial angle
                 deltaPhi = 2.0*pi*numRotations+(2*pi-fabs(initialAngle-newPhaseAngle));	
 	
-	larmFreq = (deltaPhi/x)/(2*pi);
+	larmFreq = (deltaPhi/x)/(2*pi); //convert from angular to regular frequency
 	phaseAngle = newPhaseAngle; //update the current angle to the previous angle for the next iteration
-	prevDeltaPhi = deltaPhi;	
+	prevDeltaPhi = deltaPhi; //update value of previousDeltaPhi
 
 	fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
       	        << 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
