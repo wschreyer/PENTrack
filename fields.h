@@ -13,6 +13,7 @@
 #include "field_3d.h"
 #include "conductor.h"
 #include "globals.h"
+#include "edmfields.h"
 
 /**
  * Contains list of all fields (2D/3D-maps, conductors, ...).
