@@ -19,7 +19,7 @@ public:
 	 *	Bx,		dBxdx,	dBxdy,	dBxdz;
 	 *	By,		dBydx,	dBydy,	dBydz;
 	 *	Bz,		dBzdx,	dBzdy,	dBzdz;
-	 *	Babs,	dBdx,	dBdy,	dBdz;
+	 *	Babs,		dBdx,	dBdy,	dBdz;
 	 * Has to be implemented by all derived field calculation classes.
 	 *
 	 * @param x Cartesian x coordinate
@@ -43,7 +43,7 @@ public:
 	 * @param Ei Returns electric field vector
 	 */
 	virtual void EField (double x, double y, double z, double t, double &V, double Ei[3]) = 0;
-
+	
 	/**
 	 * Virtual destructor
 	 */
