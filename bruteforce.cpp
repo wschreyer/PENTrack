@@ -5,7 +5,7 @@
 TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
 				  spinlog(false), spinloginterval(5e-7), intsteps(0), fspinout(spinout), starttime(0), t1(0), t2(0), initialAngle(0)
-				phaseAngle(-4), newPhaseAngle(0), numRotations(0), deltaPhi(0), prevDeltaPhi(0), larmFreq(0) {
+				phaseAngle(-4), newPhaseAngle(0), numRotations(0), deltaPhi(0), prevDeltaPhi(0), larmFreq(0), blochPolar(0) {
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -61,6 +61,7 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 		BFlogpol = 0.0;
 	
 	//calculate the larmor frequency
+	blochPolar=BFPol;
 	newPhaseAngle=atan2(y[1], y[0]); //calculate phase angle from the current iteration
 	
 	fspinout << std::setprecision(std::numeric_limits<double>::digits); //to obtain maximum of larmFreq in log file	
@@ -76,12 +77,14 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 	larmFreq = (deltaPhi/x)/(2*pi); //convert from angular to regular frequency
 	phaseAngle = newPhaseAngle; //update the current angle to the previous angle for the next iteration
 	prevDeltaPhi = deltaPhi; //update value of previousDeltaPhi
-
-	fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
-      	        << 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
-               	<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws  
-		<< " " << larmFreq << '\n';
-
+	
+	if ( deltaPhi-prevOut >= 10) { //only output after 10 degrees of rotation
+		fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
+      	        	<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
+	               	<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws  
+			<< " " << larmFreq << '\n';
+		prevOut=deltaPhi;
+	}
 }
 
 long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
@@ -114,6 +117,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
 					I_n[2] = 0.5;
 				
 				initialAngle=atan2(I_n[1], I_n[0]);
+				prevOut=0;
 				starttime = x1;
 				std::cout << "\nBF starttime, " << x1 << " ";
 //					stepper = boost::numeric::odeint::make_dense_output((value_type)1e-12, (value_type)1e-12, stepper_type());

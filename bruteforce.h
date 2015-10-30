@@ -46,7 +46,7 @@ private:
 	value_type cx[4]; ///< cubic spline coefficients for magnetic field x-component
 	value_type cy[4]; ///< cubic spline coefficients for magnetic field y-component
 	value_type cz[4]; ///< cubic spline coefficients for magnetic field z-component
-
+	value_type prevOut; ///< the angle at which the previous output was given
 public:
 	/**
 	 * Constructor.
@@ -68,6 +68,7 @@ public:
 	long double deltaPhi;///< the total angle the spin vector has swept
 	long double prevDeltaPhi; ///< the total angle the spin vector swept in the previous iteration
 	long double larmFreq; ///< the larmor frequency obtained from the calculation using the above variables
+	long double blochPolar; ///< the projection 
 private:
 	/**
 	 * Do cubic spline interpolation of magnetic field components with coefficients determined in TBFderivs::TBFderivs
