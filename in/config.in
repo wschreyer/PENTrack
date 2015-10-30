@@ -3,7 +3,7 @@
 [global]
 # simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry, 8 => print mr-drp for solid angle
 # 9 => print integrated mr-drp for incident theta vs energy
-simtype 8
+simtype 1
 # output neutron spatial distribution?
 neutdist 0
 # number of primary particles to be simulated
