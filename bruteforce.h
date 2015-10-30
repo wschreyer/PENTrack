@@ -68,8 +68,6 @@ public:
 	long double deltaPhi;///< the total angle the spin vector has swept
 	long double prevDeltaPhi; ///< the total angle the spin vector swept in the previous iteration
 	long double larmFreq; ///< the larmor frequency obtained from the calculation using the above variables
-	long double deltaLarm; ///< the difference between the observed and theoretical larmor frequencies
-	long double blochPolar; ///< the polarization of the particle calculated using Bloch equations
 private:
 	/**
 	 * Do cubic spline interpolation of magnetic field components with coefficients determined in TBFderivs::TBFderivs
