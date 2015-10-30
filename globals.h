@@ -19,6 +19,10 @@
 #define BF_ONLY 3 ///< set particletype in configuration to this value to print out a ramp heating analysis
 #define BF_CUT 4 ///< set particletype in configuration to this value to print out a planar slice through electric/magnetic fields
 #define GEOMETRY 7 ///< set particletype in configuration to this value to print out a sampling of the geometry
+#define MR_THETA_OUT_ANGLE 8 ///< set particletype in configuration to this value to output a 2d histogram of the MR model's diffuse reflection 
+			     ///< probability for every solid angle
+#define MR_THETA_I_ENERGY 9 ///< set particletype in configuration to this value to output a 2d histogram of the MR models' diffuse reflection
+			    ///< probability for theta_i vs neutron energy
 
 // physical constants
 static const long double pi = 3.1415926535897932384626L; ///< Pi
