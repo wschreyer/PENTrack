@@ -99,9 +99,15 @@ public:
 
 	/// number of integration steps
 	int Nstep;
-
+	
+	/// projection of the spin vector onto the magnetic field 
+	double blochPol;
+	
+	/// the larmor precession frequency of the particle
+	long double lFreq;
+	
 	std::vector<TParticle*> secondaries; ///< list of secondary particles
-
+	
 
 	/**
 	 * Constructor, initializes TParticle::type, TParticle::q, TParticle::m, TParticle::mu
