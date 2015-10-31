@@ -82,6 +82,10 @@ TFieldManager::TFieldManager(TConfig &conf, int aFieldOscillation, double aOscil
 			ss >> p1 >> p2; 
 			if (ss) 
 				f = new TEDMStaticB0GradZField(p1, p2);
+		} else if (i->first == "EDMStaticEField") {
+			ss >> p1;
+			if (ss)
+				f = new TEDMStaticEField (p1);
 		}
 
 		if (f)

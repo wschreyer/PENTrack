@@ -37,7 +37,7 @@ double TParticle::Eend(){
 TParticle::TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, int number,
 		double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
-		  tstart(t), tend(t), polstart(polarisation), polend(polarisation), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0), blochPol(0) 
+		  tstart(t), tend(t), polstart(polarisation), polend(polarisation), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0), blochPol(0), 
 		  lFreq(0), geom(&geometry), mc(&amc), field(afield){
 	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
 	value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
@@ -467,7 +467,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
 			<< polstart << " " << Hstart() << " " << Estart() << " "
-			<< B[3][3] << " " << V << " " << solidstart.ID << " ";
+			<< B[3][0] << " " << V << " " << solidstart.ID << " ";
 
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
