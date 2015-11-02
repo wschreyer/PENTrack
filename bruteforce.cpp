@@ -91,7 +91,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
 					double x2, double y2[6], double B2[4][4]){
 	if (gamma == 0)
 		return 1;
-
+	
 	bool BruteForce1 = false, BruteForce2 = false;;
 	for (unsigned int i = 0; i < BFtimes.size(); i += 2){
 		BruteForce1 |= (x1 >= BFtimes[i] && x1 < BFtimes[i+1]);

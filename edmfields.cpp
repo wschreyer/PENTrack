@@ -27,11 +27,11 @@ void TEDMStaticB0GradZField::BField(double x, double y, double z, double t, doub
     	B[2][3] += edmdB0z0dz; //dBzdz
 
     	//Calculations for the fourth row of the matrix i.e. all |B| parts
-//    	B[3][0] += sqrt((x*x + y*y + 4*z*z)*dBzdz*dBzdz/4 + 2*bz*dBzdz*z + bz*bz); (should give the same results as calculation below)
-    	B[3][0] += sqrt(pow(B[0][0], 2) + pow(B[1][0], 2) + pow(B[2][0], 2)); // |B|
-    	B[3][1] += (x*pow(edmdB0z0dz,2))/(B[3][0]*4); // d|B|/dx
-    	B[3][2] += (y*pow(edmdB0z0dz,2))/(B[3][0]*4); //d|B|/dy
-    	B[3][3] += (pow(edmdB0z0dz, 2)*z + edmB0z0*edmdB0z0dz)/(B[3][0]); //d|B|/dz
+    	B[3][0] += sqrt((x*x + y*y + 4*z*z)*edmdB0z0dz*edmdB0z0dz/4 + 2*edmB0z0*edmdB0z0dz*z + edmB0z0*edmB0z0); //(should give the same results as calculation below)
+//    	B[3][0] += sqrt(pow(B[0][0], 2) + pow(B[1][0], 2) + pow(B[2][0], 2)); // |B| (not correct when there will be other fields)
+    	B[3][1] += (x*pow(edmdB0z0dz,2))/sqrt((x*x + y*y + 4*z*z)*edmdB0z0dz*edmdB0z0dz/4 + 2*edmB0z0*edmdB0z0dz*z + edmB0z0*edmB0z0); // d|B|/dx
+    	B[3][2] += (y*pow(edmdB0z0dz,2))/sqrt((x*x + y*y + 4*z*z)*edmdB0z0dz*edmdB0z0dz/4 + 2*edmB0z0*edmdB0z0dz*z + edmB0z0*edmB0z0); //d|B|/dy
+    	B[3][3] += (pow(edmdB0z0dz, 2)*z + edmB0z0*edmdB0z0dz)/sqrt((x*x + y*y + 4*z*z)*edmdB0z0dz*edmdB0z0dz/4 + 2*edmB0z0*edmdB0z0dz*z + edmB0z0*edmB0z0); //d|B|/dz
 
 } // end TEDMStaticB0GradZField::BField
 
@@ -41,7 +41,6 @@ void TEDMStaticEField::EField (double x, double y, double z, double t, double &V
 	Ei[0] += 0; Ei[1] += 0;
 	Ei[2] += magEField;
 
-	//V = int(E*r) => V = E_z * z
+	//V = integrate(E*r) => V = E_z * z
 	V += Ei[2]*z;
 } //end TEDMStaticEField::EField 
-

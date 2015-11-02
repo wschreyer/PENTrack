@@ -133,9 +133,15 @@ void TFieldManager::BField (double x, double y, double z, double t, double B[4][
 void TFieldManager::AddvCrossE ( state_type y, double B[4][4], double Ei[3] ) {
 	
 	//add the v x E component to the magnetic field when spin tracking is done
-	B[0][0] += (y[4]*Ei[2]-y[5]*Ei[1])/(c_0*c_0); //Bx = (vy*Ez - vz*Ey)/c^2
-        B[1][0] += (y[5]*Ei[0]-y[3]*Ei[2])/(c_0*c_0); //By = (vz*Ex - vx*Ez)/c^2
-        B[2][3] += (y[3]*Ei[1]-y[4]*Ei[0])/(c_0*c_0); //Bz = (vx*Ey - vy*Ex)/c^2
+	double compBx, compBy, compBz; 
+	compBx=	(y[4]*Ei[2]-y[5]*Ei[1])/(c_0*c_0); //Bx = (vy*Ez - vz*Ey)/c^2
+	compBy= (y[5]*Ei[0]-y[3]*Ei[2])/(c_0*c_0); //By = (vz*Ex - vx*Ez)/c^2
+	compBz= (y[3]*Ei[1]-y[4]*Ei[0])/(c_0*c_0); //Bz = (vx*Ey - vy*Ex)/c^2
+	
+	B[0][0] += compBx;         
+	B[1][0] += compBy; 
+        B[2][0] += compBz;
+	B[3][0] += sqrt(compBx*compBx + compBy*compBy + compBz*compBz);
 
 } //end AddvCrossE 
 
