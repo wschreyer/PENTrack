@@ -1,24 +1,24 @@
 /**
  * \file
- * Mercury class definition. Mercury-199 is used as a comagnetometer in the EDM experiment at TRIUMF. 
+ * Xenon class definition. Xenon-129 is used as a comagnetometer used in the TRIUMF EDM experiment. 
  */
 
-#ifndef MERCURY_H_
-#define MERCURY_H_
+#ifndef XENON_H_
+#define XENON_H_
 
 #include "particle.h"
 
-extern const char* NAME_MERCURY; ///< name of TMERCURY class
+extern const char* NAME_XENON; ///< name of TXenon class
 
 /**
- * Mercury particle class.
+ * Xenon particle class.
  *
- * Simulates a mercury atom including gravitation and Lorentz-force
+ * Simulates a xenon atom including gravitation and Lorentz-force
  */
-struct TMercury: TParticle{
+struct TXenon:TParticle{
 public:
 	/**
-	 * Create mercury atom.
+	 * Create xenon
 	 *
 	 * Wraps basic TParticle constructor
 	 *
@@ -35,7 +35,7 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TMercury(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+	TXenon (int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
 	static ofstream endout; ///< endlog file stream
@@ -46,8 +46,8 @@ protected:
 
 	/**
 	 * This method is executed, when a particle crosses a material boundary.
-	 *
-	 * Currently, nothing happens to mercury atoms, but this will be changed after some research on their behaviour is done.
+	 * More research needs to be done.
+	 * Nothing happens to xenon.
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -67,8 +67,8 @@ protected:
 	/**
 	 * This method is executed on each step.
 	 *
-	 * Mercury atoms are immediately absorbed in solids other than TParticle::geom::defaultsolid, this behaviour will be changed after
-	 * some research is done. 
+	 * Xenon is immediately absorbed in solids other than TParticle::geom::defaultsolid
+	 * This behaviour will be changed after some more research is done. 
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -82,7 +82,7 @@ protected:
 
 
 	/**
-	 * Mercury decay (not used)
+	 * Xenon decay (not used)
 	 */
 	void Decay();
 
@@ -161,4 +161,4 @@ protected:
 
 };
 
-#endif // MERCURY_H_
+#endif // XENON_H_

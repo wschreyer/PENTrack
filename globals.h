@@ -33,11 +33,16 @@ static const long double mu0 = 4*pi*1e-7L; ///< magnetic permeability [Vs/Am]
 static const long double m_n = 1.674927211E-27L/ele_e; ///< neutron mass [eV/c^2]
 static const long double m_p = 1.672621637E-27L/ele_e; ///< proton mass [eV/c^2]
 static const long double m_e = 9.10938215e-31L/ele_e; ///< electron mass [eV/c^2]
+static const long double m_hg = 3.303946e-25L/ele_e; ///< mercury-199 mass [ev/c^2] (wolframalpha)
+static const long double m_xe = 2.140514e-22L/ele_e; ///< xenon-129 mass [ev/c^2] (wolframalpha)
 static const long double c_0 = 299792458.L; ///< light speed [m/s]
 static const long double hbar = 1.05457266e-34L; ///< planck constant [Js]
 static const long double mu_nSI = -0.96623641e-26L;	///< Neutron magnetic moment [J/T]
+static const long double mu_hgSI = 2.555118e-27L; ///< mercury-199 magnetic moment [J/T]
+static const long double mu_xeSI = -3.392939e-27L; ///< Xenon-129 magnetic moment [J/T]
 static const long double gamma_n = -1.83247185e8L; ///< 2*::mu_nSI/::hquer gyromagnetic ratio of neutron [1/Ts]
-
+static const long double gamma_hg = 4.76901003e7L; ///< from: http://www.sciencedirect.com/science/article/pii/S0370269314007692 [ 1/Ts ]
+static const long double gamma_xe = -7.399707336e7L; ///< from: http://nmrwiki.org/wiki/index.php?title=Gyromagnetic_ratio [ 1/Ts ]
 static const long double lengthconv = 0.01; ///< length conversion factor cgs -> SI [cm -> m]
 static const long double Bconv = 1e-4; ///< magnetic field conversion factor cgs -> SI [G -> T]
 static const long double Econv = 1e2; ///< electric field conversion factor cgs -> SI [V/cm -> V/m]
