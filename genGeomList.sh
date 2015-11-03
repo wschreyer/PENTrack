@@ -1,0 +1,128 @@
+#!/bin/bash
+#
+#This script will prepare the STL files in the required format for a PENTrack simulation. 
+#It will also remove any spaces from the names of the STL files if they exist. 
+# The script takes two optional arguments: 
+#
+#
+# @param argv1  the name of the STL files dir as an argument. If no argument given, it assumes the dir has the name STL. 
+# @param argv2 the relative path to the STL dir from the PENTrack exe (in case the input dir is not given the name "in")
+#
+# The STL files are assumed to have names with the following format:
+# 			partName_mater_CuBe_prior_1.stl 
+# and if it is a source volume then: 
+# 			partName_mater_CuBe_prior_source.stl  
+#where CuBe could be an arbitrary material type and 1 represents the priority of the material. 
+#The script will then print out an ordered list of stl files in a format that can be copy
+#pasted for the [GEOMETRY] section of the geometry.in input file of PENTrack. 
+# 
+# If no material type is specified the material type is listed as MISSING_MATERIAL and if no priority is specified it is listed 
+# with the lowest priority. 
+#The script requires you do not use at least one of the following characters in the STL file names: "}", "?", "<", "&", "!", "@"
+#
+#By: Sanmeet Chahal
+#August 26, 2015
+
+#the directory in which all the STL files are stored
+stlDirName=$1
+#in case the STL dir is not in the /in folder of PENTrack 
+specialPathToSTL=$2 
+
+# If no name is provided it will assume that the STL dir has a name with the word STL in it 
+if [ "$stlDirName" == "" ]; then
+	stlDirName="STL"
+fi
+
+#check to make sure the stl dir exists 
+if [ -d $stlDirName ]; then 
+
+	stlDirName=`echo $stlDirName | sed 's|/$||'` #remove the last backslash if it exists in the STL dirname
+
+	if [ "$specialPathToSTL" != "" ]; then 
+		specialPathToSTL=`echo $specialPathToSTL | sed 's|/$||'` #remove the last backslash if it exists in the special path name
+	fi
+
+	#remove the spaces from the STL file names
+	for f in $stlDirName/*.STL;  do 
+		a=`echo $f | sed 's/ //g'`
+	
+		#only necessary to rename the file if it contained a space
+		#ie don't rename if the file didn't have a space
+		if [ "$f" != "$a" ]; then 
+			mv "$f" "$a"
+		fi
+	done
+
+	#get a sorted list of STL files based on the priority 
+	#explanation of command: 
+	# list files in STL dir | remove the source STL from list | replace prior_ with a special char | sort numerically the second field in the STL file names 
+	# after separating the STL file names based on the special char | replace the special char in the name of the STL files with prior_ to get back the original name of the files
+	# In Linux you can have file names with the special chars: "}", "?", "<", "&", "!", "@"
+	if [ "`ls $stlDirName | grep -v source | grep "}"`" == "" ]; then 
+		sortedSTLFiles=`ls $stlDirName | grep "STL" | grep -v "source" | sed 's/prior_/}/g' | sort -t "}" -n -k 2 | sed 's/}/prior_/g'`
+	
+	elif [ "`ls $stlDirName | grep -v source | grep "?"`" == "" ]; then 
+		sortedSTLFiles=`ls $stlDirName | grep "STL" | grep -v "source" | sed 's/prior_/?/g' | sort -t "?" -n -k 2 | sed 's/?/prior_/g'`
+	
+	elif [ "`ls $stlDirName | grep -v source | grep "<"`" == "" ]; then
+		sortedSTLFiles=`ls $stlDirName | grep "STL" | grep -v "source" | sed 's/prior_/</g' | sort -t "<" -n -k 2 | sed 's/</prior_/g'`
+	
+	elif [ "`ls $stlDirName | grep -v source | grep "&"`" == "" ]; then
+		sortedSTLFiles=`ls $stlDirName| grep "STL" | grep -v "source" | sed 's/prior_/\&/g' | sort -t "&" -n -k 2 | sed 's/\&/prior_/g'`
+	
+	elif [ "`ls $stlDirName | grep -v source | grep "!"`" == "" ]; then
+		sortedSTLFiles=`ls $stlDirName | grep "STL" | grep -v "source" | sed 's/prior_/!/g' | sort -t "!" -n -k 2 | sed 's/!/prior_/g'`
+	
+	elif [ "`ls $stlDirName | grep -v source | grep "@"`" == "" ]; then
+		sortedSTLFiles=`ls $stlDirName | grep "STL" | grep -v "source" | sed 's/prior_/@/g' | sort -t "@" -n -k 2 | sed 's/@/prior_/g'`
+
+	else
+		printf "***************\nFILE NAME ERROR\n***************\n\
+Your STL file names contains at least one instance of all the following characters: }, ?, <, &, !, @.\n\
+This script requires that all file names not contain at least one of the above characters to be executed properly.\n\
+Please rename the STL files appropriately and try again. Exiting script.\n" 
+		exit 2
+	fi
+	
+	############################################
+	#PRINT THE STL FILES IN THE REQUIRED FORMAT#
+	############################################
+	
+	sortedSTLFilesArray=($sortedSTLFiles)
+	i=1 #counter for the files listed in the geometry.in file
+
+	printf "[GEOMETRY]\n#ID	STLfile    material_name    ignore_times\n$i       ignored    default\n" 
+
+	#print out the sorted list of STL files to the console available for copy paste into the geometry.in file
+	for f in "${sortedSTLFilesArray[@]}"; do 
+		i=$((i+2))
+		
+		matType=`echo $f | sed 's/^.*mat_//' | sed 's/_prior.*//'`
+		
+		if [ "`echo $f | grep "mat"`" == "" ]; then  #if no material type is specified
+			matType="MISSING_MATERIAL"
+		fi
+		
+		if [ "$specialPathToSTL" == "" ]; then 
+			printf "$i       in/$stlDirName/$f    $matType\n" 
+		else
+			printf "$i       $specialPathToSTL/$f    $matType\n" 
+		fi
+	done
+	
+	#print the source volume section
+	sourceVolume=`ls $stlDirName | grep "STL" | grep "source"`
+	
+	if [ "$specialPathToSTL" == "" ]; then 
+		printf "\n[SOURCE]\nSTLvolume       neutron       in/$stlDirName/$sourceVolume    0    0\n" 
+	else
+		printf "\n[SOURCE]\nSTLvolume       neutron       $specialPathToSTL/$stlDirName/$sourceVolume    0    0\n" 
+	fi
+else
+	printf "******************\nSTL DIR NAME ERROR\n******************\n\
+Cannot find a directory of name $stlDirName.\nSpecify the name of the dir \
+containing the STL files and try again. \nExiting script.\n" 
+	exit 2
+fi
+
+
