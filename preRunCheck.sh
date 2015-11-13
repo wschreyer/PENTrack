@@ -11,6 +11,7 @@ maxJobNum=$2
 jobName=$3
 inDirName=$4
 outDirName=$5
+pbsfileName=$6
 #wall time in hours or minutes (specify hours by h and minutes by m so 1h20m is interpreted as 1:20:00
 #maximum is 72 hours, minimum is 15 minutes (usually the minimum time required to run PENTrack)
 #wallTimeReq=$4 #saving this for future work
@@ -24,8 +25,12 @@ if [[ $outDirName == "" ]]; then
 fi
 
 ##Always regenerate the same template 
-if [ -e batch.pbs ]; then 
-	rm batch.pbs
+if [[ $pbsfileName == "" ]]; then 
+	pbsfileName="batch.pbs"
+fi
+
+if [ -e $pbsfileName ]; then 
+	rm $pbsfileName
 fi
 
 printf "#!/bin/bash\n\
@@ -46,7 +51,7 @@ echo \$PBS_JOBNAME\n\
 echo \"Starting run at: \`date\`\"\n\
 ./PENTrack \$PBS_ARRAYID \"./$inDirName\" \"./$outDirName\"\n\
 #also put log files .o / .e in a subfolder in same output folder\n\
-echo \"Program diffuse finished with exit code \$? at: \`date\`\"\n\n" > batch.pbs
+echo \"Program diffuse finished with exit code \$? at: \`date\`\"\n\n" > $pbsfileName
 
 printf "******************************************************************************************************************************************************\n" 
 printf "                                                                   Pre Run Errror Check Log                                                           \n" 
@@ -111,10 +116,10 @@ fi
 ##########################################################################
 
 if [[ $minJobNum != "" ]] && [[ $maxJobNum != "" ]];  then
-	cat batch.pbs | sed 's/#PBS -t.*/#PBS -t '$minJobNum'-'$maxJobNum' /g'  > toto.txt
-	mv toto.txt batch.pbs
+	cat $pbsfileName | sed 's/#PBS -t.*/#PBS -t '$minJobNum'-'$maxJobNum' /g'  > toto.txt
+	mv toto.txt $pbsfileName
 	
-	printf "\nFinished setting initial and final job numbers in batch.pbs.\n"
+	printf "\nFinished setting initial and final job numbers in $pbsfileName.\n"
 fi
 
 #############################################################
@@ -122,20 +127,20 @@ fi
 #############################################################
 
 outputFilesPath=`echo $PWD/$outDirName`
-#print batch.pbs -> find the line with #PBS -e (labelling it with a line number) -> delete everything after the line number
-lineNumErrorPath=`cat batch.pbs | grep -n "#PBS -e" | sed 's/[:].*//'`
-lineNumOutputPath=`cat batch.pbs | grep -n "#PBS -o" | sed 's/[:].*//'`
+#print $pbsfileName -> find the line with #PBS -e (labelling it with a line number) -> delete everything after the line number
+lineNumErrorPath=`cat $pbsfileName | grep -n "#PBS -e" | sed 's/[:].*//'`
+lineNumOutputPath=`cat $pbsfileName | grep -n "#PBS -o" | sed 's/[:].*//'`
 
 #replace the error path (need to use a | as the separator because  $outputFilesPath contains a / char
 #need to use double quotes because we are replacing with something that is a variable
-cat batch.pbs | sed "s|#PBS -e.*|#PBS -e $outputFilesPath/error.txt |g" > toto.txt
-mv toto.txt batch.pbs
+cat $pbsfileName | sed "s|#PBS -e.*|#PBS -e $outputFilesPath/error.txt |g" > toto.txt
+mv toto.txt $pbsfileName
 
 #replace the output path
-cat batch.pbs | sed "s|#PBS -o.*|#PBS -o $outputFilesPath/output.txt|g" > toto.txt
-mv toto.txt batch.pbs	
+cat $pbsfileName | sed "s|#PBS -o.*|#PBS -o $outputFilesPath/output.txt|g" > toto.txt
+mv toto.txt $pbsfileName	
 
-printf "Finished setting path of the error and output files in batch.pbs.\n"
+printf "Finished setting path of the error and output files in $pbsfileName.\n"
 
 ##########################################################################
 #####Check and set the memory set for PENTrack in the batch.pbs file #####
@@ -145,28 +150,28 @@ printf "Finished setting path of the error and output files in batch.pbs.\n"
 #For the future: 
 #convert the du -ch in/ | grep "tot" to a memory required
 #multiply that number by 10 safety factor
-cat batch.pbs | sed 's/#PBS -l pmem=.*/#PBS -l pmem=1gb/g' > toto.txt
-mv toto.txt batch.pbs
+cat $pbsfileName | sed 's/#PBS -l pmem=.*/#PBS -l pmem=1gb/g' > toto.txt
+mv toto.txt $pbsfileName
 
-printf "Finished setting the memory requested in batch.pbs.\n"
+printf "Finished setting the memory requested in $pbsfileName.\n"
 
 ####################################################
 #######Set the job name if there is user input #####
 ####################################################
 
 if [[ $jobName != "" ]];  then
-	cat batch.pbs | sed 's/#PBS -N.*/#PBS -N '$jobName' /g' > toto.txt
-	mv toto.txt batch.pbs
+	cat $pbsfileName | sed 's/#PBS -N.*/#PBS -N '$jobName' /g' > toto.txt
+	mv toto.txt $pbsfileName
 	
-	printf "Finished setting the job name in batch.pbs to $jobName.\n"
+	printf "Finished setting the job name in $pbsfileName to $jobName.\n"
 fi
 
 ########################################################################################################################
 ####### Check if number of jobs running + number of jobs specified in batch.pbs > 2880 (the max allowed by Jasper) #####
 ########################################################################################################################
 
-jobNumberStart=`grep '^#PBS -t' batch.pbs | awk '{print $3}' | sed "s/-.*$//"` 
-jobNumberEnd=`grep '^#PBS -t' batch.pbs | awk '{print $3}' | sed "s/^[^-]*-//"`
+jobNumberStart=`grep '^#PBS -t' $pbsfileName | awk '{print $3}' | sed "s/-.*$//"` 
+jobNumberEnd=`grep '^#PBS -t' $pbsfileName | awk '{print $3}' | sed "s/^[^-]*-//"`
 jobsRequested=$(($jobNumberEnd-$jobNumberStart)) 
 jobsRunning=$(qstat -tu $USER | grep $USER | wc -l) 
 totJobNum=$(($jobsRequested+jobsRunning))
@@ -207,7 +212,7 @@ lastLineEnter=0
 for n in $allNums; do
 	if [ $jobNumberStart -le $n ] && [ $jobNumberEnd -ge $n ]; then
 		lastLineEnter=1
-		printf "Cases of possible output overwrite! Job numbers with output in out/ and within the range specified by batch.pbs:\n"
+		printf "Cases of possible output overwrite! Job numbers with output in out/ and within the range specified by $pbsfileName:\n"
 		break
 	fi
 done
