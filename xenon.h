@@ -18,7 +18,7 @@ extern const char* NAME_XENON; ///< name of TXenon class
 struct TXenon:TParticle{
 public:
 	/**
-	 * Create xenon
+	 * Create xenon-129 atom. 
 	 *
 	 * Wraps basic TParticle constructor
 	 *
@@ -45,9 +45,8 @@ protected:
 	static ofstream spinout; ///< spinlog file stream
 
 	/**
-	 * This method is executed, when a particle crosses a material boundary.
-	 * More research needs to be done.
-	 * Nothing happens to xenon.
+	 * This method is executed, when a particle encounters a material boundary.
+	 * The atom is reflected specularly or diffusely depending on the material type. 
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -63,12 +62,18 @@ protected:
 	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
-
+	/**
+	 * Reflect mercury-199 from surface.
+	 *
+	 * Reflects or scatters the neutron according to specular or Lambert.
+	 */
+	void Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
+	
 	/**
 	 * This method is executed on each step.
 	 *
-	 * Xenon is immediately absorbed in solids other than TParticle::geom::defaultsolid
-	 * This behaviour will be changed after some more research is done. 
+	 * Do nothing. 
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
