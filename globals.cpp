@@ -88,6 +88,13 @@ double ElectronBetaSpectrum(double E){
 	return 8.2*sqrt(E*1e-6*E*1e-6 + 2*E*1e-6*m_e*c_0*c_0*1e-6) * pow(Qvalue - E*1e-6, 2) * (E*1e-6 + m_e*c_0*c_0*1e-6);
 }
 
+// energy distribution of comagnetometer gases using Maxwell-Boltzmann distribution
+// from "http://hyperphysics.phy-astr.gsu.edu/hbase/kinetic/maxspe.html"
+// result always < 1!
+double MaxwellBoltzSpectrum (double T, double E) {
+	double kT = boltzconst*T;  
+	return 2*sqrt(E/pi)*sqrt(kT*kT*kT)*exp(-E/kT);
+}
 
 typedef std::map<std::string, std::map<std::string, std::string> > TConfig;
 

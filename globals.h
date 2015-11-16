@@ -28,6 +28,7 @@
 static const long double pi = 3.1415926535897932384626L; ///< Pi
 static const long double ele_e = 1.602176487E-19L; ///< elementary charge [C]
 static const long double gravconst = 9.80665L; ///< g [m/s]
+static const long double boltzconst = 1.38064852E-23L/ele_e; /// Boltzmann's constant [ev/K] from http://physics.nist.gov/cgi-bin/cuu/Value?sigma
 static const long double conv = pi/180.L; ///< deg to rad conversion factor
 static const long double mu0 = 4*pi*1e-7L; ///< magnetic permeability [Vs/Am]
 static const long double m_n = 1.674927211E-27L/ele_e; ///< neutron mass [eV/c^2]
@@ -101,6 +102,17 @@ double ProtonBetaSpectrum(double E);
  */
 double ElectronBetaSpectrum(double E);
 
+/**
+ * Energy distribution of comagnetometer gasses from Maxwell-Boltzmann distribution. 
+ *
+ * From "http://hyperphysics.phy-astr.gsu.edu/hbase/kinetic/maxspe.html"
+ *
+ * @param T temperature of the gas
+ * @param E energy
+ *
+ * @return Returns probability between 0 and 1 that a gas molecule with energy E being created. 
+ */
+double MaxwellBoltzSpectrum (double T, double E); 
 
 typedef std::map<std::string, std::map<std::string, std::string> > TConfig; ///< map of sections containing a map of key-value pairs
 
