@@ -395,13 +395,13 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 			theta = acos(v_zaxis/v_tot);
 			//check x component
 			if(v_xaxis - v_tot*cos(phi)*sin(theta) > 0.01){
-				std::cout<< "Il y a un problem avec la calculation du v_x \n";
+				std::cout<< "There was an error in the calculation of v_x \n";
 //					sleep(1);
 			}else if(v_yaxis - v_tot*sin(phi)*sin(theta) > 0.01){
-				std::cout<< "Il y a un problem avec la calculation du v_y \n";
+				std::cout<< "There was an error in the calculation of  v_y \n";
 //					sleep(1);
 			}else if(v_zaxis - v_tot*cos(theta) > 0.01){
-				std::cout<< "Il y a un problem avec la calculation du v_z \n";
+				std::cout<< "There was an error in the calculation of v_z \n";
 //					sleep(1);
 			}
 			return;
@@ -414,7 +414,7 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 */
 
 	}
-
+			y2[i] = y1[i];
 
 
 };
