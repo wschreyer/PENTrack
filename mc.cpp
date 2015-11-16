@@ -38,6 +38,7 @@ TMCGenerator::TMCGenerator(const char *infile){
 			pconf->spectrum.SetExpr(i->second["spectrum"]);
 			pconf->spectrum.DefineFun("ProtonBetaSpectrum", &ProtonBetaSpectrum);
 			pconf->spectrum.DefineFun("ElectronBetaSpectrum", &ElectronBetaSpectrum);
+			pconf->spectrum.DefineFun("MaxwellBoltzSpectrum", &MaxwellBoltzSpectrum);
 			pconf->phi_v.DefineVar("x", &xvar);
 			pconf->phi_v.SetExpr(i->second["phi_v"]);
 			pconf->theta_v.DefineVar("x", &xvar);
@@ -414,7 +415,6 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 */
 
 	}
-			y2[i] = y1[i];
 
 
 };

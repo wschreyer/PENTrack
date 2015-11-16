@@ -97,7 +97,7 @@ Please rename the STL files appropriately and try again. Exiting script.\n"
 	for f in "${sortedSTLFilesArray[@]}"; do 
 		i=$((i+2))
 		
-		matType=`echo $f | sed 's/^.*mat_//' | sed 's/_prior.*//'`
+		matType=`echo $f | sed 's/^.*mater_//' | sed 's/_prior.*//'`
 		
 		if [ "`echo $f | grep "mat"`" == "" ]; then  #if no material type is specified
 			matType="MISSING_MATERIAL"

@@ -107,8 +107,8 @@ double ElectronBetaSpectrum(double E);
  *
  * From "http://hyperphysics.phy-astr.gsu.edu/hbase/kinetic/maxspe.html"
  *
- * @param T temperature of the gas
- * @param E energy
+ * @param T temperature of the gas in Kelvin
+ * @param E energy in eV
  *
  * @return Returns probability between 0 and 1 that a gas molecule with energy E being created. 
  */
