@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "xenon.h"
 
-const char* NAME_XENON = "xenon-129";
+const char* NAME_XENON = "xenon";
 
 ofstream TXenon::endout; ///< endlog file stream
 ofstream TXenon::snapshotout; ///< snapshot file stream
@@ -53,7 +53,7 @@ void TXenon::Reflect(value_type x1, state_type y1, value_type &x2, state_type &y
 	else{
 		//************** diffuse reflection no MR model ************
 		double phi_r, theta_r;	
-		
+//		std::cout << "Diffuse reflection!" << std::endl;
 		phi_r = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
 		theta_r = mc->SinCosDist(0, 0.5*pi);
 		

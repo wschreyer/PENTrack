@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "mercury.h"
 
-const char* NAME_MERCURY = "mercury-199";
+const char* NAME_MERCURY = "mercury";
 
 ofstream TMercury::endout; ///< endlog file stream
 ofstream TMercury::snapshotout; ///< snapshot file stream
@@ -16,7 +16,7 @@ ofstream TMercury::spinout; ///< spinlog file stream
 
 
 TMercury::TMercury(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
-			: TParticle(NAME_MERCURY, 0,  m_hg, mu_hgSI, gamma_hg, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
+			: TParticle(NAME_MERCURY, 0, m_hg, mu_hgSI, gamma_hg, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
 }
 
