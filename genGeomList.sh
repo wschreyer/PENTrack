@@ -99,7 +99,7 @@ Please rename the STL files appropriately and try again. Exiting script.\n"
 		
 		matType=`echo $f | sed 's/^.*mater_//' | sed 's/_prior.*//'`
 		
-		if [ "`echo $f | grep "mat"`" == "" ]; then  #if no material type is specified
+		if [ "`echo $f | grep "mater"`" == "" ]; then  #if no material type is specified
 			matType="MISSING_MATERIAL"
 		fi
 		

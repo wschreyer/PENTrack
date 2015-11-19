@@ -47,7 +47,7 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 			exit(-1);
 		}
 		fspinout.precision(10);
-		fspinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz larmFreq\n";
+		fspinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz larmFreq deltaPhi numRots phaseAngle\n";
 	}
 
 	value_type B[3];
@@ -66,25 +66,27 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 	
 	fspinout << std::setprecision(std::numeric_limits<double>::digits); //to obtain maximum of larmFreq in log file	
 	
-	if ( initialAngle < phaseAngle && initialAngle >= newPhaseAngle ) //when the phase angle has completed a revolution
+	//when the phase angle has completed a revolution (i.e. the previous and new phase angles around the initial angle)
+	if ( (initialAngle < phaseAngle && initialAngle >= newPhaseAngle && gamma < 0 ) || ( initialAngle > phaseAngle && initialAngle <= newPhaseAngle && gamma > 0 ) && phaseAngle != -4 ) 
 		numRotations+=1;
 	
 	deltaPhi = 2.0*pi*numRotations+fabs(initialAngle-newPhaseAngle); 
 	
 	if ( deltaPhi < prevDeltaPhi ) //when the newPhaseAngle has come up "behind" the initial angle
                 deltaPhi = 2.0*pi*numRotations+(2*pi-fabs(initialAngle-newPhaseAngle));	
-	
+	 
 	larmFreq = (deltaPhi/x)/(2*pi); //convert from angular to regular frequency
 	phaseAngle = newPhaseAngle; //update the current angle to the previous angle for the next iteration
 	prevDeltaPhi = deltaPhi; //update value of previousDeltaPhi
 	
-	if ( deltaPhi-prevOut >= 62.8) { //only output after 10 full rotation
+//	if ( deltaPhi-prevOut >= 62.8 ) { //only output after 10 full rotation
 		fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
       	        	<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
 	               	<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws  
-			<< " " << larmFreq << '\n';
+			<< " " << larmFreq << " " << deltaPhi   
+			<< " " << numRotations << " " << phaseAngle << '\n';
 		prevOut=deltaPhi;
-	}
+//	}
 }
 
 long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],

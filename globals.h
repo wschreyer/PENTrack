@@ -35,8 +35,8 @@ static const long double mu0 = 4*pi*1e-7L; ///< magnetic permeability [Vs/Am]
 static const long double m_n = 1.674927211E-27L/ele_e; ///< neutron mass [eV/c^2]
 static const long double m_p = 1.672621637E-27L/ele_e; ///< proton mass [eV/c^2]
 static const long double m_e = 9.10938215e-31L/ele_e; ///< electron mass [ eV/c^2 ]
-static const long double m_hg = 198.96828064/(1000*avogadroconst)/ele_e; ///< mercury-199 mass [ev/c^2] (wolframalpha)
-static const long double m_xe = 128.9047808611/(1000*avogadroconst)/ele_e; ///< xenon-129 mass [ev/c^2] (wolframalpha)
+static const long double m_hg = 198.96828064/(1000*avogadroconst)/ele_e; ///< mercury-199 mass [ev/c^2] (http://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?ele=Hg)
+static const long double m_xe = 128.9047808611/(1000*avogadroconst)/ele_e; ///< xenon-129 mass [ev/c^2] (http://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?ele=Xe)
 static const long double c_0 = 299792458.L; ///< light speed [m/s]
 static const long double hbar = 1.05457266e-34L; ///< planck constant [Js]
 static const long double mu_nSI = -0.96623641e-26L;	///< Neutron magnetic moment [J/T]
