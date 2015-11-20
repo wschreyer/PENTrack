@@ -40,7 +40,8 @@ private:
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
-
+	double spinlogdegrees; ///< output to the spinlog every spinlogdegrees number of degrees	
+	
 	value_type t1; ///< field interpolation start time
 	value_type t2; ///< field interpolation end time
 	value_type cx[4]; ///< cubic spline coefficients for magnetic field x-component

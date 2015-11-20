@@ -4,8 +4,9 @@
 
 TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
-				  spinlog(false), spinloginterval(5e-7), intsteps(0), fspinout(spinout), starttime(0), t1(0), t2(0), initialAngle(0),
-				phaseAngle(-4), newPhaseAngle(0), numRotations(0), deltaPhi(0), prevDeltaPhi(0), larmFreq(0), blochPolar(0) {
+				  spinlog(false), spinloginterval(5e-7), intsteps(0), fspinout(spinout), starttime(0), spinlogdegrees(1E-5), t1(0),
+				  t2(0), initialAngle(0), phaseAngle(-4), newPhaseAngle(0), numRotations(0), deltaPhi(0), 
+				  prevDeltaPhi(0), larmFreq(0), blochPolar(0) {
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -16,6 +17,7 @@ TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<
 	}while(BFtimess.good());
 	std::istringstream(conf["spinlog"]) >> spinlog;
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
+	std::istringstream(conf["spinlogdegrees"]) >> spinlogdegrees;
 }
 
 void TBFIntegrator::Binterp(value_type t, value_type B[3]){
@@ -47,7 +49,7 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 			exit(-1);
 		}
 		fspinout.precision(10);
-		fspinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz larmFreq deltaPhi numRots phaseAngle\n";
+		fspinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz larmFreq\n";
 	}
 
 	value_type B[3];
@@ -79,14 +81,13 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 	phaseAngle = newPhaseAngle; //update the current angle to the previous angle for the next iteration
 	prevDeltaPhi = deltaPhi; //update value of previousDeltaPhi
 	
-//	if ( deltaPhi-prevOut >= 62.8 ) { //only output after 10 full rotation
+	if ( deltaPhi-prevOut >= spinlogdegrees*pi/180 ) { //only output after 10 full rotation
 		fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
       	        	<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
 	               	<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws  
-			<< " " << larmFreq << " " << deltaPhi   
-			<< " " << numRotations << " " << phaseAngle << '\n';
+			<< " " << larmFreq << '\n';
 		prevOut=deltaPhi;
-//	}
+	}
 }
 
 long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
