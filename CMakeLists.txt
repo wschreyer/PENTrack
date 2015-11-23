@@ -41,7 +41,7 @@ endif()
 set(CMAKE_CXX_FLAGS "-O3 -frounding-math")
 if (Boost_VERSION VERSION_GREATER 1.55.0)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-	message("-- Boost > 1.55.0 requires C++11. I hope it is supported by your compiler.")
+	message(STATUS "Boost > 1.55.0 requires C++11. I hope it is supported by your compiler.")
 endif()
 	
 
