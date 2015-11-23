@@ -31,19 +31,17 @@ TNeutron::TNeutron(int number, double t, double x, double y, double z, double E,
 }
 
 double TNeutron::getMRProb ( bool integrate, double incNeutE, solid *solLeav, solid *solEnter, double atheta_i, double theta_out, double phi_out ) {
-
 	//determine neutron velocity corresponding to the energy and create a state_type vector from it
-        double vnorm = sqrt(2*incNeutE*pow(10, -9)/m_n);
-        double vystate = vnorm*sin(atheta_i);
-        double vzstate = -vnorm*cos(atheta_i); // negative because vzstate has to face the surface
-        double aVec[] = {0,0,0, 0, vystate, vzstate};
-       	state_type astateVec (aVec, aVec+sizeof(aVec)/sizeof(aVec[0])); //create a state_type data type so that it can be passed to the MRDist function
+	double v = sqrt(2*incNeutE*1e-9/m_n);
+	state_type astateVec(6, 0);
+	astateVec[4] = v*sin(atheta_i);
+	astateVec[5] = -v*cos(atheta_i); // negative because vzstate has to face the surface
 	double norm[] = { 0, 0, 1 };
 
 	if (!integrate)
-                return MRDist( false, false, astateVec, norm, solLeav, solEnter, theta_out, phi_out);
-        else
-                return MRProb( false, astateVec, norm, solLeav, solEnter);
+		return MRDist( false, false, astateVec, norm, solLeav, solEnter, theta_out, phi_out);
+	else
+		return MRProb( false, astateVec, norm, solLeav, solEnter);
 } //end getMRDRP
 
 bool TNeutron::MRValid(state_type y, const double normal[3], solid *leaving, solid *entering){
@@ -125,19 +123,19 @@ double TNeutron::MRDist(bool transmit, bool integral, state_type y, const double
 
 void TNeutron::MRDist(double theta, double xminusa, double bminusx, double &y, void *params){
 	TMRParams *p = (TMRParams*)params;
-	y = p->n->MRDist(p->transmit, p->integral, p->y, p->normal, p->leaving, p->entering, theta, 0);
+	y = MRDist(p->transmit, p->integral, p->y, p->normal, p->leaving, p->entering, theta, 0);
 }
 
 void TNeutron::NegMRDist(const alglib::real_1d_array &x, double &f, void *params){
 	TMRParams *p = (TMRParams*)params;
-	f = -p->n->MRDist(p->transmit, p->integral, p->y, p->normal, p->leaving, p->entering, x[0], 0);
+	f = -MRDist(p->transmit, p->integral, p->y, p->normal, p->leaving, p->entering, x[0], 0);
 }
 
 double TNeutron::MRProb(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering){
 //	for (int i = 0; i <= 10; i++)
 //		cout << MRDist(transmit, false, y, normal, leaving, entering, pi/2*(i/10.), 0) << ' ';
 //	cout << '\n';
-	TMRParams params = {this, transmit, true, y, normal, leaving, entering};
+	TMRParams params = {transmit, true, y, normal, leaving, entering};
 	double prob;
 
 	alglib::autogkstate s;
@@ -154,7 +152,7 @@ double TNeutron::MRDistMax(bool transmit, state_type y, const double normal[3], 
 	alglib::minbleiccreatef(1, theta, 1e-6, s);
 	alglib::minbleicsetbc(s, bndl, bndu);
 	alglib::minbleicsetcond(s, 1e-6, 0, 0, 0);
-	TMRParams params = {this, transmit, false, y, normal, leaving, entering};
+	TMRParams params = {transmit, false, y, normal, leaving, entering};
 	alglib::minbleicoptimize(s, NegMRDist, NULL, &params);
 	alglib::minbleicreport r;
 	alglib::minbleicresults(s, theta, r);

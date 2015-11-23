@@ -52,7 +52,7 @@ public:
  	* @param theta_out outgoing polar angle (not used when integrate is true)
  	* @param phi_out outgoing azimuthal angle (not used when integrate is true)
  	*/
-	double getMRProb ( bool integrate, double incNeutE, solid *solLeav, solid *solEnter, double atheta_i, double theta_out, double phi_out);
+	static double getMRProb ( bool integrate, double incNeutE, solid *solLeav, solid *solEnter, double atheta_i, double theta_out, double phi_out);
 protected:
 	static ofstream endout; ///< endlog file stream
 	static ofstream snapshotout; ///< snapshot file stream
@@ -225,7 +225,7 @@ private:
 	 *
 	 * @return Returns true, if the MicroRoughness model can be used.
 	 */
-	bool MRValid(state_type y, const double normal[3], solid *leaving, solid *entering);
+	static bool MRValid(state_type y, const double normal[3], solid *leaving, solid *entering);
 
 	/**
 	 * Return MicroRoughness model probability distribution for scattering angles theta, phi
@@ -241,13 +241,12 @@ private:
 	 *
 	 * @return Returns probability of reflection/transmission, in direction (theta, phi) or its integration over phi=0..2pi if integral == true
 	 */
-	double MRDist(bool transmit, bool integral, state_type y, const double normal[3], solid *leaving, solid *entering, double theta, double phi);
+	static double MRDist(bool transmit, bool integral, state_type y, const double normal[3], solid *leaving, solid *entering, double theta, double phi);
 
 	/**
 	 * Struct containing parameters for TNeutron::MRDist and TNeutron::NegMRDist wrapper functions.
 	 */
 	struct TMRParams{
-		TNeutron *n;
 		bool transmit, integral;
 		state_type y;
 		const double *normal;
@@ -286,7 +285,7 @@ private:
 	 *
 	 * @return Returns probability of reflection/transmission
 	 */
-	double MRProb(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering);
+	static double MRProb(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering);
 
 	/*
 	 * Calculate maximum of MicroRoughness model distribution by doing numerical minimization of TNeutron::NegMRDist
@@ -298,7 +297,7 @@ private:
 	 *
 	 * @return Returns maximal value of MicroRoughness model distribution in range (theta = 0..pi/2, phi = 0..2pi)
 	 */
-	double MRDistMax(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering);
+	static double MRDistMax(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering);
 };
 
 
