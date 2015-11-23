@@ -40,13 +40,14 @@ private:
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
-
+	double spinlogdegrees; ///< output to the spinlog every spinlogdegrees number of degrees	
+	
 	value_type t1; ///< field interpolation start time
 	value_type t2; ///< field interpolation end time
 	value_type cx[4]; ///< cubic spline coefficients for magnetic field x-component
 	value_type cy[4]; ///< cubic spline coefficients for magnetic field y-component
 	value_type cz[4]; ///< cubic spline coefficients for magnetic field z-component
-
+	value_type prevOut; ///< the angle at which the previous output was given
 public:
 	/**
 	 * Constructor.
@@ -59,6 +60,16 @@ public:
 	 * @param spinout Stream to which spin track is written
 	 */
 	TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout);
+	
+	//variables required for tracking larmor frequency
+	long double initialAngle; ///< initial phase angle of spin vector
+	long double phaseAngle; ///< azimuthal angle between Iy and Ix
+	long double newPhaseAngle; ///< the phase angle of the next integration step
+	long int numRotations; ///< number of turns the spin vector has made in the xy plane
+	long double deltaPhi;///< the total angle the spin vector has swept
+	long double prevDeltaPhi; ///< the total angle the spin vector swept in the previous iteration
+	long double larmFreq; ///< the larmor frequency obtained from the calculation using the above variables
+	long double blochPolar; ///< the projection 
 private:
 	/**
 	 * Do cubic spline interpolation of magnetic field components with coefficients determined in TBFderivs::TBFderivs

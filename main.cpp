@@ -446,7 +446,7 @@ void PrintBFieldCut(const char *outfile, TFieldManager &field){
 	//close file
 	fclose(cutfile);
 	// print time statistics
-	printf("Called BFeld and EFeld %u times in %fs (%fms per call)\n",BCutPlaneSampleCount1*BCutPlaneSampleCount2, start, start/BCutPlaneSampleCount1/BCutPlaneSampleCount2*1000);
+	printf("Called BField and EField %u times in %fs (%fms per call)\n",BCutPlaneSampleCount1*BCutPlaneSampleCount2, start, start/BCutPlaneSampleCount1/BCutPlaneSampleCount2*1000);
 }
 
 

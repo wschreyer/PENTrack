@@ -37,8 +37,8 @@ double TParticle::Eend(){
 TParticle::TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, int number,
 		double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
-		  tstart(t), tend(t), polstart(polarisation), polend(polarisation), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0),
-		  geom(&geometry), mc(&amc), field(afield){
+		  tstart(t), tend(t), polstart(polarisation), polend(polarisation), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0), blochPol(0), 
+		  lFreq(0), geom(&geometry), mc(&amc), field(afield){
 	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
 	value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
 	value_type vstart;
@@ -188,7 +188,19 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 				double B1[4][4], B2[4][4];
 				field->BField(y1[0], y1[1], y1[2], x1, B1);
 				field->BField(y2[0], y2[1], y2[2], x2, B2);
+				
+				//calculate the E field so that the vxE effect can be accounted for	
+				double v_pot, E1[3], E2[3]; //same v_pot used for both calls because potential does not matter for tracking
+				field->EField( y1[0], y1[1], y1[2], x1, v_pot, E1 ); 
+				field->EField( y2[0], y2[1], y2[2], x2, v_pot, E2 );
+				
+				field->AddvCrossE( y1, B1, E1 ); 
+				field->AddvCrossE( y2, B2, E2 ); 				
+
 				long double noflip = BFint.Integrate(x1, &y1[0], B1, x2, &y2[0], B2);
+				blochPol=BFint.blochPolar;
+				lFreq=BFint.larmFreq;
+				
 				if (mc->UniformDist(0,1) > noflip)
 					polarisation *= -1;
 				noflipprob *= noflip; // accumulate no-spin-flip probability
@@ -440,7 +452,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 					"vxend vyend vzend polend "
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
-					"Nhit Nstep trajlength Hmax\n";
+					"Nhit Nstep trajlength Hmax blochPol larmFreq\n";
 		file.precision(10);
 	}
 	cout << "Printing status\n";
@@ -455,7 +467,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
 			<< polstart << " " << Hstart() << " " << Estart() << " "
-			<< B[3][3] << " " << V << " " << solidstart.ID << " ";
+			<< B[3][0] << " " << V << " " << solidstart.ID << " ";
 
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
@@ -465,7 +477,8 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 			<< polarisation << " " << E + Epot(x, y, polarisation, field, GetCurrentsolid()) << " " << E << " " // use GetCurrentsolid() for Epot, since particle may not actually have entered sld
 			<< B[3][3] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
+			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " << blochPol << " " << 
+			std::setprecision(std::numeric_limits<double>::digits) << lFreq << '\n';
 }
 
 

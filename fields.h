@@ -13,11 +13,16 @@
 #include "field_3d.h"
 #include "conductor.h"
 #include "globals.h"
+#include "edmfields.h"
 
 /**
  * Contains list of all fields (2D/3D-maps, conductors, ...).
  */
 struct TFieldManager{
+	protected: 
+		//required for AddvCrossE function
+		typedef double value_type;
+		typedef std::vector<value_type> state_type;
 	public:
 		std::vector<TField*> fields; ///< list of fields
 		int FieldOscillation; ///< If =1 field oscillation is turned on
@@ -75,7 +80,15 @@ struct TFieldManager{
 		 * @param Ei Returns electric field vector
 		 */
 		void EField(double x, double y, double z, double t, double &V, double Ei[3]);
-
+		
+		/**
+ 		* Add the motional BField induced by the v x E effect.
+ 		* 
+ 		* @param y, the 6D vector containing the particle's position and velocity
+ 		* @param B, the matrix containing the components of the magnetic field 
+ 		* @param Ei[3] the 3D components of the electric field
+ 		*/
+		void AddvCrossE (state_type y, double B[4][4], double Ei[3] ); 
 	private:
 
 		/**
