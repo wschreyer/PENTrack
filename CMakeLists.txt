@@ -9,13 +9,11 @@ add_library(alglib OBJECT alglib-3.9.0/cpp/src/alglibinternal.cpp
 						alglib-3.9.0/cpp/src/interpolation.cpp alglib-3.9.0/cpp/src/solvers.cpp 
 						alglib-3.9.0/cpp/src/ap.cpp alglib-3.9.0/cpp/src/fasttransforms.cpp 
 						alglib-3.9.0/cpp/src/linalg.cpp alglib-3.9.0/cpp/src/specialfunctions.cpp)						
-set_target_properties(alglib PROPERTIES COMPILE_FLAGS "-Wno-strict-aliasing -Wno-strict-overflow -Wno-maybe-uninitialized -Wno-unused-variable")
 						
 include_directories("muparser_v2_2_4/include")
 add_library(muparser OBJECT muparser_v2_2_4/src/muParser.cpp muparser_v2_2_4/src/muParserBase.cpp 
 						muparser_v2_2_4/src/muParserBytecode.cpp muparser_v2_2_4/src/muParserCallback.cpp 
 						muparser_v2_2_4/src/muParserError.cpp muparser_v2_2_4/src/muParserTokenReader.cpp)						
-set_target_properties(muparser PROPERTIES COMPILE_FLAGS "-Wno-switch")
 						
 include_directories("libtricubic")
 add_library(libtricubic OBJECT libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp)
@@ -24,21 +22,33 @@ find_package(Boost 1.53.0)
 if (Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
 	link_directories(${Boost_LIBRARY_DIRS})
+else()
+	message(SEND_ERROR "Boost 1.53.0 or newer not found!")
 endif()
 
 find_package(CGAL)
 if (CGAL_CONFIG_LOADED)
+	if (CGAL_VERSION VERSION_LESS 4.1)
+		message(SEND_ERROR "CGAL version 4.2 or newer not found!")
+	endif()
 	include_directories(${CGAL_INCLUDE_DIRS})
 	link_directories(${CGAL_LIBRARIES_DIR})
-	message("-- CGAL version: " ${CGAL_VERSION})
+	message(STATUS "CGAL version: " ${CGAL_VERSION})
+else()
+	message(SEND_ERROR "CGAL library not found!")
 endif()
 						
-set(CMAKE_CXX_FLAGS "-O3 -Wall -frounding-math")
+set(CMAKE_CXX_FLAGS "-O3 -frounding-math")
+if (Boost_VERSION VERSION_GREATER 1.55.0)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	message("-- Boost > 1.55.0 requires C++11. I hope it is supported by your compiler.")
+endif()
+	
 
 add_executable(PENTrack main.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp 
 						field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp 
 						electron.cpp proton.cpp ndist.cpp source.cpp
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)						
-set_target_properties(PENTrack PROPERTIES COMPILE_FLAGS "-Wno-unused-local-typedefs")
+set_target_properties(PENTrack PROPERTIES COMPILE_FLAGS "-Wall")
 
 target_link_libraries (PENTrack rt boost_system CGAL)

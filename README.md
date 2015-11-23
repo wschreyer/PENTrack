@@ -20,7 +20,7 @@ CGAL v4.1 - v4.6 have been tested.
 
 The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and a Runge-Kutta integrator included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the cmake search path by setting the BOOST_ROOT variable by calling `cmake -DBOOST_ROOT=/path/to/boost .`.
 
-Boost 1.53.0 - 1.55.0 are recommended. 1.56.0 and newer seem to require a C++11 capable compiler (i.e. GCC 4.9.0+) and possibly the option -std=c++11 in the CFLAGS in the Makefile.
+Boost 1.53.0 - 1.55.0 are recommended. 1.56.0 and newer require a C++11 capable compiler (i.e. GCC 4.8+).
 
 ### muparser
 
@@ -72,7 +72,7 @@ If you want to export several parts of a Solidworks assembly you can do the foll
 ### Fields
 
 Magnetic and electric fields (rotationally symmetric 2D and 3D) can be included from text-based field maps
-(right now, only "[Vectorfields OPERA](https://www.cobham.com/about-cobham/aerospace-and-security/about-us/antenna-systems/specialist-technical-services-and-software/products-and-services/design-simulation-software/opera.aspx)" maps in cgs units are supported).
+(right now, only "[Vectorfields OPERA](http://www.operafea.com)" maps in cgs units are supported).
 You can also define analytic fields from straight, finite conductors.
 
 ### Particle sources
