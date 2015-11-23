@@ -39,7 +39,7 @@ else()
 endif()
 						
 set(CMAKE_CXX_FLAGS "-O3 -frounding-math")
-if (Boost_VERSION VERSION_GREATER 1.55.0)
+if (Boost_VERSION GREATER 105500)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 	message(STATUS "Boost > 1.55.0 requires C++11. I hope it is supported by your compiler.")
 endif()
@@ -49,6 +49,6 @@ add_executable(PENTrack main.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cp
 						field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp 
 						electron.cpp proton.cpp ndist.cpp source.cpp
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)						
-set_target_properties(PENTrack PROPERTIES COMPILE_FLAGS "-Wall")
+set_target_properties(PENTrack PROPERTIES COMPILE_FLAGS "-Wall -Wno-unused-local-typedefs")
 
 target_link_libraries (PENTrack rt boost_system CGAL)
