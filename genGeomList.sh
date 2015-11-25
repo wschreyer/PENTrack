@@ -116,7 +116,7 @@ Please rename the STL files appropriately and try again. Exiting script.\n"
 	done
 	
 	#print the source volume section
-	sourceVolume=`ls $stlDirName | grep "STL" | grep "source"`
+	sourceVolume=`ls $stlDirName | grep "STL" | grep "prior_source"`
 	
 	if [ "$specialPathToSTL" == "" ]; then  #by default the particle in the source volume is neutron
 		printf "\n[SOURCE]\nSTLvolume       neutron       in/$stlDirName/$sourceVolume    0    0\n" 
