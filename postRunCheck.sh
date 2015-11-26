@@ -59,9 +59,11 @@ if [[ $expectedNumJobs != "" && -d $outDirName ]]; then
 	if [ $b != "0" ]; then 
 		printf "The job number(s) of the non-empty error files are:\n"  
 		errJobs=`du -h error.txt* | awk '{ if ($1 != "0") print }' | awk '{ print $2 }' | sed 's/error.txt-//g'`
-		printf "$errJobs\n\n"
+		echo $errJob
 	fi
-
+	
+	printf "\n"
+	
 	#######Count the number of output files that had an exit code, ie that reached completion######
 	exitCodesCount=`cat output.txt* | grep -c "exit code"` 
 	printf "Number of simulations that finished (had an exit code): $exitCodesCount.\n" 

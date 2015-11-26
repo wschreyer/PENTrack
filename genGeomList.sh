@@ -20,6 +20,8 @@
 # with the lowest priority. 
 #The script requires you do not use at least one of the following characters in the STL file names: "}", "?", "<", "&", "!", "@"
 #
+#Sometimes you may have STL files that you want PENTrack to ignore, set the material to "NotUsed" (case insensitive) in the name of these files 
+#and they will be ommitted from the output of the script.
 #By: Sanmeet Chahal
 #August 26, 2015
 
@@ -95,25 +97,28 @@ Please rename the STL files appropriately and try again. Exiting script.\n"
 
 	#print out the sorted list of STL files to the console available for copy paste into the geometry.in file
 	for f in "${sortedSTLFilesArray[@]}"; do 
-		i=$((i+2))
 		
-		matType=`echo $f | sed 's/^.*mat_//' | sed 's/_prior.*//'`
+		matType=`echo $f | sed 's/^.*mater_//' | sed 's/_prior.*//'`
 		
-		if [ "`echo $f | grep "mat"`" == "" ]; then  #if no material type is specified
+		if [ "`echo $f | grep "mater"`" == "" ]; then  #if no material type is specified
 			matType="MISSING_MATERIAL"
 		fi
 		
-		if [ "$specialPathToSTL" == "" ]; then 
-			printf "$i       in/$stlDirName/$f    $matType\n" 
-		else
-			printf "$i       $specialPathToSTL/$f    $matType\n" 
+		if [ "${matType,,}" != "notused" ]; then #check that user wants to use this part in the simulation	
+			i=$((i+2))
+
+			if [ "$specialPathToSTL" == "" ]; then 
+				printf "$i       in/$stlDirName/$f    $matType\n" 
+			else
+				printf "$i       $specialPathToSTL/$f    $matType\n" 
+			fi	
 		fi
 	done
 	
 	#print the source volume section
-	sourceVolume=`ls $stlDirName | grep "STL" | grep "source"`
+	sourceVolume=`ls $stlDirName | grep "STL" | grep "prior_source"`
 	
-	if [ "$specialPathToSTL" == "" ]; then 
+	if [ "$specialPathToSTL" == "" ]; then  #by default the particle in the source volume is neutron
 		printf "\n[SOURCE]\nSTLvolume       neutron       in/$stlDirName/$sourceVolume    0    0\n" 
 	else
 		printf "\n[SOURCE]\nSTLvolume       neutron       $specialPathToSTL/$stlDirName/$sourceVolume    0    0\n" 
