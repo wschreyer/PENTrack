@@ -43,7 +43,7 @@ endif()
 
 add_executable(PENTrack main.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp 
 						field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp 
-						electron.cpp proton.cpp ndist.cpp source.cpp
+						electron.cpp proton.cpp ndist.cpp source.cpp xenon.cpp mercury.cpp
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)		
 
 if (CMAKE_COMPILER_IS_GNUCXX)
