@@ -8,6 +8,8 @@
 #include "neutron.h"
 #include "proton.h"
 #include "electron.h"
+#include "mercury.h"
+#include "xenon.h"
 #include "geometry.h"
 #include "mc.h"
 #include "trianglemesh.h"
@@ -31,6 +33,10 @@ TParticle* TParticleSource::CreateParticle(double t, double x, double y, double 
 		p = new TProton(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
 	else if (fParticleName == NAME_ELECTRON)
 		p = new TElectron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
+	else if (fParticleName == NAME_MERCURY)
+		p = new TMercury(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
+	else if (fParticleName == NAME_XENON) 
+		p = new TXenon(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
 	else{
 		cout << "Could not create particle " << fParticleName << '\n';
 		exit(-1);
