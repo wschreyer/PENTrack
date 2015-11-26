@@ -48,3 +48,15 @@ tmax 1e-5
 Emin 0
 Emax 782e3
 spectrum ElectronBetaSpectrum(x)	# ElectronBetaSpectrum is a predefined function for electron energies from free neutron decay
+
+[mercury]
+Emin 0
+Emax 1
+spectrum MaxwellBoltzSpectrum(300, x)     # MaxwellBoltzSpectrum is a predefined function for comagnetometer gas molecules (first parameter is the temp. in Kelvin)
+
+[xenon]
+Emin 0
+Emax 1
+spectrum MaxwellBoltzSpectrum(300, x)     # MaxwellBoltzSpectrum is a predefined function for comagnetometer gas molecules (first parameter is the temp. in Kelvin)
+
+

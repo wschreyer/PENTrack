@@ -48,7 +48,7 @@ UCNdet		0.1			1			0				0	0	0	0
 #boxvolume	neutron		0		1		0		1			0		1		0			0
 
 #STLsurface	particles 	STL-file		ActiveTime	Enormal
-STLsurface 	neutron		in/source.STL	200			0
+STLsurface	neutron		in/source.STL	        200		0	
 
 #STLvolume	particles	STL-file		ActiveTime	PhaseSpaceWeighting
 #STLvolume 	neutron		in/source.STL	0			1
