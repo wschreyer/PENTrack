@@ -38,6 +38,7 @@ TMCGenerator::TMCGenerator(const char *infile){
 			pconf->spectrum.SetExpr(i->second["spectrum"]);
 			pconf->spectrum.DefineFun("ProtonBetaSpectrum", &ProtonBetaSpectrum);
 			pconf->spectrum.DefineFun("ElectronBetaSpectrum", &ElectronBetaSpectrum);
+			pconf->spectrum.DefineFun("MaxwellBoltzSpectrum", &MaxwellBoltzSpectrum);
 			pconf->phi_v.DefineVar("x", &xvar);
 			pconf->phi_v.SetExpr(i->second["phi_v"]);
 			pconf->theta_v.DefineVar("x", &xvar);
@@ -395,13 +396,13 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 			theta = acos(v_zaxis/v_tot);
 			//check x component
 			if(v_xaxis - v_tot*cos(phi)*sin(theta) > 0.01){
-				std::cout<< "Il y a un problem avec la calculation du v_x \n";
+				std::cout<< "There was an error in the calculation of v_x \n";
 //					sleep(1);
 			}else if(v_yaxis - v_tot*sin(phi)*sin(theta) > 0.01){
-				std::cout<< "Il y a un problem avec la calculation du v_y \n";
+				std::cout<< "There was an error in the calculation of  v_y \n";
 //					sleep(1);
 			}else if(v_zaxis - v_tot*cos(theta) > 0.01){
-				std::cout<< "Il y a un problem avec la calculation du v_z \n";
+				std::cout<< "There was an error in the calculation of v_z \n";
 //					sleep(1);
 			}
 			return;
@@ -414,7 +415,6 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 */
 
 	}
-
 
 
 };
