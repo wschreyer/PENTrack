@@ -201,6 +201,13 @@ If bruteforce integration of particle spin precession is active, it will be logg
 - Ix, Iy, Iz: x, y and z components of the Bloch vector (times 2) [dimensionless]
 - Bx, By, Bz: x, y and z components of magnetic field direction vector (B[i]/Babs) [dimensionless]
 
+### Writing Output files to ROOT readable files
+
+merge_all.c: A [ROOT](http://root.cern.ch) script that writes all out-files (or those, whose filename matches some pattern) into a single ROOT file containing trees for each log- and particle-type.
+
+Helper Scripts 
+--------------
+
 ### preRunCheck.sh
 
 This script performs some preliminary checks before launching a large batch PENTrack job. The checks performed are:
@@ -212,20 +219,20 @@ This script performs some preliminary checks before launching a large batch PENT
 
 The script also generates a batch.pbs that can be submitted to a TORQUE queueing system. The batch script can be customized by entering the following command line input in this order: 
 
-- minJobNum - the lower bound of the job array id specified in the batch file (default is 1) 
-- maxJobNum - the upper bound of the job array id specified in the batch file (default is 10, so if minJobNum=1 and maxJobNum=10, submitting the batch file would result in 10 PENTrack jobs being run the job numbers ranging from 1-10)
-- jobName - the name of the job that will displayed when you check the status of the jobs using the `qstat` command (default is SampleRun)
-- inDirName - the relative path to the directory containing PENTrack's input files (the geometry.in file in this directory will be checked, default is in/)
-- outDirName - the relative path to the directory where the job output will be written (the cases for overwriting previous jobs will be checked in this directory, default is out/)
-- pbsfileName - the name of the batch file being generated (default name is batch.pbs)
-- wallTime - the walltime requested from the queueing system, it must be entered in the following format: 1d4h30m which means the time requested is: 1 day + 4 hours + 30 minutes (you can only specify days or hours or minutes but they order must remain: day, hours, minutes). You can also specify 120m and the batch file will correctly set the time to 2 hours. A warning will be given 
+1. minJobNum - the lower bound of the job array id specified in the batch file (default is 1) 
+2. maxJobNum - the upper bound of the job array id specified in the batch file (default is 10, so if minJobNum=1 and maxJobNum=10, submitting the batch file would result in 10 PENTrack jobs being run the job numbers ranging from 1-10)
+3. jobName - the name of the job that will displayed when you check the status of the jobs using the `qstat` command (default is SampleRun)
+4. inDirName - the relative path to the directory containing PENTrack's input files (the geometry.in file in this directory will be checked, default is in/)
+5. outDirName - the relative path to the directory where the job output will be written (the cases for overwriting previous jobs will be checked in this directory, default is out/)
+6. pbsfileName - the name of the batch file being generated (default name is batch.pbs)
+7. wallTime - the walltime requested from the queueing system, it must be entered in the following format: 1d4h30m which means the time requested is: 1 day + 4 hours + 30 minutes (you can only specify days or hours or minutes but they order must remain: day, hours, minutes). You can also specify 120m and the batch file will correctly set the time to 2 hours. A warning will be given 
 
 ### postRunCheck.sh
 
 This script performs some basic error checks after a batch run of PENTrack has finished execution. The two required inputs are: 
 
-- expectedNumJobs - the number of jobs that were part of the batch run which is to be checked
-- outDirName - the relative path to the output directory where the output from the batch run was written 
+1. expectedNumJobs - the number of jobs that were part of the batch run which is to be checked
+2. outDirName - the relative path to the output directory where the output from the batch run was written 
 
 The checks performed by the script are: 
 
@@ -252,7 +259,4 @@ The output from the script is directed to standard out is meant to be copied int
 1. stlDirName - the relative path to the directory containing the STL files that are to be processed
 2. specialPathToSTL - specify this if you wish to append a prefix to the relative path of the STL files. This is useful if you are running the script in a location that has a different relative path to the STL directory in comparison to the location of the PENTrack executable. 
 
-### Writing Output files to ROOT readable files
-
-merge_all.c: A [ROOT](http://root.cern.ch) script that writes all out-files (or those, whose filename matches some pattern) into a single ROOT file containing trees for each log- and particle-type.
 
