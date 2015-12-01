@@ -249,10 +249,11 @@ if [ "$files" != 0 ]; then
 	errorNums=`ls $outDirName/error.txt* | sed 's/error.txt-//g' | sed "s|$outDirName/||g"`
 fi
 
-files=$(ls $outDirName/*.out | grep -v "BFCut" 2> /dev/null | wc -l)
+files=$(ls $outDirName/*.out | grep -v "BFCut\|MR" 2> /dev/null | wc -l)
 
 if [  "$files" != 0 ]; then 
-	outLogNums=`ls $outDirName/*.out | sed "s|$outDirName/||g" | sed 's/^0*//g' | sed 's/.out//g' | sed 's/proton//g' | sed 's/neutron//g' | sed 's/electron//g' | sed 's/out\///g' \
+	outLogNums=`ls $outDirName/*.out | sed "s|$outDirName/||g" | sed 's/^0*//g' | sed 's/.out//g' | sed 's/proton//g' \
+		| sed 's/neutron//g' | sed 's/electron//g' | sed 's/xenon//g' | sed 's/mercury//g' | sed 's/out\///g' \
 		| sed 's/end//g' | sed 's/snapshot//g' | sed 's/hit//g' | sed 's/track//g' | sed 's/spin//g'`
 fi 
 
