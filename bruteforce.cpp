@@ -59,7 +59,7 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 		BFlogpol = 0.0;
 	fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
 			<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
-			<< B[0]/BFBws << " " << B[1]/BFBws << " " << B[2]/BFBws << '\n';
+			<< B[0] << " " << B[1] << " " << B[2] << '\n';
 }
 
 long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
