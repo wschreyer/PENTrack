@@ -14,6 +14,7 @@
 #include "field_2d.h"
 #include "field_3d.h"
 #include "conductor.h"
+#include "edmfields.h"
 
 using namespace std;
 
@@ -77,6 +78,16 @@ TFieldManager::TFieldManager(TConfig &conf, int aFieldOscillation, double aOscil
 			ss >> Ibar >> p1 >> p2 >> p3;
 			if (ss)
 				f = new TFullRacetrack(p1, p2, p3, Ibar);
+		} 
+		else if (i->first == "EDMStaticB0GradZField") {
+			ss >> p1 >> p2; 
+			if (ss) 
+				f = new TEDMStaticB0GradZField(p1, p2);
+		}
+		else if (i->first == "EDMStaticEField") {
+			ss >> p1;
+			if (ss)
+				f = new TEDMStaticEField (p1);
 		}
 
 		if (f)
