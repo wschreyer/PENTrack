@@ -45,7 +45,7 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 			exit(-1);
 		}
 		fspinout.precision(10);
-		fspinout << "t Babs Polar logPolar Ix Iy Iz Bx/Babs By/Babs Bz/Babs\n";
+		fspinout << "t Babs Polar logPolar Ix Iy Iz Bx By Bz\n";
 	}
 
 	value_type B[3];

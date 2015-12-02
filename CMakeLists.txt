@@ -41,7 +41,7 @@ endif()
 						
 
 
-add_executable(PENTrack main.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp 
+add_executable(PENTrack main.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp edmfields.cpp 
 						field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp 
 						electron.cpp proton.cpp mercury.cpp xenon.cpp ndist.cpp source.cpp 
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)		
