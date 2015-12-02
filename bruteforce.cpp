@@ -61,9 +61,8 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 			<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
 			<< B[0] << " " << B[1] << " " << B[2] << '\n';
 }
-
-long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
-					double x2, double y2[6], double B2[4][4]){
+long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3],
+					double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3]){
 	if (gamma == 0)
 		return 1;
 
@@ -92,17 +91,37 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double B1[4][4],
 //					stepper = boost::numeric::odeint::make_controlled(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
 //					stepper = stepper_type(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12));
 			}
+			
+			//Adding vxE effect to Bx, By, Bz, Note dEdt=0 (for now)
+			//Babs is not updated because it is not required in the interpolation
+			B1[0][0] += (y1[4]*E1[2] - y1[5]*E1[1]) / (c_0*c_0); //Bx = (vy*Ez - vz*Ey)/c^2
+			B1[1][0] += (y1[5]*E1[0] - y1[3]*E1[2]) / (c_0*c_0); //By = (vz*Ex - vx*Ez)/c^2
+			B1[2][0] += (y1[3]*E1[1] - y1[4]*E1[0]) / (c_0*c_0); //Bz = (vx*Ey - vy*Ex)/c^2
+			
+			B2[0][0] += (y2[4]*E2[2] - y2[5]*E2[1]) / (c_0*c_0); //Bx = (vy*Ez - vz*Ey)/c^2
+			B2[1][0] += (y2[5]*E2[0] - y2[3]*E2[2]) / (c_0*c_0); //By = (vz*Ex - vx*Ez)/c^2
+			B2[2][0] += (y2[3]*E2[1] - y2[4]*E2[0]) / (c_0*c_0); //Bz = (vx*Ey - vy*Ex)/c^2
+					
+			//Contribution to temporal Bfield derivative from vxE part dEdt=0 (for now)
+			value_type dBxdt1 = dy1dx[4]*E1[2] - dy1dx[5]*E1[1]; // dBxdt = ( ay*Ez - az*Ey ) + ( vy*dEdt_z - vz*dEdt_y ) 
+			value_type dBydt1 = dy1dx[5]*E1[0] - dy1dx[3]*E1[2]; // dBydt = ( az*Ex - ax*Ez ) + ( vz*dEdt_x - vx*dEdt_z )
+			value_type dBzdt1 = dy1dx[3]*E1[1] - dy1dx[4]*E1[0]; // dBzdt = ( ax*Ey - ay*Ex ) + ( vx*dEdt_y - vy*dEdt_x )
 
+			value_type dBxdt2 = dy2dx[4]*E2[2] - dy2dx[5]*E2[1]; // dBxdt = ( ay*Ez - az*Ey ) + ( vy*dEdt_z - vz*dEdt_y )
+			value_type dBydt2 = dy2dx[5]*E2[0] - dy2dx[3]*E2[2]; // dBydt = ( az*Ex - ax*Ez ) + ( vz*dEdt_x - vx*dEdt_z )
+			value_type dBzdt2 = dy2dx[3]*E2[1] - dy2dx[4]*E2[0]; // dBzdt = ( ax*Ey - ay*Ex ) + ( vx*dEdt_y - vy*dEdt_x )
+			
 			// calculate temporal derivative of field from spatial derivative and particle's speed dBi/dt = dBi/dxj * dxj/dt
 			t1 = x1;
 			t2 = x2;
-			value_type dBxdt1 = B1[0][1]*y1[3] + B1[0][2]*y1[4] + B1[0][3]*y1[5];
-			value_type dBydt1 = B1[1][1]*y1[3] + B1[1][2]*y1[4] + B1[1][3]*y1[5];
-			value_type dBzdt1 = B1[2][1]*y1[3] + B1[2][2]*y1[4] + B1[2][3]*y1[5];
+			
+			dBxdt1 += B1[0][1]*y1[3] + B1[0][2]*y1[4] + B1[0][3]*y1[5];
+			dBydt1 += B1[1][1]*y1[3] + B1[1][2]*y1[4] + B1[1][3]*y1[5];
+			dBzdt1 += B1[2][1]*y1[3] + B1[2][2]*y1[4] + B1[2][3]*y1[5];
 
-			value_type dBxdt2 = B2[0][1]*y2[3] + B2[0][2]*y2[4] + B2[0][3]*y2[5];
-			value_type dBydt2 = B2[1][1]*y2[3] + B2[1][2]*y2[4] + B2[1][3]*y2[5];
-			value_type dBzdt2 = B2[2][1]*y2[3] + B2[2][2]*y2[4] + B2[2][3]*y2[5];
+			dBxdt2 += B2[0][1]*y2[3] + B2[0][2]*y2[4] + B2[0][3]*y2[5];
+			dBydt2 += B2[1][1]*y2[3] + B2[1][2]*y2[4] + B2[1][3]*y2[5];
+			dBzdt2 += B2[2][1]*y2[3] + B2[2][2]*y2[4] + B2[2][3]*y2[5];
 
 			// calculate coefficients of cubic splines Bi(x) = ci[0]*x^3 + ci[1]*x^2 + ci[2]*x + ci[3]   (i = x,y,z)
 			// with boundary conditions Bi(x1) = Bi1, Bi(x2) = Bi2, dBidt(x1) = dBidt1, dBidt(x2) = dBidt2

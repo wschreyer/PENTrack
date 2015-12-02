@@ -95,15 +95,18 @@ public:
 	 *
 	 * @param x1 Time at first track point.
 	 * @param y1 State vector at first track point.
+	 * @param dy1dx Temporal derivative of state vector at first track point.
 	 * @param B1 Magnetic field at first track point.
+	 * @param E1 Electric field at first track point.
 	 * @param x2 Time at second track point.
 	 * @param y2 State vector at second track point.
+	 * @param dy2dx Temporal derivative of state vector at second track point.
 	 * @param B2 Magnetic field at second track point.
 	 *
 	 * @return Probability, that NO spin flip occured (usually close to 1).
 	 */
-	long double Integrate(double x1, double y1[6], double B1[4][4],
-						double x2, double y2[6], double B2[4][4]);
+	long double Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3], 
+						double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3]);
 
 };
 

@@ -86,8 +86,8 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 
 	// set initial values for integrator
 	value_type x = tend, x1, x2;
-	state_type y = yend, dydx;
-	state_type y1(6), y2(6);
+	state_type y = yend; 
+	state_type y1(6), y2(6), dy1dx(6), dy2dx(6); //acceleration is required for finding temporal derivatives of vxE
 	int polarisation = polend;
 	value_type h = 0.001/sqrt(yend[3]*yend[3] + yend[4]*yend[4] + yend[5]*yend[5]); // first guess for stepsize
 
@@ -185,10 +185,19 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 			}
 
 			if (field){
-				double B1[4][4], B2[4][4];
+				double B1[4][4], B2[4][4], E1[3], E2[3], v_pot1, v_pot2;
 				field->BField(y1[0], y1[1], y1[2], x1, B1);
 				field->BField(y2[0], y2[1], y2[2], x2, B2);
-				long double noflip = BFint.Integrate(x1, &y1[0], B1, x2, &y2[0], B2);
+				
+				//Need the E field to include the vxE effect in spin tracking
+				field->EField( y1[0], y1[1], y1[2], x1, v_pot1, E1 ); 
+				field->EField( y2[0], y2[1], y2[2], x2, v_pot2, E2 );		
+				
+				//Values of dy1dx and dy2dx are updated because they are passed by reference
+				derivs(x1, y1, dy1dx);
+				derivs(x2, y2, dy2dx);	
+		
+				long double noflip = BFint.Integrate(x1, &y1[0], &dy1dx[0], B1, E1, x2, &y2[0], &dy2dx[0], B2, E2);
 				if (mc->UniformDist(0,1) > noflip)
 					polarisation *= -1;
 				noflipprob *= noflip; // accumulate no-spin-flip probability
