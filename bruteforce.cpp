@@ -14,7 +14,7 @@ TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<
 	}while(BFtimess.good());
 	std::istringstream(conf["spinlog"]) >> spinlog;
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
-	std::istringstream(conf["spinlogtimeinterval"]) >> spinlogtimeinterval;
+	std::istringstream(conf["spinlogtimeoutinterval"]) >> spinlogtimeoutinterval;
 }
 
 void TBFIntegrator::Binterp(value_type t, value_type B[3]){
@@ -59,7 +59,7 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 	else if (BFpol==0.5)
 		BFlogpol = 0.0;
 		
-	if ( x - prevTimeOut >= spinlogtimeinterval ) { // so that the output to the spin log can be reduced
+	if ( x - prevTimeOut >= spinlogtimeoutinterval ) { // so that the output to the spin log can be reduced
 		fspinout << x << " " << BFBws << " " << BFpol << " " << BFlogpol << " "
 			<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
 			<< B[0] << " " << B[1] << " " << B[2] << '\n';
