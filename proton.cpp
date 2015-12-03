@@ -13,7 +13,7 @@ ofstream TProton::snapshotout; ///< snapshot file stream
 ofstream TProton::trackout; ///< tracklog file stream
 ofstream TProton::hitout; ///< hitlog file stream
 ofstream TProton::spinout; ///< spinlog file stream
-
+ofstream TProton::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
 TProton::TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: TParticle(NAME_PROTON, ele_e, m_p, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){

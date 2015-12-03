@@ -15,7 +15,7 @@ using namespace std;
  * @param filematch Merge files whose names match this regular expression (default: read all)
  * @param path Merge files in this folder (default: current folder)
  */
-void merge_all(const char *filematch = "[0-9]+[a-z]+.out", const char *path = ".")
+void merge_all(const char *filematch = "[0-9]+[A-Za-z]+.out", const char *path = ".")
 {
 	TFile *outfile = new TFile("out.root","RECREATE"); // create ROOT file
 	ifstream infile;

@@ -12,6 +12,7 @@
 #include "field_2d.h"
 #include "field_3d.h"
 #include "conductor.h"
+#include "edmfields.h"
 #include "globals.h"
 
 /**

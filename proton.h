@@ -44,7 +44,8 @@ protected:
 	static ofstream trackout; ///< tracklog file stream
 	static ofstream hitout; ///< hitlog file stream
 	static ofstream spinout; ///< spinlog file stream
-
+	static ofstream spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
+	
 	/**
 	 * This method is executed, when a particle crosses a material boundary.
 	 *
@@ -153,12 +154,21 @@ protected:
 	/**
 	 * Get spin log stream.
 	 *
-	 * @return Returns static spinout stream to use same stream for all TNeutrons
+	 * @return Returns static spinout stream to use same stream for all TProtons
 	 */
 	ofstream& GetSpinOut(){
 		return spinout;
 	};
-
+	
+	/**
+	 * Get secondary spin log stream used for spin integration of anti-parallel E-field.
+	 *
+	 * @return Returns static spinout stream to use same stream for all TProtons
+	 */
+	ofstream& GetSpinOut2(){
+		return spinout2;
+	};
+	
 };
 
 #endif // PROTON_H_

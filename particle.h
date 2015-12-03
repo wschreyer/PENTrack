@@ -343,7 +343,15 @@ protected:
 	 * @return Reference to spin log stream
 	 */
 	virtual ofstream& GetSpinOut() = 0;
-
+	
+	/**
+	 * Get secondary spin log stream used for the output from the simultaneous anti-parallel E field spin integration.
+	 *
+	 * Has to be derived by all derived classes.
+	 *
+	 * @return Reference to spin log stream
+	 */
+	virtual ofstream& GetSpinOut2() = 0;
 
 	/**
 	 * Print start and current values to a stream.
