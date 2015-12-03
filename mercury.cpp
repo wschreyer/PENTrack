@@ -13,7 +13,7 @@ ofstream TMercury::snapshotout; ///< snapshot file stream
 ofstream TMercury::trackout; ///< tracklog file stream
 ofstream TMercury::hitout; ///< hitlog file stream
 ofstream TMercury::spinout; ///< spinlog file stream
-
+ofstream TMercury::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
 TMercury::TMercury(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 			: TParticle(NAME_MERCURY, 0, m_hg, mu_hgSI, gamma_hg, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){

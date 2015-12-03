@@ -121,7 +121,6 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 	istringstream(conf["flipspin"]) >> flipspin;
 	
 	TBFIntegrator *BFint, *BFintup, *BFintdown;
-	ofstream edownSpinOut; //needed to create a different ofstream for the E-field antiparallel spin integration
 	
 	if (simulEFieldSpinInteg) {
 		//Different names so that two different spin logs would be produced if so required
@@ -130,7 +129,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 		//One of the BFintup object will integrate the spin with the E field given 
 		//and the BFintdown object will integrate the spin with the reverse of the E field given
 		BFintup = new TBFIntegrator(gamma, eupName, conf, GetSpinOut()); 
-		BFintdown = new TBFIntegrator(gamma, edownName, conf, edownSpinOut); 
+		BFintdown = new TBFIntegrator(gamma, edownName, conf, GetSpinOut2()); 
 	} else
 		BFint = new TBFIntegrator(gamma, name, conf, GetSpinOut());	
 	
