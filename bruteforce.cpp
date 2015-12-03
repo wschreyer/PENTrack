@@ -59,7 +59,7 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 		BFlogpol = 0.0;
 		
 	if ( x - prevTimeOut >= spinlogtimeoutinterval ) { // so that the output to the spin log can be reduced
-		fspinout << x << " " << " " << BFpol << " " << BFlogpol << " "
+		fspinout << x << " " << BFpol << " " << BFlogpol << " "
 			<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
 			<< B[0] << " " << B[1] << " " << B[2] << '\n';
 
