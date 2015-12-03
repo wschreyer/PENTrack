@@ -195,11 +195,10 @@ In the hitlog, you get the following parameters:
 If bruteforce integration of particle spin precession is active, it will be logged into the spinlog. In the spinlog, you get the following parameters:
 
 - t: time [s]
-- Babs: absolute magnetic field [T]
 - Polar: projection of Bloch spin vector onto magnetic field direction vector (Bloch vector has dimensionless length 0.5, so this quantity is also dimensionless)
 - logPolar: logarithm of above value [dimensionless]
 - Ix, Iy, Iz: x, y and z components of the Bloch vector (times 2) [dimensionless]
-- Bx, By, Bz: x, y and z components of magnetic field direction vector (B[i]/Babs) [dimensionless]
+- Bx, By, Bz: x, y and z components of magnetic field direction vector [T]
 
 ### Writing Output files to ROOT readable files
 
