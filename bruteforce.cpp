@@ -3,7 +3,7 @@
 
 TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
-				  spinlog(false), spinloginterval(5e-7), spinlogtimeoutinterval(0), intsteps(0), fspinout(spinout), starttime(0), t1(0), t2(0){
+				  spinlog(false), spinloginterval(5e-7), prevspinlog(0), intsteps(0), fspinout(spinout), starttime(0), t1(0), t2(0){
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -14,7 +14,7 @@ TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<
 	}while(BFtimess.good());
 	std::istringstream(conf["spinlog"]) >> spinlog;
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
-	std::istringstream(conf["spinlogtimeoutinterval"]) >> spinlogtimeoutinterval;
+	prevspinlog = -spinloginterval; // set prevspinlog negative so first time point will definitely be logged to file
 }
 
 void TBFIntegrator::Binterp(value_type t, value_type B[3]){
@@ -58,14 +58,12 @@ void TBFIntegrator::operator()(const state_type &y, value_type x){
 	else if (BFpol==0.5)
 		BFlogpol = 0.0;
 		
-	if ( x - prevTimeOut >= spinlogtimeoutinterval ) { // so that the output to the spin log can be reduced
-		fspinout << x << " " << BFpol << " " << BFlogpol << " "
-			<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
-			<< B[0] << " " << B[1] << " " << B[2] << '\n';
-
-		prevTimeOut = x;
-	}
+	fspinout << x << " " << BFpol << " " << BFlogpol << " "
+		<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
+		<< B[0] << " " << B[1] << " " << B[2] << '\n';
 }
+
+
 long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3],
 					double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3]){
 	if (gamma == 0)
@@ -90,7 +88,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				}
 				else
 					I_n[2] = 0.5;
-				starttime = x1, prevTimeOut = 0;
+				starttime = x1;
 				std::cout << "\nBF starttime, " << x1 << " ";
 //					stepper = boost::numeric::odeint::make_dense_output((value_type)1e-12, (value_type)1e-12, stepper_type());
 //					stepper = boost::numeric::odeint::make_controlled(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
@@ -146,9 +144,17 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 
 			if (spinlog){
 				std::vector<value_type> times;
-				for (value_type x = x1; x < x2; x += spinloginterval)
-					times.push_back(x);
+				if (prevspinlog + spinloginterval < x1){
+					times.push_back(x1);
+					prevspinlog = x1;
+				}
+				while (prevspinlog + spinloginterval < x2){
+					prevspinlog += spinloginterval;
+					times.push_back(prevspinlog);
+				}
 				times.push_back(x2);
+				prevspinlog = x2;
+				
 				// use dense output stepper if spin trajectory should be logged
 				dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
 				// integrate(ODEsystem functor, initial state, start time, end time, initial time step, observer functor)

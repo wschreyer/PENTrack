@@ -37,11 +37,10 @@ private:
 	double BFBminmem; ///< Stores minimum field during one spin track for information
 	bool spinlog; ///< Should the tracking be logged to file?
 	double spinloginterval; ///< Time interval between log file entries.
-	double spinlogtimeoutinterval; ///< Prints to the spin log only after the specified spinlogtimeoutinterval has passed
+	double prevspinlog; ///< Time when the previous write to the spinlog occurred
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
-	double prevTimeOut; ///< Time when the previous write to the spinlog occurred
 	
 	value_type t1; ///< field interpolation start time
 	value_type t2; ///< field interpolation end time
