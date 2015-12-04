@@ -40,10 +40,10 @@ else()
 endif()
 						
 
-
-add_executable(PENTrack main.cpp globals.cpp trianglemesh.cpp geometry.cpp mc.cpp bruteforce.cpp edmfields.cpp 
-						field_2d.cpp field_3d.cpp fields.cpp conductor.cpp particle.cpp neutron.cpp 
-						electron.cpp proton.cpp mercury.cpp xenon.cpp ndist.cpp source.cpp 
+include_directories("include")
+add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/bruteforce.cpp src/edmfields.cpp 
+						src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp 
+						src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/ndist.cpp src/source.cpp 
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)		
 
 if (CMAKE_COMPILER_IS_GNUCXX)
