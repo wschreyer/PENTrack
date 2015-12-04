@@ -13,10 +13,6 @@ install_manifest.txt
 
 # ignore binaries
 PENTrack
-*.o
-libtricubic/*.o
-alglib-3.9.0/cpp/src/*.o
-muparser_v2_2_4/src/*.o
 
 # ignore output files
 out/*.out
