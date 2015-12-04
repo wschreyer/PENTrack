@@ -16,8 +16,8 @@ add_library(muparser OBJECT muparser_v2_2_4/src/muParser.cpp muparser_v2_2_4/src
 						muparser_v2_2_4/src/muParserBytecode.cpp muparser_v2_2_4/src/muParserCallback.cpp 
 						muparser_v2_2_4/src/muParserError.cpp muparser_v2_2_4/src/muParserTokenReader.cpp)						
 						
-include_directories("libtricubic")
-add_library(libtricubic OBJECT libtricubic/libtricubic.cpp libtricubic/tricubic_utils.cpp)
+include_directories("tricubic-1.0/src/libtricubic")
+add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
 
 find_package(Boost 1.53.0)
 if (Boost_FOUND)
