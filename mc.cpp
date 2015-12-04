@@ -88,6 +88,11 @@ double TMCGenerator::NormalDist(double mean, double sigma){
 	return normaldist(rangen);
 }
 
+double TMCGenerator::ExpDist(double exponent){
+	boost::random::exponential_distribution<double> expdist(exponent);
+	return expdist(rangen);
+}
+
 void TMCGenerator::IsotropicDist(double &phi, double &theta){
 	phi = UniformDist(0,2*pi);
 	theta = SinDist(0,pi);

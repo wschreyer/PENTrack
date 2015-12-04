@@ -291,6 +291,11 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 		complex<double> iEstep(Estep, -entering->mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
 		complex<double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
 		double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
+//		if (entering->mat.UseMRModel){
+//			double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
+//			double vratio = abs(vnormal)/sqrt(2.*Estep/m_n);
+//			reflprob = 1 - (1 - reflprob)*(1 + 2*pow(entering->mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering->mat.CorrelLength + 2*kc*kc*entering->mat.CorrelLength)); // second order correction for reflection on MicroRoughness surfaces
+//		}
 //			cout << " ReflProb = " << reflprob << '\n';
 		if (prob > reflprob){ // -> absorption on reflection
 			x2 = x1;
@@ -309,13 +314,12 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid){
 	bool result = false;
 	if (currentsolid.mat.FermiImag > 0){
-		double prob = mc->UniformDist(0,1);
 		complex<long double> E(0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
 		complex<long double> k = sqrt(2*m_n*E)*ele_e/hbar; // wave vector
 		double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
-		double survprob = exp(-2*imag(k)*l);
-		if (prob > survprob){ // exponential probability decay
-			x2 = x1 + mc->UniformDist(0,1)*(x2 - x1); // if absorbed, chose a random time between x1 and x2
+		double abspath = mc->ExpDist(2*imag(k)); // exponential probability decay
+		if (abspath < l){
+			x2 = x1 + abspath/l*(x2 - x1); // if absorbed, chose a random time between x1 and x2
 			for (int i = 0; i < 6; i++)
 				stepper.calc_state(x2, y2);
 			StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, polarisation, currentsolid);

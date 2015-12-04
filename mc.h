@@ -87,6 +87,10 @@ public:
 	double NormalDist(double mean, double sigma);
 
 
+	/// return exp(-exponent*x) distributed random number
+	double ExpDist(double exponent);
+
+
 	/**
 	 * Create isotropically distributed 3D angles.
 	 *
