@@ -120,7 +120,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 	bool flipspin;
 	istringstream(conf["flipspin"]) >> flipspin;
 	
-	TBFIntegrator *BFint, *BFintup, *BFintdown;
+	TBFIntegrator *BFint1, *BFint2;
 	
 	if (simulEFieldSpinInteg) {
 		//Different names so that two different spin logs would be produced if so required
@@ -128,10 +128,10 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 		string edownName = string(name) + "Edown";
 		//One of the BFintup object will integrate the spin with the E field given 
 		//and the BFintdown object will integrate the spin with the reverse of the E field given
-		BFintup = new TBFIntegrator(gamma, eupName, conf, GetSpinOut()); 
-		BFintdown = new TBFIntegrator(gamma, edownName, conf, GetSpinOut2()); 
+		BFint1 = new TBFIntegrator(gamma, eupName, conf, GetSpinOut()); 
+		BFint2 = new TBFIntegrator(gamma, edownName, conf, GetSpinOut2()); 
 	} else
-		BFint = new TBFIntegrator(gamma, name, conf, GetSpinOut());	
+		BFint1 = new TBFIntegrator(gamma, name, conf, GetSpinOut());	
 	
 	stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
 
@@ -221,10 +221,10 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 						E2down[i] = -E2[i];
 					}					
 					
-					noflip = BFintup->Integrate(x1, &y1[0], &dy1dx[0], B1, E1down, x2, &y2[0], &dy2dx[0], B2, E2down ); 
-					noflip = BFintdown->Integrate(x1, &y1[0], &dy1dx[0], B1, E1down, x2, &y2[0], &dy2dx[0], B2, E2down ); 
+					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1down, x2, &y2[0], &dy2dx[0], B2, E2down ); 
+					noflip = BFint2->Integrate(x1, &y1[0], &dy1dx[0], B1, E1down, x2, &y2[0], &dy2dx[0], B2, E2down ); 
 				} else
-					noflip = BFint->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, x2, &y2[0], &dy2dx[0], B2, E2);
+					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, x2, &y2[0], &dy2dx[0], B2, E2);
 				
 				if (mc->UniformDist(0,1) > noflip)
 					polarisation *= -1;
@@ -267,7 +267,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 //			cout.flush();
 	
 	//delete the BFIntegrator objects after the integration is done
-	simulEFieldSpinInteg ? delete BFintup, delete BFintdown : delete BFint; 
+	simulEFieldSpinInteg ? delete BFint1, delete BFint2 : delete BFint1; 
 }
 
 
