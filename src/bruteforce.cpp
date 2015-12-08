@@ -151,7 +151,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				
 //				std::cout << "x1: " << x1 << ", x2: " << x2 << ", prevspinlog: " << prevspinlog << ", spinloginterval: " << spinloginterval << ", x2: " << x2 << std::endl;
 				
-				if ( x1 < prevspinlog + spinloginterval && prevspinlog + spinloginterval < x2){ // check if spinloginterval amount of time has passed
+				if ( x1 < prevspinlog + spinloginterval && prevspinlog + spinloginterval <= x2){ // check if spinloginterval amount of time has passed
 					prevspinlog += spinloginterval;
 					times.push_back(prevspinlog);
 //					std::cout << "x1: " << x1 << ", x2: " << x2 << ", prevspinlog: " << prevspinlog << ", spinloginterval: " << spinloginterval << ", x2: " << x2 << std::endl;
