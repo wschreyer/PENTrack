@@ -144,16 +144,18 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 
 			if (spinlog){
 				std::vector<value_type> times;
-				if (prevspinlog + spinloginterval < x1){
+				if (prevspinlog < 0){ // occurs only if TBFIntegrator::Integrate is being called for the very first time
 					times.push_back(x1);
 					prevspinlog = x1;
 				}
-				while (prevspinlog + spinloginterval < x2){
+				
+//				std::cout << "x1: " << x1 << ", x2: " << x2 << ", prevspinlog: " << prevspinlog << ", spinloginterval: " << spinloginterval << ", x2: " << x2 << std::endl;
+				
+				while ( x1 < prevspinlog + spinloginterval && prevspinlog + spinloginterval <= x2){ // check if spinloginterval amount of time has passed
 					prevspinlog += spinloginterval;
 					times.push_back(prevspinlog);
+//					std::cout << "x1: " << x1 << ", x2: " << x2 << ", prevspinlog: " << prevspinlog << ", spinloginterval: " << spinloginterval << ", x2: " << x2 << std::endl;
 				}
-				times.push_back(x2);
-				prevspinlog = x2;
 				
 				// use dense output stepper if spin trajectory should be logged
 				dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
