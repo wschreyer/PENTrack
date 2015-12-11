@@ -90,22 +90,24 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				std::cout << "\nBF starttime, " << x1 << " ";
 			}
 
+			// set up cubic spline for each magnetic field component for fast field interpolation between x1 and x2
 			alglib::real_1d_array t, B, dBdt;
 			t.setlength(2);
 			B.setlength(2);
 			dBdt.setlength(2);
 			for (int i = 0; i < 3; i++){
 				t[0] = x1;
-				B[0] = B1[i][0]/* + (y1[3 + (i + 1) % 3]*E1[(i + 2) % 3] - y1[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0)*/; //Adding vxE effect to Bx, By, Bz, Note dEdt=0 (for now)
+				B[0] = B1[i][0] + (y1[3 + (i + 1) % 3]*E1[(i + 2) % 3] - y1[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Adding vxE effect to Bx, By, Bz, Note dEdt=0 (for now)
 				dBdt[0] = y1[3]*B1[i][1] + y1[4]*B1[i][2] + y1[5]*B1[i][3]
-						/*+ (dy1dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy1dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0)*/; //Contribution to temporal Bfield derivative from vxE part, dEdt=0 (for now)
+						+ (dy1dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy1dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Contribution to temporal Bfield derivative from vxE part, dEdt=0 (for now)
 				t[1] = x2;
-				B[1] = B2[i][0]/* + (y2[3 + (i + 1) % 3]*E2[(i + 2) % 3] - y2[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0)*/;
+				B[1] = B2[i][0] + (y2[3 + (i + 1) % 3]*E2[(i + 2) % 3] - y2[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0);
 				dBdt[1] = y2[3]*B2[i][1] + y2[4]*B2[i][2] + y2[5]*B2[i][3]
-						/*+ (dy2dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0)*/;
-				alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]);
+						+ (dy2dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0);
+				alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]); // create cubic spline with known derivatives as boundary conditions
 			}
 
+			// set up integrator and spin logging
 			if (spinlog && nextspinlog < x1) // set spin log time to x1 if smaller
 				nextspinlog = x1;
 			dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
@@ -148,20 +150,20 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 
 double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type x2, const state_type &y2){
 	double B1[3], B2[3];
-	Binterp(x1, B1);
-	Binterp(x2, B2);
+	Binterp(x1, B1); // calculate field at t1
+	Binterp(x2, B2); // calculate field at t2
 	state_type I1perp(3), I2perp(3);
 	double IB1 = y1[0]*B1[0] + y1[1]*B1[1] + y1[2]*B1[2];
 	double IB2 = y2[0]*B2[0] + y2[1]*B2[1] + y2[2]*B2[2];
 	double B1abs2 = B1[0]*B1[0] + B1[1]*B1[1] + B1[2]*B1[2];
 	double B2abs2 = B2[0]*B2[0] + B2[1]*B2[1] + B2[2]*B2[2];
 	for (int i = 0; i < 3; i++){
-		I1perp[i] = y1[i] - IB1*B1[i]/B1abs2;
-		I2perp[i] = y2[i] - IB2*B2[i]/B2abs2;
+		I1perp[i] = y1[i] - IB1*B1[i]/B1abs2; // calculate projection of spin onto plane orthogonal to magnetic field
+		I2perp[i] = y2[i] - IB2*B2[i]/B2abs2; // Iperp = I - Iparallel = I - (I*B)*B/|B|^2
 	}
 	double I1perpabs = sqrt(I1perp[0]*I1perp[0] + I1perp[1]*I1perp[1] + I1perp[2]*I1perp[2]);
 	double I2perpabs = sqrt(I2perp[0]*I2perp[0] + I2perp[1]*I2perp[1] + I2perp[2]*I2perp[2]);
-	double deltaphi = acos((I1perp[0]*I2perp[0] + I1perp[1]*I2perp[1] + I1perp[2]*I2perp[2])/I1perpabs/I2perpabs);
+	double deltaphi = acos((I1perp[0]*I2perp[0] + I1perp[1]*I2perp[1] + I1perp[2]*I2perp[2])/I1perpabs/I2perpabs); // calculate angle between I1perp und I2perp
 	return deltaphi/(x2 - x1)/2/pi;
 }
 
