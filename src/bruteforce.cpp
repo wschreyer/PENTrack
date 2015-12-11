@@ -3,7 +3,7 @@
 
 TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
-				  spinlog(false), spinloginterval(5e-7), prevspinlog(0), intsteps(0), fspinout(spinout), starttime(0), t1(0), t2(0){
+				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0){
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -14,14 +14,12 @@ TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<
 	}while(BFtimess.good());
 	std::istringstream(conf["spinlog"]) >> spinlog;
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
-	prevspinlog = -spinloginterval; // set prevspinlog negative so first time point will definitely be logged to file
 }
 
 void TBFIntegrator::Binterp(value_type t, value_type B[3]){
-	value_type x = (t-t1)/(t2 - t1);
-	B[0] = ((cx[0]*x + cx[1])*x + cx[2])*x + cx[3];
-	B[1] = ((cy[0]*x + cy[1])*x + cy[2])*x + cy[3];
-	B[2] = ((cz[0]*x + cz[1])*x + cz[2])*x + cz[3];
+	for (int i = 0; i < 3; i++){
+		B[i] = alglib::spline1dcalc(Binterpolant[i], t);
+	}
 }
 
 void TBFIntegrator::operator()(state_type y, state_type &dydx, value_type x){
@@ -32,7 +30,7 @@ void TBFIntegrator::operator()(state_type y, state_type &dydx, value_type x){
 	dydx[2] = -gamma * (y[0] * B[1] - y[1] * B[0]);
 }
 
-void TBFIntegrator::operator()(const state_type &y, value_type x){
+void TBFIntegrator::LogSpin(const state_type &y, value_type x){
 	if (!spinlog)
 		return;
 	if (!fspinout.is_open()){
@@ -75,7 +73,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 		BruteForce2 |= (x2 >= BFtimes[i] && x2 < BFtimes[i+1]);
 	}
 	if (BruteForce1 || BruteForce2){
-		BFBminmem = std::min(BFBminmem, static_cast<double>(std::min(B1[3][0],B2[3][0]))); // save lowest value for info
+		BFBminmem = std::min(BFBminmem, std::min(B1[3][0],B2[3][0])); // save lowest value for info
 
 		// check if this value is worth for Bloch integration
 		if (B1[3][0] < Bmax || B2[3][0] < Bmax){
@@ -90,85 +88,41 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 					I_n[2] = 0.5;
 				starttime = x1;
 				std::cout << "\nBF starttime, " << x1 << " ";
-//					stepper = boost::numeric::odeint::make_dense_output((value_type)1e-12, (value_type)1e-12, stepper_type());
-//					stepper = boost::numeric::odeint::make_controlled(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
-//					stepper = stepper_type(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12));
 			}
-			
-			//Adding vxE effect to Bx, By, Bz, Note dEdt=0 (for now)
-			//Babs is not updated because it is not required in the interpolation
-			B1[0][0] += (y1[4]*E1[2] - y1[5]*E1[1]) / (c_0*c_0); //Bx = (vy*Ez - vz*Ey)/c^2
-			B1[1][0] += (y1[5]*E1[0] - y1[3]*E1[2]) / (c_0*c_0); //By = (vz*Ex - vx*Ez)/c^2
-			B1[2][0] += (y1[3]*E1[1] - y1[4]*E1[0]) / (c_0*c_0); //Bz = (vx*Ey - vy*Ex)/c^2
-			
-			B2[0][0] += (y2[4]*E2[2] - y2[5]*E2[1]) / (c_0*c_0); //Bx = (vy*Ez - vz*Ey)/c^2
-			B2[1][0] += (y2[5]*E2[0] - y2[3]*E2[2]) / (c_0*c_0); //By = (vz*Ex - vx*Ez)/c^2
-			B2[2][0] += (y2[3]*E2[1] - y2[4]*E2[0]) / (c_0*c_0); //Bz = (vx*Ey - vy*Ex)/c^2
-					
-			//Contribution to temporal Bfield derivative from vxE part dEdt=0 (for now)
-			value_type dBxdt1 = dy1dx[4]*E1[2] - dy1dx[5]*E1[1]; // dBxdt = ( ay*Ez - az*Ey ) + ( vy*dEdt_z - vz*dEdt_y ) 
-			value_type dBydt1 = dy1dx[5]*E1[0] - dy1dx[3]*E1[2]; // dBydt = ( az*Ex - ax*Ez ) + ( vz*dEdt_x - vx*dEdt_z )
-			value_type dBzdt1 = dy1dx[3]*E1[1] - dy1dx[4]*E1[0]; // dBzdt = ( ax*Ey - ay*Ex ) + ( vx*dEdt_y - vy*dEdt_x )
 
-			value_type dBxdt2 = dy2dx[4]*E2[2] - dy2dx[5]*E2[1]; // dBxdt = ( ay*Ez - az*Ey ) + ( vy*dEdt_z - vz*dEdt_y )
-			value_type dBydt2 = dy2dx[5]*E2[0] - dy2dx[3]*E2[2]; // dBydt = ( az*Ex - ax*Ez ) + ( vz*dEdt_x - vx*dEdt_z )
-			value_type dBzdt2 = dy2dx[3]*E2[1] - dy2dx[4]*E2[0]; // dBzdt = ( ax*Ey - ay*Ex ) + ( vx*dEdt_y - vy*dEdt_x )
-			
-			// calculate temporal derivative of field from spatial derivative and particle's speed dBi/dt = dBi/dxj * dxj/dt
-			t1 = x1;
-			t2 = x2;
-			
-			dBxdt1 += B1[0][1]*y1[3] + B1[0][2]*y1[4] + B1[0][3]*y1[5];
-			dBydt1 += B1[1][1]*y1[3] + B1[1][2]*y1[4] + B1[1][3]*y1[5];
-			dBzdt1 += B1[2][1]*y1[3] + B1[2][2]*y1[4] + B1[2][3]*y1[5];
-
-			dBxdt2 += B2[0][1]*y2[3] + B2[0][2]*y2[4] + B2[0][3]*y2[5];
-			dBydt2 += B2[1][1]*y2[3] + B2[1][2]*y2[4] + B2[1][3]*y2[5];
-			dBzdt2 += B2[2][1]*y2[3] + B2[2][2]*y2[4] + B2[2][3]*y2[5];
-
-			// calculate coefficients of cubic splines Bi(x) = ci[0]*x^3 + ci[1]*x^2 + ci[2]*x + ci[3]   (i = x,y,z)
-			// with boundary conditions Bi(x1) = Bi1, Bi(x2) = Bi2, dBidt(x1) = dBidt1, dBidt(x2) = dBidt2
-			value_type h = x2-x1;
-			cx[0] = 2*B1[0][0] - 2*B2[0][0] + dBxdt1*h + dBxdt2*h;
-			cx[1] = 3*B2[0][0] - 3*B1[0][0] - 2*dBxdt1*h - dBxdt2*h;
-			cx[2] = dBxdt1*h;
-			cx[3] = B1[0][0];
-			cy[0] = 2*B1[1][0] - 2*B2[1][0] + dBydt1*h + dBydt2*h;
-			cy[1] = 3*B2[1][0] - 3*B1[1][0] - 2*dBydt1*h - dBydt2*h;
-			cy[2] = dBydt1*h;
-			cy[3] = B1[1][0];
-			cz[0] = 2*B1[2][0] - 2*B2[2][0] + dBzdt1*h + dBzdt2*h;
-			cz[1] = 3*B2[2][0] - 3*B1[2][0] - 2*dBzdt1*h - dBzdt2*h;
-			cz[2] = dBzdt1*h;
-			cz[3] = B1[2][0];
-
-			if (spinlog){
-				std::vector<value_type> times;
-				if (prevspinlog < 0){ // occurs only if TBFIntegrator::Integrate is being called for the very first time
-					times.push_back(x1);
-					prevspinlog = x1;
-				}
-				
-//				std::cout << "x1: " << x1 << ", x2: " << x2 << ", prevspinlog: " << prevspinlog << ", spinloginterval: " << spinloginterval << ", x2: " << x2 << std::endl;
-				
-				while ( x1 < prevspinlog + spinloginterval && prevspinlog + spinloginterval <= x2){ // check if spinloginterval amount of time has passed
-					prevspinlog += spinloginterval;
-					times.push_back(prevspinlog);
-//					std::cout << "x1: " << x1 << ", x2: " << x2 << ", prevspinlog: " << prevspinlog << ", spinloginterval: " << spinloginterval << ", x2: " << x2 << std::endl;
-				}
-				
-				// use dense output stepper if spin trajectory should be logged
-				dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
-				// integrate(ODEsystem functor, initial state, start time, end time, initial time step, observer functor)
-				intsteps += boost::numeric::odeint::integrate_times(
-						stepper, boost::ref(*this), I_n, times.begin(),
-						times.end(), static_cast<value_type>(1e-9), boost::ref(*this));
+			alglib::real_1d_array t, B, dBdt;
+			t.setlength(2);
+			B.setlength(2);
+			dBdt.setlength(2);
+			for (int i = 0; i < 3; i++){
+				t[0] = x1;
+				B[0] = B1[i][0]/* + (y1[3 + (i + 1) % 3]*E1[(i + 2) % 3] - y1[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0)*/; //Adding vxE effect to Bx, By, Bz, Note dEdt=0 (for now)
+				dBdt[0] = y1[3]*B1[i][1] + y1[4]*B1[i][2] + y1[5]*B1[i][3]
+						/*+ (dy1dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy1dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0)*/; //Contribution to temporal Bfield derivative from vxE part, dEdt=0 (for now)
+				t[1] = x2;
+				B[1] = B2[i][0]/* + (y2[3 + (i + 1) % 3]*E2[(i + 2) % 3] - y2[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0)*/;
+				dBdt[1] = y2[3]*B2[i][1] + y2[4]*B2[i][2] + y2[5]*B2[i][3]
+						/*+ (dy2dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0)*/;
+				alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]);
 			}
-			else{
-				// use simpler error controlling stepper when output not needed
-				controlled_stepper_type stepper = boost::numeric::odeint::make_controlled(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
-				// integrate(ODEsystem functor, initial state, start time, end time, initial time step, observer functor)
-				intsteps += boost::numeric::odeint::integrate_adaptive(stepper, boost::ref(*this), I_n, x1, x2, static_cast<value_type>(1e-9));
+
+			if (spinlog && nextspinlog < x1) // set spin log time to x1 if smaller
+				nextspinlog = x1;
+			dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
+			stepper.initialize(I_n, x1, std::abs(1./gamma/B1[3][0]/8/pi)); // initialize stepper with step length = quarter of one precession
+			while(true){
+				stepper.do_step(boost::ref(*this)); // do step
+				intsteps++;
+				double wL = LarmorFreq(stepper.previous_time(), stepper.previous_state(), stepper.current_time(), stepper.current_state());
+				while (spinlog && nextspinlog <= x2 && nextspinlog <= stepper.current_time()){ // log spin if step ended after nextspinlog
+					stepper.calc_state(nextspinlog, I_n);
+					LogSpin(I_n, nextspinlog);
+					nextspinlog += spinloginterval;
+				}
+				if (stepper.current_time() >= x2){ // if stepper reached/overshot x2
+					stepper.calc_state(x2, I_n); // get final state
+					break;
+				}
 			}
 
 			if (B2[3][0] > Bmax || !BruteForce2){
@@ -191,3 +145,23 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 
 	return 1;
 }
+
+double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type x2, const state_type &y2){
+	double B1[3], B2[3];
+	Binterp(x1, B1);
+	Binterp(x2, B2);
+	state_type I1perp(3), I2perp(3);
+	double IB1 = y1[0]*B1[0] + y1[1]*B1[1] + y1[2]*B1[2];
+	double IB2 = y2[0]*B2[0] + y2[1]*B2[1] + y2[2]*B2[2];
+	double B1abs2 = B1[0]*B1[0] + B1[1]*B1[1] + B1[2]*B1[2];
+	double B2abs2 = B2[0]*B2[0] + B2[1]*B2[1] + B2[2]*B2[2];
+	for (int i = 0; i < 3; i++){
+		I1perp[i] = y1[i] - IB1*B1[i]/B1abs2;
+		I2perp[i] = y2[i] - IB2*B2[i]/B2abs2;
+	}
+	double I1perpabs = sqrt(I1perp[0]*I1perp[0] + I1perp[1]*I1perp[1] + I1perp[2]*I1perp[2]);
+	double I2perpabs = sqrt(I2perp[0]*I2perp[0] + I2perp[1]*I2perp[1] + I2perp[2]*I2perp[2]);
+	double deltaphi = acos((I1perp[0]*I2perp[0] + I1perp[1]*I2perp[1] + I1perp[2]*I2perp[2])/I1perpabs/I2perpabs);
+	return deltaphi/(x2 - x1)/2/pi;
+}
+

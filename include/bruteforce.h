@@ -13,6 +13,8 @@
 
 #include <boost/numeric/odeint.hpp>
 
+#include "interpolation.h"
+
 /**
  * Bloch equation integrator.
  *
@@ -37,17 +39,12 @@ private:
 	double BFBminmem; ///< Stores minimum field during one spin track for information
 	bool spinlog; ///< Should the tracking be logged to file?
 	double spinloginterval; ///< Time interval between log file entries.
-	double prevspinlog; ///< Time when the previous write to the spinlog occurred
+	double nextspinlog; ///< Time when the next write to the spinlog should happen
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
 	
-	value_type t1; ///< field interpolation start time
-	value_type t2; ///< field interpolation end time
-	value_type cx[4]; ///< cubic spline coefficients for magnetic field x-component
-	value_type cy[4]; ///< cubic spline coefficients for magnetic field y-component
-	value_type cz[4]; ///< cubic spline coefficients for magnetic field z-component
-
+	alglib::spline1dinterpolant Binterpolant[3];
 public:
 	/**
 	 * Constructor.
@@ -69,6 +66,26 @@ private:
 	 */
 	void Binterp(value_type t, value_type B[3]);
 
+	/**
+	 * Log integration step to file
+	 *
+	 * @param y Current state vector of the ODE system
+	 * @param x Current time
+	 */
+	void LogSpin(const state_type &y, value_type x);
+
+	/**
+	 * Calculate Larmor precession frequency
+	 *
+	 * @param x1 step start time
+	 * @param y1 start spin vector
+	 * @param x2 step end time
+	 * @param y2 end spin vector
+	 *
+	 * @return Larmor frequency
+	 */
+	double LarmorFreq(value_type x1, const state_type &y1, value_type x2, const state_type &y2);
+
 public:
 	/**
 	 *  Bloch equation integrator calls TBFIntegrator(x,y,dydx) to get derivatives
@@ -78,16 +95,6 @@ public:
 	 *  @param x Time
 	 */
 	void operator()(state_type y, state_type &dydx, value_type x);
-
-	/**
-	 * Integration observer
-	 *
-	 * Bloch equation integrator calls TBFIntegrator(y, x) on each integration step
-	 *
-	 * @param y Current state vector of the ODE system
-	 * @param x Current time
-	 */
-	void operator()(const state_type &y, value_type x);
 
 	/**
 	 * Track spin between two particle track points.
