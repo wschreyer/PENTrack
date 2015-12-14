@@ -29,7 +29,8 @@ void CylToCart(double v_r, double v_phi, double phi, double &v_x, double &v_y){
 }
 
 
-void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
+void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+		alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab){
 	ifstream FIN(tabfile, ifstream::in);
 	if (!FIN.is_open()){
 		cout << "\nCould not open " << tabfile << "!\n";
@@ -51,28 +52,28 @@ void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
 	if (!skipy) getline(FIN,line);
 
 	if (line.find("RBX") != string::npos){
-		BrTab.setlength(m*n);
+		BTabs[0].setlength(m*n);
 		getline(FIN,line);
 	}
 	if (line.find("RBY") != string::npos){
-		BphiTab.setlength(m*n);
+		BTabs[1].setlength(m*n);
 		getline(FIN,line);
 	}
 	if (line.find("RBZ") != string::npos){
-		BzTab.setlength(m*n);
+		BTabs[2].setlength(m*n);
 		getline(FIN,line);
 	}
 
 	if (line.find("EX") != string::npos){
-		ErTab.setlength(m*n);
+		ETabs[0].setlength(m*n);
 		getline(FIN,line);
 	}
 	if (line.find("EY") != string::npos){
-		EphiTab.setlength(m*n);
+		ETabs[1].setlength(m*n);
 		getline(FIN,line);
 	}
 	if (line.find("EZ") != string::npos){
-		EzTab.setlength(m*n);
+		ETabs[2].setlength(m*n);
 		getline(FIN,line);
 	}
 
@@ -108,29 +109,29 @@ void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
 		rind[ri] = r;
 		zind[zi] = z;
 		int i2 = zi * m + ri;
-		if (BrTab.length() > 0){
+		if (BTabs[0].length() > 0){
 			FIN >> val;
-			BrTab[i2] = val*Bconv*Bscale;
+			BTabs[0][i2] = val*Bconv*Bscale;
 		}
-		if (BphiTab.length() > 0){
+		if (BTabs[1].length() > 0){
 			FIN >> val;
-			BphiTab[i2] = val*Bconv*Bscale;
+			BTabs[1][i2] = val*Bconv*Bscale;
 		}
-		if (BzTab.length() > 0){
+		if (BTabs[2].length() > 0){
 			FIN >> val;
-			BzTab[i2] = val*Bconv*Bscale;
+			BTabs[2][i2] = val*Bconv*Bscale;
 		}
-		if (ErTab.length() > 0){
+		if (ETabs[0].length() > 0){
 			FIN >> val;
-			ErTab[i2] = val*Econv*Escale;
+			ETabs[0][i2] = val*Econv*Escale;
 		}
-		if (EphiTab.length() > 0){
+		if (ETabs[1].length() > 0){
 			FIN >> val;
-			EphiTab[i2] = val*Econv*Escale;
+			ETabs[1][i2] = val*Econv*Escale;
 		}
-		if (EzTab.length() > 0){
+		if (ETabs[2].length() > 0){
 			FIN >> val;
-			EzTab[i2] = val*Econv*Escale;
+			ETabs[2][i2] = val*Econv*Escale;
 		}
 		if (VTab.length() > 0){
 			FIN >> val;
@@ -140,14 +141,14 @@ void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
 	}
 
 	if (Bscale == 0){
-		BrTab.setlength(0);
-		BphiTab.setlength(0);
-		BzTab.setlength(0);
+		BTabs[0].setlength(0);
+		BTabs[1].setlength(0);
+		BTabs[2].setlength(0);
 	}
 	if (Escale == 0){
-		ErTab.setlength(0);
-		EphiTab.setlength(0);
-		EzTab.setlength(0);
+		ETabs[0].setlength(0);
+		ETabs[0].setlength(0);
+		ETabs[0].setlength(0);
 		VTab.setlength(0);
 	}
 
@@ -160,12 +161,17 @@ void TabField::ReadTabFile(const char *tabfile, double Bscale, double Escale){
 }
 
 
-void TabField::CheckTab(){
+void TabField::CheckTab(alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+		alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab){
 	//  calculate factors for conversion of coordinates to indexes  r = conv_rA + index * conv_rB
+	r_mi = rind[0];
+	z_mi = zind[0];
+	rdist = rind[1] - rind[0];
+	zdist = zind[1] - zind[0];
 	printf("The arrays are %u by %u.\n",m,n);
 	printf("The r values go from %G to %G\n", rind[0], rind[m-1]);
 	printf("The z values go from %G to %G.\n", zind[0], zind[n-1]);
-	printf("rdist = %G zdist = %G\n", rind[1] - rind[0], zind[1] - zind[0]);
+	printf("rdist = %G zdist = %G\n", rdist, zdist);
 
 	double Babsmax = 0, Babsmin = 9e99, Babs;
 	double Vmax = 0, Vmin = 9e99;
@@ -175,9 +181,9 @@ void TabField::CheckTab(){
 		{
 			Babs = 0;
 			int i2 = k*m + j;
-			if (BrTab.length() > 0) Babs += BrTab[i2]*BrTab[i2];
-			if (BphiTab.length() > 0) Babs += BphiTab[i2]*BphiTab[i2];
-			if (BzTab.length() > 0) Babs += BzTab[i2]*BzTab[i2];
+			if (BTabs[0].length() > 0) Babs += BTabs[0][i2]*BTabs[0][i2];
+			if (BTabs[1].length() > 0) Babs += BTabs[1][i2]*BTabs[1][i2];
+			if (BTabs[2].length() > 0) Babs += BTabs[2][i2]*BTabs[2][i2];
 			Babsmax = max(sqrt(Babs),Babsmax);
 			Babsmin = min(sqrt(Babs),Babsmin);
 			if (VTab.length() > 0)
@@ -226,49 +232,50 @@ TabField::TabField(const char *tabfile, double Bscale, double Escale,
 	lengthconv = alengthconv;
 	Bconv = aBconv;
 	Econv = aEconv;
+	alglib::real_1d_array rind, zind, BTabs[3], ETabs[3], VTab;
 
-	ReadTabFile(tabfile,Bscale,Escale); // open tabfile and read values into arrays
+	ReadTabFile(tabfile, Bscale, Escale, rind, zind, BTabs, ETabs, VTab); // open tabfile and read values into arrays
 
-	CheckTab(); // print some info
+	CheckTab(rind, zind, BTabs, ETabs, VTab); // print some info
 
 	printf("Starting Preinterpolation ... ");
-	if (BrTab.length() > 0){
+	if (BTabs[0].length() > 0){
 		cout << "Br ... ";
 		cout.flush();
-		alglib::spline2dbuildbicubicv(rind, m, zind, n, BrTab, 1, Brc);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, BTabs[0], 1, Brc);
 	}
-	if (BphiTab.length() > 0){
+	if (BTabs[1].length() > 0){
 		cout << "Bhi ... ";
 		cout.flush();
-		alglib::spline2dbuildbicubicv(rind, m, zind, n, BphiTab, 1, Bphic);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, BTabs[1], 1, Bphic);
 	}
-	if (BzTab.length() > 0){
+	if (BTabs[2].length() > 0){
 		cout << "Bz ... ";
 		cout.flush();
-		alglib::spline2dbuildbicubicv(rind, m, zind, n, BzTab, 1, Bzc);
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, BTabs[2], 1, Bzc);
+	}
+	if (ETabs[0].length() > 0){
+		cout << "Er ... ";
+		cout.flush();
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[0], 1, Erc);
+		VTab.setlength(0); // ignore potential if electric field map found
+	}
+	if (ETabs[1].length() > 0){
+		cout << "Ephi ... ";
+		cout.flush();
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[1], 1, Ephic);
+		VTab.setlength(0); // ignore potential if electric field map found
+	}
+	if (ETabs[2].length() > 0){
+		cout << "Ez ... ";
+		cout.flush();
+		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[2], 1, Ezc);
+		VTab.setlength(0); // ignore potential if electric field map found
 	}
 	if (VTab.length() > 0){
 		cout << "V ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, VTab, 1, Vc);
-		ErTab.setlength(0); // if there is a potential, we don't need the E-vector
-		EphiTab.setlength(0);
-		EzTab.setlength(0);
-	}
-	if (ErTab.length() > 0){
-		cout << "Er ... ";
-		cout.flush();
-		alglib::spline2dbuildbicubicv(rind, m, zind, n, ErTab, 1, Erc);
-	}
-	if (EphiTab.length() > 0){
-		cout << "Ephi ... ";
-		cout.flush();
-		alglib::spline2dbuildbicubicv(rind, m, zind, n, EphiTab, 1, Ephic);
-	}
-	if (EzTab.length() > 0){
-		cout << "Ez ... ";
-		cout.flush();
-		alglib::spline2dbuildbicubicv(rind, m, zind, n, EzTab, 1, Ezc);
 	}
 }
 
@@ -279,16 +286,16 @@ TabField::~TabField(){
 void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 	double r = sqrt(x*x+y*y);
 	double Bscale = BFieldScale(t);
-	if (Bscale != 0 && r >= rind[0] && r <= rind[m-1] && z >= zind[0] && z <= zind[n-1]){
+	if (Bscale != 0 && r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
 		// bicubic interpolation
 		double Br = 0, dBrdr = 0, dBrdz = 0, Bphi = 0, dBphidr = 0, dBphidz = 0, dBzdr = 0;
 		double Bx = 0, By = 0, Bz = 0, dBxdz = 0, dBydz = 0, dBzdz = 0;
 		double dummy;
 		double phi = atan2(y,x);
-		if (BrTab.length() > 0){
+		if (Brc.c_ptr()->m*Brc.c_ptr()->n > 0){
 			alglib::spline2ddiff(Brc, r, z, Br, dBrdr, dBrdz, dummy);
 		}
-		if (BphiTab.length() > 0){
+		if (Bphic.c_ptr()->m*Bphic.c_ptr()->n > 0){
 			alglib::spline2ddiff(Bphic, r, z, Bphi, dBphidr, dBphidz, dummy);
 		}
 		CylToCart(Br,Bphi,phi,Bx,By);
@@ -303,7 +310,7 @@ void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 		CylToCart(dBrdz,dBphidz,phi,dBxdz,dBydz);
 		B[0][3] += dBxdz*Bscale;
 		B[1][3] += dBydz*Bscale;
-		if (BzTab.length() > 0){
+		if (Bzc.c_ptr()->m*Bzc.c_ptr()->n > 0){
 			alglib::spline2ddiff(Bzc, r, z, Bz, dBzdr, dBzdz, dummy);
 		}
 		B[2][0] += Bz*Bscale;
@@ -314,11 +321,41 @@ void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 }
 
 
-void TabField::EField(double x, double y, double z, double t, double &V, double Ei[3]){
-	double Vloc, dVdrj[3], dummy;
-	if (VTab.length() > 0){ // prefer E-field from potential over pure E-field interpolation
-		double r = sqrt(x*x+y*y);
-		if (r >= rind[0] && r <= rind[m-1] && z >= zind[0] && z <= zind[n-1]){
+void TabField::EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]){
+	double r = sqrt(x*x+y*y);
+	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
+		if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0 || Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0 || Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0){ // prefer E-field interpolation over potential interpolation
+			double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0, dummy;
+			double dErdr, dErdz, dEphidr, dEphidz, dEzdr, dEzdz, dExdz, dEydz;
+			double phi = atan2(y,x);
+			//bicubic interpolation
+			if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0)
+				alglib::spline2ddiff(Erc, r, z, Er, dErdr, dErdz, dummy);
+			if (Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0)
+				alglib::spline2ddiff(Ephic, r, z, Ephi, dEphidr, dEphidz, dummy);
+			if (Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0)
+				alglib::spline2ddiff(Ezc, r, z, Ez, dEzdr, dEzdz, dummy);
+			CylToCart(Er,Ephi,phi,Ex,Ey); // convert r,phi components to x,y components
+			Ei[0] += Ex; // add electric field
+			Ei[1] += Ey;
+			Ei[2] += Ez;
+			if (dEidxj != NULL){
+				if (r > 0){ // convert r,phi derivatives to x,y derivatives
+					dEidxj[0][0] += (dErdr*cos(phi)*cos(phi) - dEphidr*cos(phi)*sin(phi) + (Er*sin(phi)*sin(phi) + Ephi*cos(phi)*sin(phi))/r);
+					dEidxj[0][1] += (dErdr*cos(phi)*sin(phi) - dEphidr*sin(phi)*sin(phi) - (Er*cos(phi)*sin(phi) + Ephi*cos(phi)*cos(phi))/r);
+					dEidxj[1][0] += (dErdr*cos(phi)*sin(phi) + dEphidr*cos(phi)*cos(phi) - (Er*cos(phi)*sin(phi) - Ephi*sin(phi)*sin(phi))/r);
+					dEidxj[1][1] += (dErdr*sin(phi)*sin(phi) + dEphidr*cos(phi)*sin(phi) + (Er*cos(phi)*cos(phi) - Ephi*cos(phi)*sin(phi))/r);
+				}
+				CylToCart(dErdz,dEphidz,phi,dExdz,dEydz); // convert z-derivatives of r,phi components into z-derivatives of x,y components
+				dEidxj[0][2] += dExdz;
+				dEidxj[1][2] += dEydz;
+				dEidxj[2][0] += dEzdr*cos(phi);
+				dEidxj[2][1] += dEzdr*sin(phi);
+				dEidxj[2][2] += dEzdz;
+			}
+		}
+		else{
+			double Vloc, dVdrj[3], dummy;
 			// bicubic interpolation
 			alglib::spline2ddiff(Vc, r, z, Vloc, dVdrj[0], dVdrj[2], dummy);
 			double phi = atan2(y,x);
@@ -326,24 +363,8 @@ void TabField::EField(double x, double y, double z, double t, double &V, double 
 			Ei[0] += -dVdrj[0]*cos(phi);
 			Ei[1] += -dVdrj[0]*sin(phi);
 			Ei[2] += -dVdrj[2];
+			// !!!!!!!!!!! calculation of electric field derivatives not yet implemented for potential interpolation !!!!!!!!!!!!!!!!
 		}
-	}
-	else if (ErTab.length() > 0 || EphiTab.length() > 0 || EzTab.length() > 0){
-		double r = sqrt(x*x+y*y);
-		if (r >= rind[0] && r <= rind[m-1] && z >= zind[0] && z <= zind[n-1]){
-			// bicubic interpolation
-			double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0;
-			double phi = atan2(y,x);
-			if (ErTab.length() > 0)
-				Er = alglib::spline2dcalc(Erc, r, z);
-			if (EphiTab.length() > 0)
-				Ephi = alglib::spline2dcalc(Ephic, r, z);
-			if (EzTab.length() > 0)
-				Ez = alglib::spline2dcalc(Ezc, r, z);
-			CylToCart(Er,Ephi,phi,Ex,Ey);
-			Ei[0] += Ex;
-			Ei[1] += Ey;
-			Ei[2] += Ez;
-		}
+
 	}
 }

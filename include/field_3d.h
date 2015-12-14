@@ -189,8 +189,9 @@ class TabField3: public TField{
 		 * @param t Time
 		 * @param V Returns electric potential
 		 * @param Ei Returns electric field (negative spatial derivatives of V)
+		 * @param dEidxj Adds spatial derivatives of electric field components (optional)
 		 */
-		void EField(double x, double y, double z, double t, double &V, double Ei[3]);
+		void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL);
 };
 
 #endif // FIELD_3D_H_

@@ -515,7 +515,7 @@ double TabField3::SmthrStpDer(double x) {
 	return 30*pow(x, 4) - 60*pow(x, 3) + 30*pow(x,2);
 }
 
-void TabField3::EField(double x, double y, double z, double t, double &V, double Ei[3]){
+void TabField3::EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]){
 	if (Vc.size() > 0 &&
 		(x - x_mi)/xdist > 0 && (x - x_mi - xl*xdist)/xdist < 0 &&
 		(y - y_mi)/ydist > 0 && (y - y_mi - yl*ydist)/ydist < 0 &&
@@ -534,5 +534,16 @@ void TabField3::EField(double x, double y, double z, double t, double &V, double
 		Ei[0] += -tricubic_eval(&Vc[i3][0], x, y, z, 1, 0, 0)/xdist;
 		Ei[1] += -tricubic_eval(&Vc[i3][0], x, y, z, 0, 1, 0)/ydist;
 		Ei[2] += -tricubic_eval(&Vc[i3][0], x, y, z, 0, 0, 1)/zdist;
+		if (dEidxj != NULL){ // calculate higher derivatives
+			dEidxj[0][0] += -tricubic_eval(&Vc[i3][0], x, y, z, 2, 0, 0)/xdist/xdist;
+			dEidxj[0][1] += -tricubic_eval(&Vc[i3][0], x, y, z, 1, 1, 0)/xdist/ydist;
+			dEidxj[0][2] += -tricubic_eval(&Vc[i3][0], x, y, z, 1, 0, 1)/xdist/zdist;
+			dEidxj[1][0] += -tricubic_eval(&Vc[i3][0], x, y, z, 1, 1, 0)/ydist/xdist;
+			dEidxj[1][1] += -tricubic_eval(&Vc[i3][0], x, y, z, 0, 2, 0)/ydist/ydist;
+			dEidxj[1][2] += -tricubic_eval(&Vc[i3][0], x, y, z, 0, 1, 1)/ydist/zdist;
+			dEidxj[2][0] += -tricubic_eval(&Vc[i3][0], x, y, z, 1, 0, 1)/zdist/xdist;
+			dEidxj[2][1] += -tricubic_eval(&Vc[i3][0], x, y, z, 0, 1, 1)/zdist/ydist;
+			dEidxj[2][2] += -tricubic_eval(&Vc[i3][0], x, y, z, 0, 0, 2)/zdist/zdist;
+		}
 	}
 }

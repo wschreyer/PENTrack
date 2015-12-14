@@ -42,8 +42,9 @@ struct TConductorField: public TField{
 	 * @param t Time
 	 * @param V Electric potential
 	 * @param Ei Electric field components
+	 * @param dEidxj Spatial derivatives of electric field components
 	 */
-	void EField(double x, double y, double z, double t, double &V, double Ei[3]){};
+	void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL){};
 };
 
 /**

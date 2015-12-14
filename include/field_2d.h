@@ -24,7 +24,10 @@ class TabField: public TField{
 	private:
 		int m; ///< radial size of the table file
 		int n; ///< axial size of the arrays
-		alglib::real_1d_array rind, zind, BrTab, BphiTab, BzTab, ErTab, EphiTab, EzTab, VTab;
+		double rdist; ///< distance between grid points in radial direction
+		double zdist; ///< distance between grid points in axial direction
+		double r_mi; ///< lower radial coordinate of rectangular grid
+		double z_mi; ///< lower axial coordinate of rectangular grid
 		alglib::spline2dinterpolant Brc, Bphic, Bzc, Erc, Ephic, Ezc, Vc;
 		double NullFieldTime; ///< Time before magnetic field is ramped (passed by constructor)
 		double RampUpTime; ///< field is ramped linearly from 0 to 100% in this time (passed by constructor)
@@ -44,29 +47,27 @@ class TabField: public TField{
 		 * @param tabfile Path to table file
 		 * @param Bscale Magnetic field is always scaled by this factor
 		 * @param Escale Electric field is always scaled by this factor
-		 * @param BrTab Returns radial magnetic field components at (r,z) = (x,z)
-		 * @param BphiTab Returns azimuthal magnetic field components at (r,z) = (x,z)
-		 * @param BzTab Returns axial magnetic field components at (r,z) = (x,z)
-		 * @param ErTab Returns radial electric field components at (r,z) = (x,z)
-		 * @param EphiTab Returns azimuthal electric field components at (r,z) = (x,z)
-		 * @param EzTab Returns axial electric field components at (r,z) = (x,z)
-		 * @param VTab Returns electric potential at (r,z) = (x,z)
+		 * @param rind Vector containing r-components of grid
+		 * @param zind Vector containing z-components of grid
+		 * @param BTabs Three vectors containing magnetic field components at each grid point
+		 * @param ETabs Three vectors containing electric field components at each grid point
+		 * @param VTab Vector containing electric potential at each grid point
 		 */
-		void ReadTabFile(const char *tabfile, double Bscale, double Escale);
+		void ReadTabFile(const char *tabfile, double Bscale, double Escale, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+						alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab);
 
 
 		/**
 		 * Print some information for each table column
 		 *
-		 * @param BrTab B_r column
-		 * @param BphiTab B_phi column
-		 * @param BzTab B_z column
-		 * @param ErTab E_r column
-		 * @param EphiTab E_phi column
-		 * @param EzTab E_z column
-		 * @param VTab	V column
+		 * @param rind Vector containing r-components of grid
+		 * @param zind Vector containing z-components of grid
+		 * @param BTabs Three vectors containing magnetic field components at each grid point
+		 * @param ETabs Three vectors containing electric field components at each grid point
+		 * @param VTab Vector containing electric potential at each grid point
 		 */
-		void CheckTab();
+		void CheckTab(alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+				alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab);
 
 
 		/**
@@ -129,10 +130,9 @@ class TabField: public TField{
 		 * @param t Time
 		 * @param V Returns electric potential
 		 * @param Ei Return electric field (negative spatial derivatives of V)
-		 *
-		 * @return Returns true if electric field could be evaluated at this point
+		 * @param dEidxj Adds spatial derivatives of electric field components (optional) !!!NOT YET IMPLEMENTED!!!
 		 */
-		void EField(double x, double y, double z, double t, double &V, double Ei[3]);
+		void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL);
 };
 
 

@@ -106,7 +106,7 @@ TFieldManager::~TFieldManager(){
 }
 
 
-void TFieldManager::BField (double x, double y, double z, double t, double B[4][4]){      //B-Feld am Ort des Teilchens berechnen
+void TFieldManager::BField (double x, double y, double z, double t, double B[4][4]){
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			B[i][j] = 0;
@@ -133,10 +133,15 @@ void TFieldManager::BField (double x, double y, double z, double t, double B[4][
 }
 
 
-void TFieldManager::EField(double x, double y, double z, double t, double &V, double Ei[3]){
-	Ei[0] = Ei[1] = Ei[2] = V = 0;
+void TFieldManager::EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]){
+	V = 0;
+	for (int i = 0; i < 3; i++){
+		Ei[i] = 0;
+		for (int j = 0; j < 3; j++)
+			dEidxj[i][j] = 0;
+	}
 	for (vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++){
-		(*i)->EField(x, y, z, t, V, Ei);
+		(*i)->EField(x, y, z, t, V, Ei, dEidxj);
 	}
 }
 

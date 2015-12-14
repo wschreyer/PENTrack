@@ -74,8 +74,9 @@ struct TFieldManager{
 		 * @param t Time
 		 * @param V Return electric potential (!=0 only if a map with potential was loaded)
 		 * @param Ei Returns electric field vector
+		 * @param dEidxj Returns spatial derivatives of electric field components (optional)
 		 */
-		void EField(double x, double y, double z, double t, double &V, double Ei[3]);
+		void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL);
 
 	private:
 

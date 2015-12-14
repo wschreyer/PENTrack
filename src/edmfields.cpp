@@ -37,7 +37,7 @@ void TEDMStaticB0GradZField::BField(double x, double y, double z, double t, doub
 
 TEDMStaticEField::TEDMStaticEField (double amagEField): magEField(amagEField) {}; //end TEDMStaticEField constructor
 
-void TEDMStaticEField::EField (double x, double y, double z, double t, double &V, double Ei[3]) {
+void TEDMStaticEField::EField (double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]) {
 	Ei[0] += 0; Ei[1] += 0;
 	Ei[2] += magEField;
 
