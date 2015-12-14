@@ -37,6 +37,9 @@ class TabField3: public TField{
 		double FullFieldTime; ///< Time the field stays at 100% (passed by constructor)
 		double RampDownTime; ///< field is ramped down linearly from 100% to 0 in this time (passed by constructor)
 		double BoundaryWidth; ///< if this is larger 0, the field will be smoothly reduced to 0 in this boundary around the tabulated field cuboid
+		double lengthconv; ///< Factor to convert length units in file to PENTrack units
+		double Bconv; ///< Factor to convert magnetic field units in file to PENTrack units
+
 
 		/**
 		 * Reads an Opera table file.
@@ -151,9 +154,12 @@ class TabField3: public TField{
 		 * @param aFullFieldTime Sets TabField3::FullFieldTime
 		 * @param aRampDownTime Sets TabField3::RampDownTime
 		 * @param aBoundaryWidth Sets TabField3::BoundaryWidth
+		 * @param alengthconv Factor to convert length units in file to PENTrack units (default: expect cm (cgs), convert to m)
+		 * @param aBconv Factor to convert magnetic field units in file to PENTrack units (default: expect Gauss (cgs), convert to Tesla)
 		 */
 		TabField3(const char *tabfile, double Bscale, double Escale,
-				double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime, double aBoundaryWidth);
+				double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime, double aBoundaryWidth,
+				double alengthconv = 0.01, double aBconv = 1e-4);
 
 
 		/**

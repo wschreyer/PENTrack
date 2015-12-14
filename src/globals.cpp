@@ -6,6 +6,27 @@
 
 #include "globals.h"
 
+const long double pi = 3.1415926535897932384626L; ///< Pi
+const long double ele_e = 1.602176487E-19L; ///< elementary charge [C]
+const long double gravconst = 9.80665L; ///< g [m/s]
+const long double boltzconst = 1.38064852E-23L/ele_e; /// Boltzmann's constant [ev/K] from http://physics.nist.gov/cgi-bin/cuu/Value?sigma
+const long double avogadroconst = 6.022140857E23L; /// Avogadro's constant [ mol^-1 ] from http://physics.nist.gov/cgi-bin/cuu/Value?na|search_for=avagadro%27s+number
+const long double conv = pi/180.L; ///< deg to rad conversion factor
+const long double mu0 = 4*pi*1e-7L; ///< magnetic permeability [Vs/Am]
+const long double m_n = 1.674927211E-27L/ele_e; ///< neutron mass [eV/c^2]
+const long double m_p = 1.672621637E-27L/ele_e; ///< proton mass [eV/c^2]
+const long double m_e = 9.10938215e-31L/ele_e; ///< electron mass [eV/c^2]
+const long double m_hg = 198.96828064/(1000*avogadroconst)/ele_e; ///< mercury-199 mass [ev/c^2] (http://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?ele=Hg)
+const long double m_xe = 128.9047808611/(1000*avogadroconst)/ele_e; ///< xenon-129 mass [ev/c^2] (http://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?ele=Xe)
+const long double c_0 = 299792458.L; ///< light speed [m/s]
+const long double hbar = 1.05457266e-34L; ///< planck constant [Js]
+const long double mu_nSI = -0.96623641e-26L;	///< Neutron magnetic moment [J/T]
+const long double mu_hgSI = 2.555118e-27L; ///< mercury-199 magnetic moment [J/T]
+const long double mu_xeSI = -3.392939e-27L; ///< Xenon-129 avogadroconstmagnetic moment [J/T]
+const long double gamma_n = -1.83247185e8L; ///< 2*::mu_nSI/::hquer gyromagnetic ratio of neutron [1/Ts]
+const long double gamma_hg = 4.76901003e7L; ///< from: http://www.sciencedirect.com/science/article/pii/S0370269314007692 [ 1/Ts ]
+const long double gamma_xe = -7.399707336e7L; ///< from: http://nmrwiki.org/wiki/index.php?title=Gyromagnetic_ratio [ 1/Ts ]
+
 long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
 std::string inpath = "."; ///< path to configuration files, read from command line paramters
 std::string outpath = "."; ///< path where the log file should be saved to, read from command line parameters

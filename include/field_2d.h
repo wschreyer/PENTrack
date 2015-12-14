@@ -30,6 +30,9 @@ class TabField: public TField{
 		double RampUpTime; ///< field is ramped linearly from 0 to 100% in this time (passed by constructor)
 		double FullFieldTime; ///< Time the field stays at 100% (passed by constructor)
 		double RampDownTime; ///< field is ramped down linearly from 100% to 0 in this time (passed by constructor)
+		double lengthconv; ///< Factor to convert length units in file to PENTrack units
+		double Bconv; ///< Factor to convert magnetic field units in file to PENTrack units
+		double Econv; ///< Factor to convert electric field units in file to PENTrack units
 
 
 		/**
@@ -89,9 +92,13 @@ class TabField: public TField{
 		 * @param aRampUpTime Sets TabField::RampUpTime
 		 * @param aFullFieldTime Sets TabField::FullFieldTime
 		 * @param aRampDownTime Set TabField::RampDownTime
+		 * @param alengthconv Factor to convert length units in file to PENTrack units (default: expect cm (cgs), convert to m)
+		 * @param aBconv Factor to convert magnetic field units in file to PENTrack units (default: expect Gauss (cgs), convert to Tesla)
+		 * @param aEconv Factor to convert electric field units in file to PENTrack units (default: expect V/cm (cgs), convert to V/m)
 		 */
 		TabField(const char *tabfile, double Bscale, double Escale,
-				double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime);
+				double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime,
+				double alengthconv = 0.01, double aBconv = 1e-4, double aEconv = 100.);
 
 		~TabField();
 

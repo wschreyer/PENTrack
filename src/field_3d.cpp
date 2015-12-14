@@ -363,12 +363,15 @@ double TabField3::BFieldScale(double t){
 
 
 TabField3::TabField3(const char *tabfile, double Bscale, double Escale,
-		double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime, double aBoundaryWidth){
+		double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime, double aBoundaryWidth,
+		double alengthconv, double aBconv){
 	NullFieldTime = aNullFieldTime;
 	RampUpTime = aRampUpTime;
 	FullFieldTime = aFullFieldTime;
 	RampDownTime = aRampDownTime;
 	BoundaryWidth = aBoundaryWidth;
+	lengthconv = alengthconv;
+	Bconv = aBconv;
 
 	vector<double> BxTab, ByTab, BzTab;	// Bx/By/Bz values
 	vector<double> VTab; // potential values

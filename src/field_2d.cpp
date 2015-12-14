@@ -217,11 +217,15 @@ double TabField::BFieldScale(double t){
 
 
 TabField::TabField(const char *tabfile, double Bscale, double Escale,
-		double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime){
+		double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime,
+		double alengthconv, double aBconv, double aEconv){
 	NullFieldTime = aNullFieldTime;
 	RampUpTime = aRampUpTime;
 	FullFieldTime = aFullFieldTime;
 	RampDownTime = aRampDownTime;
+	lengthconv = alengthconv;
+	Bconv = aBconv;
+	Econv = aEconv;
 
 	ReadTabFile(tabfile,Bscale,Escale); // open tabfile and read values into arrays
 
