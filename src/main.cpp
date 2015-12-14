@@ -34,6 +34,7 @@ using namespace std;
 #include "mc.h" 
 #include "bruteforce.h"
 #include "ndist.h"
+#include "microroughness.h"
 
 void ConfigInit(TConfig &config); // read config.in
 void OutputCodes(map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
@@ -299,24 +300,29 @@ void PrintMROutAngle ( const char *outfile) {
 	oss << outfile << "-F" << MRSolidAngleDRPParams[0] << "-En" << MRSolidAngleDRPParams[1] << "-b" << MRSolidAngleDRPParams[2] << "-w" << MRSolidAngleDRPParams[3] << "-th" << MRSolidAngleDRPParams[4] << ".out"; 
  	string fileName = oss.str();
 	
-	FILE *mrproboutfile = fopen (fileName.c_str(), "w");
+	ofstream mrproboutfile(fileName.c_str());
 	if (!mrproboutfile) {
 		printf("Could not open %s!", fileName.c_str());
 		exit (-1);
 	} 
 
 	//print file header
-	fprintf (mrproboutfile, "phi_out theta_out mrdrp\n");
+	mrproboutfile << "phi_out theta_out mrdrp\n";
 	double theta_inc = MRSolidAngleDRPParams[4];
-	double mrprob=0;
 	
+	//determine neutron velocity corresponding to the energy and create a state_type vector from it
+	double vabs = sqrt(2*MRSolidAngleDRPParams[1]*1e-9/m_n);
+	double v[3] = {0, vabs*sin(theta_inc), -vabs*cos(theta_inc)};
+	double norm[] = { 0, 0, 1 };
+
+	TMicroRoughness MR;
 	//write the mrprob values to the output file
-	for (double phi=-pi; phi<pi; phi+=(2*pi)/1000) {
+	for (double phi=-pi; phi<pi; phi+=(2*pi)/100) {
 		
-		for (double theta=0; theta<pi/2; theta+=(pi/2)/1000) {
+		for (double theta=0; theta<pi/2; theta+=(pi/2)/100) {
 			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
-			mrprob = (TNeutron::getMRProb( false, MRSolidAngleDRPParams[1], &solLeav, &solEnter, theta_inc, theta, phi ))*sin(theta);
-			fprintf(mrproboutfile, "%g %g %g\n", phi, theta, mrprob);				
+			double mrprob = MR.MRDist(false, false, v, norm, &solLeav, &solEnter, theta, phi)*sin(theta);
+			mrproboutfile << phi << ' ' << theta << ' ' << mrprob << '\n';
 		}
 	}
 
@@ -344,32 +350,36 @@ void PrintMRThetaIEnergy (const char *outfile) {
 	oss << outfile << "-F" << MRThetaIEnergyParams[0] << "-b" << MRThetaIEnergyParams[1] << "-w" << MRThetaIEnergyParams[2] << ".out"; 
  	string fileName = oss.str();	
 	
-	FILE *mroutfile = fopen(fileName.c_str(), "w");
+	ofstream mroutfile(fileName.c_str());
 	if (!mroutfile){
 		printf("Could not open %s!", fileName.c_str());
 		exit(-1);
 	}
 
-	fprintf( mroutfile, "theta_i neut_en totmrdrp\n" ); //print the header
+	mroutfile << "theta_i neut_en totmrdrp\n"; //print the header
 	
 	//define the min and max values of the following for loop
 	double theta_start = MRThetaIEnergyParams[3];
 	double theta_end = MRThetaIEnergyParams[4];
 	double neute_start = MRThetaIEnergyParams[5];
 	double neute_end = MRThetaIEnergyParams[6];
-	double totmrprob=0;
 	int prevProg=0;
 	std::cout << '\n';
 	
+	double norm[] = { 0, 0, 1 };
+	TMicroRoughness MR;
  	//write the integrated mrprob values to the output file 
-	for (double theta = theta_start; theta<theta_end; theta += (theta_end-theta_start)/1000) {
+	for (double theta = theta_start; theta<theta_end; theta += (theta_end-theta_start)/100) {
 		//since this part can be slow it is helpful to monitor the progress
 		PrintPercent((theta - theta_start)/(theta_end - theta_start), prevProg);
 
-		for (double energy = neute_start; energy<neute_end; energy += (neute_end-neute_start)/1000) {
+		for (double energy = neute_start; energy<neute_end; energy += (neute_end-neute_start)/100) {
+			//determine neutron velocity corresponding to the energy and create a state_type vector from it
+			double vabs = sqrt(2*energy*1e-9/m_n);
+			double v[3] = {0, vabs*sin(theta), -vabs*cos(theta)};
 			//the sin(theta) factor is needed to noramlize for different sizes of surface elements in spherical coordinates
-			totmrprob = (TNeutron::getMRProb( true, energy, &solLeav, &solEnter, theta, 0, 0 ));
-			fprintf(mroutfile, "%g %g %g\n", theta, energy, totmrprob);
+			double totmrprob = MR.MRProb(false, v, norm, &solLeav, &solEnter);
+			mroutfile << theta << ' ' << energy << ' ' << totmrprob << '\n';
 		}
 	}
 	std::cout << '\n';

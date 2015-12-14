@@ -1,6 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
 project (PENTrack)
-set(CMAKE_BUILD_TYPE Release)
+
+if (NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release)
+endif()
 
 include_directories("alglib-3.9.0/cpp/src")
 add_library(alglib OBJECT alglib-3.9.0/cpp/src/alglibinternal.cpp 
@@ -42,7 +45,7 @@ endif()
 
 include_directories("include")
 add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/bruteforce.cpp src/edmfields.cpp 
-						src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp 
+						src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
 						src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/ndist.cpp src/source.cpp 
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)		
 

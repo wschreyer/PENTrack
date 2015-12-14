@@ -3,18 +3,12 @@
  * Neutron class definition.
  */
 
-#include <complex>
-
 #include "neutron.h"
 #include "globals.h"
 #include "proton.h"
 #include "electron.h"
 #include "ndist.h"
 
-#include <boost/math/special_functions/bessel.hpp>
-
-#include "optimization.h"
-#include "integration.h"
 
 const char* NAME_NEUTRON = "neutron";
 
@@ -24,140 +18,11 @@ ofstream TNeutron::trackout; ///< tracklog file stream
 ofstream TNeutron::hitout; ///< hitlog file stream
 ofstream TNeutron::spinout; ///< spinlog file stream
 ofstream TNeutron::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration 
+TMicroRoughness TNeutron::MR;
 
 TNeutron::TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
-}
-
-double TNeutron::getMRProb ( bool integrate, double incNeutE, solid *solLeav, solid *solEnter, double atheta_i, double theta_out, double phi_out ) {
-	//determine neutron velocity corresponding to the energy and create a state_type vector from it
-	double v = sqrt(2*incNeutE*1e-9/m_n);
-	state_type astateVec(6, 0);
-	astateVec[4] = v*sin(atheta_i);
-	astateVec[5] = -v*cos(atheta_i); // negative because vzstate has to face the surface
-	double norm[] = { 0, 0, 1 };
-
-	if (!integrate)
-		return MRDist( false, false, astateVec, norm, solLeav, solEnter, theta_out, phi_out);
-	else
-		return MRProb( false, astateVec, norm, solLeav, solEnter);
-} //end getMRDRP
-
-bool TNeutron::MRValid(state_type y, const double normal[3], solid *leaving, solid *entering){
-	double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5]; // velocity squared
-	double vnormal = y[3]*normal[0] + y[4]*normal[1] + y[5]*normal[2]; // velocity projected onto surface normal
-	double E = 0.5*m_n*v2; // kinetic energy
-	value_type Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
-	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
-	material *mat;
-	if (vnormal > 0)
-		mat = &leaving->mat;
-	else
-		mat = &entering->mat;
-	if (Estep >= 0){
-		double kc = sqrt(2*m_n*Estep)*ele_e/hbar; // critical wave number of potential wall
-		if (2*mat->RMSRoughness*ki < 1 && 2*mat->RMSRoughness*kc < 1)
-			return true;
-	}
-	else{
-		double kt = sqrt(2*m_n*(E - Estep))*ele_e/hbar; // wave number in second solid
-		if (2*mat->RMSRoughness*ki < 1 && 2*mat->RMSRoughness*kt < 1)
-			return true;
-	}
-	cout << "MR model not applicable on material " << mat->name << ". Falling back to Lambert model!\n";
-	return false;
-}
-
-double TNeutron::MRDist(bool transmit, bool integral, state_type y, const double normal[3], solid *leaving, solid *entering, double theta, double phi){
-	double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5]; // velocity squared
-	double vnormal = y[3]*normal[0] + y[4]*normal[1] + y[5]*normal[2]; // velocity projected onto surface normal
-	double E = 0.5*m_n*v2; // kinetic energy
-	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9; // potential wall
-	double costheta_i = abs(vnormal/sqrt(v2)); // cosine of angle between normal and incoming velocity vector
-	if (transmit && E*costheta_i*costheta_i <= Estep) // if particle is transmitted: check if energy is higher than potential wall
-		return 0;
-
-	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
-	complex<double> kc = sqrt(2*(double)m_n*complex<double>(Estep, 0.))*(double)ele_e/(double)hbar; // critical wave number of potential wall
-	double kt = 0;
-
-	complex<double> Si = 2*costheta_i/(costheta_i + sqrt(costheta_i*costheta_i - kc*kc/ki/ki)); // specularly transmitted amplitude
-	complex<double> So;
-	if (transmit){
-		kt = sqrt(2*m_n*(E - Estep))*ele_e/hbar; // wave number in second solid
-		So = 2*cos(theta)/(cos(theta) + sqrt(cos(theta)*cos(theta) + kc*kc/kt/kt)); // diffusely transmitted amplitude
-	}
-	else
-		So = 2*cos(theta)/(cos(theta) + sqrt(cos(theta)*cos(theta) - kc*kc/ki/ki)); // diffusely reflected amplitude
-
-	double b, w;
-	if (vnormal > 0){
-		b = leaving->mat.RMSRoughness;
-		w = leaving->mat.CorrelLength;
-	}
-	else{
-		b = entering->mat.RMSRoughness;
-		w = entering->mat.CorrelLength;
-	}
-
-	double theta_i = acos(costheta_i);
-	double Fmu = 0; // fourier transform of roughness correlation function
-	if (!integral && !transmit)
-		Fmu = exp(-w*w/2*ki*ki*(sin(theta_i)*sin(theta_i) + sin(theta)*sin(theta) - 2*sin(theta_i)*sin(theta)*cos(phi)));
-	else if (!integral && transmit)
-		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta) - 2*ki*kt*sin(theta_i)*sin(theta)*cos(phi)));
-	else if (integral && !transmit) // if integral is set, precalculate phi-integral using modified Bessel function of first kind
-		Fmu = exp(-w*w/2*ki*ki*(sin(theta_i)*sin(theta_i) + sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, w*w*ki*ki*sin(theta_i)*sin(theta));
-	else if (integral && transmit)
-		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, w*w*ki*kt*sin(theta_i)*sin(theta));
-	double factor = norm(kc)*norm(kc)*b*b*w*w/8/pi/costheta_i;
-	if (transmit)
-		factor *= kt/ki;
-	if (integral)
-		factor *= sin(theta); // integral over sin(theta) dtheta dphi
-	double result = factor*norm(Si)*norm(So)*Fmu;
-	//	cout << integral << transmit << ' ' << theta_i << ' ' << theta << ' ' << phi << ' ' << ki << ' ' << kt << ' ' << kc << ' ' << factor << ' ' << Si << ' ' << So << ' ' << Fmu << ' ' << result << '\n';
-	return result; // return probability
-}
-
-void TNeutron::MRDist(double theta, double xminusa, double bminusx, double &y, void *params){
-	TMRParams *p = (TMRParams*)params;
-	y = MRDist(p->transmit, p->integral, p->y, p->normal, p->leaving, p->entering, theta, 0);
-}
-
-void TNeutron::NegMRDist(const alglib::real_1d_array &x, double &f, void *params){
-	TMRParams *p = (TMRParams*)params;
-	f = -MRDist(p->transmit, p->integral, p->y, p->normal, p->leaving, p->entering, x[0], 0);
-}
-
-double TNeutron::MRProb(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering){
-//	for (int i = 0; i <= 10; i++)
-//		cout << MRDist(transmit, false, y, normal, leaving, entering, pi/2*(i/10.), 0) << ' ';
-//	cout << '\n';
-	TMRParams params = {transmit, true, y, normal, leaving, entering};
-	double prob;
-
-	alglib::autogkstate s;
-	alglib::autogksmooth(0, pi/2, s);
-	alglib::autogkintegrate(s, MRDist, &params);
-	alglib::autogkreport r;
-	alglib::autogkresults(s, prob, r);
-	return prob;
-}
-
-double TNeutron::MRDistMax(bool transmit, state_type y, const double normal[3], solid *leaving, solid *entering){
-	alglib::minbleicstate s;
-	alglib::real_1d_array theta = "[0.7853981635]", bndl = "[0]", bndu = "[1.570796327]";
-	alglib::minbleiccreatef(1, theta, 1e-6, s);
-	alglib::minbleicsetbc(s, bndl, bndu);
-	alglib::minbleicsetcond(s, 1e-6, 0, 0, 0);
-	TMRParams params = {transmit, false, y, normal, leaving, entering};
-	alglib::minbleicoptimize(s, NegMRDist, NULL, &params);
-	alglib::minbleicreport r;
-	alglib::minbleicresults(s, theta, r);
-//	cout << "min: " << r.terminationtype << " in " << r.iterationscount << '\n';
-	return MRDist(transmit, false, y, normal, leaving, entering, theta[0], 0);
 }
 
 void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
@@ -175,21 +40,21 @@ void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type
 	for (int i = 0; i < 3; i++)
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
-	bool UseMRModel = mat->UseMRModel && MRValid(y1, normal, leaving, entering); // check if MicroRoughness model should be applied
+	bool UseMRModel = mat->UseMRModel && MR.MRValid(&y1[3], normal, leaving, entering); // check if MicroRoughness model should be applied
 	if (UseMRModel)
-		diffprob = MRProb(true, y1, normal, leaving, entering); // calculate probability of diffuse scattering using MR model
+		diffprob = MR.MRProb(true, &y1[3], normal, leaving, entering); // calculate probability of diffuse scattering using MR model
 	else
 		diffprob = mat->DiffProb; // use fixed probability of diffuse scattering for simple Lambert model
 
 	if (prob < diffprob){ // diffuse transmission
 		double theta_t, phi_t;
 		if (UseMRModel){
-			double MRmax = MRDistMax(true, y1, normal, leaving, entering);
+			double MRmax = MR.MRDistMax(true, &y1[3], normal, leaving, entering);
 //			cout << "max: " << MRmax << '\n';
 			do{
 				phi_t = mc->UniformDist(0, 2*pi);
 				theta_t = mc->SinDist(0, pi/2);
-			}while (mc->UniformDist(0, MRmax) > MRDist(true, false, y1, normal, leaving, entering, theta_t, phi_t));
+			}while (mc->UniformDist(0, MRmax) > MR.MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
 		}
 		else{
 			phi_t = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
@@ -214,9 +79,9 @@ void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 	double prob = mc->UniformDist(0,1);
 	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
 	double diffprob;
-	bool UseMRModel = mat->UseMRModel && MRValid(y1, normal, leaving, entering);
+	bool UseMRModel = mat->UseMRModel && MR.MRValid(&y1[3], normal, leaving, entering);
 	if (UseMRModel)
-		diffprob = MRProb(false, y1, normal, leaving, entering);
+		diffprob = MR.MRProb(false, &y1[3], normal, leaving, entering);
 	else
 		diffprob = mat->DiffProb;
 //	cout << "prob: " << diffprob << '\n';
@@ -234,12 +99,12 @@ void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 		//************** diffuse reflection ************
 		double phi_r, theta_r;
 		if (UseMRModel){
-			double MRmax = MRDistMax(false, y1, normal, leaving, entering);
+			double MRmax = MR.MRDistMax(false, &y1[3], normal, leaving, entering);
 //			cout << "max: " << MRmax << '\n';
 			do{
 				phi_r = mc->UniformDist(0, 2*pi);
 				theta_r = mc->SinDist(0, pi/2);
-			}while (mc->UniformDist(0, MRmax) > MRDist(false, false, y1, normal, leaving, entering, theta_r, phi_r));
+			}while (mc->UniformDist(0, MRmax) > MR.MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
 		}
 		else{
 			phi_r = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
