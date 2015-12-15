@@ -239,43 +239,51 @@ TabField::TabField(const char *tabfile, double Bscale, double Escale,
 	CheckTab(rind, zind, BTabs, ETabs, VTab); // print some info
 
 	printf("Starting Preinterpolation ... ");
+	fBrc = fBphic = fBzc = fErc = fEphic = fEzc = fVc = false;
 	if (BTabs[0].length() > 0){
 		cout << "Br ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, BTabs[0], 1, Brc);
+		fBrc = true;
 	}
 	if (BTabs[1].length() > 0){
 		cout << "Bhi ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, BTabs[1], 1, Bphic);
+		fBphic = true;
 	}
 	if (BTabs[2].length() > 0){
 		cout << "Bz ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, BTabs[2], 1, Bzc);
+		fBzc = true;
 	}
 	if (ETabs[0].length() > 0){
 		cout << "Er ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[0], 1, Erc);
 		VTab.setlength(0); // ignore potential if electric field map found
+		fErc = true;
 	}
 	if (ETabs[1].length() > 0){
 		cout << "Ephi ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[1], 1, Ephic);
 		VTab.setlength(0); // ignore potential if electric field map found
+		fEphic = true;
 	}
 	if (ETabs[2].length() > 0){
 		cout << "Ez ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[2], 1, Ezc);
 		VTab.setlength(0); // ignore potential if electric field map found
+		fEzc = true;
 	}
 	if (VTab.length() > 0){
 		cout << "V ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, VTab, 1, Vc);
+		fVc = true;
 	}
 }
 
@@ -292,10 +300,10 @@ void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 		double Bx = 0, By = 0, Bz = 0, dBxdz = 0, dBydz = 0, dBzdz = 0;
 		double dummy;
 		double phi = atan2(y,x);
-		if (Brc.c_ptr()->m*Brc.c_ptr()->n > 0){
+		if (fBrc){
 			alglib::spline2ddiff(Brc, r, z, Br, dBrdr, dBrdz, dummy);
 		}
-		if (Bphic.c_ptr()->m*Bphic.c_ptr()->n > 0){
+		if (fBphic){
 			alglib::spline2ddiff(Bphic, r, z, Bphi, dBphidr, dBphidz, dummy);
 		}
 		CylToCart(Br,Bphi,phi,Bx,By);
@@ -310,7 +318,7 @@ void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 		CylToCart(dBrdz,dBphidz,phi,dBxdz,dBydz);
 		B[0][3] += dBxdz*Bscale;
 		B[1][3] += dBydz*Bscale;
-		if (Bzc.c_ptr()->m*Bzc.c_ptr()->n > 0){
+		if (fBzc){
 			alglib::spline2ddiff(Bzc, r, z, Bz, dBzdr, dBzdz, dummy);
 		}
 		B[2][0] += Bz*Bscale;
@@ -324,16 +332,16 @@ void TabField::BField(double x, double y, double z, double t, double B[4][4]){
 void TabField::EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]){
 	double r = sqrt(x*x+y*y);
 	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
-		if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0 || Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0 || Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0){ // prefer E-field interpolation over potential interpolation
+		if (fErc || fEphic || fEzc){ // prefer E-field interpolation over potential interpolation
 			double phi = atan2(y,x);
 			if (dEidxj == NULL){
 				alglib::real_1d_array Er, Ephi, Ez;
 				double Ex, Ey;
-				if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0)
+				if (fErc)
 					alglib::spline2dcalcv(Erc, r, z, Er); // use cheaper interpolation if derivatives not required
-				if (Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0)
+				if (fEphic)
 					alglib::spline2dcalcv(Ephic, r, z, Ephi);
-				if (Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0)
+				if (fEzc)
 					alglib::spline2dcalcv(Ezc, r, z, Ez);
 				CylToCart(Er[0], Ephi[0], phi, Ex, Ey); // convert r,phi components to x,y components
 				Ei[0] += Ex; // add electric field
@@ -344,11 +352,11 @@ void TabField::EField(double x, double y, double z, double t, double &V, double 
 				double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0, dummy;
 				double dErdr, dErdz, dEphidr, dEphidz, dEzdr, dEzdz, dExdz, dEydz;
 				//bicubic interpolation
-				if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0)
+				if (fErc)
 					alglib::spline2ddiff(Erc, r, z, Er, dErdr, dErdz, dummy);
-				if (Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0)
+				if (fEphic)
 					alglib::spline2ddiff(Ephic, r, z, Ephi, dEphidr, dEphidz, dummy);
-				if (Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0)
+				if (fEzc)
 					alglib::spline2ddiff(Ezc, r, z, Ez, dEzdr, dEzdz, dummy);
 				CylToCart(Er,Ephi,phi,Ex,Ey); // convert r,phi components to x,y components
 				Ei[0] += Ex; // add electric field
@@ -370,7 +378,7 @@ void TabField::EField(double x, double y, double z, double t, double &V, double 
 				}
 			}
 		}
-		else{
+		else if (fVc){
 			double Vloc, dVdrj[3], dummy;
 			// bicubic interpolation
 			alglib::spline2ddiff(Vc, r, z, Vloc, dVdrj[0], dVdrj[2], dummy);

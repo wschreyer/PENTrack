@@ -28,7 +28,8 @@ class TabField: public TField{
 		double zdist; ///< distance between grid points in axial direction
 		double r_mi; ///< lower radial coordinate of rectangular grid
 		double z_mi; ///< lower axial coordinate of rectangular grid
-		alglib::spline2dinterpolant Brc, Bphic, Bzc, Erc, Ephic, Ezc, Vc;
+		bool fBrc, fBphic, fBzc, fErc, fEphic, fEzc, fVc; ///< remember which field components were loaded from table file
+		alglib::spline2dinterpolant Brc, Bphic, Bzc, Erc, Ephic, Ezc, Vc; ///< spline interpolant for each field component
 		double NullFieldTime; ///< Time before magnetic field is ramped (passed by constructor)
 		double RampUpTime; ///< field is ramped linearly from 0 to 100% in this time (passed by constructor)
 		double FullFieldTime; ///< Time the field stays at 100% (passed by constructor)

@@ -137,8 +137,10 @@ void TFieldManager::EField(double x, double y, double z, double t, double &V, do
 	V = 0;
 	for (int i = 0; i < 3; i++){
 		Ei[i] = 0;
-		for (int j = 0; j < 3; j++)
-			dEidxj[i][j] = 0;
+		if (dEidxj != NULL){
+			for (int j = 0; j < 3; j++)
+				dEidxj[i][j] = 0;
+		}
 	}
 	for (vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++){
 		(*i)->EField(x, y, z, t, V, Ei, dEidxj);
