@@ -325,33 +325,49 @@ void TabField::EField(double x, double y, double z, double t, double &V, double 
 	double r = sqrt(x*x+y*y);
 	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
 		if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0 || Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0 || Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0){ // prefer E-field interpolation over potential interpolation
-			double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0, dummy;
-			double dErdr, dErdz, dEphidr, dEphidz, dEzdr, dEzdz, dExdz, dEydz;
 			double phi = atan2(y,x);
-			//bicubic interpolation
-			if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0)
-				alglib::spline2ddiff(Erc, r, z, Er, dErdr, dErdz, dummy);
-			if (Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0)
-				alglib::spline2ddiff(Ephic, r, z, Ephi, dEphidr, dEphidz, dummy);
-			if (Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0)
-				alglib::spline2ddiff(Ezc, r, z, Ez, dEzdr, dEzdz, dummy);
-			CylToCart(Er,Ephi,phi,Ex,Ey); // convert r,phi components to x,y components
-			Ei[0] += Ex; // add electric field
-			Ei[1] += Ey;
-			Ei[2] += Ez;
-			if (dEidxj != NULL){
-				if (r > 0){ // convert r,phi derivatives to x,y derivatives
-					dEidxj[0][0] += (dErdr*cos(phi)*cos(phi) - dEphidr*cos(phi)*sin(phi) + (Er*sin(phi)*sin(phi) + Ephi*cos(phi)*sin(phi))/r);
-					dEidxj[0][1] += (dErdr*cos(phi)*sin(phi) - dEphidr*sin(phi)*sin(phi) - (Er*cos(phi)*sin(phi) + Ephi*cos(phi)*cos(phi))/r);
-					dEidxj[1][0] += (dErdr*cos(phi)*sin(phi) + dEphidr*cos(phi)*cos(phi) - (Er*cos(phi)*sin(phi) - Ephi*sin(phi)*sin(phi))/r);
-					dEidxj[1][1] += (dErdr*sin(phi)*sin(phi) + dEphidr*cos(phi)*sin(phi) + (Er*cos(phi)*cos(phi) - Ephi*cos(phi)*sin(phi))/r);
+			if (dEidxj == NULL){
+				alglib::real_1d_array Er, Ephi, Ez;
+				double Ex, Ey;
+				if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0)
+					alglib::spline2dcalcv(Erc, r, z, Er); // use cheaper interpolation if derivatives not required
+				if (Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0)
+					alglib::spline2dcalcv(Ephic, r, z, Ephi);
+				if (Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0)
+					alglib::spline2dcalcv(Ezc, r, z, Ez);
+				CylToCart(Er[0], Ephi[0], phi, Ex, Ey); // convert r,phi components to x,y components
+				Ei[0] += Ex; // add electric field
+				Ei[1] += Ey;
+				Ei[2] += Ez[0];
+			}
+			else{
+				double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0, dummy;
+				double dErdr, dErdz, dEphidr, dEphidz, dEzdr, dEzdz, dExdz, dEydz;
+				//bicubic interpolation
+				if (Erc.c_ptr()->m*Erc.c_ptr()->n > 0)
+					alglib::spline2ddiff(Erc, r, z, Er, dErdr, dErdz, dummy);
+				if (Ephic.c_ptr()->m*Ephic.c_ptr()->n > 0)
+					alglib::spline2ddiff(Ephic, r, z, Ephi, dEphidr, dEphidz, dummy);
+				if (Ezc.c_ptr()->m*Ezc.c_ptr()->n > 0)
+					alglib::spline2ddiff(Ezc, r, z, Ez, dEzdr, dEzdz, dummy);
+				CylToCart(Er,Ephi,phi,Ex,Ey); // convert r,phi components to x,y components
+				Ei[0] += Ex; // add electric field
+				Ei[1] += Ey;
+				Ei[2] += Ez;
+				if (dEidxj != NULL){
+					if (r > 0){ // convert r,phi derivatives to x,y derivatives
+						dEidxj[0][0] += (dErdr*cos(phi)*cos(phi) - dEphidr*cos(phi)*sin(phi) + (Er*sin(phi)*sin(phi) + Ephi*cos(phi)*sin(phi))/r);
+						dEidxj[0][1] += (dErdr*cos(phi)*sin(phi) - dEphidr*sin(phi)*sin(phi) - (Er*cos(phi)*sin(phi) + Ephi*cos(phi)*cos(phi))/r);
+						dEidxj[1][0] += (dErdr*cos(phi)*sin(phi) + dEphidr*cos(phi)*cos(phi) - (Er*cos(phi)*sin(phi) - Ephi*sin(phi)*sin(phi))/r);
+						dEidxj[1][1] += (dErdr*sin(phi)*sin(phi) + dEphidr*cos(phi)*sin(phi) + (Er*cos(phi)*cos(phi) - Ephi*cos(phi)*sin(phi))/r);
+					}
+					CylToCart(dErdz,dEphidz,phi,dExdz,dEydz); // convert z-derivatives of r,phi components into z-derivatives of x,y components
+					dEidxj[0][2] += dExdz;
+					dEidxj[1][2] += dEydz;
+					dEidxj[2][0] += dEzdr*cos(phi);
+					dEidxj[2][1] += dEzdr*sin(phi);
+					dEidxj[2][2] += dEzdz;
 				}
-				CylToCart(dErdz,dEphidz,phi,dExdz,dEydz); // convert z-derivatives of r,phi components into z-derivatives of x,y components
-				dEidxj[0][2] += dExdz;
-				dEidxj[1][2] += dEydz;
-				dEidxj[2][0] += dEzdr*cos(phi);
-				dEidxj[2][1] += dEzdr*sin(phi);
-				dEidxj[2][2] += dEzdz;
 			}
 		}
 		else{

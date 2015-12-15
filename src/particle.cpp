@@ -120,7 +120,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 	bool flipspin;
 	istringstream(conf["flipspin"]) >> flipspin;
 	
-	TBFIntegrator *BFint1, *BFint2;
+	TBFIntegrator *BFint1 = NULL, *BFint2 = NULL;
 	
 	if (simulEFieldSpinInteg) {
 		//Different names so that two different spin logs would be produced if so required
