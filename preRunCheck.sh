@@ -33,6 +33,10 @@ if [ -e $pbsfileName ]; then
 	rm $pbsfileName
 fi
 
+#remove the last backslashes if they exist
+inDirName=`echo $inDirName | sed 's|/$||'` 
+outDirName=`echo $outDirName | sed 's|/$||'`
+
 printf "#!/bin/bash\n\
 #PBS -S /bin/bash\n\
 #PBS -l pmem=1gb  \n\
