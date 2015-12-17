@@ -335,14 +335,14 @@ void TabField::EField(double x, double y, double z, double t, double &V, double 
 		if (fErc || fEphic || fEzc){ // prefer E-field interpolation over potential interpolation
 			double phi = atan2(y,x);
 			if (dEidxj == NULL){
-				alglib::real_1d_array Er, Ephi, Ez;
+				alglib::real_1d_array Er("[0]"), Ephi("[0]"), Ez("[0]");
 				double Ex, Ey;
 				if (fErc)
-					alglib::spline2dcalcv(Erc, r, z, Er); // use cheaper interpolation if derivatives not required
+					alglib::spline2dcalcvbuf(Erc, r, z, Er); // use cheaper interpolation if derivatives not required
 				if (fEphic)
-					alglib::spline2dcalcv(Ephic, r, z, Ephi);
+					alglib::spline2dcalcvbuf(Ephic, r, z, Ephi);
 				if (fEzc)
-					alglib::spline2dcalcv(Ezc, r, z, Ez);
+					alglib::spline2dcalcvbuf(Ezc, r, z, Ez);
 				CylToCart(Er[0], Ephi[0], phi, Ex, Ey); // convert r,phi components to x,y components
 				Ei[0] += Ex; // add electric field
 				Ei[1] += Ey;
