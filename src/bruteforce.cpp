@@ -95,15 +95,31 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 			t.setlength(2);
 			B.setlength(2);
 			dBdt.setlength(2);
+			t[0] = x1, t[1] = x2;
+			//go through all the coordinates and calculate B1i, dB1idt, B2i and dB2idt where 1 and 2 represent the B field at x1, x2
+			//and i represents the coordinates x, y, z. The results of each interpolation are stored in the Binterpolant array of spline1dcubic objects
 			for (int i = 0; i < 3; i++){
-				t[0] = x1;
+				//Bi_corr = Bi_default + Bi_from_vxE
+				//dBidt = dBi_defaultdt + dBi_from_vxEdt
 				B[0] = B1[i][0] + (y1[3 + (i + 1) % 3]*E1[(i + 2) % 3] - y1[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Adding vxE effect to Bx, By, Bz, Note dEdt=0 (for now)
 				dBdt[0] = y1[3]*B1[i][1] + y1[4]*B1[i][2] + y1[5]*B1[i][3]
 						+ (dy1dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy1dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Contribution to temporal Bfield derivative from vxE part, dEdt=0 (for now)
-				t[1] = x2;
+				
 				B[1] = B2[i][0] + (y2[3 + (i + 1) % 3]*E2[(i + 2) % 3] - y2[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0);
 				dBdt[1] = y2[3]*B2[i][1] + y2[4]*B2[i][2] + y2[5]*B2[i][3]
-						+ (dy2dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0);
+						+ (dy2dx[3 + (i + 1) % 3]*E2[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0);
+
+				/**Parameters to spline1dbuildcubic :
+				* @param spline nodes (i.e. independent var)
+				* @param function vals ( dependent vals)
+				* @param boundLType - boundary conditions on the left boundary (1 = first derivative)
+				* @param left boundary condition ( first derivative since boundLType is 1 for us)
+				* @param boundRType - right boundary condition type (1 = first derivative condition), 
+				* @param boundR - boundary condition on the right boundary ( first derivative is used since boundRType = 1 )
+				* @param splineinterpolant the interpolated B field is calculated and stored in Binterpolant because it is passed by reference.
+				*
+				* In this case we have three different spline1dinterpolant's all stored together in the Binterpolant array
+				**/
 				alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]); // create cubic spline with known derivatives as boundary conditions
 			}
 
