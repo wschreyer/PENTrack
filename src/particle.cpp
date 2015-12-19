@@ -490,7 +490,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
 					"Nhit Nstep trajlength Hmax blochPolar wL delwL\n";
-		file.precision(10);
+		file << std::setprecision(std::numeric_limits<double>::digits); // need maximum precision for wL and delwL 
 	}
 	cout << "Printing status\n";
 
