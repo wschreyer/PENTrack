@@ -205,7 +205,7 @@ double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type
 	double I1perpabs = sqrt(I1perp[0]*I1perp[0] + I1perp[1]*I1perp[1] + I1perp[2]*I1perp[2]);
 	double I2perpabs = sqrt(I2perp[0]*I2perp[0] + I2perp[1]*I2perp[1] + I2perp[2]*I2perp[2]);
 	double deltaphi = acos((I1perp[0]*I2perp[0] + I1perp[1]*I2perp[1] + I1perp[2]*I2perp[2])/I1perpabs/I2perpabs); // calculate angle between I1perp und I2perp
-	return deltaphi/(x2 - x1)/2/pi;
+	return wL*(x1-starttime)/(x2-starttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-starttime);
 }
 
 double TBFIntegrator::getLarmorFreq () { return wL; }  
