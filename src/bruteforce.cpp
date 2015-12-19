@@ -3,7 +3,7 @@
 
 TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
-				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0){
+				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0), wL(0){
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -55,7 +55,7 @@ void TBFIntegrator::LogSpin(const state_type &y, value_type x){
 		BFlogpol = log10(0.5-BFpol);
 	else if (BFpol==0.5)
 		BFlogpol = 0.0;
-		
+	
 	fspinout << x << " " << BFpol << " " << BFlogpol << " "
 		<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
 		<< B[0] << " " << B[1] << " " << B[2] << '\n';
@@ -131,7 +131,12 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 			while(true){
 				stepper.do_step(boost::ref(*this)); // do step
 				intsteps++;
-				double wL = LarmorFreq(stepper.previous_time(), stepper.previous_state(), stepper.current_time(), stepper.current_state());
+				//calculate larmor precession frequency and the projection of spin onto magnetic field (s_z). Required for EDM measurement simulation.
+				wL = LarmorFreq(stepper.previous_time(), stepper.previous_state(), stepper.current_time(), stepper.current_state());
+				double tempB[3]; 
+				Binterp(stepper.current_time(), tempB[3]);
+				blochPolar = (I_n[0]*tempB[0] + I_n[1]*tempB[1] + I_n[2]*tempB[2])/sqrt(tempB[0]*tempB[0] + tempB[1]*tempB[1] + tempB[2]*tempB[2]);
+				
 				while (spinlog && nextspinlog <= x2 && nextspinlog <= stepper.current_time()){ // log spin if step ended after nextspinlog
 					stepper.calc_state(nextspinlog, I_n);
 					LogSpin(I_n, nextspinlog);
@@ -182,4 +187,7 @@ double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type
 	double deltaphi = acos((I1perp[0]*I2perp[0] + I1perp[1]*I2perp[1] + I1perp[2]*I2perp[2])/I1perpabs/I2perpabs); // calculate angle between I1perp und I2perp
 	return deltaphi/(x2 - x1)/2/pi;
 }
+
+double TBFIntegrator::getLarmorFreq () { return wL; }  
+double TBFIntegrator::getBlochPolar () { return blochPolar; }
 

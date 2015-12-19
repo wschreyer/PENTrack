@@ -38,7 +38,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 		double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
 		  tstart(t), tend(t), polstart(polarisation), polend(polarisation), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0),
-		  geom(&geometry), mc(&amc), field(afield){
+		  blochPolar(0), wL(0), delwL(0), geom(&geometry), mc(&amc), field(afield){
 	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
 	value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
 	value_type vstart;
@@ -227,8 +227,13 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 					
 					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, x2, &y2[0], &dy2dx[0], B2, E2 ); 
 					noflip = BFint2->Integrate(x1, &y1[0], &dy1dx[0], B1down, E1down, x2, &y2[0], &dy2dx[0], B2down, E2down ); 
+					
+					delwL = BFint1->getLarmorFreq() - BFint2->getLarmorFreq();
 				} else
 					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, x2, &y2[0], &dy2dx[0], B2, E2);
+				
+				wL = BFint1->getLarmorFreq();
+				blochPolar = BFint1->getBlochPolar();
 				
 				if (mc->UniformDist(0,1) > noflip)
 					polarisation *= -1;
@@ -484,7 +489,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 					"vxend vyend vzend polend "
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
-					"Nhit Nstep trajlength Hmax\n";
+					"Nhit Nstep trajlength Hmax blochPolar wL delwL\n";
 		file.precision(10);
 	}
 	cout << "Printing status\n";
@@ -509,7 +514,8 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 			<< polarisation << " " << E + Epot(x, y, polarisation, field, GetCurrentsolid()) << " " << E << " " // use GetCurrentsolid() for Epot, since particle may not actually have entered sld
 			<< B[3][3] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
+			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " 
+			<< blochPolar << " " << wL << " " << delwL << '\n';
 }
 
 

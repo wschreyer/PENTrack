@@ -43,6 +43,8 @@ private:
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
+	double wL; ///< larmor precession frequency 
+	double blochPolar; ///< the projection of the spin onto the magnetic field
 	
 	alglib::spline1dinterpolant Binterpolant[3];
 public:
@@ -95,7 +97,22 @@ public:
 	 *  @param x Time
 	 */
 	void operator()(state_type y, state_type &dydx, value_type x);
-
+	
+	/**
+	 * This function will return the larmor frequency. 
+	 * Used so that larmor frequency can be logged in the endlog. 
+	 *
+	 * @return wL, the larmor precession frequency. 
+	 */
+	double getLarmorFreq();
+	
+	/**
+	 * Returns the projection of the spin onto the magnetic field at time x1.
+	 *
+	 * @return blochPolar 
+	 */
+	 double getBlochPolar();
+	
 	/**
 	 * Track spin between two particle track points.
 	 *
