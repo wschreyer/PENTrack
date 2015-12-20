@@ -200,7 +200,9 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 			}
 
 			if (field){
-				double B1[4][4], B2[4][4], B1down[4][4], B2down[4][4], E1[3], E2[3], E1down[3], E2down[3], v_pot1, v_pot2;
+				double B1[4][4], B2[4][4], B1down[4][4], B2down[4][4], E1[3], E2[3], E1down[3], E2down[3];
+				double dE1up[3][3], dE2up[3][3], dE1down[3][3], dE2down[3][3], v_pot1, v_pot2;
+				
 				field->BField(y1[0], y1[1], y1[2], x1, B1);
 				field->BField(y2[0], y2[1], y2[2], x2, B2);
 				
@@ -221,8 +223,8 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 					
 					//generate the E-field that is anti-parallel to specified E-field 
 					for ( unsigned i = 0; i < sizeof(E1down)/sizeof(double); ++i) {
-						E1down[i] = -E1[i];
-						E2down[i] = -E2[i];
+						E1down[i] = -1*E1[i];
+						E2down[i] = -1*E2[i];
 					}					
 					
 					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, x2, &y2[0], &dy2dx[0], B2, E2 ); 
