@@ -53,12 +53,12 @@ struct TEDMStaticB0GradZField: public TField{
  * 
  */
 struct TEDMStaticEField: public TField {
-	double magEField; 	
+	double exMag, eyMag, ezMag; 	
 
 	/**
  	* Constructor requires just the magnitude of the field. 
  	*/
-	TEDMStaticEField(double amagEField);
+	TEDMStaticEField(double aexMag, double aeyMag, double aezMag);
 
 	/**
 	 * Adds no magnetic field.

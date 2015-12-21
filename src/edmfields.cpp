@@ -35,12 +35,16 @@ void TEDMStaticB0GradZField::BField(double x, double y, double z, double t, doub
 
 } // end TEDMStaticB0GradZField::BField
 
-TEDMStaticEField::TEDMStaticEField (double amagEField): magEField(amagEField) {}; //end TEDMStaticEField constructor
+TEDMStaticEField::TEDMStaticEField (double aexMag, double aeyMag, double aezMag): exMag(aexMag), eyMag(aeyMag), ezMag(aezMag) {}; //end TEDMStaticEField constructor
 
 void TEDMStaticEField::EField (double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]) {
-	Ei[0] += 0; Ei[1] += 0;
-	Ei[2] += magEField;
+	Ei[0] += exMag; 
+	Ei[1] += eyMag;
+	Ei[2] += ezMag;
 
 	//V = integrate(E*r) => V = E_z * z
 	V += Ei[2]*z;
+	
+	//the dEidxj values are all 0 and since this the default initialization value in TFieldManager
+	//there is no assignment necessary here
 } //end TEDMStaticEField::EField 

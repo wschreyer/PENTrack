@@ -3,7 +3,7 @@
 
 TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
-				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0){
+				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0), wL(0){
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -30,7 +30,7 @@ void TBFIntegrator::operator()(state_type y, state_type &dydx, value_type x){
 	dydx[2] = -gamma * (y[0] * B[1] - y[1] * B[0]);
 }
 
-void TBFIntegrator::LogSpin(const state_type &y, value_type x){
+void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_type &y2, value_type x2){
 	if (!spinlog)
 		return;
 	if (!fspinout.is_open()){
@@ -43,22 +43,26 @@ void TBFIntegrator::LogSpin(const state_type &y, value_type x){
 			std::cout << "Could not open " << BFoutfile1.str() << '\n';
 			exit(-1);
 		}
-		fspinout.precision(10);
-		fspinout << "t Polar logPolar Ix Iy Iz Bx By Bz\n";
+		
+		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
+		fspinout << std::setprecision(std::numeric_limits<double>::digits);
+		fspinout << "t Polar logPolar Ix Iy Iz Bx By Bz wL\n";
 	}
 
 	value_type B[3];
-	Binterp(x, B);
-	value_type BFpol = (y[0]*B[0] + y[1]*B[1] + y[2]*B[2])/sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
+	Binterp(x2, B);
+	value_type BFpol = (y2[0]*B[0] + y2[1]*B[1] + y2[2]*B[2])/sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
 	value_type BFlogpol = 0;
 	if (BFpol<0.5)
 		BFlogpol = log10(0.5-BFpol);
 	else if (BFpol==0.5)
 		BFlogpol = 0.0;
-		
-	fspinout << x << " " << BFpol << " " << BFlogpol << " "
-		<< 2*y[0] << " " << 2*y[1] << " " << 2*y[2] << " "
-		<< B[0] << " " << B[1] << " " << B[2] << '\n';
+	
+	wL = LarmorFreq(x1, y1, x2, y2);
+
+	fspinout << x2 << " " << BFpol << " " << BFlogpol << " "
+		<< 2*y2[0] << " " << 2*y2[1] << " " << 2*y2[2] << " "
+		<< B[0] << " " << B[1] << " " << B[2] << " " << wL << '\n';
 }
 
 
@@ -83,6 +87,10 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 					I_n[0] = B1[0][0]/B1[3][0]*0.5;
 					I_n[1] = B1[1][0]/B1[3][0]*0.5;
 					I_n[2] = B1[2][0]/B1[3][0]*0.5;
+					
+//					I_n[0] = 0;
+//					I_n[1] = 0.5;
+//					I_n[2] = 0;
 				}
 				else
 					I_n[2] = 0.5;
@@ -120,7 +128,11 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				*
 				* In this case we have three different spline1dinterpolant's all stored together in the Binterpolant array
 				**/
-				alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]); // create cubic spline with known derivatives as boundary conditions
+				try { 
+					alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]); // create cubic spline with known derivatives as boundary conditions
+				} catch ( alglib::ap_error e ) {
+					std::cout << "Error message from 1dsplinebuild: " << e.msg.c_str() << std::endl;
+				}
 			}
 
 			// set up integrator and spin logging
@@ -131,10 +143,22 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 			while(true){
 				stepper.do_step(boost::ref(*this)); // do step
 				intsteps++;
-				double wL = LarmorFreq(stepper.previous_time(), stepper.previous_state(), stepper.current_time(), stepper.current_state());
+				
+				//calculate larmor precession frequency and the projection of spin onto magnetic field (s_z). Required for EDM measurement simulation.
+				wL = LarmorFreq(stepper.previous_time(), stepper.previous_state(), stepper.current_time(), stepper.current_state());
+					
+				value_type curB[3]; 
+				Binterp(stepper.current_time(), curB);
+				blochPolar = (I_n[0]*curB[0] + I_n[1]*curB[1] + I_n[2]*curB[2])/sqrt(curB[0]*curB[0] + curB[1]*curB[1] + curB[2]*curB[2]);
+				
+				double prevspinlog = stepper.previous_time();  
+				state_type prevspinstate = stepper.previous_state();
+				 
 				while (spinlog && nextspinlog <= x2 && nextspinlog <= stepper.current_time()){ // log spin if step ended after nextspinlog
 					stepper.calc_state(nextspinlog, I_n);
-					LogSpin(I_n, nextspinlog);
+					LogSpin(prevspinstate, prevspinlog, I_n, nextspinlog);
+					prevspinlog = nextspinlog;
+					prevspinstate = I_n;
 					nextspinlog += spinloginterval;
 				}
 				if (stepper.current_time() >= x2){ // if stepper reached/overshot x2
@@ -180,6 +204,19 @@ double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type
 	double I1perpabs = sqrt(I1perp[0]*I1perp[0] + I1perp[1]*I1perp[1] + I1perp[2]*I1perp[2]);
 	double I2perpabs = sqrt(I2perp[0]*I2perp[0] + I2perp[1]*I2perp[1] + I2perp[2]*I2perp[2]);
 	double deltaphi = acos((I1perp[0]*I2perp[0] + I1perp[1]*I2perp[1] + I1perp[2]*I2perp[2])/I1perpabs/I2perpabs); // calculate angle between I1perp und I2perp
-	return deltaphi/(x2 - x1)/2/pi;
+	// the final wL is the weighted average of the value obtained from the previous steps and the current step
+	// this method is equivalent to obtaining a cumulative deltaPhi since start time and dividing by the total time since passed
+	if ( boost::math::isfinite(deltaphi/(x2-x1)) ) {
+		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized
+		if ( wL == -1) 
+			wL = 0;
+			 
+		return wL*(x1-starttime)/(x2-starttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-starttime);
+	}
+	else //wL is set to default value of -1 when an error was produced
+		return -1;
 }
+
+double TBFIntegrator::getLarmorFreq () { return wL; }  
+double TBFIntegrator::getBlochPolar () { return blochPolar; }
 

@@ -12,7 +12,7 @@
 #include <map>
 
 #include <boost/numeric/odeint.hpp>
-
+#include <boost/math/special_functions/fpclassify.hpp>
 #include "interpolation.h"
 
 /**
@@ -43,6 +43,8 @@ private:
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
+	double wL; ///< larmor precession frequency 
+	double blochPolar; ///< the projection of the spin onto the magnetic field
 	
 	alglib::spline1dinterpolant Binterpolant[3];
 public:
@@ -69,10 +71,12 @@ private:
 	/**
 	 * Log integration step to file
 	 *
-	 * @param y Current state vector of the ODE system
-	 * @param x Current time
+	 * @param y1 previous state vector of the ODE system (spin)
+	 * @param x1 previous time 
+	 * @param y2 Current state vector of the ODE system
+	 * @param x2 Current time
 	 */
-	void LogSpin(const state_type &y, value_type x);
+	void LogSpin(const state_type &y1, value_type x1, const state_type &y2, value_type x2);
 
 	/**
 	 * Calculate Larmor precession frequency
@@ -95,7 +99,22 @@ public:
 	 *  @param x Time
 	 */
 	void operator()(state_type y, state_type &dydx, value_type x);
-
+	
+	/**
+	 * This function will return the larmor frequency. 
+	 * Used so that larmor frequency can be logged in the endlog. 
+	 *
+	 * @return wL, the larmor precession frequency. 
+	 */
+	double getLarmorFreq();
+	
+	/**
+	 * Returns the projection of the spin onto the magnetic field at time x1.
+	 *
+	 * @return blochPolar 
+	 */
+	 double getBlochPolar();
+	
 	/**
 	 * Track spin between two particle track points.
 	 *
