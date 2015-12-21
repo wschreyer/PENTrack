@@ -58,14 +58,11 @@ void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_typ
 	else if (BFpol==0.5)
 		BFlogpol = 0.0;
 	
-	value_type lFreq = LarmorFreq(x1, y1, x2, y2);
-	// lFreq is nan at t=0 since the previous and current states will be identical
-	if ( ! boost::math::isfinite(lFreq) ) //whenever lFreq is a nan or +-inf
-		lFreq = -1;
-	
+	wL = LarmorFreq(x1, y1, x2, y2);
+
 	fspinout << x2 << " " << BFpol << " " << BFlogpol << " "
 		<< 2*y2[0] << " " << 2*y2[1] << " " << 2*y2[2] << " "
-		<< B[0] << " " << B[1] << " " << B[2] << " " << lFreq << '\n';
+		<< B[0] << " " << B[1] << " " << B[2] << " " << wL << '\n';
 }
 
 
@@ -131,7 +128,11 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				*
 				* In this case we have three different spline1dinterpolant's all stored together in the Binterpolant array
 				**/
-				alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]); // create cubic spline with known derivatives as boundary conditions
+				try { 
+					alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]); // create cubic spline with known derivatives as boundary conditions
+				} catch ( alglib::ap_error e ) {
+					std::cout << "Error message from 1dsplinebuild: " << e.msg.c_str() << std::endl;
+				}
 			}
 
 			// set up integrator and spin logging
@@ -145,8 +146,6 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				
 				//calculate larmor precession frequency and the projection of spin onto magnetic field (s_z). Required for EDM measurement simulation.
 				wL = LarmorFreq(stepper.previous_time(), stepper.previous_state(), stepper.current_time(), stepper.current_state());
-				if ( !boost::math::isfinite(wL) ) //whenever wL is nan or +-inf set to default value of -1 which signals error
-					wL = -1;
 					
 				value_type curB[3]; 
 				Binterp(stepper.current_time(), curB);
@@ -205,7 +204,16 @@ double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type
 	double I1perpabs = sqrt(I1perp[0]*I1perp[0] + I1perp[1]*I1perp[1] + I1perp[2]*I1perp[2]);
 	double I2perpabs = sqrt(I2perp[0]*I2perp[0] + I2perp[1]*I2perp[1] + I2perp[2]*I2perp[2]);
 	double deltaphi = acos((I1perp[0]*I2perp[0] + I1perp[1]*I2perp[1] + I1perp[2]*I2perp[2])/I1perpabs/I2perpabs); // calculate angle between I1perp und I2perp
-	return wL*(x1-starttime)/(x2-starttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-starttime);
+	// the final wL is the weighted average of the value obtained from the previous steps and the current step
+	// this method is equivalent to obtaining a cumulative deltaPhi since start time and dividing by the total time since passed
+	if ( boost::math::isfinite(deltaphi/(x2-x1)) ) 
+		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized
+		if ( wL == -1) 
+			wL = 0;
+			 
+		return wL*(x1-starttime)/(x2-starttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-starttime);
+	else //wL is set to default value of -1 when an error was produced
+		return -1;
 }
 
 double TBFIntegrator::getLarmorFreq () { return wL; }  
