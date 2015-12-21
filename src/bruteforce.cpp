@@ -206,12 +206,13 @@ double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type
 	double deltaphi = acos((I1perp[0]*I2perp[0] + I1perp[1]*I2perp[1] + I1perp[2]*I2perp[2])/I1perpabs/I2perpabs); // calculate angle between I1perp und I2perp
 	// the final wL is the weighted average of the value obtained from the previous steps and the current step
 	// this method is equivalent to obtaining a cumulative deltaPhi since start time and dividing by the total time since passed
-	if ( boost::math::isfinite(deltaphi/(x2-x1)) ) 
+	if ( boost::math::isfinite(deltaphi/(x2-x1)) ) {
 		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized
 		if ( wL == -1) 
 			wL = 0;
 			 
 		return wL*(x1-starttime)/(x2-starttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-starttime);
+	}
 	else //wL is set to default value of -1 when an error was produced
 		return -1;
 }
