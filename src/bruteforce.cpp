@@ -68,9 +68,9 @@ void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_typ
 
 long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3],
 					double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3]){
-	if (gamma == 0)
+	if (gamma == 0 || x1 == x2 ) 
 		return 1;
-
+		
 	bool BruteForce1 = false, BruteForce2 = false;;
 	for (unsigned int i = 0; i < BFtimes.size(); i += 2){
 		BruteForce1 |= (x1 >= BFtimes[i] && x1 < BFtimes[i+1]);
@@ -128,9 +128,10 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				*
 				* In this case we have three different spline1dinterpolant's all stored together in the Binterpolant array
 				**/
-				try { 
+				try { // this call is known to produce errors sometimes becuase t[0] and t[1] are sometimes the same value
 					alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]); // create cubic spline with known derivatives as boundary conditions
 				} catch ( alglib::ap_error e ) {
+//					std::cout << "t1: " << t[0] << ", t2: " << t[1] << ", difference: " << t[0] - t[1] << std::endl;
 					std::cout << "Error message from 1dsplinebuild: " << e.msg.c_str() << std::endl;
 				}
 			}
