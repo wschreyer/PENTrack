@@ -218,7 +218,6 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				 
 				while (spinlog && nextspinlog <= x2 && nextspinlog <= stepper.current_time()){ // log spin if step ended after nextspinlog
 					stepper.calc_state(nextspinlog, I_n);
-					std::cout << "HELLOOOO" << std::endl;
 					LogSpin(prevspinlog, prevspinstate, y1, E1, dE1, nextspinlog, I_n, y2, E2, dE2);
 					prevspinlog = nextspinlog;
 					prevspinstate = I_n;

@@ -26,7 +26,7 @@ spinlog 0			# print spin tracking to file
 spinloginterval 5e-7	# min. time interval [s] between track points in spinlog file
 simulEFieldSpinInteg 0  # does spin integration using both parallel and anti-parallel E fields (two spin logs will be produced 0000particleEup.out and 0000particleEdown.out)
 spinlogtimeoutinterval 0.1   # writes to spin log only after the specified spinlogtimeoutinterval has passed
-startpol 1    #the starting polarization of the neutrons (1 => aligned with B field, -1 => anti-parallel with B field)
+startpol 1    #the starting polarization of the neutrons (1 => aligned with B field, -1 => anti-parallel with B field, default value is 1)
 
 BFtimes	500 700		# do brute force spin tracking between these points in time
 BFmaxB 0.1			# do brute force spin tracking when absolute magnetic field is below this value [T]
