@@ -17,7 +17,7 @@ TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
 	std::istringstream(conf["startpol"]) >> startpol;
 	
-	if ( fabs(startpol) > 1 ) //if user specified polarization doesn't make sens
+	if ( fabs(startpol) > 1 ) //if user specified polarization doesn't make sense
 		startpol = 1;
 }
 
