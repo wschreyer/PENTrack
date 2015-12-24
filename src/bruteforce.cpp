@@ -16,6 +16,9 @@ TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<
 	std::istringstream(conf["spinlog"]) >> spinlog;
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
 	std::istringstream(conf["startpol"]) >> startpol;
+	
+	if ( fabs(startpol) > 1 ) //if user specified polarization doesn't make sens
+		startpol = 1;
 }
 
 void TBFIntegrator::Binterp(value_type t, value_type B[3]){
@@ -109,10 +112,12 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 			if (I_n.empty()){
 				I_n.resize(3, 0);
 				if (B1[3][0] > 0){
+					//start the particles polarization aligned with the B field
 					I_n[0] = B1[0][0]/B1[3][0]*0.5;
 					I_n[1] = B1[1][0]/B1[3][0]*0.5;
 					I_n[2] = B1[2][0]/B1[3][0]*0.5;
 					
+					std::cout << "start pol: " << startpol << std::endl;					
 //					I_n[0] = 0;
 //					I_n[1] = 0.5;
 //					I_n[2] = 0;
