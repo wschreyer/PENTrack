@@ -43,6 +43,7 @@ private:
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
+	double wLstarttime; ///< time when the wL calculation was started
 	double wL; ///< larmor precession frequency 
 	double blochPolar; ///< the projection of the spin onto the magnetic field
 	

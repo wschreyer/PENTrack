@@ -3,7 +3,7 @@
 
 TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
-				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0), wL(0){
+				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0), wLstarttime(0), wL(0){
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -117,7 +117,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				}
 				else
 					I_n[2] = 0.5;
-				starttime = x1;
+				starttime = x1; wLstarttime = x1;
 				std::cout << "\nBF starttime, " << x1 << " ";
 			}
 			
@@ -242,11 +242,13 @@ double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type
 	// the final wL is the weighted average of the value obtained from the previous steps and the current step
 	// this method is equivalent to obtaining a cumulative deltaPhi since start time and dividing by the total time since passed
 	if ( boost::math::isfinite(deltaphi/(x2-x1)) ) {
-		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized to 0
-		if ( wL == -1) 
+		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized so that the weighted average is not done with -1,
+		//the wLstarttime must also be reset if wL is reset to ensure the average is done correctly
+		if ( wL == -1) {
 			wL = 0;
-			 
-		return wL*(x1-starttime)/(x2-starttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-starttime);
+			wLstarttime = x1;
+		}
+		return wL*(x1-wLstarttime)/(x2-wLstarttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-wLstarttime);
 	}
 	else //wL is set to default value of -1 when an error occured
 		return -1;
