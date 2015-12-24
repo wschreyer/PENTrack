@@ -46,6 +46,7 @@ private:
 	double wLstarttime; ///< time when the wL calculation was started
 	double wL; ///< larmor precession frequency 
 	double blochPolar; ///< the projection of the spin onto the magnetic field
+	double startpol; ///< user specified starting polarization of the neutrons
 	
 	alglib::spline1dinterpolant Binterpolant[3];
 public:
