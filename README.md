@@ -199,6 +199,19 @@ If bruteforce integration of particle spin precession is active, it will be logg
 - logPolar: logarithm of above value [dimensionless]
 - Ix, Iy, Iz: x, y and z components of the Bloch vector (times 2) [dimensionless]
 - Bx, By, Bz: x, y and z components of magnetic field direction vector [T]
+- wL: Larmor precession frequency (Hz)
+- x1, y1, z1: Position of the neutron at the starting step of TBFIntegrator integration
+- v1x, v1y. v1z: Velocity of the neutron at the starting step of TBFIntegrator integration
+- E1x, E1y, E1z: Electric field at the neutron's position at the starting step of TBFIntegrator integration
+- dE1xdx, dE1xdy, dE1xdz: gradient of the x-component of the electric field at the neutron's position at the starting step of TBFIntegrator integration
+- dE1ydx, dE1ydy, dE1ydz: gradient of the y-component of the electric field at the neutron's position at the starting step of TBFIntegrator integration
+- dE1zdx, dE1zdy, dE1zdz: gradient of the z-component of the electric field at the neutron's position at the starting step of TBFIntegrator integration
+- x2, y2, z2: Position of the neutron at the ending step of TBFInterator integration
+- v2x, v2y, v2z: Velocity of the neutron at the ending step of TBFIntegrator integration
+- E2x, E2y, E2z: Electric field at the neutron's position at the ending step of TBFIntegrator integration
+- dE2xdx, dE2xdy, dE2xdz: gradient of the x-component of the electric field at the neutron's position at the ending step of TBFIntegrator integration
+- dE2ydx, dE2ydy, dE2ydz: gradient of the y-component of the electric field at the neutron's position at the ending step of TBFIntegrator integration
+- dE2zdx, dE2zdy, dE2zdz: gradient of the z-component of the electric field at the neutron's position at the ending step of TBFIntegrator integration
 
 ### Writing Output files to ROOT readable files
 
