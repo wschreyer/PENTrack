@@ -68,7 +68,7 @@ void TBFIntegrator::LogSpin(value_type x1, const state_type &y1, const double pv
 		BFlogpol = 0.0;
 	
 	wL = LarmorFreq(x1, y1, x2, y2);
-
+		
 	fspinout << x2 << " " << BFpol << " " << BFlogpol << " "
 		<< 2*y2[0] << " " << 2*y2[1] << " " << 2*y2[2] << " "
 		<< B[0] << " " << B[1] << " " << B[2] << " " << wL << " ";
@@ -112,15 +112,34 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 			if (I_n.empty()){
 				I_n.resize(3, 0);
 				if (B1[3][0] > 0){
-					//start the particles polarization aligned with the B field
-					I_n[0] = B1[0][0]/B1[3][0]*0.5;
-					I_n[1] = B1[1][0]/B1[3][0]*0.5;
-					I_n[2] = B1[2][0]/B1[3][0]*0.5;
+					state_type test(3);
+					//1) obtain the spin with the startpol polarization as if the Bfield were along the z-axis, with the y-component being 0
+					//a) Find angle that spin vector needs to be rotated (assuming startpol represents z component of spin, i.e. probability of finding spin up or down)
+					long double theta = acosl(startpol);
+					//b) Define spin vector rotated away from z-axis by angle theta towards x-axis
+					I_n[0] = 0.5*sinl(theta);
+					I_n[1] = 0;
+					I_n[2] = 0.5*cosl(theta);
 					
-					std::cout << "start pol: " << startpol << std::endl;					
-//					I_n[0] = 0;
-//					I_n[1] = 0.5;
-//					I_n[2] = 0;
+					//2) Rotate the spin vector into coordinate system where the B0 field defines the z-axis and choose the starting point of the spin to be 
+					//either along the x or y axes projected onto the plane defined by B0 depending on whichever axes has smaller dot product with the B0 field			
+					const double xaxis[3] = { 1, 0, 0 };
+					const double yaxis[3] = { 0, 1, 0 };
+					const double startBField[3] = { B1[0][0]/B1[3][0], B1[1][0]/B1[3][0], B1[2][0]/B1[3][0] };					
+//					const double startBField[3] = { 0, 1, 0 };
+//					std::cout << "startBField: " << startBField[0] << ", startBField: " << startBField[1] << ", startBField: " << startBField[2] << std::endl; 
+//					for (int i = 0; i < 3; i++)
+//						std::cout << "Istart[" << i << "]: " << I_n[i] << std::endl;
+					
+					//to ensure that the x-axis of the coordinate transform is not chosen to be along the B0 field
+					if ( fabs(startBField[0]) <= fabs(startBField[1]) ) // if the Bx is smaller than By the x-axis will represent the x-axis of the coordinate transform
+						RotateVector(&I_n[0], startBField, xaxis);
+					else 
+						RotateVector(&I_n[0], startBField, yaxis);
+					
+//					for (int i = 0; i < 3; i++)
+//						std::cout << "Ifinal[" << i << "]: " << I_n[i] << std::endl;
+
 				}
 				else
 					I_n[2] = 0.5;
