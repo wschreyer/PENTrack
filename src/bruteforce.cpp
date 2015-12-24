@@ -97,7 +97,16 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				starttime = x1;
 				std::cout << "\nBF starttime, " << x1 << " ";
 			}
-
+			
+			
+			//calculate temporal derivatives of electric field from spatial derivatives (needed for vxE derivative which is needed for B spline)
+			double dE1dt[3], dE2dt[3];
+			for (int i = 0; i < 3; i++ ) {
+				dE1dt[i] = y1[3]*dE1[i][0] + y1[4]*dE1[i][1] + y1[5]*dE1[i][2];
+				dE2dt[i] = y2[3]*dE2[i][0] + y2[4]*dE2[i][1] + y2[5]*dE2[i][2];
+			} 
+				
+			
 			// set up cubic spline for each magnetic field component for fast field interpolation between x1 and x2
 			alglib::real_1d_array t, B, dBdt;
 			t.setlength(2);
@@ -109,13 +118,15 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 			for (int i = 0; i < 3; i++){
 				//Bi_corr = Bi_default + Bi_from_vxE
 				//dBidt = dBi_defaultdt + dBi_from_vxEdt
-				B[0] = B1[i][0] + (y1[3 + (i + 1) % 3]*E1[(i + 2) % 3] - y1[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Adding vxE effect to Bx, By, Bz, Note dEdt=0 (for now)
+				B[0] = B1[i][0] + (y1[3 + (i + 1) % 3]*E1[(i + 2) % 3] - y1[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Adding vxE effect to Bx, By, Bz
 				dBdt[0] = y1[3]*B1[i][1] + y1[4]*B1[i][2] + y1[5]*B1[i][3]
-						+ (dy1dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy1dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Contribution to temporal Bfield derivative from vxE part, dEdt=0 (for now)
+						+ ( (dy1dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy1dx[3 + (i + 2) % 3]*E1[(i + 1) % 3])
+						+   (y1[3 + (i + 1) % 3]*dE1dt[(i + 2) % 3] - y1[3 + (i + 2) % 3]*dE1dt[(i + 1) % 3]) ) / (c_0*c_0); //Contribution to temporal Bfield derivative from vxE part
 				
 				B[1] = B2[i][0] + (y2[3 + (i + 1) % 3]*E2[(i + 2) % 3] - y2[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0);
 				dBdt[1] = y2[3]*B2[i][1] + y2[4]*B2[i][2] + y2[5]*B2[i][3]
-						+ (dy2dx[3 + (i + 1) % 3]*E2[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0);
+						+ ( (dy2dx[3 + (i + 1) % 3]*E2[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E2[(i + 1) % 3]) 
+						+   (y2[3 + (i + 1) % 3]*dE2dt[(i + 2) % 3] - y2[3 + (i + 2) % 3]*dE2dt[(i + 1) % 3]) ) / (c_0*c_0);
 
 				/**Parameters to spline1dbuildcubic :
 				* @param spline nodes (i.e. independent var)
