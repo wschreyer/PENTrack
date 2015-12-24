@@ -76,7 +76,8 @@ private:
 	 * @param y2 Current state vector of the ODE system
 	 * @param x2 Current time
 	 */
-	void LogSpin(const state_type &y1, value_type x1, const state_type &y2, value_type x2);
+	void LogSpin(value_type x1, const state_type &y1, const double pv1[3], const double E1[3], const double dE1[3][3],
+	 value_type x2, const state_type &y2, const double pv2[3], const double E2[3], const double dE2[3][3]);
 
 	/**
 	 * Calculate Larmor precession frequency

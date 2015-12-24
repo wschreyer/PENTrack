@@ -30,7 +30,8 @@ void TBFIntegrator::operator()(state_type y, state_type &dydx, value_type x){
 	dydx[2] = -gamma * (y[0] * B[1] - y[1] * B[0]);
 }
 
-void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_type &y2, value_type x2){
+void TBFIntegrator::LogSpin(value_type x1, const state_type &y1, const double pv1[6], const double E1[3], const double dE1[3][3],
+   			    value_type x2, const state_type &y2, const double pv2[6], const double E2[3], const double dE2[3][3]){
 	if (!spinlog)
 		return;
 	if (!fspinout.is_open()){
@@ -46,9 +47,12 @@ void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_typ
 		
 		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
 		fspinout << std::setprecision(std::numeric_limits<double>::digits);
-		fspinout << "t Polar logPolar Ix Iy Iz Bx By Bz wL\n";
+		fspinout << "t Polar logPolar Ix Iy Iz Bx By Bz wL "
+			    "x1 y1 z1 v1x v1y v1z E1x E1y E1z dE1xdx dE1xdy dE1xdz dE1ydx dE1ydy dE1ydz " 
+			    "dE1zdx dE1zdy dE1zdz x2 y2 z2 v2x v2y v2z E2x E2y E2z dE2xdx dE2xdy dE2xdz "
+			    "dE2ydx dE2ydy dE2ydz dE2zdx dE2zdy dE2zdz\n" ;
 	}
-
+	
 	value_type B[3];
 	Binterp(x2, B);
 	value_type BFpol = (y2[0]*B[0] + y2[1]*B[1] + y2[2]*B[2])/sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
@@ -62,7 +66,26 @@ void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_typ
 
 	fspinout << x2 << " " << BFpol << " " << BFlogpol << " "
 		<< 2*y2[0] << " " << 2*y2[1] << " " << 2*y2[2] << " "
-		<< B[0] << " " << B[1] << " " << B[2] << " " << wL << '\n';
+		<< B[0] << " " << B[1] << " " << B[2] << " " << wL << " ";
+		
+	//write out position, velocity, E field, and E field derivatives at x1 (the x2 from TBFIntegrator::Integrate)	
+	for (int i = 0; i < 6; i++)
+		fspinout << pv1[i] << " "; 
+	for ( int i = 0; i < 3; i++) 
+		fspinout << E1[i] << " "; 
+	for ( int i = 0; i < 3; i++) 
+		for (int j = 0; j < 3; j++) 
+			fspinout << dE1[i][j] << " "; 
+	
+	//write out position, velocity, E field and E field derivatives at x2 (the x2 from TBFIntegrator::Integrate)
+	for (int i = 0; i < 6; i++)
+		fspinout << pv2[i] << " "; 
+	for ( int i = 0; i < 3; i++) 
+		fspinout << E2[i] << " "; 
+	for ( int i = 0; i < 3; i++) 
+		for (int j = 0; j < 3; j++) 
+			fspinout << dE2[i][j] << " "; 
+		
 }
 
 
@@ -168,7 +191,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				 
 				while (spinlog && nextspinlog <= x2 && nextspinlog <= stepper.current_time()){ // log spin if step ended after nextspinlog
 					stepper.calc_state(nextspinlog, I_n);
-					LogSpin(prevspinstate, prevspinlog, I_n, nextspinlog);
+					LogSpin(prevspinlog, prevspinstate, y1, E1, dE1, nextspinlog, I_n, y2, E2, dE2);
 					prevspinlog = nextspinlog;
 					prevspinstate = I_n;
 					nextspinlog += spinloginterval;
@@ -219,13 +242,13 @@ double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type
 	// the final wL is the weighted average of the value obtained from the previous steps and the current step
 	// this method is equivalent to obtaining a cumulative deltaPhi since start time and dividing by the total time since passed
 	if ( boost::math::isfinite(deltaphi/(x2-x1)) ) {
-		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized
+		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized to 0
 		if ( wL == -1) 
 			wL = 0;
 			 
 		return wL*(x1-starttime)/(x2-starttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-starttime);
 	}
-	else //wL is set to default value of -1 when an error was produced
+	else //wL is set to default value of -1 when an error occured
 		return -1;
 }
 
