@@ -30,6 +30,7 @@ private:
 	typedef	boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type;
 	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type;
 	state_type I_n; ///< Spin vector
+	double startBField[3]; /// the Bfield at the start of the spin integration (used for wL calculation)
 //	stepper_type stepper;
 
 	value_type gamma; ///< Particle's gyromagnetic ration

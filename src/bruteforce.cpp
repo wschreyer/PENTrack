@@ -126,7 +126,10 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 					//either along the x or y axes projected onto the plane defined by B0 depending on whichever axes has smaller dot product with the B0 field			
 					const double xaxis[3] = { 1, 0, 0 };
 					const double yaxis[3] = { 0, 1, 0 };
-					const double startBField[3] = { B1[0][0]/B1[3][0], B1[1][0]/B1[3][0], B1[2][0]/B1[3][0] };					
+					startBField[0] = B1[0][0]/B1[3][0];
+					startBField[1] = B1[1][0]/B1[3][0];
+					startBField[2] = B1[2][0]/B1[3][0];
+										
 //					const double startBField[3] = { 0, 1, 0 };
 //					std::cout << "startBField: " << startBField[0] << ", startBField: " << startBField[1] << ", startBField: " << startBField[2] << std::endl; 
 //					for (int i = 0; i < 3; i++)
@@ -251,9 +254,13 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 }
 
 double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type x2, const state_type &y2){
-	double B1[3], B2[3];
-	Binterp(x1, B1); // calculate field at t1
-	Binterp(x2, B2); // calculate field at t2
+	double B1[3] = { startBField[0], startBField[1], startBField[2] }; 
+	double B2[3] = { startBField[0], startBField[1], startBField[2] };
+//	double B1[3], B2[3];
+//	Binterp((x1+x2)/2, B1); // calculate field at t1
+//	Binterp((x1+x2)/2, B2); // calculate field at t2
+//	std::cout << "B1x: " << B1[0] << ", B1y: " << B1[1] << ", B1z: " << B1[2] << std::endl;
+//	std::cout << "B2x: " << B2[0] << ", B2y: " << B2[1] << ", B2z: " << B2[2] << std::endl;
 	state_type I1perp(3), I2perp(3);
 	double IB1 = y1[0]*B1[0] + y1[1]*B1[1] + y1[2]*B1[2];
 	double IB2 = y2[0]*B2[0] + y2[1]*B2[1] + y2[2]*B2[2];
