@@ -207,32 +207,44 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 				field->BField(y2[0], y2[1], y2[2], x2, B2);
 				
 				//Need the E field to include the vxE effect in spin tracking
-				field->EField( y1[0], y1[1], y1[2], x1, v_pot1, E1 ); 
-				field->EField( y2[0], y2[1], y2[2], x2, v_pot2, E2 );		
+				field->EField( y1[0], y1[1], y1[2], x1, v_pot1, E1, dE1up ); 
+				field->EField( y2[0], y2[1], y2[2], x2, v_pot2, E2, dE2up );		
 				
 				//Values of dy1dx and dy2dx are updated because they are passed by reference
 				derivs(x1, y1, dy1dx);
 				derivs(x2, y2, dy2dx);	
 				
 				long double noflip;
-				
+								
 				if ( simulEFieldSpinInteg ) { 
 					//create B1down and B2down if the simultaneousEFieldSpinIntegration is on
 					field->BField(y1[0], y1[1], y1[2], x1, B1down);
 					field->BField(y2[0], y2[1], y2[2], x2, B2down);			
 					
-					//generate the E-field that is anti-parallel to specified E-field 
+					//generate the E-field and its derivatives that are anti-parallel to specified E-field 
 					for ( unsigned i = 0; i < sizeof(E1down)/sizeof(double); ++i) {
 						E1down[i] = -1*E1[i];
 						E2down[i] = -1*E2[i];
+						
+						for (int j = 0; j < 3; ++j) {
+							dE1down[i][j] = -1*dE1up[i][j];
+							dE2down[i][j] = -1*dE2up[i][j];
+						}					
 					}					
 					
-					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, x2, &y2[0], &dy2dx[0], B2, E2 ); 
-					noflip = BFint2->Integrate(x1, &y1[0], &dy1dx[0], B1down, E1down, x2, &y2[0], &dy2dx[0], B2down, E2down ); 
+//					for (int k = 0; k < 3; k++) {
+//						for (int l = 0; l < 3; l++) {
+//							cout << "dE1up: " << dE1up[k][l] << ", dE2up: " << dE2up[k][l] << 
+//								", dE1down: " << dE1down[k][l] << ", dE2down: " << dE2down[k][l] << endl;
+//						}
+//					}
+					
+					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, dE1up, x2, &y2[0], &dy2dx[0], B2, E2, dE2up ); 
+					noflip = BFint2->Integrate(x1, &y1[0], &dy1dx[0], B1down, E1down, dE1down, x2, &y2[0], &dy2dx[0], B2down, E2down, dE2down ); 
 					
 					delwL = BFint1->getLarmorFreq() - BFint2->getLarmorFreq();
 				} else
-					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, x2, &y2[0], &dy2dx[0], B2, E2);
+					noflip = BFint1->Integrate(x1, &y1[0], &dy1dx[0], B1, E1, dE1up, x2, &y2[0], &dy2dx[0], B2, E2, dE2up );
 				
 				wL = BFint1->getLarmorFreq();
 				blochPolar = BFint1->getBlochPolar();

@@ -66,8 +66,8 @@ void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_typ
 }
 
 
-long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3],
-					double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3]){
+long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3], double dE1[3][3], 
+					double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3], double dE2[3][3]){
 	if (gamma == 0 || x1 == x2 ) 
 		return 1;
 		
