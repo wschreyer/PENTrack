@@ -126,9 +126,9 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 					//either along the x or y axes projected onto the plane defined by B0 depending on whichever axes has smaller dot product with the B0 field			
 					const double xaxis[3] = { 1, 0, 0 };
 					const double yaxis[3] = { 0, 1, 0 };
-					startBField[0] = B1[0][0]/B1[3][0];
-					startBField[1] = B1[1][0]/B1[3][0];
-					startBField[2] = B1[2][0]/B1[3][0];
+					startBField[0] = B1[0][0];
+					startBField[1] = B1[1][0];
+					startBField[2] = B1[2][0];
 										
 //					const double startBField[3] = { 0, 1, 0 };
 //					std::cout << "startBField: " << startBField[0] << ", startBField: " << startBField[1] << ", startBField: " << startBField[2] << std::endl; 
