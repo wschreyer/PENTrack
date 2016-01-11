@@ -3,7 +3,8 @@
 
 TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<std::string, std::string> &conf, std::ofstream &spinout)
 				: gamma(agamma), particlename(aparticlename), Bmax(0), BFBminmem(std::numeric_limits<double>::infinity()),
-				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0), wL(0){
+				  spinlog(false), spinloginterval(5e-7), nextspinlog(0), intsteps(0), fspinout(spinout), starttime(0), 
+				  wLstarttime(0), wL(0), blochPolar(0), startpol(1){
 	std::istringstream(conf["BFmaxB"]) >> Bmax;
 	std::istringstream BFtimess(conf["BFtimes"]);
 	do{
@@ -14,6 +15,10 @@ TBFIntegrator::TBFIntegrator(double agamma, std::string aparticlename, std::map<
 	}while(BFtimess.good());
 	std::istringstream(conf["spinlog"]) >> spinlog;
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
+	std::istringstream(conf["startpol"]) >> startpol;
+	
+	if ( fabs(startpol) > 1 ) //if user specified polarization doesn't make sense
+		startpol = 1;
 }
 
 void TBFIntegrator::Binterp(value_type t, value_type B[3]){
@@ -30,7 +35,8 @@ void TBFIntegrator::operator()(state_type y, state_type &dydx, value_type x){
 	dydx[2] = -gamma * (y[0] * B[1] - y[1] * B[0]);
 }
 
-void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_type &y2, value_type x2){
+void TBFIntegrator::LogSpin(value_type x1, const state_type &y1, const double pv1[6], const double E1[3], const double dE1[3][3],
+   			    value_type x2, const state_type &y2, const double pv2[6], const double E2[3], const double dE2[3][3]){
 	if (!spinlog)
 		return;
 	if (!fspinout.is_open()){
@@ -46,9 +52,12 @@ void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_typ
 		
 		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
 		fspinout << std::setprecision(std::numeric_limits<double>::digits);
-		fspinout << "t Polar logPolar Ix Iy Iz Bx By Bz wL\n";
+		fspinout << "t Polar logPolar Ix Iy Iz Bx By Bz wL "
+			    "x1 y1 z1 v1x v1y v1z E1x E1y E1z dE1xdx dE1xdy dE1xdz dE1ydx dE1ydy dE1ydz " 
+			    "dE1zdx dE1zdy dE1zdz x2 y2 z2 v2x v2y v2z E2x E2y E2z dE2xdx dE2xdy dE2xdz "
+			    "dE2ydx dE2ydy dE2ydz dE2zdx dE2zdy dE2zdz\n" ;
 	}
-
+	
 	value_type B[3];
 	Binterp(x2, B);
 	value_type BFpol = (y2[0]*B[0] + y2[1]*B[1] + y2[2]*B[2])/sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
@@ -59,18 +68,38 @@ void TBFIntegrator::LogSpin(const state_type &y1, value_type x1, const state_typ
 		BFlogpol = 0.0;
 	
 	wL = LarmorFreq(x1, y1, x2, y2);
-
+		
 	fspinout << x2 << " " << BFpol << " " << BFlogpol << " "
 		<< 2*y2[0] << " " << 2*y2[1] << " " << 2*y2[2] << " "
-		<< B[0] << " " << B[1] << " " << B[2] << " " << wL << '\n';
+		<< B[0] << " " << B[1] << " " << B[2] << " " << wL << " ";
+		
+	//write out position, velocity, E field, and E field derivatives at x1 (the x2 from TBFIntegrator::Integrate)	
+	for (int i = 0; i < 6; i++)
+		fspinout << pv1[i] << " "; 
+	for ( int i = 0; i < 3; i++) 
+		fspinout << E1[i] << " "; 
+	for ( int i = 0; i < 3; i++) 
+		for (int j = 0; j < 3; j++) 
+			fspinout << dE1[i][j] << " "; 
+	
+	//write out position, velocity, E field and E field derivatives at x2 (the x2 from TBFIntegrator::Integrate)
+	for (int i = 0; i < 6; i++)
+		fspinout << pv2[i] << " "; 
+	for ( int i = 0; i < 3; i++) 
+		fspinout << E2[i] << " "; 
+	for ( int i = 0; i < 3; i++) 
+		for (int j = 0; j < 3; j++) 
+			fspinout << dE2[i][j] << " "; 
+	
+	fspinout << "\n";	
 }
 
 
-long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3],
-					double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3]){
-	if (gamma == 0)
+long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3], double dE1[3][3], 
+					double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3], double dE2[3][3]){
+	if (gamma == 0 || x1 == x2 ) 
 		return 1;
-
+		
 	bool BruteForce1 = false, BruteForce2 = false;;
 	for (unsigned int i = 0; i < BFtimes.size(); i += 2){
 		BruteForce1 |= (x1 >= BFtimes[i] && x1 < BFtimes[i+1]);
@@ -84,20 +113,53 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 			if (I_n.empty()){
 				I_n.resize(3, 0);
 				if (B1[3][0] > 0){
-					I_n[0] = B1[0][0]/B1[3][0]*0.5;
-					I_n[1] = B1[1][0]/B1[3][0]*0.5;
-					I_n[2] = B1[2][0]/B1[3][0]*0.5;
+					state_type test(3);
+					//1) obtain the spin with the startpol polarization as if the Bfield were along the z-axis, with the y-component being 0
+					//a) Find angle that spin vector needs to be rotated (assuming startpol represents z component of spin, i.e. probability of finding spin up or down)
+					long double theta = acosl(startpol);
+					//b) Define spin vector rotated away from z-axis by angle theta towards x-axis
+					I_n[0] = 0.5*sinl(theta);
+					I_n[1] = 0;
+					I_n[2] = 0.5*cosl(theta);
 					
-//					I_n[0] = 0;
-//					I_n[1] = 0.5;
-//					I_n[2] = 0;
+					//2) Rotate the spin vector into coordinate system where the B0 field defines the z-axis and choose the starting point of the spin to be 
+					//either along the x or y axes projected onto the plane defined by B0 depending on whichever axes has smaller dot product with the B0 field			
+					const double xaxis[3] = { 1, 0, 0 };
+					const double yaxis[3] = { 0, 1, 0 };
+					startBField[0] = B1[0][0];
+					startBField[1] = B1[1][0];
+					startBField[2] = B1[2][0];
+										
+//					const double startBField[3] = { 0, 1, 0 };
+//					std::cout << "startBField: " << startBField[0] << ", startBField: " << startBField[1] << ", startBField: " << startBField[2] << std::endl; 
+//					for (int i = 0; i < 3; i++)
+//						std::cout << "Istart[" << i << "]: " << I_n[i] << std::endl;
+					
+					//to ensure that the x-axis of the coordinate transform is not chosen to be along the B0 field
+					if ( fabs(startBField[0]) <= fabs(startBField[1]) ) // if the Bx is smaller than By the x-axis will represent the x-axis of the coordinate transform
+						RotateVector(&I_n[0], startBField, xaxis);
+					else 
+						RotateVector(&I_n[0], startBField, yaxis);
+					
+//					for (int i = 0; i < 3; i++)
+//						std::cout << "Ifinal[" << i << "]: " << I_n[i] << std::endl;
+
 				}
 				else
 					I_n[2] = 0.5;
-				starttime = x1;
+				starttime = x1; wLstarttime = x1;
 				std::cout << "\nBF starttime, " << x1 << " ";
 			}
-
+			
+			
+			//calculate temporal derivatives of electric field from spatial derivatives (needed for vxE derivative which is needed for B spline)
+			double dE1dt[3], dE2dt[3];
+			for (int i = 0; i < 3; i++ ) {
+				dE1dt[i] = y1[3]*dE1[i][0] + y1[4]*dE1[i][1] + y1[5]*dE1[i][2];
+				dE2dt[i] = y2[3]*dE2[i][0] + y2[4]*dE2[i][1] + y2[5]*dE2[i][2];
+			} 
+				
+			
 			// set up cubic spline for each magnetic field component for fast field interpolation between x1 and x2
 			alglib::real_1d_array t, B, dBdt;
 			t.setlength(2);
@@ -109,13 +171,15 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 			for (int i = 0; i < 3; i++){
 				//Bi_corr = Bi_default + Bi_from_vxE
 				//dBidt = dBi_defaultdt + dBi_from_vxEdt
-				B[0] = B1[i][0] + (y1[3 + (i + 1) % 3]*E1[(i + 2) % 3] - y1[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Adding vxE effect to Bx, By, Bz, Note dEdt=0 (for now)
+				B[0] = B1[i][0] + (y1[3 + (i + 1) % 3]*E1[(i + 2) % 3] - y1[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Adding vxE effect to Bx, By, Bz
 				dBdt[0] = y1[3]*B1[i][1] + y1[4]*B1[i][2] + y1[5]*B1[i][3]
-						+ (dy1dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy1dx[3 + (i + 2) % 3]*E1[(i + 1) % 3]) / (c_0*c_0); //Contribution to temporal Bfield derivative from vxE part, dEdt=0 (for now)
+						+ ( (dy1dx[3 + (i + 1) % 3]*E1[(i + 2) % 3] - dy1dx[3 + (i + 2) % 3]*E1[(i + 1) % 3])
+						+   (y1[3 + (i + 1) % 3]*dE1dt[(i + 2) % 3] - y1[3 + (i + 2) % 3]*dE1dt[(i + 1) % 3]) ) / (c_0*c_0); //Contribution to temporal Bfield derivative from vxE part
 				
 				B[1] = B2[i][0] + (y2[3 + (i + 1) % 3]*E2[(i + 2) % 3] - y2[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0);
 				dBdt[1] = y2[3]*B2[i][1] + y2[4]*B2[i][2] + y2[5]*B2[i][3]
-						+ (dy2dx[3 + (i + 1) % 3]*E2[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E2[(i + 1) % 3]) / (c_0*c_0);
+						+ ( (dy2dx[3 + (i + 1) % 3]*E2[(i + 2) % 3] - dy2dx[3 + (i + 2) % 3]*E2[(i + 1) % 3]) 
+						+   (y2[3 + (i + 1) % 3]*dE2dt[(i + 2) % 3] - y2[3 + (i + 2) % 3]*dE2dt[(i + 1) % 3]) ) / (c_0*c_0);
 
 				/**Parameters to spline1dbuildcubic :
 				* @param spline nodes (i.e. independent var)
@@ -128,9 +192,10 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				*
 				* In this case we have three different spline1dinterpolant's all stored together in the Binterpolant array
 				**/
-				try { 
+				try { // this call is known to produce errors sometimes becuase t[0] and t[1] are sometimes the same value
 					alglib::spline1dbuildcubic(t, B, 2, 1, dBdt[0], 1, dBdt[1], Binterpolant[i]); // create cubic spline with known derivatives as boundary conditions
 				} catch ( alglib::ap_error e ) {
+//					std::cout << "t1: " << t[0] << ", t2: " << t[1] << ", difference: " << t[0] - t[1] << std::endl;
 					std::cout << "Error message from 1dsplinebuild: " << e.msg.c_str() << std::endl;
 				}
 			}
@@ -156,7 +221,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 				 
 				while (spinlog && nextspinlog <= x2 && nextspinlog <= stepper.current_time()){ // log spin if step ended after nextspinlog
 					stepper.calc_state(nextspinlog, I_n);
-					LogSpin(prevspinstate, prevspinlog, I_n, nextspinlog);
+					LogSpin(prevspinlog, prevspinstate, y1, E1, dE1, nextspinlog, I_n, y2, E2, dE2);
 					prevspinlog = nextspinlog;
 					prevspinstate = I_n;
 					nextspinlog += spinloginterval;
@@ -189,9 +254,13 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 }
 
 double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type x2, const state_type &y2){
-	double B1[3], B2[3];
-	Binterp(x1, B1); // calculate field at t1
-	Binterp(x2, B2); // calculate field at t2
+	double B1[3] = { startBField[0], startBField[1], startBField[2] }; 
+	double B2[3] = { startBField[0], startBField[1], startBField[2] };
+//	double B1[3], B2[3];
+//	Binterp((x1+x2)/2, B1); // calculate field at t1
+//	Binterp((x1+x2)/2, B2); // calculate field at t2
+//	std::cout << "B1x: " << B1[0] << ", B1y: " << B1[1] << ", B1z: " << B1[2] << std::endl;
+//	std::cout << "B2x: " << B2[0] << ", B2y: " << B2[1] << ", B2z: " << B2[2] << std::endl;
 	state_type I1perp(3), I2perp(3);
 	double IB1 = y1[0]*B1[0] + y1[1]*B1[1] + y1[2]*B1[2];
 	double IB2 = y2[0]*B2[0] + y2[1]*B2[1] + y2[2]*B2[2];
@@ -207,13 +276,15 @@ double TBFIntegrator::LarmorFreq(value_type x1, const state_type &y1, value_type
 	// the final wL is the weighted average of the value obtained from the previous steps and the current step
 	// this method is equivalent to obtaining a cumulative deltaPhi since start time and dividing by the total time since passed
 	if ( boost::math::isfinite(deltaphi/(x2-x1)) ) {
-		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized
-		if ( wL == -1) 
+		//if the previous calculation of wL produced an error (nan or inf), then wL should be reinitialized so that the weighted average is not done with -1,
+		//the wLstarttime must also be reset if wL is reset to ensure the average is done correctly
+		if ( wL == -1) {
 			wL = 0;
-			 
-		return wL*(x1-starttime)/(x2-starttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-starttime);
+			wLstarttime = x1;
+		}
+		return wL*(x1-wLstarttime)/(x2-wLstarttime) + (deltaphi/(x2 - x1)/2/pi)*(x2-x1)/(x2-wLstarttime);
 	}
-	else //wL is set to default value of -1 when an error was produced
+	else //wL is set to default value of -1 when an error occured
 		return -1;
 }
 

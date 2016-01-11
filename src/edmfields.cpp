@@ -41,10 +41,17 @@ void TEDMStaticEField::EField (double x, double y, double z, double t, double &V
 	Ei[0] += exMag; 
 	Ei[1] += eyMag;
 	Ei[2] += ezMag;
-
+	
+	//all derivatives to zero if dEidxj is specified
+	if (dEidxj != NULL) { 
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				dEidxj[i][j] = 0; 
+			}
+		}
+	}
+	
 	//V = integrate(E*r) => V = E_z * z
 	V += Ei[2]*z;
 	
-	//the dEidxj values are all 0 and since this the default initialization value in TFieldManager
-	//there is no assignment necessary here
 } //end TEDMStaticEField::EField 

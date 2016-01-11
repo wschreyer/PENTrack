@@ -30,6 +30,7 @@ private:
 	typedef	boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type;
 	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type;
 	state_type I_n; ///< Spin vector
+	double startBField[3]; /// the Bfield at the start of the spin integration (used for wL calculation)
 //	stepper_type stepper;
 
 	value_type gamma; ///< Particle's gyromagnetic ration
@@ -43,8 +44,10 @@ private:
 	long int intsteps; ///< Count integrator steps during spin tracking for information.
 	std::ofstream &fspinout; ///< file to log into
 	double starttime; ///< time of last integration start
+	double wLstarttime; ///< time when the wL calculation was started
 	double wL; ///< larmor precession frequency 
 	double blochPolar; ///< the projection of the spin onto the magnetic field
+	double startpol; ///< user specified starting polarization of the neutrons
 	
 	alglib::spline1dinterpolant Binterpolant[3];
 public:
@@ -76,7 +79,8 @@ private:
 	 * @param y2 Current state vector of the ODE system
 	 * @param x2 Current time
 	 */
-	void LogSpin(const state_type &y1, value_type x1, const state_type &y2, value_type x2);
+	void LogSpin(value_type x1, const state_type &y1, const double pv1[3], const double E1[3], const double dE1[3][3],
+	 value_type x2, const state_type &y2, const double pv2[3], const double E2[3], const double dE2[3][3]);
 
 	/**
 	 * Calculate Larmor precession frequency
@@ -132,8 +136,8 @@ public:
 	 *
 	 * @return Probability, that NO spin flip occured (usually close to 1).
 	 */
-	long double Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3], 
-						double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3]);
+	long double Integrate(double x1, double y1[6], double dy1dx[6], double B1[4][4], double E1[3], double dE1[3][3],
+						double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3], double dE2[3][3]);
 
 };
 

@@ -257,7 +257,7 @@ if [[ $expectedNumJobs != "" && -d $outDirName ]]; then
 		totNeutDecayed=`echo "${neutDecayedMat[$i]}+$totNeutDecayed" | bc` #stop id = -4
 		totNeutNoInitPos=`echo "${neutNoInitPosMat[$i]}+$totNeutNoInitPos" | bc` #stop id = -5
 		totNeutEncountCGALErr=`echo "${neutEncountCGALErrMat[$i]}+$totNeutEncountCGALErr" | bc` #stop id = -6
-		totNeutEncountGeomErr=`echo "${neutEncountGeomErrMat[$i]}+$totNeutEncountCGALErr" | bc` #stop id = -7
+		totNeutEncountGeomErr=`echo "${neutEncountGeomErrMat[$i]}+$totNeutEncountGeomErr" | bc` #stop id = -7
 	done
 
 	avTime=`echo "scale=2; $totSimTime/$numTot" | bc -l`
