@@ -68,3 +68,9 @@ STLsurface	neutron		in/source.STL	        200		0
 #FullRacetrack		2250		-0.15		1.35		0.6
 
 FiniteWireZCenter	12500		-1		2
+#Below are the fields required for an EDM measurement 
+#EDMStaticB0GradZField    B0z0(T)        gradient-dB0z0dz (T/m)
+#EDMStaticB0GradZField    1E-6           1E-9
+#EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)
+#EDMStaticEField          0                        0                       1E6
+
