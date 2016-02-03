@@ -518,7 +518,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
 			<< polstart << " " << Hstart() << " " << Estart() << " "
-			<< B[3][3] << " " << V << " " << solidstart.ID << " ";
+			<< B[3][0] << " " << V << " " << solidstart.ID << " ";
 
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
@@ -526,7 +526,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, int polar
 	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 			<< y[3] << " " << y[4] << " " << y[5] << " "
 			<< polarisation << " " << E + Epot(x, y, polarisation, field, GetCurrentsolid()) << " " << E << " " // use GetCurrentsolid() for Epot, since particle may not actually have entered sld
-			<< B[3][3] << " " << V << " " << sld.ID << " "
+			<< B[3][0] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
 			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " 
 			<< blochPolar << " " << wL << " " << delwL << '\n';
