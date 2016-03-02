@@ -142,9 +142,9 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 	value_type Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
 //		cout << "Leaving " << leaving->ID << " Entering " << entering->ID << " Enormal = " << Enormal << " Estep = " << Estep;
 	if (Enormal > Estep){ // transmission only possible if E > Estep
-		long double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-		long double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
-		long double transprob = 4*k1*k2/(k1 + k2)/(k1 + k2); // transmission probability
+		double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
+		double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
+		double transprob = 4*k1*k2/(k1 + k2)/(k1 + k2); // transmission probability
 //			cout << " TransProb = " << transprob << '\n';
 		if (prob < transprob) // -> transmission
 			Transmit(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
@@ -156,11 +156,11 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 		complex<double> iEstep(Estep, -entering->mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
 		complex<double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
 		double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
-//		if (entering->mat.UseMRModel){
-//			double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
-//			double vratio = abs(vnormal)/sqrt(2.*Estep/m_n);
-//			reflprob = 1 - (1 - reflprob)*(1 + 2*pow(entering->mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering->mat.CorrelLength + 2*kc*kc*entering->mat.CorrelLength)); // second order correction for reflection on MicroRoughness surfaces
-//		}
+		if (entering->mat.UseMRModel){
+			double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
+			double addtrans = 2*pow(entering->mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering->mat.CorrelLength + 2*kc*kc*pow(entering->mat.CorrelLength, 2));
+			reflprob = 1 - (1 - reflprob)*sqrt(1 + addtrans); // second order correction for reflection on MicroRoughness surfaces
+		}
 //			cout << " ReflProb = " << reflprob << '\n';
 		if (prob > reflprob){ // -> absorption on reflection
 			x2 = x1;
