@@ -32,10 +32,6 @@ class TabField3: public TField{
 		std::vector<std::vector<double> > Byc; ///< interpolation coefficients for magnetic y component
 		std::vector<std::vector<double> > Bzc; ///< interpolation coefficients for magnetic z component
 		std::vector<std::vector<double> > Vc; ///< interpolation coefficients for electric potential
-		double NullFieldTime; ///< Time before magnetic field is ramped (passed by constructor)
-		double RampUpTime; ///< field is ramped linearly from 0 to 100% in this time (passed by constructor)
-		double FullFieldTime; ///< Time the field stays at 100% (passed by constructor)
-		double RampDownTime; ///< field is ramped down linearly from 100% to 0 in this time (passed by constructor)
 		double BoundaryWidth; ///< if this is larger 0, the field will be smoothly reduced to 0 in this boundary around the tabulated field cuboid
 		double lengthconv; ///< Factor to convert length units in file to PENTrack units
 		double Bconv; ///< Factor to convert magnetic field units in file to PENTrack units
@@ -55,7 +51,7 @@ class TabField3: public TField{
 		 * @param BzTab Returns magnetic field z components at grid points
 		 * @param VTab Returns electric potential at grid points
 		 */
-		void ReadTabFile(const char *tabfile, double Bscale, double Escale,
+		void ReadTabFile(const char *tabfile,
 				std::vector<double> &BxTab, std::vector<double> &ByTab, std::vector<double> &BzTab, std::vector<double> &VTab);
 
 
@@ -98,18 +94,6 @@ class TabField3: public TField{
 
 
 		/**
-		 * Get magnetic field scale factor for a specific time.
-		 *
-		 * Determined by TabField3::NullFieldTime, TabField3::RampUpTime, TabField3::FullFieldTime, TabField3::RampDownTime
-		 *
-		 * @param t Time
-		 *
-		 * @return Returns magnetic field scale factor
-		 */
-		double BFieldScale(double t);
-
-
-		/**
 		 * Smoothly reduce the field at the edges of the tabulated region
 		 *
 		 * If coordinates are within BoundaryWidth of the edges of the tabulated field,
@@ -147,19 +131,14 @@ class TabField3: public TField{
 		 * Calls TabField3::ReadTabFile, TabField3::CheckTab and for each column TabField3::PreInterpol
 		 *
 		 * @param tabfile Path of table file
-		 * @param Bscale Magnetic field is always scaled by this factor
-		 * @param Escale Electric field is always scaled by this factor
-		 * @param aNullFieldTime Sets TabField3::NullFieldTime
-		 * @param aRampUpTime Sets TabField3::RampUpTime
-		 * @param aFullFieldTime Sets TabField3::FullFieldTime
-		 * @param aRampDownTime Sets TabField3::RampDownTime
+		 * @param Bscale Time-dependent scaling formula for magnetic field
+		 * @param Escale Time-dependent scaling formula for electric field
 		 * @param aBoundaryWidth Sets TabField3::BoundaryWidth
 		 * @param alengthconv Factor to convert length units in file to PENTrack units (default: expect cm (cgs), convert to m)
 		 * @param aBconv Factor to convert magnetic field units in file to PENTrack units (default: expect Gauss (cgs), convert to Tesla)
 		 */
-		TabField3(const char *tabfile, double Bscale, double Escale,
-				double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime, double aBoundaryWidth,
-				double alengthconv = 0.01, double aBconv = 1e-4);
+		TabField3(const char *tabfile, std::string Bscale, std::string Escale,
+				double aBoundaryWidth, double alengthconv = 0.01, double aBconv = 1e-4);
 
 
 		/**

@@ -9,10 +9,56 @@
 
 #include <cstddef>
 
+#include "muParser.h"
+
 /**
  * Virtual base class for all field calculation methods
  */
 class TField{
+private:
+	mu::Parser Bscaler; ///< formula parser for time-dependent magnetic field scaling formula
+	mu::Parser Escaler; ///< formula parser for time-dependent electric field scaling formula
+	double tvar; ///< time variable for use in scaling formular parsers
+
+protected:
+	/**
+	 * Calculate magnetic field scaling from parsed formula
+	 *
+	 * @param t Time
+	 *
+	 * @return Return scaling factor
+	 */
+	double BScaling(double t){
+		tvar = t;
+		try{
+			return Bscaler.Eval();
+		}
+		catch (mu::Parser::exception_type &e)
+		{
+			std::cout << e.GetMsg() << std::endl;
+		}
+		return 0;
+	};
+
+	/**
+	 * Calculate electric field scaling from parsed formula
+	 *
+	 * @param t Time
+	 *
+	 * @return Return scaling factor
+	 */
+	double EScaling(double t){
+		tvar = t;
+		try{
+			return Escaler.Eval();
+		}
+		catch (mu::Parser::exception_type &e)
+		{
+			std::cout << e.GetMsg() << std::endl;
+		}
+		return 0;
+	};
+
 public:
 	/**
 	 * Add magnetic field at a given position and time.
@@ -28,7 +74,7 @@ public:
 	 * @param y Cartesian y coordinate
 	 * @param z Cartesian z coordinate
 	 * @param t Time
-	 * @param B Magnetic field component matrix to which the values are added
+	 * @param B Returns magnetic field component matrix
 	 */
 	virtual void BField (double x, double y, double z, double t, double B[4][4]) = 0;
 
@@ -46,6 +92,16 @@ public:
 	 * @param dEidxj Returns spatial derivatives of electric field components (optional)
 	 */
 	virtual void EField (double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL) = 0;
+
+	/**
+	 * Generic constructor, should be called by every derived class.
+	 */
+	TField(std::string Bscale, std::string Escale){
+		Bscaler.DefineVar("t", &tvar);
+		Bscaler.SetExpr(Bscale);
+		Escaler.DefineVar("t", &tvar);
+		Escaler.SetExpr(Escale);
+	}
 
 	/**
 	 * Virtual destructor

@@ -21,9 +21,6 @@
 struct TFieldManager{
 	public:
 		std::vector<TField*> fields; ///< list of fields
-		int FieldOscillation; ///< If =1 field oscillation is turned on
-		double OscillationFraction; ///< Field oscillation amplitude
-		double OscillationFrequency; ///< Field oscillation frequency
 		
 		/**
 		 * Constructor.
@@ -35,7 +32,7 @@ struct TFieldManager{
 		 * @param aOscillationFraction Amplitude of field oscillation
 		 * @param aOscillationFrequency Frequency of field oscillation
 		 */
-		TFieldManager(TConfig &conf, int aFieldOscillation = 0, double aOscillationFraction = 0, double aOscillationFrequency = 0);
+		TFieldManager(TConfig &conf);
 
 		
 		/**
@@ -77,16 +74,6 @@ struct TFieldManager{
 		 * @param dEidxj Returns spatial derivatives of electric field components (optional)
 		 */
 		void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL);
-
-	private:
-
-		/**
-		 * Scale magnetic field due to field oscillation.
-		 *
-		 * @param t Time
-		 */
-		double BFieldScale(double t);
-		
 };
 
 #endif // FIELDS_H_

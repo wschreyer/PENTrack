@@ -30,10 +30,6 @@ class TabField: public TField{
 		double z_mi; ///< lower axial coordinate of rectangular grid
 		bool fBrc, fBphic, fBzc, fErc, fEphic, fEzc, fVc; ///< remember which field components were loaded from table file
 		alglib::spline2dinterpolant Brc, Bphic, Bzc, Erc, Ephic, Ezc, Vc; ///< spline interpolant for each field component
-		double NullFieldTime; ///< Time before magnetic field is ramped (passed by constructor)
-		double RampUpTime; ///< field is ramped linearly from 0 to 100% in this time (passed by constructor)
-		double FullFieldTime; ///< Time the field stays at 100% (passed by constructor)
-		double RampDownTime; ///< field is ramped down linearly from 100% to 0 in this time (passed by constructor)
 		double lengthconv; ///< Factor to convert length units in file to PENTrack units
 		double Bconv; ///< Factor to convert magnetic field units in file to PENTrack units
 		double Econv; ///< Factor to convert electric field units in file to PENTrack units
@@ -54,7 +50,7 @@ class TabField: public TField{
 		 * @param ETabs Three vectors containing electric field components at each grid point
 		 * @param VTab Vector containing electric potential at each grid point
 		 */
-		void ReadTabFile(const char *tabfile, double Bscale, double Escale, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+		void ReadTabFile(const char *tabfile, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
 						alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab);
 
 
@@ -71,16 +67,6 @@ class TabField: public TField{
 				alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab);
 
 
-		/**
-		 * Get magnetic field scale factor for a specific time.
-		 *
-		 * Determined by TabField::NullFieldTime, TabField::RampUpTime, TabField::FullFieldTime, TabField::RampDownTime
-		 *
-		 * @param t Time
-		 *
-		 * @return Returns magnetic field scale factor
-		 */
-		double BFieldScale(double t);
 	public:
 		/**
 		 * Constructor.
@@ -88,18 +74,13 @@ class TabField: public TField{
 		 * Calls TabField::ReadTabFile, TabField::CheckTab and for each column TabField::PreInterpol
 		 *
 		 * @param tabfile Path of table file
-		 * @param Bscale Magnetic field is always scaled by this factor
-		 * @param Escale Electric field is always scaled by this factor
-		 * @param aNullFieldTime Sets TabField::NullFieldTime
-		 * @param aRampUpTime Sets TabField::RampUpTime
-		 * @param aFullFieldTime Sets TabField::FullFieldTime
-		 * @param aRampDownTime Set TabField::RampDownTime
+		 * @param Bscale Time-dependent scaling formula for magnetic field
+		 * @param Escale Time-dependent scaling formula for electric field
 		 * @param alengthconv Factor to convert length units in file to PENTrack units (default: expect cm (cgs), convert to m)
 		 * @param aBconv Factor to convert magnetic field units in file to PENTrack units (default: expect Gauss (cgs), convert to Tesla)
 		 * @param aEconv Factor to convert electric field units in file to PENTrack units (default: expect V/cm (cgs), convert to V/m)
 		 */
-		TabField(const char *tabfile, double Bscale, double Escale,
-				double aNullFieldTime, double aRampUpTime, double aFullFieldTime, double aRampDownTime,
+		TabField(const char *tabfile, std::string Bscale, std::string Escale,
 				double alengthconv = 0.01, double aBconv = 1e-4, double aEconv = 100.);
 
 		~TabField();
@@ -114,7 +95,7 @@ class TabField: public TField{
 		 * @param y Y coordinate where the field shall be evaluated
 		 * @param z Z coordinate where the field shall be evaluated
 		 * @param t Time
-		 * @param B Adds magnetic field components B[0..2][0], their derivatives B[0..2][1..3], the absolute value B[3][0] and its derivatives B[3][1..3]
+		 * @param B Return magnetic field components B[0..2][0], their derivatives B[0..2][1..3], the absolute value B[3][0] and its derivatives B[3][1..3]
 		 */
 		void BField(double x, double y, double z, double t, double B[4][4]);
 
@@ -131,7 +112,7 @@ class TabField: public TField{
 		 * @param t Time
 		 * @param V Returns electric potential
 		 * @param Ei Return electric field (negative spatial derivatives of V)
-		 * @param dEidxj Adds spatial derivatives of electric field components (optional) !!!NOT YET IMPLEMENTED!!!
+		 * @param dEidxj Return spatial derivatives of electric field components (optional) !!!NOT YET IMPLEMENTED!!!
 		 */
 		void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL);
 };

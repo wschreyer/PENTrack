@@ -8,16 +8,17 @@
 #include "conductor.h"
 #include "globals.h"
 
-TConductorField::TConductorField(double aI): I(aI){};
+TConductorField::TConductorField(double aI, std::string Bscale): TField(Bscale, "1"), I(aI){ };
 
 
-TFiniteWire::TFiniteWire(double SW1xx, double SW1yy, double SW1zz, double SW2xx, double SW2yy, double SW2zz, double aI): TConductorField(aI), SW1x(SW1xx), SW1y(SW1yy), SW1z(SW1zz), SW2x(SW2xx), SW2y(SW2yy), SW2z(SW2zz){
+TFiniteWire::TFiniteWire(double SW1xx, double SW1yy, double SW1zz, double SW2xx, double SW2yy, double SW2zz, double aI, std::string Bscale):
+		TConductorField(aI, Bscale), SW1x(SW1xx), SW1y(SW1yy), SW1z(SW1zz), SW2x(SW2xx), SW2y(SW2yy), SW2z(SW2zz){
 
 };
 
 void TFiniteWire::BField(const double x, const double y, const double z, double t, double B[4][4])
 {
-	double vorfaktor = mu0 * I / (4 * pi);
+	double vorfaktor = mu0 * I / (4 * pi)*BScaling(t);
 
 	double t1 = SW2z * SW2z;
 	double t2 = z * z;
@@ -133,30 +134,31 @@ void TFiniteWire::BField(const double x, const double y, const double z, double 
 	double t386 = t361 * t101 * vorfaktor;
 	double t398 = -SW1x * t12 + t234 + y * SW2x - t162;
 	double t401 = t398 * t143;
-	B[0][0] += t147 * t144 * t81;
-	B[0][1] += -t179 * t154 * t153 / 2 - t190 * t154 * t185 + t147 * t229 * t194;
-	B[0][2] += -t257 * t154 * t153 / 2 - t264 * t154 * t185 + t147 * t289 * t194 + t293;
-	B[0][3] += -t319 * t154 * t153 / 2 - t325 * t154 * t185 + t147 * t350 * t194 + t97 * t144 * t81;
-	B[1][0] += -t361 * t359;
-	B[1][1] += -t293 + t179 * t144 * t363 / 2 + t190 * t368 * t367 - t228 * t372 * t367;
-	B[1][2] += t257 * t144 * t363 / 2 + t264 * t368 * t367 - t288 * t372 * t367;
-	B[1][3] += -t386 + t319 * t144 * t363 / 2 + t325 * t368 * t367 - t349 * t372 * t367;
-	B[2][0] += t398 * t144 * t81;
-	B[2][1] += -t179 * t401 * t153 / 2 - t190 * t401 * t185 + t398 * t229 * t194 - t97 * t144 * t81;
-	B[2][2] += -t257 * t401 * t153 / 2 - t264 * t401 * t185 + t398 * t289 * t194 + t386;
-	B[2][3] += -t319 * t401 * t153 / 2 - t325 * t401 * t185 + t398 * t350 * t194;
+	B[0][0] = t147 * t144 * t81;
+	B[0][1] = -t179 * t154 * t153 / 2 - t190 * t154 * t185 + t147 * t229 * t194;
+	B[0][2] = -t257 * t154 * t153 / 2 - t264 * t154 * t185 + t147 * t289 * t194 + t293;
+	B[0][3] = -t319 * t154 * t153 / 2 - t325 * t154 * t185 + t147 * t350 * t194 + t97 * t144 * t81;
+	B[1][0] = -t361 * t359;
+	B[1][1] = -t293 + t179 * t144 * t363 / 2 + t190 * t368 * t367 - t228 * t372 * t367;
+	B[1][2] = t257 * t144 * t363 / 2 + t264 * t368 * t367 - t288 * t372 * t367;
+	B[1][3] = -t386 + t319 * t144 * t363 / 2 + t325 * t368 * t367 - t349 * t372 * t367;
+	B[2][0] = t398 * t144 * t81;
+	B[2][1] = -t179 * t401 * t153 / 2 - t190 * t401 * t185 + t398 * t229 * t194 - t97 * t144 * t81;
+	B[2][2] = -t257 * t401 * t153 / 2 - t264 * t401 * t185 + t398 * t289 * t194 + t386;
+	B[2][3] = -t319 * t401 * t153 / 2 - t325 * t401 * t185 + t398 * t350 * t194;
 
 }
 
 
-TFiniteWireX::TFiniteWireX(double SW1xx, double SW2xx, double SWzz, double aI): TConductorField(aI), SW1x(SW1xx), SW2x(SW2xx), SWz(SWzz){
+TFiniteWireX::TFiniteWireX(double SW1xx, double SW2xx, double SWzz, double aI, std::string Bscale):
+		TConductorField(aI, Bscale), SW1x(SW1xx), SW2x(SW2xx), SWz(SWzz){
 
 };
 
 
 void TFiniteWireX::BField(const double x, const double y, const double z, double t, double B[4][4])
 {
-	double vorfaktor = mu0 * I / (4 * pi);
+	double vorfaktor = mu0 * I / (4 * pi)*BScaling(t);
 
 
 	double t1 = SW2x * SW2x;
@@ -206,25 +208,26 @@ void TFiniteWireX::BField(const double x, const double y, const double z, double
 	double t95 = t39 * t91;
 	double t97 = -t28 * y;
 	double t101 = t24 * t63 * vorfaktor;
-	B[1][0] += t37 * t27;
-	B[1][1] += t55 * t51 * t40;
-	B[1][2] += t55 * t59 * t40 - t65 * t64 * t27 - y * t71 * t69 * t27;
-	B[1][3] += t55 * t78 * t40 / 2 + t37 * t25 - t26 * t36 * t64 * t27 - t26 * t71 * t69 * t27;
-	B[2][0] += -t28 * t65 * t92;
-	B[2][1] += t97 * t36 * t51 * t95;
-	B[2][2] += t28 * t5 * t36 * t101 + t97 * t36 * t59 * t95 + t33 * t28 * t5 * t71 * t92 - t28 * t36 * t24 * t91;
-	B[2][3] += t28 * t26 * t65 * t101 + t97 * t36 * t78 * t95 / 2 - t33 * t26 * t97 * t71 * t24 * t91;
+	B[1][0] = t37 * t27;
+	B[1][1] = t55 * t51 * t40;
+	B[1][2] = t55 * t59 * t40 - t65 * t64 * t27 - y * t71 * t69 * t27;
+	B[1][3] = t55 * t78 * t40 / 2 + t37 * t25 - t26 * t36 * t64 * t27 - t26 * t71 * t69 * t27;
+	B[2][0] = -t28 * t65 * t92;
+	B[2][1] = t97 * t36 * t51 * t95;
+	B[2][2] = t28 * t5 * t36 * t101 + t97 * t36 * t59 * t95 + t33 * t28 * t5 * t71 * t92 - t28 * t36 * t24 * t91;
+	B[2][3] = t28 * t26 * t65 * t101 + t97 * t36 * t78 * t95 / 2 - t33 * t26 * t97 * t71 * t24 * t91;
 }
 
 
-TFiniteWireY::TFiniteWireY(double SW1yy, double SW2yy, double SWzz, double aI): TConductorField(aI), SW1y(SW1yy), SW2y(SW2yy), SWz(SWzz){
+TFiniteWireY::TFiniteWireY(double SW1yy, double SW2yy, double SWzz, double aI, std::string Bscale):
+		TConductorField(aI, Bscale), SW1y(SW1yy), SW2y(SW2yy), SWz(SWzz){
 
 };
 
 
 void TFiniteWireY::BField(const double x, const double y, const double z, double t, double B[4][4])
 {
-	double vorfaktor = mu0 * I / (4 * pi);
+	double vorfaktor = mu0 * I / (4 * pi)*BScaling(t);
 
 	double t1 = SWz * SWz;
 	double t3 = 2 * SWz * z;
@@ -270,25 +273,26 @@ void TFiniteWireY::BField(const double x, const double y, const double z, double
 	double t89 = t36 * t31 * t28 * t9;
 	double t90 = -2 * t30 * t64;
 	double t95 = t31 * x;
-	B[0][0] += t36 * t32 * t29;
-	B[0][1] += -x * t36 * t32 * t42 + t58 * t30 * t56 * t47 - x * t64 * t62 * t29;
-	B[0][2] += t58 * t30 * t73 * t47;
-	B[0][3] += -t77 * t32 * t42 / 2 + t58 * t30 * t83 * t47 / 2 - t89 - t90 * t62 * t29 / 2;
-	B[2][0] += t36 * t95 * t29;
-	B[2][1] += -t36 * t31 * t5 * t42 + t58 * x * t56 * t47 + t89 - t64 * t61 * t5 * t29;
-	B[2][2] += t58 * x * t73 * t47;
-	B[2][3] += -t77 * t95 * t42 / 2 + t58 * x * t83 * t47 / 2 - t90 * t61 * x * t29 / 2;
+	B[0][0] = t36 * t32 * t29;
+	B[0][1] = -x * t36 * t32 * t42 + t58 * t30 * t56 * t47 - x * t64 * t62 * t29;
+	B[0][2] = t58 * t30 * t73 * t47;
+	B[0][3] = -t77 * t32 * t42 / 2 + t58 * t30 * t83 * t47 / 2 - t89 - t90 * t62 * t29 / 2;
+	B[2][0] = t36 * t95 * t29;
+	B[2][1] = -t36 * t31 * t5 * t42 + t58 * x * t56 * t47 + t89 - t64 * t61 * t5 * t29;
+	B[2][2] = t58 * x * t73 * t47;
+	B[2][3] = -t77 * t95 * t42 / 2 + t58 * x * t83 * t47 / 2 - t90 * t61 * x * t29 / 2;
 }
 
 
-TFiniteWireZ::TFiniteWireZ(double SWxx, double SWyy, double SW1zz, double SW2zz, double aI): TConductorField(aI), SWx(SWxx), SWy(SWyy), SW1z(SW1zz), SW2z(SW2zz){
+TFiniteWireZ::TFiniteWireZ(double SWxx, double SWyy, double SW1zz, double SW2zz, double aI, std::string Bscale):
+		TConductorField(aI, Bscale), SWx(SWxx), SWy(SWyy), SW1z(SW1zz), SW2z(SW2zz){
 
 };
 
 
 void TFiniteWireZ::BField(const double x, const double y, const double z, double t, double B[4][4])
 {
-	double vorfaktor = mu0 * I / (4 * pi);
+	double vorfaktor = mu0 * I / (4 * pi)*BScaling(t);
 
 	double t1 = SWx * SWx;
 	double t3 = 2 * SWx * x;
@@ -341,26 +345,26 @@ void TFiniteWireZ::BField(const double x, const double y, const double z, double
 	double t95 = (t16 * t46 - t15 - t24 * t51 + t23) * t43;
 	double t97 = -t47 * t28;
 	double t100 = -t56 * t31 * t47;
-	B[0][0] += t40 * t30;
-	B[0][1] += t57 * t54 - t63 * t30 / 2 - t71 * t30 / 2;
-	B[0][2] += t57 * t78 + t80 - t82 * t30 / 2 - t86 * t30 / 2;
-	B[0][3] += t57 * t95;
-	B[1][0] += t40 * t97;
-	B[1][1] += t100 * t54 - t80 - t63 * t97 / 2 - t71 * t97 / 2;
-	B[1][2] += t100 * t78 - t82 * t97 / 2 - t86 * t97 / 2;
-	B[1][3] += t100 * t95;
+	B[0][0] = t40 * t30;
+	B[0][1] = t57 * t54 - t63 * t30 / 2 - t71 * t30 / 2;
+	B[0][2] = t57 * t78 + t80 - t82 * t30 / 2 - t86 * t30 / 2;
+	B[0][3] = t57 * t95;
+	B[1][0] = t40 * t97;
+	B[1][1] = t100 * t54 - t80 - t63 * t97 / 2 - t71 * t97 / 2;
+	B[1][2] = t100 * t78 - t82 * t97 / 2 - t86 * t97 / 2;
+	B[1][3] = t100 * t95;
 }
 
 
 
-TFiniteWireZCenter::TFiniteWireZCenter(double SW1zz, double SW2zz, double aI): TConductorField(aI), SW1z(SW1zz), SW2z(SW2zz){
+TFiniteWireZCenter::TFiniteWireZCenter(double SW1zz, double SW2zz, double aI, std::string Bscale):
+		TConductorField(aI, Bscale), SW1z(SW1zz), SW2z(SW2zz){
 
 };
 
 
 void TFiniteWireZCenter::BField(const double x, const double y, const double z, double t, double B[4][4]){
-
-	double vorfaktor = mu0 * I / (4 * pi);
+	double vorfaktor = mu0 * I / (4 * pi)*BScaling(t);
 
 	double t1 = x * x;
 	double t2 = y * y;
@@ -407,25 +411,26 @@ void TFiniteWireZCenter::BField(const double x, const double y, const double z, 
 	double t89 = t21 * t52 * vorfaktor;
 	double t93 = t35 * t84;
 	double t95 = -t24 * x;
-	B[0][0] += t33 * t23;
-	B[0][1] += t49 * t45 * t36 - t54 * t53 * t23 - x * t60 * t58 * t23;
-	B[0][2] += t49 * t67 * t36 + t33 * t22 - t32 * t53 * t71 - t60 * t58 * t71;
-	B[0][3] += t49 * t81 * t36;
-	B[1][0] += -t24 * t54 * t85;
-	B[1][1] += t24 * t1 * t32 * t89 + t95 * t32 * t45 * t93 + t29 * t24 * t1 * t60 * t85 - t24 * t32 * t21 * t84;
-	B[1][2] += t24 * y * t54 * t89 + t95 * t32 * t67 * t93 - t29 * y * t95 * t60 * t21 * t84;
-	B[1][3] += t95 * t32 * t81 * t93;
+	B[0][0] = t33 * t23;
+	B[0][1] = t49 * t45 * t36 - t54 * t53 * t23 - x * t60 * t58 * t23;
+	B[0][2] = t49 * t67 * t36 + t33 * t22 - t32 * t53 * t71 - t60 * t58 * t71;
+	B[0][3] = t49 * t81 * t36;
+	B[1][0] = -t24 * t54 * t85;
+	B[1][1] = t24 * t1 * t32 * t89 + t95 * t32 * t45 * t93 + t29 * t24 * t1 * t60 * t85 - t24 * t32 * t21 * t84;
+	B[1][2] = t24 * y * t54 * t89 + t95 * t32 * t67 * t93 - t29 * y * t95 * t60 * t21 * t84;
+	B[1][3] = t95 * t32 * t81 * t93;
 }
 
 
 
-TFullRacetrack::TFullRacetrack(double SW1zz, double SW2zz, double SWrr, double aI): TConductorField(aI), SW1z(SW1zz), SW2z(SW2zz), SWr(SWrr){
+TFullRacetrack::TFullRacetrack(double SW1zz, double SW2zz, double SWrr, double aI, std::string Bscale):
+		TConductorField(aI, Bscale), SW1z(SW1zz), SW2z(SW2zz), SWr(SWrr){
 
 };
 
 
 void TFullRacetrack::BField(double x, double y, double z, double t, double B[4][4]){
-	double vorfaktor = mu0 * I / (4 * pi);
+	double vorfaktor = mu0 * I / (4 * pi)*BScaling(t);
 
 	double t1 = x * x;
 	double t2 = y * y;
@@ -838,22 +843,23 @@ void TFullRacetrack::BField(double x, double y, double z, double t, double B[4][
 	double t1104 = t1103 * t257;
 	double t1109 = t1103 * t1020;
 	double t1124 = t1095 * t456 / 2 - t37 * t634 * t460 + t1100 * t95 / 2 - t1104 * t400 / 2 + t37 * t659 * t404 - t1109 * t128 / 2 - t1095 * t352 / 2 + t37 * t677 * t356 - t1100 * t145 / 2 + t1104 * t302 / 2 - t37 * t701 * t306 + t1109 * t172 / 2;
-	B[0][0] += 4 * t33 * t23 - t24 * t57 * t53 - t24 * t78 * t74 + SWr * t99 * t95 + t24 * t117 * t113 + SWr * t132 * t128 + SWr * t146 * t145 + t24 * t164 * t160 + SWr * t173 * t172;
-	B[0][1] += -4 * t24 * t179 * t178 + SWr * t196 * t192 + t24 * t199 * t53 + SWr * t214 * t210 + SWr * t224 * t223 + t77 * t227 * t74 + SWr * t236 * t235 + t24 * t239 * t113 + t24 * t242 * t160;
-	B[0][2] += t247 * t192 - t250 * t210 - t247 * t223 + t250 * t235 - t255 * t95 + t258 * t128 + t255 * t145 - t258 * t172;
-	B[0][3] += t379 + t486;
-	B[1][0] += t533 + t601;
-	B[1][1] += 4 * t425 * t607 * t417 - t338 * t616 * t327 - t338 * t77 * t623 * t473 - t627 * t99 * t456 / 2 + t466 * t634 * t460 - t637 * t469 * t95 / 2 + t643 + t392 * t649 * t381 - t652 * t132 * t400 / 2 + t410 * t659 * t404 + t710;
-	B[1][2] += t779 + t816;
-	B[1][3] += t874 + t921;
-	B[2][0] += 4 * t720 * t32 * t607 * t718 - t627 * t196 * t841 / 2 + t365 * t934 * t734 - t637 * t849 * t192 / 2 - t942 + t746 * t616 * t327 - t652 * t214 * t871 / 2 + t316 * t952 * t754 - t663 * t882 * t210 / 2 + t960 + t999;
-	B[2][1] += t1031;
-	B[2][2] += t1062;
-	B[2][3] += t1093 + t1124;
+	B[0][0] = 4 * t33 * t23 - t24 * t57 * t53 - t24 * t78 * t74 + SWr * t99 * t95 + t24 * t117 * t113 + SWr * t132 * t128 + SWr * t146 * t145 + t24 * t164 * t160 + SWr * t173 * t172;
+	B[0][1] = -4 * t24 * t179 * t178 + SWr * t196 * t192 + t24 * t199 * t53 + SWr * t214 * t210 + SWr * t224 * t223 + t77 * t227 * t74 + SWr * t236 * t235 + t24 * t239 * t113 + t24 * t242 * t160;
+	B[0][2] = t247 * t192 - t250 * t210 - t247 * t223 + t250 * t235 - t255 * t95 + t258 * t128 + t255 * t145 - t258 * t172;
+	B[0][3] = t379 + t486;
+	B[1][0] = t533 + t601;
+	B[1][1] = 4 * t425 * t607 * t417 - t338 * t616 * t327 - t338 * t77 * t623 * t473 - t627 * t99 * t456 / 2 + t466 * t634 * t460 - t637 * t469 * t95 / 2 + t643 + t392 * t649 * t381 - t652 * t132 * t400 / 2 + t410 * t659 * t404 + t710;
+	B[1][2] = t779 + t816;
+	B[1][3] = t874 + t921;
+	B[2][0] = 4 * t720 * t32 * t607 * t718 - t627 * t196 * t841 / 2 + t365 * t934 * t734 - t637 * t849 * t192 / 2 - t942 + t746 * t616 * t327 - t652 * t214 * t871 / 2 + t316 * t952 * t754 - t663 * t882 * t210 / 2 + t960 + t999;
+	B[2][1] = t1031;
+	B[2][2] = t1062;
+	B[2][3] = t1093 + t1124;
 }
 
 
-TInfiniteWireZ::TInfiniteWireZ(double lxx, double lyy, double aI): TConductorField(aI), lx(lxx), ly(lyy){
+TInfiniteWireZ::TInfiniteWireZ(double lxx, double lyy, double aI, std::string Bscale):
+		TConductorField(aI, Bscale), lx(lxx), ly(lyy){
 
 };
 
@@ -861,7 +867,7 @@ TInfiniteWireZ::TInfiniteWireZ(double lxx, double lyy, double aI): TConductorFie
 void TInfiniteWireZ::BField(double x,double y,double z, double t, double B[4][4]){
 	// cartesian coordinates of neutron
 	// cartesian coordinates of racetracks
-	double vorfaktor = mu0 * I / (2 * pi);
+	double vorfaktor = mu0 * I / (2 * pi)*BScaling(t);
 
 	double t1 = ly - y;
 	double t2 = vorfaktor * t1;
@@ -878,28 +884,28 @@ void TInfiniteWireZ::BField(double x,double y,double z, double t, double B[4][4]
 	double t19 = vorfaktor * t12;
 	double t20 = -2 * t15 * t1;
 	double t23 = -vorfaktor * t16;
-	B[0][0] += t2 * t12;
-	B[0][1] += -t2 * t17;
-	B[0][2] += -t19 - t2 * t20;
-	B[1][0] += -t23 * t12;
-	B[1][1] += t19 + t23 * t17;
-	B[1][2] += t23 * t20;
+	B[0][0] = t2 * t12;
+	B[0][1] = -t2 * t17;
+	B[0][2] = -t19 - t2 * t20;
+	B[1][0] = -t23 * t12;
+	B[1][1] = t19 + t23 * t17;
+	B[1][2] = t23 * t20;
 }
 
 
-TInfiniteWireZCenter::TInfiniteWireZCenter(double aI): TConductorField(aI){
+TInfiniteWireZCenter::TInfiniteWireZCenter(double aI, std::string Bscale):
+		TConductorField(aI, Bscale){
 
 };
 
 void TInfiniteWireZCenter::BField(const double x, const double y, const double z, double t, double B[4][4]){
-
-	double vorfaktor = mu0 * I / (2 * pi);
+	double vorfaktor = mu0 * I / (2 * pi)*BScaling(t);
 	double r2 = x*x + y*y;
-	B[0][0] += vorfaktor*y/r2;
-	B[0][1] += -2*vorfaktor*x*y/r2/r2;
-	B[0][2] += vorfaktor*(x*x - y*y)/r2/r2;
+	B[0][0] = vorfaktor*y/r2;
+	B[0][1] = -2*vorfaktor*x*y/r2/r2;
+	B[0][2] = vorfaktor*(x*x - y*y)/r2/r2;
 
-	B[1][0] += -vorfaktor*x/r2;
-	B[1][1] += vorfaktor*(x*x - y*y)/r2/r2;
-	B[1][2] += 2*vorfaktor*x*y/r2/r2;
+	B[1][0] = -vorfaktor*x/r2;
+	B[1][1] = vorfaktor*(x*x - y*y)/r2/r2;
+	B[1][2] = 2*vorfaktor*x*y/r2/r2;
 }

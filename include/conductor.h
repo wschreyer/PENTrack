@@ -13,12 +13,13 @@
  */
 struct TConductorField: public TField{
 	double I; ///< current through wire
+
 	/**
 	 * Constructor
 	 *
-	 * Sets current through wire TConductorField::I
+	 * Sets current through wire TConductorField::I and field scaling formula
 	 */
-	TConductorField(double aI);
+	TConductorField(double aI, std::string Bscale);
 
 	/**
 	 * Compute magnetic field.
@@ -60,9 +61,9 @@ struct TFiniteWire: public TConductorField{
 	double SW2z; ///< z coordinate of end point
 
 	/**
-	 * Constructor, requires coordinates of start and end point of wire and current.
+	 * Constructor, requires coordinates of start and end point of wire, current, and field scaling formula.
 	 */
-	TFiniteWire(double SW1xx, double SW1yy, double SW1zz, double SW2xx, double SW2yy, double SW2zz, double aI);
+	TFiniteWire(double SW1xx, double SW1yy, double SW1zz, double SW2xx, double SW2yy, double SW2zz, double aI, std::string Bscale);
 
 	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
@@ -77,9 +78,9 @@ struct TFiniteWireX: public TConductorField{
 	double SWz; ///< z coordinate of wire
 
 	/**
-	 * Constructor, requires coordinates of start and end point of wire and current.
+	 * Constructor, requires coordinates of start and end point of wire, current, and field scaling formula.
 	 */
-	TFiniteWireX(double SW1xx, double SW2xx, double SWzz, double aI);
+	TFiniteWireX(double SW1xx, double SW2xx, double SWzz, double aI, std::string Bscale);
 
 	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
@@ -94,9 +95,9 @@ struct TFiniteWireY: public TConductorField{
 	double SWz; ///< z coordinate of wire
 
 	/**
-	 * Constructor, requires coordinates of start and end point of wire and current.
+	 * Constructor, requires coordinates of start and end point of wire, current, and field scaling formula.
 	 */
-	TFiniteWireY(double SW1yy, double SW2yy, double SWzz, double aI);
+	TFiniteWireY(double SW1yy, double SW2yy, double SWzz, double aI, std::string Bscale);
 
 	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
@@ -112,9 +113,9 @@ struct TFiniteWireZ: public TConductorField{
 	double SW2z; ///< z coordinate of end point
 
 	/**
-	 * Constructor, requires coordinates of start and end point of wire and current.
+	 * Constructor, requires coordinates of start and end point of wire, current, and field scaling formula.
 	 */
-	TFiniteWireZ(double SWxx, double SWyy, double SW1zz, double SW2zz, double aI);
+	TFiniteWireZ(double SWxx, double SWyy, double SW1zz, double SW2zz, double aI, std::string Bscale);
 
 	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
@@ -128,9 +129,9 @@ struct TFiniteWireZCenter: public TConductorField{
 	double SW2z; ///< z coordinate of end point
 
 	/**
-	 * Constructor, requires coordinates of start and end point of wire and current.
+	 * Constructor, requires coordinates of start and end point of wire, current, and field scaling formula.
 	 */
-	TFiniteWireZCenter(double SW1zz, double SW2zz, double aI);
+	TFiniteWireZCenter(double SW1zz, double SW2zz, double aI, std::string Bscale);
 
 	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };
@@ -148,9 +149,9 @@ struct TFullRacetrack: public TConductorField{
 	double SWr; ///< width of coils
 
 	/**
-	 * Constructor, requires coordinates, size and current.
+	 * Constructor, requires coordinates, size, current, and field scaling formula.
 	 */
-	TFullRacetrack(double SW1zz, double SW2zz, double SWrr, double aI);
+	TFullRacetrack(double SW1zz, double SW2zz, double SWrr, double aI, std::string Bscale);
 
 	void BField(double x, double y, double z, double t, double B[4][4]);
 };
@@ -164,9 +165,9 @@ struct TInfiniteWireZ: public TConductorField{
 	double ly; ///< y coordinate of wire
 
 	/**
-	 * Constructor, requires coordinates and current.
+	 * Constructor, requires coordinates, current, and field scaling formula.
 	 */
-	TInfiniteWireZ(double lxx, double lyy, double aI);
+	TInfiniteWireZ(double lxx, double lyy, double aI, std::string Bscale);
 
 	void BField(double x,double y,double z, double t, double B[4][4]);
 };
@@ -177,9 +178,9 @@ struct TInfiniteWireZ: public TConductorField{
  */
 struct TInfiniteWireZCenter: public TConductorField{
 	/**
-	 * Constructor, requires current.
+	 * Constructor, requires current and field scaling formula.
 	 */
-	TInfiniteWireZCenter(double aI);
+	TInfiniteWireZCenter(double aI, std::string Bscale);
 
 	void BField(const double x, const double y, const double z, double t, double B[4][4]);
 };

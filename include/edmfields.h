@@ -19,7 +19,7 @@ struct TEDMStaticB0GradZField: public TField{
 	/**
 	 * Constructor, requires B0z component at centre of the EDM cell and the derivative of the B0z component along the z-axis.
 	 */
-	TEDMStaticB0GradZField(double abz, double adB0zdz);
+	TEDMStaticB0GradZField(double abz, double adB0zdz, std::string Bscale);
 	
 	/**
 	 * The calculation for the B0 components are derived from a first order approximation of
@@ -58,7 +58,7 @@ struct TEDMStaticEField: public TField {
 	/**
  	* Constructor requires just the magnitude of the field. 
  	*/
-	TEDMStaticEField(double aexMag, double aeyMag, double aezMag);
+	TEDMStaticEField(double aexMag, double aeyMag, double aezMag, std::string Escale);
 
 	/**
 	 * Adds no magnetic field.
