@@ -19,12 +19,23 @@ UCNdet		0.1			1			0				0	0	0	0
 #ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	in/storagevol.STL		PolishedSteel
-3	in/guide.STL			PolishedSteel
-4	in/valve.STL			PolishedSteel		0-200 500-1000
-5	in/UCNdet.STL			UCNdet
-6	in/protdet.STL			Al
-7	in/absorber.STL			PE
+2	in/storagevolume_60degfeeder_bellow.STL		PolishedSteel
+3	in/guide_experiment.STL		PolishedSteel
+4	in/guide_source.STL		PolishedSteel
+5	in/guide_detector.STL		PolishedSteel
+6	in/switch.STL			PolishedSteel
+7	in/valve.STL			PolishedSteel		0-200 500-1000
+8	in/switch_flap_source.STL	PolishedSteel		200-1000
+9	in/switch_flap_middle.STL	PolishedSteel		0-200 500-1000
+10	in/switch_flap_detector.STL	PolishedSteel		0-500
+11	in/foil_detector.STL		Al
+12	in/UCNdet.STL			UCNdet
+13	in/protdet.STL			Al
+14	in/absorber_up.STL		PE			500-560
+15	in/absorber_middle.STL		PE			0-500 520-540 560-1000
+16	in/absorber_down.STL		PE			0-520 540-1000
+17	in/source.STL			UCNdet			200-1000
+18	in/source.STL			PolishedSteel		0-200
 
 [SOURCE]
 ############ sourcemodes ###############
@@ -36,26 +47,39 @@ UCNdet		0.1			1			0				0	0	0	0
 #
 # STLsurface: starting values are on triangles whose vertices are all in the given STL-volume
 # cylsurface: starting values are on triangles which have at least one vertex in the given parameter range (r,phi,z)
+# For surface sources an additional Enormal can be defined.
+# This adds an additional energy boost to the velocity component normal to the surface.
 ########################################
 
-#cylsurface	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	Enormal
-#cylsurface	electron	0.123	0.495	0		360			0.003	1.145	200			0
+#STLsurface	particles 	STL-file		ActiveTime	Enormal
+STLsurface 	neutron		in/sourcevolume.STL	200		0
 
 #cylvolume	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
-#cylvolume	neutron		0.125	0.495	0		360			0.005	1.145	0			1
+#cylvolume	neutron		0.16	0.5		0		360			0.005	1.145	0			1
+
+#cylsurface	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	Enormal
+#cylsurface	electron	0.10	0.55	0		360			0		1.145	0			0
 
 #boxvolume	particles	x_min	x_max	y_min	y_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
 #boxvolume	neutron		0		1		0		1			0		1		0			0
 
-#STLsurface	particles 	STL-file		ActiveTime	Enormal
-STLsurface	neutron		in/source.STL	        200		0	
 
 #STLvolume	particles	STL-file		ActiveTime	PhaseSpaceWeighting
 #STLvolume 	neutron		in/source.STL	0			1
 
 [FIELDS]
-#field 		table-file			BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime	BoundaryWidth
-2Dtable 	in/42_0063_PF80fieldval.tab	1		1		400		100		200		100
+########### electric and magnetic fields ##########
+# 2Dtable: a table of field values on a regular 2D grid. It is assumed that the field is rotationally symmetric around the z axis.
+# 3Dtable: a table of field values on a regular 3D grid. For 3D tables a bondary width can be specified within which the field is smoothly brought to zero.
+# InfiniteWireZ[Center]: simulate a current parallel to the z-axis, or along the z-axis (With suffix Center)
+# FiniteWire[X/Y/Z/ZCenter]: simulate a current flowing from one point to another along an arbitrary straight line or parallel to the X-, Y-, or Z-axis
+# FullRaceTrack: simulate a current flowing from one point to another on the z-axis and returning along four arms at radius r 
+# EDMStaticEField: simulate a uniform electric field along an arbitrary direction
+# EDMStaticB0GradZField: simulate a magnetic field along the z-axis with a uniform gradient
+##################################################
+#field 		table-file													BFieldScale	EFieldScale	NullFieldTime	RampUpTime	FullFieldTime	RampDownTime	BoundaryWidth
+2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab		1			1			400				100			200				100
+#2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist_newelectrode85cm.table	0			1			0				0			200				100
 #3Dtable	in/3Dtable.tab			1		1		0		0		1000		0		0.05
 
 #InfiniteWireZ		I		x		y
@@ -64,13 +88,11 @@ STLsurface	neutron		in/source.STL	        200		0
 #FiniteWireX/Y/Z	I		x1/y1/z1	x2/y2/z2	z/z/z1		#/#/z2
 #FiniteWireZCenter	I		z1		z2
 #FullRacetrack		I		z1		z2		r
+#EDMStaticB0GradZField    B0z0(T)        gradient-dB0z0dz (T/m)
+#EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)
 
 #FullRacetrack		2250		-0.15		1.35		0.6
-
 FiniteWireZCenter	12500		-1		2
-#Below are the fields required for an EDM measurement 
-#EDMStaticB0GradZField    B0z0(T)        gradient-dB0z0dz (T/m)
 #EDMStaticB0GradZField    1E-6           1E-9
-#EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)
 #EDMStaticEField          0                        0                       1E6
 
