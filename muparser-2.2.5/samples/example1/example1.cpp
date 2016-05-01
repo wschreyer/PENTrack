@@ -6,7 +6,7 @@
 //  |  Y Y  \|  |  /|    |     / __ \_|  | \/\___ \ \  ___/ |  | \/
 //  |__|_|  /|____/ |____|    (____  /|__|  /____  > \___  >|__|   
 //        \/                       \/            \/      \/        
-//  (C) 2013 Ingo Berg
+//  (C) 2015 Ingo Berg
 //
 //  example1.cpp - using the parser as a static library
 //
@@ -175,7 +175,7 @@ void Splash()
   mu::console() << _T("  |__|_|  /|____/ |____|    (____  /|__|  /____  > \\___  >|__|    \n");
   mu::console() << _T("        \\/                       \\/            \\/      \\/         \n");
   mu::console() << _T("  Version ") << Parser().GetVersion(pviFULL) << _T("\n");
-  mu::console() << _T("  (C) 2014 Ingo Berg\n");
+  mu::console() << _T("  (C) 2015 Ingo Berg\n");
 }
 
 //---------------------------------------------------------------------------
@@ -371,11 +371,6 @@ int CheckKeywords(const mu::char_type *a_szLine, mu::Parser &a_Parser)
     ListExprVar(a_Parser);
     return 1;
   }
-  else if ( sLine == _T("list const") )
-  {
-    ListConst(a_Parser);
-    return 1;
-  }
   else if ( sLine == _T("locale de") )
   {
     mu::console() << _T("Setting german locale: ArgSep=';' DecSep=',' ThousandsSep='.'\n");
@@ -473,6 +468,7 @@ void Calc()
   value_type  vVarVal[] = { 1, 2 }; // Values of the parser variables
   parser.DefineVar(_T("a"), &vVarVal[0]);  // Assign Variable names and bind them to the C++ variables
   parser.DefineVar(_T("b"), &vVarVal[1]);
+  parser.DefineVar(_T("ft"), &vVarVal[1]);
   parser.DefineStrConst(_T("sVar1"), _T("Sample string 1") );
   parser.DefineStrConst(_T("sVar2"), _T("Sample string 2") );
   parser.AddValIdent(IsHexValue);
@@ -496,6 +492,8 @@ void Calc()
   parser.DefineFun(_T("selftest"), SelfTest);
   parser.DefineFun(_T("help"), Help);
 
+  parser.DefinePostfixOprt(_T("{ft}"), Milli);
+  parser.DefinePostfixOprt(_T("ft"), Milli);
 #ifdef _DEBUG
 //  parser.EnableDebugDump(1, 0);
 #endif

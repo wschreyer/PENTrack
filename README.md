@@ -12,13 +12,13 @@ External libraries
 ### CGAL
 
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
-Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case, you may have to adjust the cmake search path by setting the CGAL_DIR variable by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
+Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case you may have to adjust the cmake search path by setting the CGAL_DIR variable by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
 
 CGAL v4.1 - v4.8 have been tested.
 
 ### Boost
 
-The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and a Runge-Kutta integrator included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the cmake search path by setting the BOOST_ROOT variable by calling cmake with `-DBOOST_ROOT=/path/to/boost`.
+The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and the [odeint integrator](http://headmyshoulder.github.io/odeint-v2/) included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the cmake search path by setting the BOOST_ROOT variable by calling cmake with `-DBOOST_ROOT=/path/to/boost`.
 
 Boost 1.53.0 - 1.59.0 have been tested. 1.56.0 and newer require a C++11 capable compiler (i.e. GCC 4.8+).
 
