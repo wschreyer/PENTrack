@@ -111,7 +111,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 		
 				
 	if (B1[3][0] == 0 && B2[3][0] == 0)
-		throw std::invalid_argument("To Whom it may concern; You are trying to bruteforce spintrack a particle in a reigon with 0 BField. PENTRack doesnt work with 0 field. Check your boundaries so they make sense!");
+		throw std::invalid_argument("To Whom it may concern; You are trying to bruteforce spintrack a particle in a reigon with 0 BField. Spintracking doesnt work with 0 field. Check your boundaries so they make sense!");
 
 		// check if this value is worth for Bloch integration
 		if (B1[3][0] < Bmax || B2[3][0] < Bmax){
