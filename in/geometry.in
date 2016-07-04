@@ -4,42 +4,45 @@
 #see Neutron news 3.3 (1992): 26-37, Z. Physik 254, 169--188 (1972) and Eur. Phys. J. A 44, 23–29 (2010)
 #name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]	UseMRmodel
 default		0			0			0				0			0			0			0
-PolishedSteel	183.			0.0852			0.05				1e-4	2.6e-9	20e-9 1
-PE		-8.66			0.49			0.5				0	0	0	0
+PolishedSteel	183			0.0852			0.05				1e-4	2.6e-9	20e-9 	0
+PE		-8.6553			0.492			0.5				0	0	0	0
 Ti		-51.1			0.0432			0.2				1e-5	0	0	0
-Cu		171			0.0726			0.2				1e-5	0	0	0
-Al		54.1			0.00756			0.2				1e-5	0	0	0
-DLC		269			0.0625			0.01  				2e-6	0.9e-9	34e-9	1
+Cu		170.7470		0.0726			0.2				1e-5	0	0	0
+Al		54.1			0.00281			0.2				1e-5	0	0	0
+AlLT		54.1			1.40e-3			0.2				1e-5	0	0	0
+DLC		269			0.0625			0.01  				2e-6	3E-9	25E-9	0
 UCNdet		0.1			1			0				0	0	0	0
+DLCLT		269			5.1116e-3		0.01  				2e-6    3E-9	25E-9	0	# cold NiMo, imag part should be lower
+NiPLT       	212.9579		0.0311         		0.16				0	0	0	0	#NiPlt is at 1K
+NiLT		245.1117		0.04068			0.15				0	0	0	0	#Ni is at 1K
+NiMo		226.7135		0.136			0				0	2.4E-9	12E-9	1
+NiMoLT		226.7135		3.7e-2			0				0	2.4E-9	12E-9	1
+CuBe		178.8031		0.0726			0.16				0	0	0	0
+LHe		18.7854			1.9e-8			0.16				0	0	0	0	#Liquid He is at 1K
+LHePerf		18.7854			0			0.16				0	0	0	0	#Perfect Liquid Helium, no absorbtion or upscattering
+BeO		256.6665		6.23e-2			0.16				0	0	0	0
+SS		183.0405		8.52e-2			0.16				0	0	0	0
+dPE    		 209              	0.06           		0.16            		1e-5	0	0	0
+dPS     	171             	0.047          		0.16             		1e-5	0	0	0
+unknown
 
 [GEOMETRY]
 #solids the program will load, particle absorbed in the solid will be flagged with the ID of the solid
 #IDs have to be larger than 0 and unique, ID 1 will be assumed to be the default medium which is always present
 #the ID also defines the order in which overlapping solids are handled (highest ID will be considered first)
 #ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000
-#ID	STLfile				material_name		ignore_times
-1	ignored				default
-2	in/storagevolume_60degfeeder_bellow.STL		PolishedSteel
-3	in/guide_experiment.STL		PolishedSteel
-4	in/guide_source.STL		PolishedSteel
-5	in/guide_detector.STL		PolishedSteel
-6	in/switch.STL			PolishedSteel
-7	in/valve.STL			PolishedSteel		0-200 500-1000
-8	in/switch_flap_source.STL	PolishedSteel		200-1000
-9	in/switch_flap_middle.STL	PolishedSteel		0-200 500-1000
-10	in/switch_flap_detector.STL	PolishedSteel		0-500
-11	in/foil_detector.STL		Al
-12	in/UCNdet.STL			UCNdet
-13	in/protdet.STL			Al
-14	in/absorber_up.STL		PE			500-560
-15	in/absorber_middle.STL		PE			0-500 520-540 560-1000
-16	in/absorber_down.STL		PE			0-520 540-1000
-17	in/source.STL			UCNdet			200-1000
-18	in/source.STL			PolishedSteel		0-200
+#ID	STLfile    material_name    ignore_times
+1       ignored    default
+3       in/EDM_Simple_140h_362d-EDMCellCyl_mater_dPS_prior_172-2.STL    dPS
+5       in/EDM_Simple_140h_362d-EDMCelltop_mater_dPS_prior_173-1.STL    dPS
+7       in/EDM_Simple_140h_362d-EDMCellbottom_mater_dPS_prior_174-1.STL    dPS
+
+
 
 [SOURCE]
 ############ sourcemodes ###############
 # STLvolume: source volume is given by a STL file, particles are created in the space completely surrounded by the STL-surface
+
 # boxvolume: particle starting values are diced in the given parameter range (x,y,z)
 # cylvolume: particle starting values are diced in the given parameter range (r,phi,z)
 # For volume sources, the initial particle density can be weighted by the available phase space.
@@ -52,20 +55,19 @@ UCNdet		0.1			1			0				0	0	0	0
 ########################################
 
 #STLsurface	particles 	STL-file		ActiveTime	Enormal
-STLsurface 	neutron		in/sourcevolume.STL	200		0
 
 #cylvolume	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
-#cylvolume	neutron		0.16	0.5		0		360			0.005	1.145	0			1
+#cylvolume	neutron		0.16	0.5	0	360		0.005	1.145	0		1
 
 #cylsurface	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	Enormal
-#cylsurface	electron	0.10	0.55	0		360			0		1.145	0			0
+#cylsurface	electron	0.10	0.55	0	360		0	1.145	0		0
 
 #boxvolume	particles	x_min	x_max	y_min	y_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
-#boxvolume	neutron		0		1		0		1			0		1		0			0
+#boxvolume	neutron		0	1	0	1		0	1	0		0
 
 
-#STLvolume	particles	STL-file		ActiveTime	PhaseSpaceWeighting
-#STLvolume 	neutron		in/source.STL	0			1
+#STLvolume	particles	STL-file		ActiveTime	PhaseSpaceWeighting			1
+STLvolume       neutron       in/EDM_Simple_140h_362d-EDMTopcellUCNsource_mater_unknown_prior_source-1.STL    0    0
 
 [FIELDS]
 ########### electric and magnetic fields ##########
@@ -81,22 +83,21 @@ STLsurface 	neutron		in/sourcevolume.STL	200		0
 # For each field a time-dependent scaling factor can be added (does not allow spaces yet!).
 # Note that rapidly changing fields might be missed by the trajectory integrator making too large time steps
 ##################################################
-#field 		table-file														BFieldScale															EFieldScale		BoundaryWidth
-1 2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab			t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))		1
-#2 2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist_newelectrode85cm.table		0																	1
-#3 3Dtable	in/3Dtable.tab													1																	1				0.05
-
+#field 		table-file	BFieldScale	EFieldScale	BoundaryWidth
+#1 2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab			t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))		1
+#2 2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist_newelectrode85cm.table	0	1
+#3 3Dtable	in/B0-HHcoil-1muT-r-1m-noGradCGS.table	1	1	0.01
 #InfiniteWireZ		I		x		y		scale
 #InfiniteWireZCenter	I	scale
 #FiniteWire		I		x1		y1		z1		x2		y2		z2		scale
 #FiniteWireX/Y/Z	I		x1/y1/z1	x2/y2/z2	z/z/z1		#/#/z2		scale
 #FiniteWireZCenter	I		z1		z2		scale
 #FullRacetrack		I		z1		z2		r		scale
-#EDMStaticB0GradZField    B0z0(T)        gradient-dB0z0dz (T/m)		scale
-#EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)	scale
-
 #4 FullRacetrack			2250		-0.15		1.35		0.6		1
-5 FiniteWireZCenter			12500		-1			2		1
-#6 EDMStaticB0GradZField    1E-6		1E-9		1
+#5 FiniteWireZCenter			12500		-1			2		1		
+#EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
+#6 EDMStaticB0GradZField 	0	0	0	0	0	1E-6	1E-9		0.01	1	-1	1 	-1	1	-1	1
+#EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)	scale
 #7 EDMStaticEField			0			0			1E6		1
-
+#EDM_AC_B1Field  edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz freq time1 time2 shift BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
+#8 EDM_AC_B1Field	0	0	0	0	0	1E-6	1E-9	1	2	4	0	0.01	1	-1	1	-1	1	-1	1
