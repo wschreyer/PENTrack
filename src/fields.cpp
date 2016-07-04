@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 #include "fields.h"
 #include "field.h"
@@ -20,7 +21,7 @@ TFieldManager::TFieldManager(TConfig &conf){
 	for (std::map<std::string, std::string>::iterator i = conf["FIELDS"].begin(); i != conf["FIELDS"].end(); i++){
 		std::string type;
 		std::string ft;
-		double Ibar, p1, p2, p3, p4, p5, p6;
+		double Ibar, p1, p2, p3, p4, p5, p6, p7, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi;
 		std::string Bscale, Escale;
 		TField *f = NULL;
 		std::istringstream ss(i->second);
@@ -78,9 +79,26 @@ TFieldManager::TFieldManager(TConfig &conf){
 				f = new TFullRacetrack(p1, p2, p3, Ibar, Bscale);
 		} 
 		else if (type == "EDMStaticB0GradZField") {
-			ss >> p1 >> p2 >> Bscale;
-			if (ss) 
-				f = new TEDMStaticB0GradZField(p1, p2, Bscale);
+			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
+			
+			//conversion to radians
+			p4*=pi/180;
+			p5*=pi/180;
+			
+			
+			if (ss)
+				f = new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 0, 0, 0, 0, 0, bW, xma, xmi, yma, ymi, zma, zmi, Bscale);
+		}
+		else if (type == "EDM_AC_B1Field") {
+			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> freq >> time1 >> time2 >> shift >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
+			
+			//convert to radians
+			p4*=pi/180;
+			p5*=pi/180;
+			
+			
+			if (ss)
+				f = new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 1, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi, Bscale);
 		}
 		else if (type == "EDMStaticEField") {
 			ss >> p1 >> p2 >> p3 >> Bscale;
