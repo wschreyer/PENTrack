@@ -69,6 +69,7 @@ unknown
 ########################################
 
 #STLsurface	particles 	STL-file		ActiveTime	Enormal
+STLsurface 	neutron		in/sourcevolume.STL	200		0 
 
 #cylvolume	particles	r_min	r_max	phi_min	phi_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
 #cylvolume	neutron		0.16	0.5	0	360		0.005	1.145	0		1
