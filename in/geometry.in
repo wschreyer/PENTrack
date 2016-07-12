@@ -32,10 +32,24 @@ unknown
 #the ID also defines the order in which overlapping solids are handled (highest ID will be considered first)
 #ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000
 #ID	STLfile    material_name    ignore_times
-1       ignored    default
-3       in/EDM_Simple_140h_362d-EDMCellCyl_mater_dPS_prior_172-2.STL    dPS
-5       in/EDM_Simple_140h_362d-EDMCelltop_mater_dPS_prior_173-1.STL    dPS
-7       in/EDM_Simple_140h_362d-EDMCellbottom_mater_dPS_prior_174-1.STL    dPS
+1	ignored				default
+2	in/storagevolume_60degfeeder_bellow.STL		PolishedSteel
+3	in/guide_experiment.STL		PolishedSteel
+4	in/guide_source.STL		PolishedSteel
+5	in/guide_detector.STL		PolishedSteel
+6	in/switch.STL			PolishedSteel
+7	in/valve.STL			PolishedSteel		0-200 500-1000
+8	in/switch_flap_source.STL	PolishedSteel		200-1000
+9	in/switch_flap_middle.STL	PolishedSteel		0-200 500-1000
+10	in/switch_flap_detector.STL	PolishedSteel		0-500
+11	in/foil_detector.STL		Al
+12	in/UCNdet.STL			UCNdet
+13	in/protdet.STL			Al
+14	in/absorber_up.STL		PE			500-560
+15	in/absorber_middle.STL		PE			0-500 520-540 560-1000
+16	in/absorber_down.STL		PE			0-520 540-1000
+17	in/source.STL			UCNdet			200-1000
+18	in/source.STL			PolishedSteel		0-200
 
 
 
@@ -67,7 +81,7 @@ unknown
 
 
 #STLvolume	particles	STL-file		ActiveTime	PhaseSpaceWeighting			1
-STLvolume       neutron       in/EDM_Simple_140h_362d-EDMTopcellUCNsource_mater_unknown_prior_source-1.STL    0    0
+#STLvolume 	neutron		in/source.STL	0			1
 
 [FIELDS]
 ########### electric and magnetic fields ##########
@@ -89,14 +103,14 @@ STLvolume       neutron       in/EDM_Simple_140h_362d-EDMTopcellUCNsource_mater_
 #3 3Dtable	in/B0-HHcoil-1muT-r-1m-noGradCGS.table	1	1	0.01
 #InfiniteWireZ		I		x		y		scale
 #InfiniteWireZCenter	I	scale
-#FiniteWire		I		x1		y1		z1		x2		y2		z2		scale
+#FiniteWire		I		x1		y1		z1		x2		y2		z2		scale	
 #FiniteWireX/Y/Z	I		x1/y1/z1	x2/y2/z2	z/z/z1		#/#/z2		scale
 #FiniteWireZCenter	I		z1		z2		scale
 #FullRacetrack		I		z1		z2		r		scale
 #4 FullRacetrack			2250		-0.15		1.35		0.6		1
 #5 FiniteWireZCenter			12500		-1			2		1		
 #EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
-#6 EDMStaticB0GradZField 	0	0	0	0	0	1E-6	1E-9		0.01	1	-1	1 	-1	1	-1	1
+6 EDMStaticB0GradZField 	0	0	0	0	0	1E-6	1E-9		0.01	1	-1	1 	-1	1	-1	1
 #EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)	scale
 #7 EDMStaticEField			0			0			1E6		1
 #EDM_AC_B1Field  edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz freq time1 time2 shift BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
