@@ -100,10 +100,10 @@ unknown
 #field 		table-file	BFieldScale	EFieldScale	BoundaryWidth
 #1 2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab			t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))		1
 #2 2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist_newelectrode85cm.table	0	1
-#3 3Dtable	in/B0-HHcoil-1muT-r-1m-noGradCGS.table	1	1	0.01
+#3 3Dtable	in/3Dtable.tab		
 #InfiniteWireZ		I		x		y		scale
 #InfiniteWireZCenter	I	scale
-#FiniteWire		I		x1		y1		z1		x2		y2		z2		scale	
+#FiniteWire		I		x1		y1		z1		x2		y2		z2		scale
 #FiniteWireX/Y/Z	I		x1/y1/z1	x2/y2/z2	z/z/z1		#/#/z2		scale
 #FiniteWireZCenter	I		z1		z2		scale
 #FullRacetrack		I		z1		z2		r		scale
