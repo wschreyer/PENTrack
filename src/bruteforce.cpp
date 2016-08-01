@@ -99,6 +99,7 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 					double x2, double y2[6], double dy2dx[6], double B2[4][4], double E2[3], double dE2[3][3]){
 	if (gamma == 0 || x1 == x2 ) 
 		return 1;
+
 		
 	bool BruteForce1 = false, BruteForce2 = false;;
 	for (unsigned int i = 0; i < BFtimes.size(); i += 2){
@@ -107,6 +108,10 @@ long double TBFIntegrator::Integrate(double x1, double y1[6], double dy1dx[6], d
 	}
 	if (BruteForce1 || BruteForce2){
 		BFBminmem = std::min(BFBminmem, std::min(B1[3][0],B2[3][0])); // save lowest value for info
+		
+				
+	if (B1[3][0] == 0 && B2[3][0] == 0)
+		throw std::invalid_argument("To Whom it may concern; You are trying to bruteforce spintrack a particle in a reigon with 0 BField. Spintracking doesnt work with 0 field. Check your boundaries so they make sense!");
 
 		// check if this value is worth for Bloch integration
 		if (B1[3][0] < Bmax || B2[3][0] < Bmax){
