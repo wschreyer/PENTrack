@@ -35,14 +35,14 @@ double TMicroRoughness::MRDist(bool transmit, bool integral, const double v[3], 
 	double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity projected onto surface normal
 	double E = 0.5*m_n*v2; // kinetic energy
 	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9; // potential wall
-	double costheta_i = abs(vnormal/sqrt(v2)); // cosine of angle between normal and incoming velocity vector
-	if (transmit && E*costheta_i*costheta_i <= Estep) // if particle is transmitted: check if energy is higher than potential wall
+	if (transmit && E <= Estep) // if particle is transmitted: check if energy is higher than potential wall
 		return 0;
 
 	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
 	std::complex<double> kc = std::sqrt(2*(double)m_n*std::complex<double>(Estep, 0.))*(double)ele_e/(double)hbar; // critical wave number of potential wall
 	double kt = 0;
 
+	double costheta_i = abs(vnormal/sqrt(v2)); // cosine of angle between normal and incoming velocity vector
 	std::complex<double> Si = 2*costheta_i/(costheta_i + sqrt(costheta_i*costheta_i - kc*kc/ki/ki)); // specularly transmitted amplitude
 	std::complex<double> So;
 	if (transmit){
@@ -80,10 +80,6 @@ double TMicroRoughness::MRDist(bool transmit, bool integral, const double v[3], 
 	double result = factor*norm(Si)*norm(So)*Fmu;
 	//	cout << integral << transmit << ' ' << theta_i << ' ' << theta << ' ' << phi << ' ' << ki << ' ' << kt << ' ' << kc << ' ' << factor << ' ' << Si << ' ' << So << ' ' << Fmu << ' ' << result << '\n';
 	return result; // return probability
-}
-
-void TMicroRoughness::operator()(std::vector<double> state, std::vector<double> &derivs, double x){
-	derivs[0] = MRDist(ftransmit, fintegral, fv, fnormal, fleaving, fentering, x, 0);
 }
 
 void TMicroRoughness::MRDist(double theta, double xminusa, double bminusx, double &y, void *params){

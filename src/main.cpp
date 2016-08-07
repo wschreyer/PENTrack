@@ -324,6 +324,11 @@ void PrintMROutAngle ( const char *outfile) {
 			double mrprob = MR.MRDist(false, false, v, norm, &solLeav, &solEnter, theta, phi)*sin(theta);
 			mrproboutfile << phi << ' ' << theta << ' ' << mrprob << '\n';
 		}
+		for (double theta=0; theta<pi/2; theta+=(pi/2)/100) {
+			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
+			double mrprob = MR.MRDist(true, false, v, norm, &solLeav, &solEnter, theta, phi)*sin(theta);
+			mrproboutfile << phi << ' ' << pi - theta << ' ' << mrprob << '\n';
+		}
 	}
 
 } // end PrintMRThetaIEnergy

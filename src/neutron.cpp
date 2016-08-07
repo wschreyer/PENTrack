@@ -27,105 +27,150 @@ TNeutron::TNeutron(int number, double t, double x, double y, double z, double E,
 
 void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
-	value_type vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
-	double prob = mc->UniformDist(0,1);
-	double diffprob;
+	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 
 	// specular transmission (refraction)
-	value_type Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-	value_type Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
-	long double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-	long double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
+	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
+	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
+	double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
 	for (int i = 0; i < 3; i++)
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
-	bool UseMRModel = mat->UseMRModel && MR.MRValid(&y1[3], normal, leaving, entering); // check if MicroRoughness model should be applied
-	if (UseMRModel)
-		diffprob = MR.MRProb(true, &y1[3], normal, leaving, entering); // calculate probability of diffuse scattering using MR model
-	else
-		diffprob = mat->DiffProb; // use fixed probability of diffuse scattering for simple Lambert model
+	traversed = true;
+	trajectoryaltered = true;
+}
 
-	if (prob < diffprob){ // diffuse transmission
-		double theta_t, phi_t;
-		if (UseMRModel){
-			double MRmax = MR.MRDistMax(true, &y1[3], normal, leaving, entering);
+void TNeutron::TransmitMR(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
+
+	if (!mat->UseMRModel || !MR.MRValid(&y1[3], normal, leaving, entering)) // check if MicroRoughness model should be applied
+		return;
+
+	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
+	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
+	double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
+	for (int i = 0; i < 3; i++)
+		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
+
+	double theta_t, phi_t;
+	double MRmax = MR.MRDistMax(true, &y1[3], normal, leaving, entering);
 //			cout << "max: " << MRmax << '\n';
-			do{
-				phi_t = mc->UniformDist(0, 2*pi);
-				theta_t = mc->SinDist(0, pi/2);
-			}while (mc->UniformDist(0, MRmax) > MR.MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
-		}
-		else{
-			phi_t = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
-			theta_t = mc->SinCosDist(0, 0.5*pi);
-		}
-		if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
-		x2 = x1;
-		value_type vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
-		y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
-		y2[4] = vabs*sin(phi_t)*sin(theta_t);
-		y2[5] = vabs*cos(theta_t);
-		RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
-	}
+	do{
+		phi_t = mc->UniformDist(0, 2*pi);
+		theta_t = mc->SinDist(0, pi/2);
+	}while (mc->UniformDist(0, MRmax) > MR.MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
+
+	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
+	x2 = x1;
+	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
+	y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
+	y2[4] = vabs*sin(phi_t)*sin(theta_t);
+	y2[5] = vabs*cos(theta_t);
+	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+
+	traversed = true;
+	trajectoryaltered = true;
+}
+
+void TNeutron::TransmitLambert(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
+	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
+	double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
+	for (int i = 0; i < 3; i++)
+		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
+
+	double theta_t, phi_t;
+	phi_t = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
+	theta_t = mc->SinCosDist(0, 0.5*pi);
+
+	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
+	x2 = x1;
+	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
+	y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
+	y2[4] = vabs*sin(phi_t)*sin(theta_t);
+	y2[5] = vabs*cos(theta_t);
+	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+
 	traversed = true;
 	trajectoryaltered = true;
 }
 
 void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
-	value_type vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
-	double prob = mc->UniformDist(0,1);
-	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
-	double diffprob;
-	bool UseMRModel = mat->UseMRModel && MR.MRValid(&y1[3], normal, leaving, entering);
-	if (UseMRModel)
-		diffprob = MR.MRProb(false, &y1[3], normal, leaving, entering);
-	else
-		diffprob = mat->DiffProb;
-//	cout << "prob: " << diffprob << '\n';
-	if (prob >= diffprob){
-		//************** specular reflection **************
-//				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
-		x2 = x1;
-		for (int i = 0; i < 6; i++)
-			y2[i] = y1[i];
-		y2[3] -= 2*vnormal*normal[0]; // reflect velocity
-		y2[4] -= 2*vnormal*normal[1];
-		y2[5] -= 2*vnormal*normal[2];
-	}
-	else{
-		//************** diffuse reflection ************
-		double phi_r, theta_r;
-		if (UseMRModel){
-			double MRmax = MR.MRDistMax(false, &y1[3], normal, leaving, entering);
-//			cout << "max: " << MRmax << '\n';
-			do{
-				phi_r = mc->UniformDist(0, 2*pi);
-				theta_r = mc->SinDist(0, pi/2);
-			}while (mc->UniformDist(0, MRmax) > MR.MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
-		}
-		else{
-			phi_r = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
-			theta_r = mc->SinCosDist(0, 0.5*pi);
-		}
-		if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
-		x2 = x1;
-		for (int i = 0; i < 3; i++)
-			y2[i] = y1[i];
-		value_type vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-		y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
-		y2[4] = vabs*sin(phi_r)*sin(theta_r);
-		y2[5] = vabs*cos(theta_r);
-		RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
-//				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
-	}
 
-	if (mc->UniformDist(0,1) < entering->mat.SpinflipProb){
-		polarisation *= -1;
-		Nspinflip++;
-	}
+	//************** specular reflection **************
+//				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
+	x2 = x1;
+	for (int i = 0; i < 6; i++)
+		y2[i] = y1[i];
+	y2[3] -= 2*vnormal*normal[0]; // reflect velocity
+	y2[4] -= 2*vnormal*normal[1];
+	y2[5] -= 2*vnormal*normal[2];
+
+	traversed = false;
+	trajectoryaltered = true;
+}
+
+void TNeutron::ReflectMR(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
+	if (!mat->UseMRModel || !MR.MRValid(&y1[3], normal, leaving, entering))
+		return;
+
+	double phi_r, theta_r;
+	double MRmax = MR.MRDistMax(false, &y1[3], normal, leaving, entering);
+//			cout << "max: " << MRmax << '\n';
+	do{
+		phi_r = mc->UniformDist(0, 2*pi);
+		theta_r = mc->SinDist(0, pi/2);
+	}while (mc->UniformDist(0, MRmax) > MR.MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
+
+	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
+	x2 = x1;
+	for (int i = 0; i < 3; i++)
+		y2[i] = y1[i];
+	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
+	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
+	y2[4] = vabs*sin(phi_r)*sin(theta_r);
+	y2[5] = vabs*cos(theta_r);
+	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+//				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
+
+
+	traversed = false;
+	trajectoryaltered = true;
+}
+
+void TNeutron::ReflectLambert(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	//particle was neither transmitted nor absorbed, so it has to be reflected
+
+	double phi_r, theta_r;
+	phi_r = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
+	theta_r = mc->SinCosDist(0, 0.5*pi);
+
+	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
+	x2 = x1;
+	for (int i = 0; i < 3; i++)
+		y2[i] = y1[i];
+	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
+	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
+	y2[4] = vabs*sin(phi_r)*sin(theta_r);
+	y2[5] = vabs*cos(theta_r);
+	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+//				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
+
 
 	traversed = false;
 	trajectoryaltered = true;
@@ -133,44 +178,72 @@ void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 
 void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
-	value_type vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-	value_type Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	trajectoryaltered = false;
 	traversed = true;
-	value_type prob = mc->UniformDist(0,1);
 
-	value_type Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
+	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+
+	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
+
 //		cout << "Leaving " << leaving->ID << " Entering " << entering->ID << " Enormal = " << Enormal << " Estep = " << Estep;
-	if (Enormal > Estep){ // transmission only possible if E > Estep
+
+	bool UseMRModel = mat->UseMRModel && MR.MRValid(&y1[3], normal, leaving, entering);
+	if (UseMRModel && mc->UniformDist(0,1) < MR.MRProb(false, &y1[3], normal, leaving, entering)){ 	// handle MicroRoughness reflection/transmission separately
+		ReflectMR(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
+	}
+	else if (UseMRModel && mc->UniformDist(0,1) < MR.MRProb(true, &y1[3], normal, leaving, entering)){
+		TransmitMR(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
+	}
+
+	else if (Enormal > Estep){ // transmission only possible if Enormal > Estep
 		double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
 		double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
-		double transprob = 4*k1*k2/(k1 + k2)/(k1 + k2); // transmission probability
-//			cout << " TransProb = " << transprob << '\n';
-		if (prob < transprob) // -> transmission
-			Transmit(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
-		else // no transmission -> reflection
-			Reflect(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
+
+		double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // specular reflection probability
+		if (mc->UniformDist(0,1) < reflprob){ // reflection
+			if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
+				ReflectLambert(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // Lambert reflection
+			else
+				Reflect(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // specular reflection
+		}
+		else{
+			if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
+				TransmitLambert(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // Lambert transmission
+			else
+				Transmit(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // specular transmission
+		}
 	}
-	else{
+	else{ // total reflection (Enormal < Estep)
 		double k1 = sqrt(Enormal); // wavenumber in first solid (only real part)
 		complex<double> iEstep(Estep, -entering->mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
 		complex<double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
 		double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
+
 		if (entering->mat.UseMRModel){
 			double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
 			double addtrans = 2*pow(entering->mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering->mat.CorrelLength + 2*kc*kc*pow(entering->mat.CorrelLength, 2));
 			reflprob = 1 - (1 - reflprob)*sqrt(1 + addtrans); // second order correction for reflection on MicroRoughness surfaces
 		}
 //			cout << " ReflProb = " << reflprob << '\n';
-		if (prob > reflprob){ // -> absorption on reflection
+
+		if (mc->UniformDist(0,1) > reflprob){ // -> absorption on reflection
 			x2 = x1;
 			y2 = y1; // set end point to point right before collision and set ID to absorbed
 			StopIntegration(ID_ABSORBED_ON_SURFACE, x2, y2, polarisation, *entering);
 			traversed = false;
 			trajectoryaltered = true;
 		}
+		else if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
+			ReflectLambert(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // Lambert reflection
 		else // no absorption -> reflection
-			Reflect(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
+			Reflect(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // specular reflection
+	}
+
+	if (mc->UniformDist(0,1) < entering->mat.SpinflipProb){ // should spin be flipped?
+		polarisation *= -1;
+		Nspinflip++;
 	}
 
 }
@@ -179,8 +252,8 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid){
 	bool result = false;
 	if (currentsolid.mat.FermiImag > 0){
-		complex<long double> E(0.5*m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
-		complex<long double> k = sqrt(2*m_n*E)*ele_e/hbar; // wave vector
+		complex<double> E(0.5*(double)m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
+		complex<double> k = sqrt(2*(double)m_n*E)*(double)ele_e/(double)hbar; // wave vector
 		double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
 		double abspath = mc->ExpDist(2*imag(k)); // exponential probability decay
 		if (abspath < l){

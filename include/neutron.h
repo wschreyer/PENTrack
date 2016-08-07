@@ -72,22 +72,56 @@ protected:
 	/**
 	 * Transmit neutron through surface.
 	 *
-	 * Refracts or scatters the neutron according to Micro Roughness model.
+	 * Refracts neutron velocity.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void Transmit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
+	/**
+	 * Transmit neutron through surface.
+	 *
+	 * Refracts or scatters the neutron according to Micro Roughness model.
+	 * For parameter documentation see TNeutron::OnHit.
+	 */
+	void TransmitMR(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
+
+	/**
+	 * Transmit neutron through surface.
+	 *
+	 * Refracts or scatters the neutron according to Lambert model.
+	 * For parameter documentation see TNeutron::OnHit.
+	 */
+	void TransmitLambert(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 	/**
 	 * Reflect neutron from surface.
 	 *
-	 * Reflects or scatters the neutron according to Lambert or Micro Roughness model.
+	 * Reflects neutron specularly.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
+	/**
+	 * Reflect neutron from surface.
+	 *
+	 * Reflects or scatters the neutron according to Micro Roughness model.
+	 * For parameter documentation see TNeutron::OnHit.
+	 */
+	void ReflectMR(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
+
+	/**
+	 * Reflect neutron from surface.
+	 *
+	 * Reflects or scatters the neutron according to Lambert model.
+	 * For parameter documentation see TNeutron::OnHit.
+	 */
+	void ReflectLambert(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 	/**
 	 * Checks for absorption in solids using Fermi-potential formalism and does some additional calculations for neutrons

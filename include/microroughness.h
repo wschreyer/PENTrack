@@ -75,8 +75,6 @@ public:
 	 */
 	double MRDistMax(bool transmit, const double v[3], const double normal[3], solid *leaving, solid *entering);
 
-	void operator()(std::vector<double> state, std::vector<double> &derivs, double x);
-
 	/**
 	 * Wrapper function to allow ALGLIB integration of MicroRoughness model distribution
 	 *
