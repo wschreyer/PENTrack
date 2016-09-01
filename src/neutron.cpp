@@ -57,8 +57,7 @@ void TNeutron::TransmitMR(value_type x1, state_type y1, value_type &x2, state_ty
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
 	double theta_t, phi_t;
-	double MRmax = MR.MRDistMax(true, &y1[3], normal, leaving, entering);
-//			cout << "max: " << MRmax << '\n';
+	double MRmax = 1.5 * MR.MRDistMax(true, &y1[3], normal, leaving, entering); // scale up maximum to make sure it lies above all values of scattering distribution
 	do{
 		phi_t = mc->UniformDist(0, 2*pi);
 		theta_t = mc->SinDist(0, pi/2);
@@ -128,7 +127,7 @@ void TNeutron::ReflectMR(value_type x1, state_type y1, value_type &x2, state_typ
 		return;
 
 	double phi_r, theta_r;
-	double MRmax = MR.MRDistMax(false, &y1[3], normal, leaving, entering);
+	double MRmax = 1.5 * MR.MRDistMax(false, &y1[3], normal, leaving, entering);  // scale up maximum to make sure it lies above all values of scattering distribution
 //			cout << "max: " << MRmax << '\n';
 	do{
 		phi_r = mc->UniformDist(0, 2*pi);
@@ -185,24 +184,30 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
 
-	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
+	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat; // use material properties of the solid whose surface was hit
+	//material *mat = &entering->mat;
 
 //		cout << "Leaving " << leaving->ID << " Entering " << entering->ID << " Enormal = " << Enormal << " Estep = " << Estep;
 
 	bool UseMRModel = mat->UseMRModel && MR.MRValid(&y1[3], normal, leaving, entering);
-	if (UseMRModel && mc->UniformDist(0,1) < MR.MRProb(false, &y1[3], normal, leaving, entering)){ 	// handle MicroRoughness reflection/transmission separately
+	double MRreflprob = 0, MRtransprob = 0;
+	if (UseMRModel){ 	// handle MicroRoughness reflection/transmission separately
+		MRreflprob = MR.MRProb(false, &y1[3], normal, leaving, entering);
+		if (0.5*m_n*(y1[0]*y1[0] + y1[1]*y1[1] + y1[2]*y1[2]) > Estep) // MicroRoughness transmission can happen if neutron energy > potential step
+			MRtransprob = MR.MRProb(true, &y1[3], normal, leaving, entering);
+	}
+	double prob = mc->UniformDist(0, 1);
+	if (UseMRModel && prob < MRreflprob)
 		ReflectMR(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
-	}
-	else if (UseMRModel && mc->UniformDist(0,1) < MR.MRProb(true, &y1[3], normal, leaving, entering)){
+	else if (UseMRModel && prob < MRreflprob + MRtransprob)
 		TransmitMR(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
-	}
 
-	else if (Enormal > Estep){ // transmission only possible if Enormal > Estep
+	else if (Enormal > Estep){ // specular transmission only possible if Enormal > Estep
 		double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
 		double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
 
-		double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // specular reflection probability
-		if (mc->UniformDist(0,1) < reflprob){ // reflection
+		double reflprob = pow((k1 - k2)/(k1 + k2), 2); // specular reflection probability
+		if (prob < MRreflprob + MRtransprob + reflprob*(1 - MRreflprob - MRtransprob)){ // reflection, scale down reflprob so MRreflprob + MRtransprob + reflprob + transprob = 1
 			if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
 				ReflectLambert(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // Lambert reflection
 			else
@@ -219,26 +224,28 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 		double k1 = sqrt(Enormal); // wavenumber in first solid (only real part)
 		complex<double> iEstep(Estep, -entering->mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
 		complex<double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
-		double reflprob = pow(abs((k1 - k2)/(k1 + k2)), 2); // reflection probability
+		double absprob = 1 - norm((k1 - k2)/(k1 + k2)); // absorption probability
 
 		if (entering->mat.UseMRModel){
 			double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
 			double addtrans = 2*pow(entering->mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering->mat.CorrelLength + 2*kc*kc*pow(entering->mat.CorrelLength, 2));
-			reflprob = 1 - (1 - reflprob)*sqrt(1 + addtrans); // second order correction for reflection on MicroRoughness surfaces
+			absprob *= sqrt(1 + addtrans); // second order correction for reflection on MicroRoughness surfaces
 		}
 //			cout << " ReflProb = " << reflprob << '\n';
 
-		if (mc->UniformDist(0,1) > reflprob){ // -> absorption on reflection
+		if (prob < MRreflprob + MRtransprob + absprob*(1 - MRreflprob - MRtransprob)){ // -> absorption on reflection, scale down absprob so MRreflprob + MRtransprob + absprob + reflprob = 1
 			x2 = x1;
 			y2 = y1; // set end point to point right before collision and set ID to absorbed
 			StopIntegration(ID_ABSORBED_ON_SURFACE, x2, y2, polarisation, *entering);
 			traversed = false;
 			trajectoryaltered = true;
 		}
-		else if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
-			ReflectLambert(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // Lambert reflection
-		else // no absorption -> reflection
-			Reflect(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // specular reflection
+		else{ // no absorption -> reflection
+			if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
+				ReflectLambert(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // Lambert reflection
+			else
+				Reflect(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed); // specular reflection
+		}
 	}
 
 	if (mc->UniformDist(0,1) < entering->mat.SpinflipProb){ // should spin be flipped?
