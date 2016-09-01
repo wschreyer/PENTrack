@@ -90,6 +90,8 @@ public:
 	/**
 	 * Wrapper function to allow ALGLIB maximization of MicroRoughness model distribution
 	 *
+	 * Maximum of scattering distribution must lie on the line phi = 0
+	 *
 	 * @param x Array of x1,x2,... values. Contains only single variable theta in this case.
 	 * @param f NEGATIVE value of distribution at (theta = x[0], phi = 0)
 	 * @param params Contains TMRParams struct

@@ -1,7 +1,7 @@
 #include <complex>
 #include <vector>
 
-#include <boost/math/special_functions/bessel.hpp>
+#include "specialfunctions.h"
 
 #include "microroughness.h"
 
@@ -31,6 +31,8 @@ bool TMicroRoughness::MRValid(const double v[3], const double normal[3], solid *
 }
 
 double TMicroRoughness::MRDist(bool transmit, bool integral, const double v[3], const double normal[3], solid *leaving, solid *entering, double theta, double phi){
+	if (theta < 0 || theta > pi/2)
+		return 0;
 	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
 	double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity projected onto surface normal
 	double E = 0.5*m_n*v2; // kinetic energy
@@ -47,6 +49,8 @@ double TMicroRoughness::MRDist(bool transmit, bool integral, const double v[3], 
 	std::complex<double> So;
 	if (transmit){
 		kt = sqrt(2*m_n*(E - Estep))*ele_e/hbar; // wave number in second solid
+		if (-real(kc*kc)/kt/kt > cos(theta)*cos(theta)) // this can happen if Estep < 0
+			return 0;
 		So = 2*cos(theta)/(cos(theta) + sqrt(cos(theta)*cos(theta) + kc*kc/kt/kt)); // diffusely transmitted amplitude
 	}
 	else
@@ -65,14 +69,14 @@ double TMicroRoughness::MRDist(bool transmit, bool integral, const double v[3], 
 	double theta_i = acos(costheta_i);
 	double Fmu = 0; // fourier transform of roughness correlation function
 	if (!integral && !transmit)
-		Fmu = exp(-w*w/2*ki*ki*(sin(theta_i)*sin(theta_i) + sin(theta)*sin(theta) - 2*sin(theta_i)*sin(theta)*cos(phi)));
+		Fmu = exp(-w*w/2*ki*ki*(sin(theta_i)*sin(theta_i) +       sin(theta)*sin(theta) -                                 2*sin(theta_i)*sin(theta)*cos(phi)));
 	else if (!integral && transmit)
-		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta) - 2*ki*kt*sin(theta_i)*sin(theta)*cos(phi)));
+		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta) -                           2*ki*kt*sin(theta_i)*sin(theta)*cos(phi)));
 	else if (integral && !transmit) // if integral is set, precalculate phi-integral using modified Bessel function of first kind
-		Fmu = exp(-w*w/2*ki*ki*(sin(theta_i)*sin(theta_i) + sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, w*w*ki*ki*sin(theta_i)*sin(theta));
+		Fmu = exp(-w*w/2*ki*ki*(sin(theta_i)*sin(theta_i) +       sin(theta)*sin(theta))) * 2*pi*alglib::besseli0(w*w*ki*ki*sin(theta_i)*sin(theta));
 	else if (integral && transmit)
-		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta))) * 2*pi*boost::math::cyl_bessel_i(0, w*w*ki*kt*sin(theta_i)*sin(theta));
-	double factor = norm(kc)*norm(kc)*b*b*w*w/8/pi/costheta_i;
+		Fmu = exp(-w*w/2*(ki*ki*sin(theta_i)*sin(theta_i) + kt*kt*sin(theta)*sin(theta))) * 2*pi*alglib::besseli0(w*w*ki*kt*sin(theta_i)*sin(theta));
+	double factor = real(kc*kc*kc*kc)*b*b*w*w/8/pi/costheta_i;
 	if (transmit)
 		factor *= kt/ki;
 	if (integral)
@@ -94,6 +98,7 @@ void TMicroRoughness::NegMRDist(const alglib::real_1d_array &x, double &f, void 
 
 double TMicroRoughness::MRProb(bool transmit, const double v[3], const double normal[3], solid *leaving, solid *entering){
 	ftransmit = transmit;
+	fintegral = true;
 	fv = v;
 	fnormal = normal;
 	fleaving = leaving;
@@ -105,19 +110,32 @@ double TMicroRoughness::MRProb(bool transmit, const double v[3], const double no
 	alglib::autogkintegrate(s, &MRDist, this);
 	alglib::autogkreport r;
 	alglib::autogkresults(s, prob, r);
+//	cout << prob << " int: " << r.terminationtype << " in " << r.nintervals << '\n';
+//	if (r.terminationtype != 1)
+//		throw std::runtime_error("microroughness integration did not converge properly");
 	return prob;
 
 }
 
 double TMicroRoughness::MRDistMax(bool transmit, const double v[3], const double normal[3], solid *leaving, solid *entering){
-	alglib::minbleicstate s;
-	alglib::real_1d_array theta = "[0.7853981635]", bndl = "[0]", bndu = "[1.570796327]";
-	alglib::minbleiccreatef(1, theta, 1e-6, s);
-	alglib::minbleicsetbc(s, bndl, bndu);
-	alglib::minbleicsetcond(s, 1e-6, 0, 0, 0);
-	alglib::minbleicoptimize(s, &NegMRDist, NULL, this);
-	alglib::minbleicreport r;
-	alglib::minbleicresults(s, theta, r);
-//	cout << "min: " << r.terminationtype << " in " << r.iterationscount << '\n';
+	ftransmit = transmit;
+	fintegral = false;
+	fv = v;
+	fnormal = normal;
+	fleaving = leaving;
+	fentering = entering;
+
+	alglib::mincgstate s;
+	alglib::real_1d_array theta = "[0.7853981635]";
+	alglib::mincgcreatef(1, theta, 1e-10, s);
+	alglib::mincgsetcond(s, 0, 0, 0, 0);
+	alglib::mincgoptimize(s, &NegMRDist, NULL, this);
+	alglib::mincgreport r;
+	alglib::mincgresults(s, theta, r);
+//	cout << theta[0] << " min: " << r.terminationtype << " in " << r.iterationscount << '\n';
+//	if (theta[0] < 0 || theta[0] > pi/2)
+//		throw std::runtime_error("theta out of bounds");
+//	if (r.terminationtype < 0)
+//		throw std::runtime_error("microroughness maximization did not converge properly");
 	return MRDist(transmit, false, v, normal, leaving, entering, theta[0], 0);
 }
