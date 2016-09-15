@@ -58,4 +58,4 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif()
 	
 				
-target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
+target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} rt)
