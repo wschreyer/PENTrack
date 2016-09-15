@@ -1,8 +1,8 @@
 [MATERIALS]
-#Define material properties for UCN: imaginary Fermi potential and diffuse reflectivity
-#Diffuse reflection is either modeled with the Lambert model (default) or the Micro Roughness model
-#see Neutron news 3.3 (1992): 26-37, Z. Physik 254, 169--188 (1972) and Eur. Phys. J. A 44, 23–29 (2010)
-#name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]	UseMRmodel
+# Define material properties for UCN: imaginary Fermi potential, diffuse reflectivity, spin flip probability
+# Diffuse reflection is either modeled with the Lambert model or the Micro Roughness model
+#  see Neutron news 3.3 (1992): 26-37, Z. Physik 254, 169--188 (1972) and Eur. Phys. J. A 44, 23–29 (2010)
+#name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability [0..1]		SpinflipProbability [0..1]	RMSroughness [m]	CorrelationLength [m]	UseMRmodel [0/1]
 default		0			0			0				0			0			0			0
 PolishedSteel	183			0.0852			0.05				1e-4	2.6e-9	20e-9 	1
 PE		-8.6553			0.492			0.5				0	0	0	0
@@ -24,13 +24,15 @@ BeO		256.6665		6.23e-2			0.16				0	0	0	0
 SS		183.0405		8.52e-2			0.16				0	0	0	0
 dPE    		 209              	0.06           		0.16            		1e-5	0	0	0
 dPS     	171             	0.047          		0.16             		1e-5	0	0	0
-unknown
+
 
 [GEOMETRY]
-#solids the program will load, particle absorbed in the solid will be flagged with the ID of the solid
-#IDs have to be larger than 0 and unique, ID 1 will be assumed to be the default medium which is always present
-#the ID also defines the order in which overlapping solids are handled (highest ID will be considered first)
-#ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000
+# Solids the program will load. Each solid has to be assigned unique ID and a material from above.
+# IDs have to be larger than 0, ID 1 will be assumed to be the default medium which is always present.
+# Particles absorbed in a solid will be flagged with the ID of the solid.
+# The ID also defines the order in which overlapping solids are handled (highest ID will be considered first).
+# Paths to StL files have to be defined relative to the executable.
+# Ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000.
 #ID	STLfile    material_name    ignore_times
 1	ignored				default
 2	in/storagevolume_60degfeeder_bellow.STL		PolishedSteel
@@ -55,17 +57,19 @@ unknown
 
 [SOURCE]
 ############ sourcemodes ###############
-# STLvolume: source volume is given by a STL file, particles are created in the space completely surrounded by the STL-surface
-
-# boxvolume: particle starting values are diced in the given parameter range (x,y,z)
-# cylvolume: particle starting values are diced in the given parameter range (r,phi,z)
-# For volume sources, the initial particle density can be weighted by the available phase space.
-# In that case, the given particle's energy spectrum is interpreted as a total energy spectrum.
+# STLvolume: source volume is given by a STL file, particles are created in the space completely enclosed in the STL surface
+#
+# boxvolume: particle starting values are diced in the given parameter range (x,y,z) [m,m,m]
+# cylvolume: particle starting values are diced in the given parameter range (r,phi,z) [m,degree,m]
+# For volume sources the initial particle density can be weighted by the available phase space (Set PhaseSpaceWeighting to 1).
+#  In that case, the particle's energy spectrum given in particle.in is interpreted as a total-energy spectrum.
 #
 # STLsurface: starting values are on triangles whose vertices are all in the given STL-volume
 # cylsurface: starting values are on triangles which have at least one vertex in the given parameter range (r,phi,z)
-# For surface sources an additional Enormal can be defined.
-# This adds an additional energy boost to the velocity component normal to the surface.
+# For surface sources an additional Enormal [eV] can be defined.
+#  This adds an additional energy boost to the velocity component normal to the surface.
+#
+# Only a single source can be defined. If there is more than one, only the first one will be used.
 ########################################
 
 #STLsurface	particles 	STL-file		ActiveTime	Enormal
@@ -86,13 +90,17 @@ STLsurface 	neutron		in/sourcevolume.STL	200		0
 
 [FIELDS]
 ########### electric and magnetic fields ##########
+# Tabulated maps:
 # 2Dtable: a table of field values on a regular 2D grid. It is assumed that the field is rotationally symmetric around the z axis.
-# 3Dtable: a table of field values on a regular 3D grid. For 3D tables a bondary width can be specified within which the field is smoothly brought to zero.
+# 3Dtable: a table of field values on a regular 3D grid. For 3D tables a BoundaryWidth [m] can be specified within which the field is smoothly brought to zero.
+#
+# Analytically calculated fields:
 # InfiniteWireZ[Center]: simulate a current parallel to the z-axis, or along the z-axis (With suffix Center)
 # FiniteWire[X/Y/Z/ZCenter]: simulate a current flowing from one point to another along an arbitrary straight line or parallel to the X-, Y-, or Z-axis
 # FullRaceTrack: simulate a current flowing from one point to another on the z-axis and returning along four arms at radius r 
 # EDMStaticEField: simulate a uniform electric field along an arbitrary direction
 # EDMStaticB0GradZField: simulate a magnetic field along the z-axis with a uniform gradient
+# All coordinates are defined in meters, currents in ampere
 #
 # Each line is preceded by a unique identifier. Entries with duplicate identifiers will overwrite each other
 # For each field a time-dependent scaling factor can be added (does not allow spaces yet!).

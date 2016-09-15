@@ -6,7 +6,7 @@ PENTrack - a simulation tool for ultra-cold neutrons, protons and electrons
 If you just want to do simulations, you should check out the stable releases, which have been tested. If you want the latest and greatest features and probably some bugs, or even want to contribute, you should check out the latest revision from master branch.
 
 
-External libraries
+Required libraries
 -----------
 
 ### CGAL
@@ -40,21 +40,21 @@ It is included in the repository.
 [Lekien and Marsden] (http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.
 
 
-Run the simulation
-------------------
-
-Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
-Three command line parameters can be passed to the executable: a job number (default: 0) which is appended to all log file names, a path from where the *.in files should be read (default: in/) and a path to which the out file will be written (default: out/).
-
-
 Defining your experiment
 ------------------------
+
+### Configuration files
+
+Simulation parameters are defined in three configuration files---config.in, geometry.in, and particle.in. By default, they are located in the in directory.
+
+General simulation parameters are defined in config.in. Geometry, electromagnetic fields, and particle sources are defined in geometry.in. Particle-specific parameters---spectra, directions, polarization, and output data---are defined in particle.in.
+
+More information can be found in each in file.
 
 ### Geometry
 
 Geometry can be imported using [binary STL files] (http://en.wikipedia.org/wiki/STL_%28file_format%29).
-STL files use a list of triangles to describe 3D-surfaces. They can be created with most CAD software, e.g. Solidworks via "File - Save As..." using the STL file type. Solidworks makes sure that the surface normals always point outside a solid body. This is used to check if points lie inside a solid object.
-Note the "Options..." button in the Save dialog, there you can change format (only binary supported), resolution, coordinate system etc.
+STL files use a list of triangles to describe 3D-surfaces. They can be created with most CAD software, e.g. Solidworks via "File - Save As..." using the STL file type. Note the "Options..." button in the Save dialog, there you can change format (only binary supported), resolution, coordinate system etc.
 
 PENTrack expects the STL files to be in unit Meters.
 
@@ -64,7 +64,7 @@ Do not choose a too high resolution. Usually, setting the deviation tolerance to
 
 If you want to export several parts of a Solidworks assembly you can do the following:
 
-1. Select the part(s) to be exported and rightclick.
+1. Select the part(s) to be exported and right-click.
 2. Select "Invert selection" and then use "Suppress" on all other parts.
 3. Now you can save that single part as STL (make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part or else the different parts will not fit together).
 4. You can check the positioning of the parts with e.g. [MeshLab](http://meshlab.sourceforge.net/), SolidView, Minimagics, Solidworks...
@@ -80,11 +80,22 @@ You can also define analytic fields from straight, finite conductors.
 Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the particle.in file.
 
 
+Run the simulation
+------------------
+
+Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
+
+Three command-line parameters can be passed to the executable: a job number (default: 0) which is prepended to all log-file names, a path from where the *.in files should be read (default: in/) and a path where the output files will be written (default: out/).
+
+
 Physics
 -------
 
-All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment. UCN interaction with matter is described with the Fermi potential formalism and either the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Spin tracking by bruteforce integration of the Bloch equation is also included.
+All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment.
 
+Interaction of UCN with matter is described with the Fermi-potential formalism and the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection, and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall.
+
+A particle's spin can be tracked by integrating the Bloch equation. To reduce computation time a magnetic-field threshold can be defined to limit spin tracking to regions where the adiabatic condition is not fulfilled.
 
 
 Writing your own simulation
@@ -213,9 +224,9 @@ If bruteforce integration of particle spin precession is active, it will be logg
 - dE2ydx, dE2ydy, dE2ydz: gradient of the y-component of the electric field at the neutron's position at the ending step of TBFIntegrator integration
 - dE2zdx, dE2zdy, dE2zdz: gradient of the z-component of the electric field at the neutron's position at the ending step of TBFIntegrator integration
 
-### Writing Output files to ROOT readable files
+### Merging output files into ROOT trees
 
-merge_all.c: A [ROOT](http://root.cern.ch) script that writes all out-files (or those, whose filename matches some pattern) into a single ROOT file containing trees for each log- and particle-type.
+merge_all.c: A [ROOT](http://root.cern.ch) script that writes all out-files (or those, whose filenames match some pattern) into a single ROOT file containing trees for each log- and particle-type.
 
 Helper Scripts 
 --------------
