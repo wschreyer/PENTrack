@@ -13,6 +13,9 @@ TMCGenerator::TMCGenerator(const char *infile){
 	std::cout << "Random Seed: " << seed << "\n\n";
 	rangen.seed(seed);
 
+	ProtonBetaSpectrumDist = ParseDist(&ProtonBetaSpectrum, 0., 750.); // create piecewise linear distribution from predefined energy spectrum of protons from free-neutron decay
+	ElectronBetaSpectrumDist = ParseDist(&ElectronBetaSpectrum, 0., 782000.); // create piecewise linear distribution from predefined energy spectrum of protons from free-neutron decay
+
 	TConfig invars; ///< contains variables from *.in file
 	ReadInFile(infile, invars);
 	for (TConfig::iterator i = invars.begin(); i != invars.end(); i++){
@@ -22,27 +25,35 @@ TMCGenerator::TMCGenerator(const char *infile){
 	ReadInFile(infile, invars); // read particle.in again to overwrite defaults for specific particle settings
 
 	for (TConfig::iterator i = invars.begin(); i != invars.end(); i++){
+		if (i->first == "all")
+			continue;
 		TParticleConfig *pconf = &pconfigs[i->first];
-		std::istringstream(i->second["Emax"]) >> pconf->Emax;
-		std::istringstream(i->second["Emin"]) >> pconf->Emin;
+		double Emin, Emax, phi_v_min, phi_v_max, theta_v_min, theta_v_max;
 		std::istringstream(i->second["lmax"]) >> pconf->lmax;
 		std::istringstream(i->second["polarization"]) >> pconf->polarization;
 		std::istringstream(i->second["tau"]) >> pconf->tau;
 		std::istringstream(i->second["tmax"]) >> pconf->tmax;
-		std::istringstream(i->second["phi_v_min"]) >> pconf->phi_v_min;
-		std::istringstream(i->second["phi_v_max"]) >> pconf->phi_v_max;
-		std::istringstream(i->second["theta_v_min"]) >> pconf->theta_v_min;
-		std::istringstream(i->second["theta_v_max"]) >> pconf->theta_v_max;
+		std::istringstream(i->second["phi_v_min"]) >> phi_v_min;
+		std::istringstream(i->second["phi_v_max"]) >> phi_v_max;
+		std::istringstream(i->second["theta_v_min"]) >> theta_v_min;
+		std::istringstream(i->second["theta_v_max"]) >> theta_v_max;
+		std::istringstream(i->second["Emax"]) >> Emax;
+		std::istringstream(i->second["Emin"]) >> Emin;
 		try{
-			pconf->spectrum.DefineVar("x", &xvar);
-			pconf->spectrum.SetExpr(i->second["spectrum"]);
-			pconf->spectrum.DefineFun("ProtonBetaSpectrum", &ProtonBetaSpectrum);
-			pconf->spectrum.DefineFun("ElectronBetaSpectrum", &ElectronBetaSpectrum);
-			pconf->spectrum.DefineFun("MaxwellBoltzSpectrum", &MaxwellBoltzSpectrum);
-			pconf->phi_v.DefineVar("x", &xvar);
-			pconf->phi_v.SetExpr(i->second["phi_v"]);
-			pconf->theta_v.DefineVar("x", &xvar);
-			pconf->theta_v.SetExpr(i->second["theta_v"]);
+			mu::Parser spectrum;
+			spectrum.SetExpr(i->second["spectrum"]);
+			spectrum.DefineFun("ProtonBetaSpectrum", &ProtonBetaSpectrum);
+			spectrum.DefineFun("ElectronBetaSpectrum", &ElectronBetaSpectrum);
+			spectrum.DefineFun("MaxwellBoltzSpectrum", &MaxwellBoltzSpectrum);
+			pconf->spectrum = ParseDist(spectrum, Emin, Emax);
+
+			mu::Parser phi_v, theta_v;
+			phi_v.SetExpr(i->second["phi_v"]);
+			pconf->phi_v = ParseDist(phi_v, phi_v_min, phi_v_max);
+
+			theta_v.SetExpr(i->second["theta_v"]);
+			pconf->theta_v = ParseDist(theta_v, theta_v_min, theta_v_max);
+
 		}
 		catch (mu::Parser::exception_type &exc){
 			std::cout << exc.GetMsg();
@@ -59,7 +70,7 @@ TMCGenerator::~TMCGenerator(){
 double TMCGenerator::UniformDist(double min, double max){
 	if (min == max)
 		return min;
-	boost::uniform_real<double> unidist(min, max);
+	boost::random::uniform_real_distribution<double> unidist(min, max);
 	return unidist(rangen);
 }
 
@@ -220,54 +231,14 @@ double TMCGenerator::NeutronSpectrum(){
 }
 
 double TMCGenerator::Spectrum(const std::string &particlename){
-	double y;
 	TParticleConfig *pconfig = &pconfigs[particlename];
-	for (;;){
-		xvar = UniformDist(pconfig->Emin, pconfig->Emax);
-		try{
-			y = pconfig->spectrum.Eval();
-		}
-		catch(mu::Parser::exception_type &exc){
-			std::cout << exc.GetMsg();
-			exit(-1);
-		}
-		if (UniformDist(0,1) < y)
-			return xvar;
-	}
-	return 0;
+	return pconfig->spectrum(rangen);
 }
 
 void TMCGenerator::AngularDist(const std::string &particlename, double &phi_v, double &theta_v){
-	double y;
 	TParticleConfig *pconfig = &pconfigs[particlename];
-	for (;;){
-		xvar = UniformDist(pconfig->phi_v_min, pconfig->phi_v_max);
-		try{
-			y = pconfig->phi_v.Eval();
-		}
-		catch(mu::Parser::exception_type &exc){
-			std::cout << exc.GetMsg();
-			exit(-1);
-		}
-		if (UniformDist(0,1) < y){
-			phi_v = xvar;
-			break;
-		}
-	}
-	for (;;){
-		xvar = UniformDist(pconfig->theta_v_min, pconfig->theta_v_max);
-		try{
-			y = pconfig->theta_v.Eval();
-		}
-		catch(mu::Parser::exception_type &exc){
-			std::cout << exc.GetMsg();
-			exit(-1);
-		}
-		if (UniformDist(0,1) < y){
-			theta_v = xvar;
-			break;
-		}
-	}
+	phi_v = pconfig->phi_v(rangen);
+	theta_v = pconfig->theta_v(rangen);
 }
 
 double TMCGenerator::LifeTime(const std::string &particlename){
@@ -309,13 +280,8 @@ void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double 
  *
  */
 	// energy of proton
- 	for (;;){
- 		double Ekin = UniformDist(0,751);
- 		if (UniformDist(0,1) < ProtonBetaSpectrum(Ekin)){
- 			p[0] = Ekin/c_0 + m_p*c_0;
- 			break;
- 		}
- 	}
+ 	double Ekin = ProtonBetaSpectrumDist(rangen);
+	p[0] = Ekin/c_0 + m_p*c_0;
 	// momentum norm of proton
 	pabs = sqrt(p[0]*p[0] - m_p*m_p*c_0*c_0);
 
@@ -420,8 +386,48 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 */
 
 	}
+}
 
 
-};
 
+boost::random::piecewise_linear_distribution<double> TMCGenerator::ParseDist(mu::Parser &func, double range_min, double range_max){
+	if (range_min > range_max)
+		std::swap(range_min, range_max); // swap min/mix if necessary
+	std::vector<double> range, dist;
+	double x;
+	func.DefineVar("x", &x); // define x variable in muParser function
+	for (x = range_min; x <= range_max; x += (range_max - range_min)/PIECEWISE_LINEAR_DIST_INTERVALS){ // go through parameter range
+		range.push_back(x); // create list of parameter values
+		dist.push_back(func.Eval()); // create list of function values
+		if (range_min == range_max){ // if min and max of parameter range are equal
+			x = std::nextafter(range_max, std::numeric_limits<double>::max()); // add another parameter value slightly larger than min, else piecewise linear distribution defaults to range 0..1
+			range.push_back(x);
+			dist.push_back(func.Eval());
+			break; // stop list creation
+		}
+	}
 
+	boost::random::piecewise_linear_distribution<double> randist(range.begin(), range.end(), dist.begin()); // create piecewise linear distribution from parameter- and distribution-value lists
+//	std::cout << randist << '\n';
+	return randist;
+}
+
+boost::random::piecewise_linear_distribution<double> TMCGenerator::ParseDist(double (*func)(double), double range_min, double range_max){
+	if (range_min > range_max)
+		std::swap(range_min, range_max); // swap min/mix if necessary
+	std::vector<double> range, dist;
+	for (double x = range_min; x <= range_max; x += (range_max - range_min)/PIECEWISE_LINEAR_DIST_INTERVALS){ // go through parameter range
+		range.push_back(x); // create list of parameter values
+		dist.push_back((*func)(x)); // create list of function values
+		if (range_min == range_max){ // if min and max of parameter range are equal
+			x = std::nextafter(range_max, std::numeric_limits<double>::max()); // add another parameter value slightly larger than min, else piecewise linear distribution defaults to range 0..1
+			range.push_back(x);
+			dist.push_back((*func)(x));
+			break; // stop list creation
+		}
+	}
+
+	boost::random::piecewise_linear_distribution<double> randist(range.begin(), range.end(), dist.begin()); // create piecewise linear distribution from parameter- and distribution-value lists
+//	std::cout << randist << '\n';
+	return randist;
+}

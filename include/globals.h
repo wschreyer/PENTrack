@@ -82,7 +82,7 @@ void BOOST(double beta[3], double p[4]);
  *
  * From diploma thesis M. Simson.
  *
- * @param E energy
+ * @param E energy [eV]
  *
  * @return Returns a probability between 0 and 1 that a proton with energy E is created.
  */
@@ -94,7 +94,7 @@ double ProtonBetaSpectrum(double E);
  *
  * From "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
  *
- * @param E energy
+ * @param E energy [eV]
  *
  * @return Returns probability between 0 and 1 that an electron with energy E is created.
  */

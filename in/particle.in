@@ -7,15 +7,15 @@ polarization 0		# 1: low-field-seeker, -1: high-field-seeker, 0: random
 
 Emin 0				# min. energy [eV]
 Emax 0				# max. energy [eV]
-spectrum 1			# differential initial energy distribution (0 <= f(x) <= 1 !)
+spectrum 1			# differential initial energy distribution
 
 phi_v_min 0			# min. azimuth angle of velocity [rad]
 phi_v_max 6.2831853	# max. azimuth angle of velocity [rad]
-phi_v 1				# differential initial distribution of azimuth angle of velocity - volume source only! (0 <= f(x) <= 1 !)
+phi_v 1				# differential initial distribution of azimuth angle of velocity - volume source only!
 
 theta_v_min 0		# min. polar angle of velocity [rad]
 theta_v_max 3.14159	# max. polar angle of velocity [rad]
-theta_v sin(x)		# differential initial distribution of polar angle of velocity - volume source only! (0 <= f(x) <= 1 !)
+theta_v sin(x)		# differential initial distribution of polar angle of velocity - volume source only!
 
 endlog 1			# print initial and final state to file [0/1]
 tracklog 0			# print complete trajectory to file [0/1]
@@ -38,16 +38,16 @@ flipspin 0			# Monte Carlo spin flips after each spin tracking [0/1]
 tau 880.1
 Emin 100e-9
 Emax 300e-9
-#spectrum sqrt(x)/sqrt(300e-9)
-spectrum (1.96616e39*x^5 - 0.00204264e36*x^4 + 0.834378e27*x^3 - 167.958e18*x^2 + 16674.8e9*x - 639317)/14000 # UCN spectrum in horizontal guide from FRM2 source
+#spectrum sqrt(x)
+spectrum 1.96616e39*x^5 - 0.00204264e36*x^4 + 0.834378e27*x^3 - 167.958e18*x^2 + 16674.8e9*x - 639317 # UCN spectrum in horizontal guide from FRM2 source
 
 #Emin 5.5e-9
 #Emax 85e-9
-#spectrum 1.986*(x*1e9 - 5.562)*(1 - tanh(0.3962*(x*1e9 - 72.72)))/220 # total energy spectrum of UCN in storage volume after cleaning
+#spectrum 1.986*(x*1e9 - 5.562)*(1 - tanh(0.3962*(x*1e9 - 72.72))) # total energy spectrum of UCN in storage volume after cleaning
 
 #Emin 20e-9
 #Emax 115e-9
-#spectrum 0.7818*(x*1e9 - 24.842)*(1 - tanh(0.2505*(x*1e9 - 97.510)))/100 # total energy spectrum of low-field-seekers in storage volume after ramping
+#spectrum 0.7818*(x*1e9 - 24.842)*(1 - tanh(0.2505*(x*1e9 - 97.510))) # total energy spectrum of low-field-seekers in storage volume after ramping
 
 [proton]
 tmax 3e-3

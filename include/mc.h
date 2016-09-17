@@ -14,6 +14,8 @@
 
 #include "muParser.h"
 
+#define PIECEWISE_LINEAR_DIST_INTERVALS 1000
+
 /**
  * For each section in particle.in such a struct is created containing all user options
  */
@@ -22,15 +24,9 @@ struct TParticleConfig{
 	double tmax; ///< max. simulation time
 	double lmax; ///< max. trajectory length
 	int polarization; ///< initial polarization
-	double Emin; ///< min. initial energy
-	double Emax; ///< max. initial energy
-	mu::Parser spectrum; ///< Parsed energy spectrum given by user
-	double phi_v_min; ///< Parsed minimum for initial azimuthal angle of velocity given by user
-	double phi_v_max; ///< Parsed maximum for initial azimuthal angle of velocity given by user
-	mu::Parser phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
-	double theta_v_min; ///< Parsed minimum for initial polarl angle of velocity given by user
-	double theta_v_max; ///< Parsed maximum for initial polar angle of velocity given by user
-	mu::Parser theta_v; ///< Parsed initial polar angle distribution of velocity given by user
+	boost::random::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
+	boost::random::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
+	boost::random::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
 };
 
 /**
@@ -39,9 +35,10 @@ struct TParticleConfig{
 class TMCGenerator{
 public:
 	boost::mt19937_64 rangen; ///< random number generator
-	double xvar; ///< x variable for formula parser
 	std::map<std::string, TParticleConfig> pconfigs; ///< TParticleConfig for each particle type
 	uint64_t seed; ///< initial random seed
+	boost::random::piecewise_linear_distribution<double> ProtonBetaSpectrumDist; ///< predefined energy distribution of protons from free-neutron decay
+	boost::random::piecewise_linear_distribution<double> ElectronBetaSpectrumDist; ///< predefined energy distribution of electron from free-neutron decay
 
 	/**
 	 * Constructor.
@@ -195,6 +192,30 @@ public:
 	 * @param theta - polar associated with velocity
 	 */
 	void tofDist(double &Ekin, double &phi, double &theta);
+
+private:
+	/**
+	 * Create a piecewise linear distribution from a muParser function
+	 *
+	 * @param func Function parsed by muParser
+	 * @param range_min Lower range limit of distribution
+	 * @param range_max Upper range limit of distribution
+	 *
+	 * @return Return piecewise linear distribution
+	 */
+	boost::random::piecewise_linear_distribution<double> ParseDist(mu::Parser &func, double range_min, double range_max);
+
+	/**
+	 * Create a piecewise linear distribution from a function with single parameter
+	 *
+	 * @param func Function with single parameter
+	 * @param range_min Lower range limit of distribution
+	 * @param range_max Upper range limit of distribution
+	 *
+	 * @return Return piecewise linear distribution
+	 */
+	boost::random::piecewise_linear_distribution<double> ParseDist(double (*func)(double), double range_min, double range_max);
+
 };
 
 #endif /*MC_H_*/

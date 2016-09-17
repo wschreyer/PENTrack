@@ -119,14 +119,14 @@ TParticle* TVolumeSource::CreateParticle(){
 		TParticleConfig *mcconf = &fmc->pconfigs[fParticleName];
 		if (MinPot == numeric_limits<double>::infinity()){ // if minimum potential energy has not yet been determined
 			FindPotentialMinimum(); // find minimum potential energy
-			if (MinPot > mcconf->Emax){ // abort program if spectrum completely out of potential range
-				cout << "Error: your chosen spectrum is below the minimal potential energy in the source volume (" << mcconf->Emax << "eV < " << MinPot << "eV). Exiting!\n";
+			if (MinPot > mcconf->spectrum.max()){ // abort program if spectrum completely out of potential range
+				cout << "Error: your chosen spectrum is below the minimal potential energy in the source volume (" << mcconf->spectrum.max() << "eV < " << MinPot << "eV). Exiting!\n";
 				exit(-1);
 			}
 		}
 
-		if (MinPot > mcconf->Emin){ // give warning if chosen spectrum contains energy ranges that are not possible
-			cout << "Warning: your chosen spectrum contains energies below the minimal potential energy in the source volume (" << mcconf->Emin << "eV < " << MinPot << "eV). The energy spectrum will be cut off!\n";
+		if (MinPot > mcconf->spectrum.min()){ // give warning if chosen spectrum contains energy ranges that are not possible
+			cout << "Warning: your chosen spectrum contains energies below the minimal potential energy in the source volume (" << mcconf->spectrum.min() << "eV < " << MinPot << "eV). The energy spectrum will be cut off!\n";
 		}
 		double H;
 		do{
