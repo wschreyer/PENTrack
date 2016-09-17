@@ -87,7 +87,7 @@ void BOOST(double beta[3], double p[4]){
 }
 //======== end of BOOST ====================================================================================================
 
-// energy distribution of protons (0 < 'Energie' < 750 eV)
+// energy distribution of protons (0 < E < 750 eV)
 // proton recoil spectrum from "Diplomarbeit M. Simson"
 // result always < 1!
 double ProtonBetaSpectrum(double E){
@@ -101,7 +101,7 @@ double ProtonBetaSpectrum(double E){
 }
 
 
-// energy distribution of electrons (0 < 'Energie' < 782 keV)
+// energy distribution of electrons (0 < E < 782 keV)
 // from "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
 // result always < 1!
 double ElectronBetaSpectrum(double E){
@@ -110,11 +110,11 @@ double ElectronBetaSpectrum(double E){
 }
 
 // energy distribution of comagnetometer gases using Maxwell-Boltzmann distribution
-// from "http://hyperphysics.phy-astr.gsu.edu/hbase/kinetic/maxspe.html"
+// from en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
 // result always < 1!
 double MaxwellBoltzSpectrum (double T, double E) {
 	double kT = boltzconst*T;  
-	return 2*sqrt(E/pi)*sqrt(kT*kT*kT)*exp(-E/kT);
+	return 2*sqrt(E/pi)/sqrt(kT*kT*kT)*exp(-E/kT) / (2*sqrt(0.5/pi)/kT*exp(-0.5)); // return distribution divided by its maximum at E/kt = 0.5
 }
 
 typedef std::map<std::string, std::map<std::string, std::string> > TConfig;
