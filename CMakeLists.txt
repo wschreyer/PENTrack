@@ -30,7 +30,7 @@ else()
 	message(SEND_ERROR "Boost 1.53.0 or newer not found!")
 endif()
 
-find_package(CGAL)
+find_package(CGAL PATHS "cgal/build")
 if (CGAL_CONFIG_LOADED)
 	message(STATUS "CGAL version: " ${CGAL_VERSION})
 	if (CGAL_VERSION VERSION_LESS 4.1)
