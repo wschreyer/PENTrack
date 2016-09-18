@@ -19,6 +19,7 @@
 using namespace std;
 
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
+static const int STATE_VARIABLES = 7; ///< number of variables in trajectory integration (position, velocity, proper time)
 
 
 /**
@@ -52,10 +53,10 @@ public:
 	/// stop time
 	value_type tend;
 
-	/// state vector before integration
+	/// state vector before integration (position, velocity, and proper time)
 	state_type ystart;
 
-	/// state vector after integration)
+	/// state vector after integration (position, velocity, and proper time)
 	state_type yend;
 
 	/// initial polarisation of particle (-1,0,1)
@@ -149,7 +150,7 @@ public:
 	 * Class TParticle is given to integrator, which calls TParticle(x,y,dydx)
 	 *
 	 * @param x Time
-	 * @param y State vector (position + velocity)
+	 * @param y State vector (position, velocity, and proper time)
 	 * @param dydx Returns derivatives of y with respect to t
 	 */
 	void operator()(state_type y, state_type &dydx, value_type x);
@@ -189,7 +190,7 @@ protected:
 	 * Including gravitation, Lorentz-force and magnetic interaction with magnetic moment.
 	 *
 	 * @param x Time
-	 * @param y	State vector (position and velocity)
+	 * @param y	State vector (position, velocity, and proper time)
 	 * @param dydx Returns derivatives of y with respect to x
 	 */
 	void derivs(value_type x, state_type y, state_type &dydx);

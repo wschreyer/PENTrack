@@ -48,8 +48,8 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	else
 		vstart = c_0 * beta;
 
-	ystart.resize(6);
-	yend.resize(6);
+	ystart.resize(STATE_VARIABLES, 0);
+	yend.resize(STATE_VARIABLES, 0);
 	yend[0] = ystart[0] = x;
 	yend[1] = ystart[1] = y;
 	yend[2] = ystart[2] = z;
@@ -87,7 +87,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 	// set initial values for integrator
 	value_type x = tend, x1, x2;
 	state_type y = yend; 
-	state_type y1(6), y2(6), dy1dx(6), dy2dx(6); //acceleration is required for finding temporal derivatives of vxE
+	state_type y1(STATE_VARIABLES), y2(STATE_VARIABLES);
 	int polarisation = polend;
 	value_type h = 0.001/sqrt(yend[3]*yend[3] + yend[4]*yend[4] + yend[5]*yend[5]); // first guess for stepsize
 
@@ -153,11 +153,11 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 			StopIntegration(ID_ODEINT_ERROR, x, y, polarisation, GetCurrentsolid());
 		}
 
-		if (stepper.current_time() > tstart + tau){
-			x = tstart + tau;
-			stepper.calc_state(tstart + tau, y);	//If stepsize overshot, decrease.
+		if (y[6] > tau){ // if proper time is larger than lifetime
+			x = x1 + (x - x1)*(tau - y1[6])/(y[6] - y1[6]); // interpolate decay time in lab frame
+			stepper.calc_state(x, y);
 		}
-		if (stepper.current_time() > tmax){
+		if (stepper.current_time() > tmax){	//If stepsize overshot max simulation time
 			x = tmax;
 			stepper.calc_state(tmax, y);
 		}
@@ -185,7 +185,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 			// take snapshots at certain times
 			if (snapshotlog && snapshots.good()){
 				if (x1 <= nextsnapshot && x2 > nextsnapshot){
-					state_type ysnap(6);
+					state_type ysnap(STATE_VARIABLES);
 					stepper.calc_state(nextsnapshot, ysnap);
 					cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
@@ -210,10 +210,10 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 				field->EField( y1[0], y1[1], y1[2], x1, v_pot1, E1, dE1up ); 
 				field->EField( y2[0], y2[1], y2[2], x2, v_pot2, E2, dE2up );		
 				
-				//Values of dy1dx and dy2dx are updated because they are passed by reference
+				state_type dy1dx(STATE_VARIABLES), dy2dx(STATE_VARIABLES);
 				derivs(x1, y1, dy1dx);
-				derivs(x2, y2, dy2dx);	
-				
+				derivs(x2, y2, dy2dx);
+
 				long double noflip;
 								
 				if ( simulEFieldSpinInteg ) { 
@@ -255,17 +255,15 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 			}
 
 			x1 = x2;
-			for (int i = 0; i < 6; i++)
-				y1[i] = y2[i];
+			y1 = y2;
 			polend = polarisation;
 		}
 
-		PrintPercent(max((x - tstart)/tau, max((x - tstart)/(tmax - tstart), lend/maxtraj)), perc);
+		PrintPercent(max(y[6]/tau, max((x - tstart)/(tmax - tstart), lend/maxtraj)), perc);
 		
-		// x >= tstart + tau?
-		if (ID == ID_UNKNOWN && x >= tstart + tau)
+		if (ID == ID_UNKNOWN && y[6] >= tau) // proper time >= tau?
 			StopIntegration(ID_DECAYED, x, y, polarisation, GetCurrentsolid());
-		else if (ID == ID_UNKNOWN && (x >= tmax || lend >= maxtraj))
+		else if (ID == ID_UNKNOWN && (x >= tmax || lend >= maxtraj)) // time > tmax or trajectory length > max length?
 			StopIntegration(ID_NOT_FINISH, x, y, polarisation, GetCurrentsolid());
 	}
 
@@ -306,9 +304,9 @@ void TParticle::derivs(value_type x, state_type y, state_type &dydx){
 	dydx[0] = y[3]; // time derivatives of position = velocity
 	dydx[1] = y[4];
 	dydx[2] = y[5];
+
 	value_type F[3] = {0,0,0}; // Force in lab frame
-	if (m != 0)
-		F[2] += -gravconst*m*ele_e; // add gravitation to force
+	F[2] += -gravconst*m*ele_e; // add gravitation to force
 	if (field){
 		double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
 		if (q != 0 || (mu != 0 && polend != 0))
@@ -326,10 +324,12 @@ void TParticle::derivs(value_type x, state_type y, state_type &dydx){
 			F[2] += polend*mu*B[3][3];
 		}
 	}
-	value_type rel = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0))/m/ele_e; // relativstic factor 1/gamma/m
-	dydx[3] = rel*(F[0] - (y[3]*y[3]*F[0] + y[3]*y[4]*F[1] + y[3]*y[5]*F[2])/c_0/c_0); // general relativstic equation of motion
-	dydx[4] = rel*(F[1] - (y[4]*y[3]*F[0] + y[4]*y[4]*F[1] + y[4]*y[5]*F[2])/c_0/c_0); // dv/dt = 1/gamma/m*(F - v * v^T * F / c^2)
-	dydx[5] = rel*(F[2] - (y[5]*y[3]*F[0] + y[5]*y[4]*F[1] + y[5]*y[5]*F[2])/c_0/c_0);
+	value_type inversegamma = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0)); // relativstic factor 1/gamma
+	dydx[3] = inversegamma/m/ele_e*(F[0] - (y[3]*y[3]*F[0] + y[3]*y[4]*F[1] + y[3]*y[5]*F[2])/c_0/c_0); // general relativstic equation of motion
+	dydx[4] = inversegamma/m/ele_e*(F[1] - (y[4]*y[3]*F[0] + y[4]*y[4]*F[1] + y[4]*y[5]*F[2])/c_0/c_0); // dv/dt = 1/gamma/m*(F - v * v^T * F / c^2)
+	dydx[5] = inversegamma/m/ele_e*(F[2] - (y[5]*y[3]*F[0] + y[5]*y[4]*F[1] + y[5]*y[5]*F[2])/c_0/c_0);
+
+	dydx[6] = inversegamma; // derivative of proper time is 1/gamma
 }
 
 
@@ -386,8 +386,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 				solid sld = geom->solids[it->first.sldindex];
 				if (CheckHitError(&sld, it->first.distnormal)){ // check all hits for errors
 					x2 = x1;
-					for (int i = 0; i < 6; i++)
-						y2[i] = y1[i];
+					y2 = y1;
 					StopIntegration(ID_GEOMETRY_ERROR, x2, y2, pol, currentsolid); // stop trajectory integration if error found
 					return true;
 				}
@@ -437,8 +436,8 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 			// else cut integration step right before and after first collision point
 			// and call ReflectOrAbsorb again for each smaller step (quite similar to bisection algorithm)
 			value_type xnew, xbisect1 = x1, xbisect2 = x1;
-			state_type ybisect1(6);
-			state_type ybisect2(6);
+			state_type ybisect1(STATE_VARIABLES);
+			state_type ybisect2(STATE_VARIABLES);
 			ybisect1 = ybisect2 = y1;
 
 			xnew = x1 + (x2 - x1)*(coll.s - 0.01*iteration); // cut integration right before collision point
@@ -478,8 +477,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 void TParticle::StopIntegration(int aID, value_type x, state_type y, int polarisation, solid sld){
 	ID = aID;
 	tend = x;
-	for (int i = 0; i < 6; i++)
-		yend[i] = y[i];
+	yend = y;
 	polend = polarisation;
 	solidend = sld;
 }

@@ -64,7 +64,6 @@ void TNeutron::TransmitMR(value_type x1, state_type y1, value_type &x2, state_ty
 	}while (mc->UniformDist(0, MRmax) > MR.MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
 
 	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
-	x2 = x1;
 	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
 	y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
 	y2[4] = vabs*sin(phi_t)*sin(theta_t);
@@ -90,7 +89,6 @@ void TNeutron::TransmitLambert(value_type x1, state_type y1, value_type &x2, sta
 	theta_t = mc->SinCosDist(0, 0.5*pi);
 
 	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
-	x2 = x1;
 	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
 	y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
 	y2[4] = vabs*sin(phi_t)*sin(theta_t);
@@ -109,8 +107,7 @@ void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 	//************** specular reflection **************
 //				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
 	x2 = x1;
-	for (int i = 0; i < 6; i++)
-		y2[i] = y1[i];
+	y2 = y1;
 	y2[3] -= 2*vnormal*normal[0]; // reflect velocity
 	y2[4] -= 2*vnormal*normal[1];
 	y2[5] -= 2*vnormal*normal[2];
@@ -136,8 +133,7 @@ void TNeutron::ReflectMR(value_type x1, state_type y1, value_type &x2, state_typ
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 	x2 = x1;
-	for (int i = 0; i < 3; i++)
-		y2[i] = y1[i];
+	y2 = y1;
 	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
 	y2[4] = vabs*sin(phi_r)*sin(theta_r);
@@ -161,8 +157,7 @@ void TNeutron::ReflectLambert(value_type x1, state_type y1, value_type &x2, stat
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 	x2 = x1;
-	for (int i = 0; i < 3; i++)
-		y2[i] = y1[i];
+	y2 = y1;
 	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
 	y2[4] = vabs*sin(phi_r)*sin(theta_r);
@@ -265,8 +260,7 @@ bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &
 		double abspath = mc->ExpDist(2*imag(k)); // exponential probability decay
 		if (abspath < l){
 			x2 = x1 + abspath/l*(x2 - x1); // if absorbed, chose a random time between x1 and x2
-			for (int i = 0; i < 6; i++)
-				stepper.calc_state(x2, y2);
+			stepper.calc_state(x2, y2);
 			StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, polarisation, currentsolid);
 			printf("Absorption!\n");
 			result = true; // stop integration
