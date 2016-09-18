@@ -30,7 +30,7 @@ else()
 	message(SEND_ERROR "Boost 1.53.0 or newer not found!")
 endif()
 
-find_package(CGAL PATHS "cgal/build")
+find_package(CGAL PATHS "cgal")
 if (CGAL_CONFIG_LOADED)
 	message(STATUS "CGAL version: " ${CGAL_VERSION})
 	if (CGAL_VERSION VERSION_LESS 4.1)
@@ -41,7 +41,8 @@ if (CGAL_CONFIG_LOADED)
 else()
 	message(SEND_ERROR "CGAL library not found!")
 endif()
-						
+
+find_library(RT_LIB rt)
 
 include_directories("include")
 add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/bruteforce.cpp src/edmfields.cpp 
@@ -50,12 +51,14 @@ add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/ge
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)		
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-	set_target_properties(PENTrack PROPERTIES COMPILE_FLAGS "-Wall -Wno-unused-local-typedefs")
+	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -Wno-unused-local-typedefs)
 	if (Boost_VERSION GREATER 105500)
-		set_target_properties(PENTrack PROPERTIES COMPILE_FLAGS "-std=c++11 -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+		set_property(TARGET PENTrack PROPERTY CXX_STANDARD_REQUIRED ON)
+		set_property(TARGET PENTrack PROPERTY CXX_STANDARD 11)
+		target_compile_options(PENTrack PUBLIC -Wno-deprecated-declarations)
 		message(STATUS "Boost 1.56.0+ requires C++11. I hope it is supported by your compiler.")
 	endif()
 endif()
 	
 				
-target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} rt)
+target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${RT_LIB})
