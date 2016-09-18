@@ -18,3 +18,4 @@ PENTrack
 out/*.out
 out/*.root
 doc/
+cgal/build/

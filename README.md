@@ -12,7 +12,7 @@ Required libraries
 ### CGAL
 
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
-Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package, for all others, it has to be downloaded and installed manually from the website. In the latter case you may have to adjust the cmake search path by setting the CGAL_DIR variable by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
+Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package. If yours does not, you can run the bash script `install_cgal.sh`, which will download and compile CGAL for you. If you choose to manually download and compile it yourself, you will have to adjust cmake's search path by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
 
 CGAL v4.1 - v4.8 have been tested.
 
