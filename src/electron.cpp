@@ -15,24 +15,24 @@ ofstream TElectron::hitout; ///< hitlog file stream
 ofstream TElectron::spinout; ///< spinlog file stream
 ofstream TElectron::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
-TElectron::TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
+TElectron::TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
 }
 
 
-void TElectron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+void TElectron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
 			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
 	traversed = true;
 	trajectoryaltered = false;
 }
 
 
-bool TElectron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid){
+bool TElectron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid){
 	if (currentsolid.ID != geom->defaultsolid.ID){
 		x2 = x1;
 		y2 = y1;
-		StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, polarisation, currentsolid);
+		StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, currentsolid);
 		printf("Absorption!\n");
 		return true;
 	}

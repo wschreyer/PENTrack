@@ -36,7 +36,7 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
 	static ofstream endout; ///< endlog file stream
@@ -62,7 +62,7 @@ protected:
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 
@@ -79,7 +79,7 @@ protected:
 	 * @param currentsolid Solid in which the proton is at the moment
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid);
+	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid);
 
 
 	/**
@@ -97,8 +97,8 @@ protected:
 	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	void Print(value_type x, state_type y, int polarisation, solid sld){
-		TParticle::Print(endout, x, y, polarisation, sld);
+	void Print(value_type x, state_type y, solid sld){
+		TParticle::Print(endout, x, y, sld);
 	};
 
 
@@ -112,8 +112,8 @@ protected:
 	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintSnapshot(value_type x, state_type y, int polarisation, solid sld){
-		TParticle::Print(snapshotout, x, y, polarisation, sld, "snapshot.out");
+	virtual void PrintSnapshot(value_type x, state_type y, solid sld){
+		TParticle::Print(snapshotout, x, y, sld, "snapshot.out");
 	};
 
 
@@ -127,8 +127,8 @@ protected:
 	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintTrack(value_type x, state_type y, int polarisation, solid sld){
-		TParticle::PrintTrack(trackout, x, y, polarisation, sld);
+	virtual void PrintTrack(value_type x, state_type y, solid sld){
+		TParticle::PrintTrack(trackout, x, y, sld);
 	};
 
 
@@ -146,8 +146,8 @@ protected:
 	 * @param leaving Material which is left at this boundary
 	 * @param entering Material which is entered at this boundary
 	 */
-	virtual void PrintHit(value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
-		TParticle::PrintHit(hitout, x, y1, y2, pol1, pol2, normal, leaving, entering);
+	virtual void PrintHit(value_type x, state_type y1, state_type y2, const double *normal, solid *leaving, solid *entering){
+		TParticle::PrintHit(hitout, x, y1, y2, normal, leaving, entering);
 	};
 
 

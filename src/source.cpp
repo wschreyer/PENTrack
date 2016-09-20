@@ -84,7 +84,7 @@ TParticle* TSurfaceSource::CreateParticle(){
 	RotateVector(v, n);
 	phi_v = atan2(v[1],v[0]);
 	theta_v = acos(v[2]);
-	int polarisation = fmc->DicePolarisation(fParticleName);
+	double polarisation = fmc->pconfigs[fParticleName].polarization;
 
 	return TParticleSource::CreateParticle(t, p[0], p[1], p[2], Ekin, phi_v, theta_v, polarisation);
 }
@@ -101,7 +101,7 @@ void TVolumeSource::FindPotentialMinimum(){
 	for (int i = 0; i < N; i++){
 		PrintPercent((double)i/N, percent);
 		double t = fmc->UniformDist(0, fActiveTime); // dice start time
-		int polarisation = fmc->DicePolarisation(fParticleName); // dice polarisation
+		int polarisation = fmc->pconfigs[fParticleName].polarization; // dice polarisation
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z); // dice point in source volume
 		TParticle *p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarisation); // create dummy particle with Ekin = 0
@@ -136,7 +136,7 @@ TParticle* TVolumeSource::CreateParticle(){
 		cout << "Trying to find starting point for particle with total energy " << H << "eV ...";
 		for (int i = 0; true; i++){
 			double t = fmc->UniformDist(0, fActiveTime); // dice start time
-			int polarisation = fmc->DicePolarisation(fParticleName); // dice polarisation
+			double polarisation = mcconf->polarization; // dice polarisation
 			double x, y, z;
 			RandomPointInSourceVolume(x, y, z); // dice point in source volume
 			TParticle *proposed_p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarisation); // create new particle with Ekin = 0
@@ -160,7 +160,7 @@ TParticle* TVolumeSource::CreateParticle(){
 		double E = fmc->Spectrum(fParticleName);
 		double phi_v, theta_v;
 		fmc->AngularDist(fParticleName, phi_v, theta_v);
-		int polarisation = fmc->DicePolarisation(fParticleName);
+		double polarisation = fmc->pconfigs[fParticleName].polarization;
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z);
 		cout << '\n';

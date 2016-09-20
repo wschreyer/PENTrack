@@ -37,7 +37,7 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+	TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 	
 protected:
 	static ofstream endout; ///< endlog file stream
@@ -65,7 +65,7 @@ protected:
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 
@@ -75,7 +75,7 @@ protected:
 	 * Refracts neutron velocity.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void Transmit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	void Transmit(value_type x1, state_type y1, value_type &x2, state_type &y2,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 	/**
@@ -84,7 +84,7 @@ protected:
 	 * Refracts or scatters the neutron according to Micro Roughness model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void TransmitMR(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	void TransmitMR(value_type x1, state_type y1, value_type &x2, state_type &y2,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 	/**
@@ -93,7 +93,7 @@ protected:
 	 * Refracts or scatters the neutron according to Lambert model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void TransmitLambert(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	void TransmitLambert(value_type x1, state_type y1, value_type &x2, state_type &y2,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 	/**
@@ -102,7 +102,7 @@ protected:
 	 * Reflects neutron specularly.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	void Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 	/**
@@ -111,7 +111,7 @@ protected:
 	 * Reflects or scatters the neutron according to Micro Roughness model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void ReflectMR(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	void ReflectMR(value_type x1, state_type y1, value_type &x2, state_type &y2,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 	/**
@@ -120,7 +120,7 @@ protected:
 	 * Reflects or scatters the neutron according to Lambert model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void ReflectLambert(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	void ReflectLambert(value_type x1, state_type y1, value_type &x2, state_type &y2,
 				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
 
 	/**
@@ -139,7 +139,7 @@ protected:
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid);
+	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid);
 
 
 	/**
@@ -161,7 +161,7 @@ protected:
 	 *
 	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
-	value_type Epot(value_type t, state_type y, int polarisation, TFieldManager *field, solid sld);
+	value_type Epot(value_type t, state_type y, TFieldManager *field, solid sld);
 
 	/**
 	 * Write the particle's start properties and current values into a file.
@@ -173,8 +173,8 @@ protected:
 	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	void Print(value_type x, state_type y, int polarisation, solid sld){
-		TParticle::Print(endout, x, y, polarisation, sld);
+	void Print(value_type x, state_type y, solid sld){
+		TParticle::Print(endout, x, y, sld);
 	};
 
 
@@ -188,8 +188,8 @@ protected:
 	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintSnapshot(value_type x, state_type y, int polarisation, solid sld){
-		TParticle::Print(snapshotout, x, y, polarisation, sld, "snapshot.out");
+	virtual void PrintSnapshot(value_type x, state_type y, solid sld){
+		TParticle::Print(snapshotout, x, y, sld, "snapshot.out");
 	};
 
 
@@ -203,8 +203,8 @@ protected:
 	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintTrack(value_type x, state_type y, int polarisation, solid sld){
-		TParticle::PrintTrack(trackout, x, y, polarisation, sld);
+	virtual void PrintTrack(value_type x, state_type y, solid sld){
+		TParticle::PrintTrack(trackout, x, y, sld);
 	};
 
 
@@ -222,8 +222,8 @@ protected:
 	 * @param leaving Material which is left at this boundary
 	 * @param entering Material which is entered at this boundary
 	 */
-	virtual void PrintHit(value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering){
-		TParticle::PrintHit(hitout, x, y1, y2, pol1, pol2, normal, leaving, entering);
+	virtual void PrintHit(value_type x, state_type y1, state_type y2, const double *normal, solid *leaving, solid *entering){
+		TParticle::PrintHit(hitout, x, y1, y2, normal, leaving, entering);
 	};
 
 

@@ -15,22 +15,22 @@ ofstream TMercury::hitout; ///< hitlog file stream
 ofstream TMercury::spinout; ///< spinlog file stream
 ofstream TMercury::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
-TMercury::TMercury(int number, double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
+TMercury::TMercury(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 			: TParticle(NAME_MERCURY, 0, m_hg, mu_hgSI, gamma_hg, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
 }
 
 
-void TMercury::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+void TMercury::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
 			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
 	trajectoryaltered = false;
 	traversed = true;
 	
-	Reflect(x1, y1, x2, y2, polarisation, normal, leaving, entering, trajectoryaltered, traversed);
+	Reflect(x1, y1, x2, y2, normal, leaving, entering, trajectoryaltered, traversed);
 }
 
 
-void TMercury::Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+void TMercury::Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2,
 			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
 	
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
@@ -68,7 +68,7 @@ void TMercury::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 	}
 
 	if (mc->UniformDist(0,1) < entering->mat.SpinflipProb){
-		polarisation *= -1;
+		y2[7] *= -1;
 		Nspinflip++;
 	}
 
@@ -77,7 +77,7 @@ void TMercury::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 } // end reflect method
 
 //do nothing for each for step
-bool TMercury::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid) { return false; }
+bool TMercury::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid) { return false; }
 
 //Mercury does not decay
 void TMercury::Decay(){}

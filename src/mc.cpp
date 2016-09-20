@@ -253,16 +253,11 @@ double TMCGenerator::MaxTrajLength(const std::string &particlename){
 	return pconfigs[particlename].lmax;
 }
 
-int TMCGenerator::DicePolarisation(const std::string &particlename){
-	int p = pconfigs[particlename].polarization;
-	if (p == 0){
-		if(UniformDist(0,1) < 0.5)
-			return -1;
-		else
-			return 1;
-	}
+double TMCGenerator::DicePolarisation(const double polarisation){
+	if(UniformDist(0,1) < 0.5*(1. + polarisation))
+		return 1;
 	else
-		return p;
+		return -1;
 }
 
 void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, int &pol_p, int &pol_e)

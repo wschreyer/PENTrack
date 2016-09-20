@@ -138,11 +138,11 @@ public:
 	/**
 	 * Initial polarisation of different particles
 	 *
-	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
+	 * @param polarisation Projection of spin vector onto magnetic field vector
 	 *
-	 * @return Returns deiced of fixed polarisation (-1, 0, 1), depending on user choice in particle.in
+	 * @return Returns random polarisation (-1,1), weighted by spin projection onto magnetic field vector
 	 */
-	int DicePolarisation(const std::string &particlename);
+	double DicePolarisation(const double polarisation);
 
 
 	/**

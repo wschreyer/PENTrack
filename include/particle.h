@@ -19,7 +19,7 @@
 using namespace std;
 
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
-static const int STATE_VARIABLES = 7; ///< number of variables in trajectory integration (position, velocity, proper time)
+static const int STATE_VARIABLES = 8; ///< number of variables in trajectory integration (position, velocity, proper time, polarization)
 
 
 /**
@@ -53,17 +53,17 @@ public:
 	/// stop time
 	value_type tend;
 
-	/// state vector before integration (position, velocity, and proper time)
+	/// state vector before integration (position, velocity, proper time, and polarization)
 	state_type ystart;
 
-	/// state vector after integration (position, velocity, and proper time)
+	/// state vector after integration (position, velocity, proper time, and polarization)
 	state_type yend;
 
-	/// initial polarisation of particle (-1,0,1)
-	int polstart;
+	/// initial projection of spin onto magnetic field (-1..1)
+	double polstart;
 
-	/// final polarisation of particle (-1,0,1)
-	int polend;
+	/// final projection of spin onto magnetic field (-1..1)
+	double polend;
 
 	/// solid in which the particle started
 	solid solidstart;
@@ -101,9 +101,6 @@ public:
 	/// number of integration steps
 	int Nstep;
 	
-	/// projection of spin onto magnetic field
-	double blochPolar;
-	
 	/// particle larmor precession frequency
 	double wL;
 	
@@ -130,13 +127,13 @@ public:
 	 * @param E Initial kinetic energy
 	 * @param phi Azimuth of initial velocity vector
 	 * @param theta Polar angle of initial velocity vector
-	 * @param polarisation polarisation of particle (+/- 1)
+	 * @param polarisation polarisation of particle (-1..1)
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
 	TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, int number,
-			double t, double x, double y, double z, double E, double phi, double theta, int polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+			double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 	/**
 	 * Destructor, deletes secondaries
@@ -220,13 +217,33 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment
 	 * @param y2 End point of line segment
-	 * @param pol Particle polarisation
 	 * @param hitlog Should hits be logged to file?
 	 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 	 * @return Returns true if particle was reflected/absorbed
 	 */
-	bool CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &pol, bool hitlog, int iteration = 1);
+	bool CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, bool hitlog, int iteration = 1);
 
+
+	/**
+	 * Simulate spin precession
+	 *
+	 * Integrates general BMT equation over one time step.
+	 * If the conditions given by times and Bmax are not fulfilled, the spin vector will simply be rotated along the magnetic field, keeping the spin projection onto the magnetic field constant.
+	 *
+	 * @param spin Spin vector, returns new spin vector after step
+	 * @param x1 Time at beginning of step [s]
+	 * @param y1 Particle state vector at beginning of step
+	 * @param x2 Time at end of step [s]
+	 * @param y2 Particle state vector at end of step
+	 * @param time Absolute time intervals in between spin integration should be carried out [s]
+	 * @param Bmax Spin integration will only be carried out, if magnetic field is below this value [T]
+	 * @param flipspin If set to one, polarisation in y2 will be randomly set after the integration, weighted by spin projection onto the magnetic field
+	 * @param spinlog Set to one to print spin trajectory to file [0,1]
+	 * @param spinloginterval Time interval at which spin trajectory will be printed to file [s]
+	 */
+	void IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval);
+
+	void SpinDerivs(state_type y, state_type &dydx, value_type x, vector<alglib::spline1dinterpolant> &omega);
 
 	/**
 	 * This virtual method is executed, when a particle crosses a material boundary.
@@ -238,14 +255,13 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
-	 * @param polarisation Polarisation of particle, may be altered
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	virtual void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation,
+	virtual void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
 						const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed) = 0;
 
 
@@ -259,11 +275,10 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
-	 * @param polarisation Polarisation of particle, may be altered
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle path was changed
 	 */
-	virtual bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, int &polarisation, solid currentsolid) = 0;
+	virtual bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid) = 0;
 
 
 	/**
@@ -278,10 +293,9 @@ protected:
 	 * @param aID ID describing particle fate.
 	 * @param x Current time.
 	 * @param y Current state vector.
-	 * @param polarisation Current particle polarisation.
 	 * @param sld Solid in which the particle is currently.
 	 */
-	void StopIntegration(int aID, value_type x, state_type y, int polarisation, solid sld);
+	void StopIntegration(int aID, value_type x, state_type y, solid sld);
 
 
 	/**
@@ -292,10 +306,9 @@ protected:
 	 *
 	 * @param x Current time
 	 * @param y Current state vector
-	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void Print(value_type x, state_type y, int polarisation, solid sld) = 0;
+	virtual void Print(value_type x, state_type y, solid sld) = 0;
 
 
 	/**
@@ -306,10 +319,9 @@ protected:
 	 *
 	 * @param x Current time
 	 * @param y Current state vector
-	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintSnapshot(value_type x, state_type y, int polarisation, solid sld) = 0;
+	virtual void PrintSnapshot(value_type x, state_type y, solid sld) = 0;
 
 
 	/**
@@ -320,10 +332,9 @@ protected:
 	 *
 	 * @param x Current time
 	 * @param y Current state vector
-	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintTrack(value_type x, state_type y, int polarisation, solid sld) = 0;
+	virtual void PrintTrack(value_type x, state_type y, solid sld) = 0;
 
 
 	/**
@@ -335,13 +346,11 @@ protected:
 	 * @param x Time of material hit
 	 * @param y1 State vector before material hit
 	 * @param y2 State vector after material hit
-	 * @param pol1 Polarisation before material hit
-	 * @param pol2 Polarisation after material hit
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Material which is left at this boundary
 	 * @param entering Material which is entered at this boundary
 	 */
-	virtual void PrintHit(value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering) = 0;
+	virtual void PrintHit(value_type x, state_type y1, state_type y2, const double *normal, solid *leaving, solid *entering) = 0;
 
 
 	/**
@@ -370,11 +379,10 @@ protected:
 	 * @param file stream to print into
 	 * @param x Current time
 	 * @param y Current state vector
-	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 * @param filesuffix Optional suffix added to the file name (default: "end.out")
 	 */
-	void Print(std::ofstream &file, value_type x, state_type y, int polarisation, solid sld, std::string filesuffix = "end.out");
+	void Print(std::ofstream &file, value_type x, state_type y, solid sld, std::string filesuffix = "end.out");
 
 
 	/**
@@ -385,10 +393,9 @@ protected:
 	 * @param trackfile Stream to print into
 	 * @param x Current time
 	 * @param y Current state vector
-	 * @param polarisation Current polarisation
 	 * @param sld Solid in which the particle is currently.
 	 */
-	void PrintTrack(std::ofstream &trackfile, value_type x, state_type y, int polarisation, solid sld);
+	void PrintTrack(std::ofstream &trackfile, value_type x, state_type y, solid sld);
 
 
 	/**
@@ -400,13 +407,11 @@ protected:
 	 * @param x Time of material hit
 	 * @param y1 State vector before material hit
 	 * @param y2 State vector after material hit
-	 * @param pol1 Polarisation before material hit
-	 * @param pol2 Polarisation after material hit
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Material which is left at this boundary
 	 * @param entering Material which is entered at this boundary
 	 */
-	void PrintHit(std::ofstream &hitfile, value_type x, state_type y1, state_type y2, int pol1, int pol2, const double *normal, solid *leaving, solid *entering);
+	void PrintHit(std::ofstream &hitfile, value_type x, state_type y1, state_type y2, const double *normal, solid *leaving, solid *entering);
 
 
 	/**
@@ -426,13 +431,12 @@ protected:
 	 *
 	 * @param t Time
 	 * @param y Coordinate vector
-	 * @param polarisation Particle polarisation
 	 * @param field Pointer to TFieldManager structure for electric and magnetic potential
 	 * @param sld Solid in which the particle is currently.
 	 *
 	 * @return Returns potential energy [eV]
 	 */
-	virtual double Epot(value_type t, state_type y, int polarisation, TFieldManager *field, solid sld);
+	virtual double Epot(value_type t, state_type y, TFieldManager *field, solid sld);
 
 };
 
