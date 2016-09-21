@@ -38,12 +38,12 @@ public:
 	TMercury(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
-	static ofstream endout; ///< endlog file stream
-	static ofstream snapshotout; ///< snapshot file stream
-	static ofstream trackout; ///< tracklog file stream
-	static ofstream hitout; ///< hitlog file stream
-	static ofstream spinout; ///< spinlog file stream
-	static ofstream spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
+	static std::ofstream endout; ///< endlog file stream
+	static std::ofstream snapshotout; ///< snapshot file stream
+	static std::ofstream trackout; ///< tracklog file stream
+	static std::ofstream hitout; ///< hitlog file stream
+	static std::ofstream spinout; ///< spinlog file stream
+	static std::ofstream spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 	
 	/**
 	 * This method is executed, when a particle encounters a material boundary.
@@ -161,7 +161,7 @@ protected:
 	 *
 	 * @return Returns static spinout stream to use same stream for all TMercurys
 	 */
-	ofstream& GetSpinOut(){
+	std::ofstream& GetSpinOut(){
 		return spinout;
 	};
 	
@@ -170,7 +170,7 @@ protected:
 	 *
 	 * @return Returns static spinout stream to use same stream for all TMercurys
 	 */
-	ofstream& GetSpinOut2(){
+	std::ofstream& GetSpinOut2(){
 		return spinout2;
 	};
 	

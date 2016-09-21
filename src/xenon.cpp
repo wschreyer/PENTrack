@@ -8,12 +8,12 @@
 
 const char* NAME_XENON = "xenon";
 
-ofstream TXenon::endout; ///< endlog file stream
-ofstream TXenon::snapshotout; ///< snapshot file stream
-ofstream TXenon::trackout; ///< tracklog file stream
-ofstream TXenon::hitout; ///< hitlog file stream
-ofstream TXenon::spinout; ///< spinlog file stream
-ofstream TXenon::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
+std::ofstream TXenon::endout; ///< endlog file stream
+std::ofstream TXenon::snapshotout; ///< snapshot file stream
+std::ofstream TXenon::trackout; ///< tracklog file stream
+std::ofstream TXenon::hitout; ///< hitlog file stream
+std::ofstream TXenon::spinout; ///< spinlog file stream
+std::ofstream TXenon::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
 TXenon::TXenon(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 			: TParticle(NAME_XENON, 0,  m_xe, mu_xeSI, gamma_xe, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){

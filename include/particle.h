@@ -16,8 +16,6 @@
 #include "mc.h"
 #include "fields.h"
 
-using namespace std;
-
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
 static const int STATE_VARIABLES = 8; ///< number of variables in trajectory integration (position, velocity, proper time, polarization)
 
@@ -241,9 +239,9 @@ protected:
 	 * @param spinlog Set to one to print spin trajectory to file [0,1]
 	 * @param spinloginterval Time interval at which spin trajectory will be printed to file [s]
 	 */
-	void IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval);
+	void IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval);
 
-	void SpinDerivs(state_type y, state_type &dydx, value_type x, vector<alglib::spline1dinterpolant> &omega);
+	void SpinDerivs(state_type y, state_type &dydx, value_type x, std::vector<alglib::spline1dinterpolant> &omega);
 
 	/**
 	 * This virtual method is executed, when a particle crosses a material boundary.
@@ -360,7 +358,7 @@ protected:
 	 *
 	 * @return Reference to spin log stream
 	 */
-	virtual ofstream& GetSpinOut() = 0;
+	virtual std::ofstream& GetSpinOut() = 0;
 	
 	/**
 	 * Get secondary spin log stream used for the output from the simultaneous anti-parallel E field spin integration.
@@ -369,7 +367,7 @@ protected:
 	 *
 	 * @return Reference to spin log stream
 	 */
-	virtual ofstream& GetSpinOut2() = 0;
+	virtual std::ofstream& GetSpinOut2() = 0;
 
 	/**
 	 * Print start and current values to a stream.

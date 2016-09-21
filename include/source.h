@@ -12,15 +12,13 @@
 #include "particle.h"
 #include "mc.h"
 
-using namespace std;
-
 /**
  * Virtual base class for all particle sources
  */
 class TParticleSource{
 protected:
 	double fActiveTime; ///< Duration for which the source will be active
-	const string fParticleName; ///< Name of particle that the source should create
+	const std::string fParticleName; ///< Name of particle that the source should create
 	TMCGenerator *fmc; ///< TMCGenerator class passed in constructor
 	TGeometry *fgeom; ///< TGeometry class passed in constructor
 	TFieldManager *ffield; ///< TFieldManager class passed in constructor
@@ -35,7 +33,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TParticleSource(const string ParticleName, double ActiveTime, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TParticleSource(const std::string ParticleName, double ActiveTime, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
 
 	/**
 	 * Destructor
@@ -77,7 +75,7 @@ class TSurfaceSource: public TParticleSource{
 protected:
 	double sourcearea; ///< Net area of source surface
 	double Enormal; ///< Boost given to particles starting from this surface
-	vector<TTriangle> sourcetris; ///< List of triangles making up the source surface
+	std::vector<TTriangle> sourcetris; ///< List of triangles making up the source surface
 public:
 	/**
 	 * Constructor.
@@ -89,7 +87,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSurfaceSource(const string ParticleName, double ActiveTime, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
 
 	/**
 	 * Create new particle on surface
@@ -174,7 +172,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCuboidVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TCuboidVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
 
 
 	/**
@@ -211,7 +209,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCylindricalVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TCylindricalVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
 
 
 	/**
@@ -255,7 +253,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCylindricalSurfaceSource(const string ParticleName, double ActiveTime, double E_normal, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TCylindricalSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
 };
 
 /**
@@ -278,7 +276,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSTLVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, string sourcefile, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TSTLVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, std::string sourcefile, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
 
 
 	/**
@@ -312,7 +310,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSTLSurfaceSource(const string ParticleName, double ActiveTime, string sourcefile, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TSTLSurfaceSource(const std::string ParticleName, double ActiveTime, std::string sourcefile, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
 };
 
 /**
@@ -326,7 +324,7 @@ public:
  */
 struct TSource{
 public:
-	string sourcemode; ///< volume/surface/customvol/customsurf
+	std::string sourcemode; ///< volume/surface/customvol/customsurf
 	TParticleSource *source; ///< TParticleSource contructed according to user chosen sourcemode
 
 

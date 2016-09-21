@@ -9,6 +9,7 @@
 #include "electron.h"
 #include "ndist.h"
 
+using namespace std;
 
 const char* NAME_NEUTRON = "neutron";
 

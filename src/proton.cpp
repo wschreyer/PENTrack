@@ -8,12 +8,12 @@
 
 const char* NAME_PROTON = "proton";
 
-ofstream TProton::endout; ///< endlog file stream
-ofstream TProton::snapshotout; ///< snapshot file stream
-ofstream TProton::trackout; ///< tracklog file stream
-ofstream TProton::hitout; ///< hitlog file stream
-ofstream TProton::spinout; ///< spinlog file stream
-ofstream TProton::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
+std::ofstream TProton::endout; ///< endlog file stream
+std::ofstream TProton::snapshotout; ///< snapshot file stream
+std::ofstream TProton::trackout; ///< tracklog file stream
+std::ofstream TProton::hitout; ///< hitlog file stream
+std::ofstream TProton::spinout; ///< spinlog file stream
+std::ofstream TProton::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
 TProton::TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: TParticle(NAME_PROTON, ele_e, m_p, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){

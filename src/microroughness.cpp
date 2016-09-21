@@ -1,9 +1,13 @@
 #include <complex>
 #include <vector>
 
+#include "optimization.h"
+#include "integration.h"
 #include "specialfunctions.h"
 
 #include "microroughness.h"
+
+using namespace std;
 
 bool TMicroRoughness::MRValid(const double v[3], const double normal[3], solid *leaving, solid *entering){
 	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared

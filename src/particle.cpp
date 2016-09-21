@@ -13,6 +13,7 @@
 
 #include "particle.h"
 
+using namespace std;
 
 double TParticle::Hstart(){
 	return Ekin(&ystart[3]) + Epot(tstart, ystart, field, geom->GetSolid(tstart, &ystart[0]));
@@ -258,7 +259,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 }
 
 
-void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval){
+void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval){
 	if (gamma == 0 || x1 == x2 || !field)
 		return;
 
@@ -297,7 +298,7 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 	}
 
 	if ((integrate1 || integrate2) && (B1[3][0] < Bmax || B2[3][0] < Bmax)){ // do spin integration only, if time is in specified range and field is smaller than Bmax
-		std::cout << x1 << "s " << 1 - polarisation << " ";
+		std::cout << x2-x1 << "s " << 1 - polarisation << " ";
 		alglib::real_1d_array ts;
 		vector<alglib::real_1d_array> omega(3);
 		vector<alglib::spline1dinterpolant> omega_int(3);
@@ -325,11 +326,14 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 		}
 		for (int i = 0; i < 3; i++)
 			alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]);
+		std::cout << (x2 - x1)*sqrt(omega[0][0]*omega[0][0] + omega[1][0]*omega[1][0] + omega[2][0]*omega[2][0])/2./pi << "r ";
 
 		dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
-		spinstepper.initialize(spin, x1, std::abs(1./gamma/B1[3][0]/8/pi));
+		spinstepper.initialize(spin, x1, std::abs(pi/gamma/B1[3][0]));
+		unsigned int steps = 0;
 		while (true){
 			spinstepper.do_step(boost::bind(&TParticle::SpinDerivs, this, _1, _2, _3, omega_int));
+			steps++;
 			if (spinstepper.current_time() >= x2){
 				spinstepper.calc_state(x2, spin);
 				break;
@@ -337,7 +341,7 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 
 		}
 		polarisation = (spin[0]*B2[0][0] + spin[1]*B2[1][0] + spin[2]*B2[2][0])/B2[3][0]/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
-		std::cout << x2 << "s " << 1 - polarisation << '\n';
+		std::cout << " " << 1 - polarisation << " (" << steps << ")\n";
 	}
 	else{ // if no spin integration is done, parallel-transport spin along magnetic field
 		if (polarisation*polarisation >= 1){
@@ -359,7 +363,7 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 }
 
 
-void TParticle::SpinDerivs(state_type y, state_type &dydx, value_type x, vector<alglib::spline1dinterpolant> &omega){
+void TParticle::SpinDerivs(state_type y, state_type &dydx, value_type x, std::vector<alglib::spline1dinterpolant> &omega){
 	double omegat[3];
 	for (int i = 0; i < 3; i++)
 		omegat[i] = alglib::spline1dcalc(omega[i], x);

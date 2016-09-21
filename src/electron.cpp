@@ -8,12 +8,12 @@
 
 const char* NAME_ELECTRON = "electron";
 
-ofstream TElectron::endout; ///< endlog file stream
-ofstream TElectron::snapshotout; ///< snapshot file stream
-ofstream TElectron::trackout; ///< tracklog file stream
-ofstream TElectron::hitout; ///< hitlog file stream
-ofstream TElectron::spinout; ///< spinlog file stream
-ofstream TElectron::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
+std::ofstream TElectron::endout; ///< endlog file stream
+std::ofstream TElectron::snapshotout; ///< snapshot file stream
+std::ofstream TElectron::trackout; ///< tracklog file stream
+std::ofstream TElectron::hitout; ///< hitlog file stream
+std::ofstream TElectron::spinout; ///< spinlog file stream
+std::ofstream TElectron::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
 TElectron::TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){

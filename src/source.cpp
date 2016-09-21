@@ -15,7 +15,9 @@
 #include "trianglemesh.h"
 #include "globals.h"
 
-TParticleSource::TParticleSource(const string ParticleName, double ActiveTime, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
+using namespace std;
+
+TParticleSource::TParticleSource(const std::string ParticleName, double ActiveTime, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
 	: fActiveTime(ActiveTime), fParticleName(ParticleName), fmc(&mc), fgeom(&geometry), ffield(field), ParticleCounter(0){
 
 }
@@ -45,7 +47,7 @@ TParticle* TParticleSource::CreateParticle(double t, double x, double y, double 
 }
 
 
-TSurfaceSource::TSurfaceSource(const string ParticleName, double ActiveTime, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
+TSurfaceSource::TSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
 		: TParticleSource(ParticleName, ActiveTime, mc, geometry, field), sourcearea(0), Enormal(E_normal){
 
 }
@@ -170,7 +172,7 @@ TParticle* TVolumeSource::CreateParticle(){
 
 
 
-TCuboidVolumeSource::TCuboidVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
+TCuboidVolumeSource::TCuboidVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
 	: TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field), xmin(x_min), xmax(x_max), ymin(y_min), ymax(y_max), zmin(z_min), zmax(z_max){
 
 }
@@ -184,7 +186,7 @@ void TCuboidVolumeSource::RandomPointInSourceVolume(double &x, double &y, double
 
 
 
-TCylindricalVolumeSource::TCylindricalVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
+TCylindricalVolumeSource::TCylindricalVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
 	: TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
 
 }
@@ -208,7 +210,7 @@ bool TCylindricalSurfaceSource::InSourceVolume(CPoint p){
 }
 
 
-TCylindricalSurfaceSource::TCylindricalSurfaceSource(const string ParticleName, double ActiveTime, double E_normal, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
+TCylindricalSurfaceSource::TCylindricalSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
 	: TSurfaceSource(ParticleName, ActiveTime, E_normal, mc, geometry, field), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
 	for (CIterator i = geometry.mesh.triangles.begin(); i != geometry.mesh.triangles.end(); i++){
 		if (InSourceVolume(i->tri[0]) && InSourceVolume(i->tri[1]) && InSourceVolume(i->tri[2])){
@@ -220,7 +222,7 @@ TCylindricalSurfaceSource::TCylindricalSurfaceSource(const string ParticleName, 
 }
 
 
-TSTLVolumeSource::TSTLVolumeSource(const string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, string sourcefile, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
+TSTLVolumeSource::TSTLVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, std::string sourcefile, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
 	: TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field){
 	kdtree.ReadFile(sourcefile.c_str(),0);
 	kdtree.Init();
@@ -243,7 +245,7 @@ void TSTLVolumeSource::RandomPointInSourceVolume(double &x, double &y, double &z
 }
 
 
-TSTLSurfaceSource::TSTLSurfaceSource(const string ParticleName, double ActiveTime, string sourcefile, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
+TSTLSurfaceSource::TSTLSurfaceSource(const std::string ParticleName, double ActiveTime, std::string sourcefile, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
 	: TSurfaceSource(ParticleName, ActiveTime, E_normal, mc, geometry, field){
 	TTriangleMesh mesh;
 	mesh.ReadFile(sourcefile.c_str(),0);

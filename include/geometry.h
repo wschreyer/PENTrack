@@ -16,8 +16,6 @@
 #include "trianglemesh.h"
 #include "globals.h"
 
-using namespace std;
-
 static const double REFLECT_TOLERANCE = 1e-8;  ///< max distance of reflection point to actual surface collision point
 
 /// Struct to store material properties (read from geometry.in, right now only for neutrons)
@@ -59,7 +57,7 @@ struct solid{
 struct TGeometry{
 	public:
 		TTriangleMesh mesh; ///< kd-tree structure containing triangle meshes from STL-files
-		vector<solid> solids; ///< solids list
+		std::vector<solid> solids; ///< solids list
 		solid defaultsolid; ///< "vacuum", this solid's properties are used when the particle is not inside any other solid
 		
 		/**
@@ -97,7 +95,7 @@ struct TGeometry{
 		 *
 		 * @return Returns true if line segment collides with a surface
 		 */
-		bool GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], map<TCollision, bool> &colls);
+		bool GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], std::map<TCollision, bool> &colls);
 		
 			
 		/**
@@ -107,7 +105,7 @@ struct TGeometry{
 		 * @param p Point to test
 		 * @param currentsolids Map of solids in which the point is inside paired with information if it was ignored or not
 		 */
-		void GetSolids(const double t, const double p[3], map<solid, bool> &currentsolids);
+		void GetSolids(const double t, const double p[3], std::map<solid, bool> &currentsolids);
 
 
 		/**
@@ -130,7 +128,7 @@ struct TGeometry{
 		 *
 		 * @return Returns solid with highest priority, that was not ignored at time t
 		 */
-		solid GetSolid(const double t, const double p[3], map<solid, bool> currentsolids);
+		solid GetSolid(const double t, const double p[3], std::map<solid, bool> currentsolids);
 };
 
 #endif /*GEOMETRY_H_*/

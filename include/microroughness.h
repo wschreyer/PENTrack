@@ -8,11 +8,7 @@
 #ifndef INCLUDE_MICROROUGHNESS_H_
 #define INCLUDE_MICROROUGHNESS_H_
 
-#include "optimization.h"
-#include "integration.h"
-
 #include "geometry.h"
-#include "globals.h"
 
 class TMicroRoughness{
 private:
