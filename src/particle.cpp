@@ -54,16 +54,31 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	}
 
 	ystart.resize(STATE_VARIABLES, 0);
-	yend.resize(STATE_VARIABLES, 0);
-	yend[0] = ystart[0] = x; // position
-	yend[1] = ystart[1] = y;
-	yend[2] = ystart[2] = z;
-	yend[3] = ystart[3] = vstart*cos(phi)*sin(theta); // velocity
-	yend[4] = ystart[4] = vstart*sin(phi)*sin(theta);
-	yend[5] = ystart[5] = vstart*cos(theta);
-	yend[6] = ystart[6] = 0; // proper time
-	yend[7] = ystart[7] = amc.DicePolarisation(polarisation); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
-	polend = polstart = polarisation;
+	ystart[0] = x; // position
+	ystart[1] = y;
+	ystart[2] = z;
+	ystart[3] = vstart*cos(phi)*sin(theta); // velocity
+	ystart[4] = vstart*sin(phi)*sin(theta);
+	ystart[5] = vstart*cos(theta);
+	ystart[6] = 0; // proper time
+	ystart[7] = amc.DicePolarisation(polarisation); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
+	yend = ystart;
+
+	spinstart.resize(3, 0);
+	if (field){
+		double B[4][4];
+		field->BField(x, y, z, t, B);
+		if (B[3][0] > 0){
+			double spinaz = mc->UniformDist(0, 2*pi); // random azimuth angle of spin
+			spinstart[0] = sqrt(1 - polarisation*polarisation)*sin(spinaz); // set initial spin vector
+			spinstart[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
+			spinstart[2] = polarisation;
+			double B0[3] = {B[0][0], B[1][0], B[2][0]};
+			RotateVector(&spinstart[0], B0); // rotate initial spin vector such that its z-component is parallel to magnetic field
+		}
+	}
+	spinend = spinstart;
+
 	Hmax = Hstart();
 	maxtraj = mc->MaxTrajLength(name); // max. trajectory length
 	tau = mc->LifeTime(name); // lifetime either exponentially distributed or fixed
@@ -141,21 +156,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 	}while(SpinTimess.good());
 	std::istringstream(conf["spinlog"]) >> spinlog;
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
-
-	state_type spinvector(3, 0);
-	if (field){
-		double B[4][4];
-		field->BField(y[0], y[1], y[2], x, B);
-		if (B[3][0] > 0){
-			double spinaz = mc->UniformDist(0, 2*pi); // random azimuth angle of spin
-			spinvector[0] = sqrt(1 - polend*polend)*sin(spinaz); // set initial spin vector
-			spinvector[1] = sqrt(1 - polend*polend)*cos(spinaz);
-			spinvector[2] = polend;
-			double B0[3] = {B[0][0], B[1][0], B[2][0]};
-			RotateVector(&spinvector[0], B0); // rotate initial spin vector such that its z-component is parallel to magnetic field
-		}
-	}
-	std::cout << spinvector[0] << "," << spinvector[1] << "," << spinvector[2] << '\n';
+	state_type spin = spinend;
 
 	stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
 
@@ -203,7 +204,8 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 				y = y2;
 			}
 
-			IntegrateSpin(spinvector, x1, y1, x2, y2, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval);
+			IntegrateSpin(spin, x1, y1, x2, y2, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval);
+			spinend = spin;
 
 			lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
 			Hmax = max(Ekin(&y2[3]) + Epot(x, y2, field, GetCurrentsolid()), Hmax);
@@ -287,7 +289,7 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 		spin[2] = polarisation*B2[2][0]/B2[3][0];
 		return;
 	}
-	else{
+	else{ // if particle already is in magnetic field, calculate spin-projection on magnetic field
 		polarisation = (spin[0]*B1[0][0] + spin[1]*B1[1][0] + spin[2]*B1[2][0])/B1[3][0]/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
 	}
 
@@ -299,14 +301,16 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 
 	if ((integrate1 || integrate2) && (B1[3][0] < Bmax || B2[3][0] < Bmax)){ // do spin integration only, if time is in specified range and field is smaller than Bmax
 		std::cout << x2-x1 << "s " << 1 - polarisation << " ";
-		alglib::real_1d_array ts;
+
+		alglib::real_1d_array ts; // set up values for interpolation of precession axis
 		vector<alglib::real_1d_array> omega(3);
 		vector<alglib::spline1dinterpolant> omega_int(3);
-		const int int_points = 2;
+		const int int_points = 10;
 		ts.setlength(int_points + 1);
 		for (int i = 0; i < 3; i++)
 			omega[i].setlength(int_points + 1);
-		for (int i = 0; i <= int_points; i++){
+
+		for (int i = 0; i <= int_points; i++){ // calculate precession axis at several points along trajectory step
 			double t = x1 + i*(x2 - x1)/int_points;
 			double B[4][4], V, E[3];
 			state_type y(STATE_VARIABLES), dydt(STATE_VARIABLES);
@@ -319,47 +323,71 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 			double gamma_rel = 1./sqrt(1 - v2/c_0/c_0);
 			double Bparallel[3];
 			for (int j = 0; j < 3; j++)
-				Bparallel[j] = (B[0][0]*y[3] + B[1][0]*y[4] + B[2][0]*y[5])*y[j]/v2;
-			omega[0][i] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0][0] - gamma_rel*(y[4]*E[2] - y[5]*E[2])/c_0) + gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[4]*y[5] - dydt[5]*y[4])/c_0/c_0;
-			omega[1][i] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1][0] - gamma_rel*(y[5]*E[0] - y[3]*E[0])/c_0) + gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[5]*y[3] - dydt[3]*y[5])/c_0/c_0;
-			omega[2][i] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2][0] - gamma_rel*(y[3]*E[1] - y[4]*E[1])/c_0) + gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[3]*y[4] - dydt[4]*y[3])/c_0/c_0;
+				Bparallel[j] = (B[0][0]*y[3] + B[1][0]*y[4] + B[2][0]*y[5])*y[j]/v2; // magnetic-field component parallel to velocity
+
+			// spin precession axis due to relativistically distorted magnetic field, omega_B = -gyro/gamma * ( (1 - gamma)*(v.B)*v/v^2 + gamma*B - gamma*(v x E)/c )
+			double OmegaB[3];
+			OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0][0] - gamma_rel*(y[4]*E[2] - y[5]*E[2])/c_0);
+			OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1][0] - gamma_rel*(y[5]*E[0] - y[3]*E[0])/c_0);
+			OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2][0] - gamma_rel*(y[3]*E[1] - y[4]*E[1])/c_0);
+
+			// Thomas precession in lab frame, omega_T = gamma^2/(gamma + 1)*(dv/dt x v)
+			double OmegaT[3];
+			OmegaT[0] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[4]*y[5] - dydt[5]*y[4])/c_0/c_0;
+			OmegaT[1] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[5]*y[3] - dydt[3]*y[5])/c_0/c_0;
+			OmegaT[2] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[3]*y[4] - dydt[4]*y[3])/c_0/c_0;
+
+			// total precession axis is sum of magnetic precession axis and Thomas-precession axis
+			omega[0][i] = OmegaB[0] + OmegaT[0];
+			omega[1][i] = OmegaB[1] + OmegaT[1];
+			omega[2][i] = OmegaB[2] + OmegaT[2];
 		}
+
+		std::cout << (x2 - x1)*sqrt(omega[0][0]*omega[0][0] + omega[1][0]*omega[1][0] + omega[2][0]*omega[2][0])/2/pi << "r ";
 		for (int i = 0; i < 3; i++)
-			alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]);
-		std::cout << (x2 - x1)*sqrt(omega[0][0]*omega[0][0] + omega[1][0]*omega[1][0] + omega[2][0]*omega[2][0])/2./pi << "r ";
+			alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
 
 		dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
-		spinstepper.initialize(spin, x1, std::abs(pi/gamma/B1[3][0]));
+		spinstepper.initialize(spin, x1, std::abs(pi/gamma/B1[3][0])); // initialize integrator with step size = half rotation
 		unsigned int steps = 0;
 		while (true){
+			// take an integration step, SpinDerivs contains right-hand side of equation of motion
 			spinstepper.do_step(boost::bind(&TParticle::SpinDerivs, this, _1, _2, _3, omega_int));
 			steps++;
-			if (spinstepper.current_time() >= x2){
+			if (spinstepper.current_time() >= x2){ // if stepper overshot, calculate end point and stop
 				spinstepper.calc_state(x2, spin);
 				break;
 			}
 
 		}
+
+		// calculate new spin projection
 		polarisation = (spin[0]*B2[0][0] + spin[1]*B2[1][0] + spin[2]*B2[2][0])/B2[3][0]/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
 		std::cout << " " << 1 - polarisation << " (" << steps << ")\n";
 	}
-	else{ // if no spin integration is done, parallel-transport spin along magnetic field
-		if (polarisation*polarisation >= 1){
+	else if ((B1[3][0] < Bmax || B2[3][0] < Bmax)){ // if time outside selected ranges, parallel-transport spin along magnetic field
+		if (polarisation*polarisation >= 1){ // catch rounding errors
 			spin[0] = 0;
 			spin[1] = 0;
 		}
 		else{
-			double spinaz = mc->UniformDist(0, 2*pi);
+			double spinaz = mc->UniformDist(0, 2*pi); // random azimuth
 			spin[0] = sqrt(1 - polarisation*polarisation)*sin(spinaz);
 			spin[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
 		}
 		spin[2] = polarisation;
 		double B0[3] = {B2[0][0], B2[1][0], B2[2][0]};
-		RotateVector(&spin[0], B0);
+		RotateVector(&spin[0], B0); // rotate spin vector onto magnetic field vector
 	}
 
-	if (flipspin)
-		y2[7] = mc->DicePolarisation(polarisation);
+
+	if (B2[3][0] > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
+		if (flipspin)
+			y2[7] = mc->DicePolarisation(polarisation); // set new polarisation weighted by spin-projection on magnetic field
+		spin[0] = B2[0][0]*y2[7]/B2[3][0];
+		spin[1] = B2[1][0]*y2[7]/B2[3][0];
+		spin[2] = B2[2][0]*y2[7]/B2[3][0];
+	}
 }
 
 
@@ -559,7 +587,6 @@ void TParticle::StopIntegration(int aID, value_type x, state_type y, solid sld){
 	ID = aID;
 	tend = x;
 	yend = y;
-	polend = y[7];
 	solidend = sld;
 }
 
@@ -596,11 +623,12 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, solid sld
 	file	<< jobnumber << " " << particlenumber << " "
 			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
-			<< polstart << " " << Hstart() << " " << Estart() << " "
+			<< ystart[7] << " " << Hstart() << " " << Estart() << " "
 			<< B[3][0] << " " << V << " " << solidstart.ID << " ";
 
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
+	double polend = (spinend[0]*B[0][0] + spinend[1]*B[1][0] + spinend[2]*B[2][0])/B[3][0]/sqrt(spinend[0]*spinend[0] + spinend[1]*spinend[1] + spinend[2]*spinend[2]);
 
 	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 			<< y[3] << " " << y[4] << " " << y[5] << " "

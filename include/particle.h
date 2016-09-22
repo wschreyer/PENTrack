@@ -57,11 +57,11 @@ public:
 	/// state vector after integration (position, velocity, proper time, and polarization)
 	state_type yend;
 
-	/// initial projection of spin onto magnetic field (-1..1)
-	double polstart;
+	/// spin vector before integration
+	state_type spinstart;
 
-	/// final projection of spin onto magnetic field (-1..1)
-	double polend;
+	/// spin vector after integration
+	state_type spinend;
 
 	/// solid in which the particle started
 	solid solidstart;
@@ -188,7 +188,7 @@ protected:
 	 * @param y	State vector (position, velocity, and proper time)
 	 * @param dydx Returns derivatives of y with respect to x
 	 */
-	void derivs(value_type x, state_type y, state_type &dydx);
+	inline void derivs(value_type x, state_type y, state_type &dydx);
 
 
 	/**
@@ -235,13 +235,24 @@ protected:
 	 * @param y2 Particle state vector at end of step
 	 * @param time Absolute time intervals in between spin integration should be carried out [s]
 	 * @param Bmax Spin integration will only be carried out, if magnetic field is below this value [T]
-	 * @param flipspin If set to one, polarisation in y2 will be randomly set after the integration, weighted by spin projection onto the magnetic field
+	 * @param flipspin If set to one, polarisation in y2 will be randomly set when magnetic field rises above Bmax, weighted by spin projection onto the magnetic field
 	 * @param spinlog Set to one to print spin trajectory to file [0,1]
 	 * @param spinloginterval Time interval at which spin trajectory will be printed to file [s]
 	 */
 	void IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval);
 
-	void SpinDerivs(state_type y, state_type &dydx, value_type x, std::vector<alglib::spline1dinterpolant> &omega);
+
+	/**
+	 * Equations of motion of spin vector.
+	 *
+	 * Calculates spin-precession axis from pre-calculated splines
+	 *
+	 * @param y Current spin vector
+	 * @param dydx Calculated time derivative of spin vector
+	 * @param x Current time
+	 * @param omega Vector of three splines used to interpolate spin-precession axis
+	 */
+	inline void SpinDerivs(state_type y, state_type &dydx, value_type x, std::vector<alglib::spline1dinterpolant> &omega);
 
 	/**
 	 * This virtual method is executed, when a particle crosses a material boundary.
