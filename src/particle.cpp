@@ -204,7 +204,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 				y = y2;
 			}
 
-			IntegrateSpin(spin, x1, y1, x2, y2, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval);
+			noflipprob *= 1 - IntegrateSpin(spin, x1, y1, x2, y2, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval);
 			spinend = spin;
 
 			lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
@@ -261,9 +261,9 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 }
 
 
-void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval){
+double TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval){
 	if (gamma == 0 || x1 == x2 || !field)
-		return;
+		return 0;
 
 	double B1[4][4], B2[4][4], polarisation;
 	field->BField(y1[0], y1[1], y1[2], x1, B1);
@@ -272,7 +272,7 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 	if (B2[3][0] == 0){ // if there's no magnetic field or particle is leaving magnetic field, do nothing
 		std::cout << "Magnetic field is zero\n";
 		std::fill(spin.begin(), spin.end(), 0); // set all spin components to zero
-		return;
+		return 0;
 	}
 	else if (B1[3][0] == 0 && B2[3][0] > 0){ // if particle enters magnetic field
 		std::cout << "Entering magnetic field\n";
@@ -283,11 +283,14 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 				polarisation = 1;
 			else
 				polarisation = -1;
+			y2[7] = polarisation;
+			if (y2[7] != y1[7])
+				Nspinflip++;
 		}
 		spin[0] = polarisation*B2[0][0]/B2[3][0]; // set spin (anti-)parallel to field
 		spin[1] = polarisation*B2[1][0]/B2[3][0];
 		spin[2] = polarisation*B2[2][0]/B2[3][0];
-		return;
+		return 0.5;
 	}
 	else{ // if particle already is in magnetic field, calculate spin-projection on magnetic field
 		polarisation = (spin[0]*B1[0][0] + spin[1]*B1[1][0] + spin[2]*B1[2][0])/B1[3][0]/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
@@ -300,7 +303,8 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 	}
 
 	if ((integrate1 || integrate2) && (B1[3][0] < Bmax || B2[3][0] < Bmax)){ // do spin integration only, if time is in specified range and field is smaller than Bmax
-		std::cout << x2-x1 << "s " << 1 - polarisation << " ";
+		if ((!integrate1 && integrate2) || (B1[3][0] > Bmax && B2[3][0] < Bmax))
+			std::cout << x1 << "s " << y1[7] - polarisation << " ";
 
 		alglib::real_1d_array ts; // set up values for interpolation of precession axis
 		vector<alglib::real_1d_array> omega(3);
@@ -343,11 +347,10 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 			omega[2][i] = OmegaB[2] + OmegaT[2];
 		}
 
-		std::cout << (x2 - x1)*sqrt(omega[0][0]*omega[0][0] + omega[1][0]*omega[1][0] + omega[2][0]*omega[2][0])/2/pi << "r ";
 		for (int i = 0; i < 3; i++)
 			alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
 
-		dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(static_cast<value_type>(1e-12), static_cast<value_type>(1e-12), stepper_type());
+		dense_stepper_type2 spinstepper(1e-12, 1e-12, 1., 1., true);
 		spinstepper.initialize(spin, x1, std::abs(pi/gamma/B1[3][0])); // initialize integrator with step size = half rotation
 		unsigned int steps = 0;
 		while (true){
@@ -363,7 +366,6 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 
 		// calculate new spin projection
 		polarisation = (spin[0]*B2[0][0] + spin[1]*B2[1][0] + spin[2]*B2[2][0])/B2[3][0]/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
-		std::cout << " " << 1 - polarisation << " (" << steps << ")\n";
 	}
 	else if ((B1[3][0] < Bmax || B2[3][0] < Bmax)){ // if time outside selected ranges, parallel-transport spin along magnetic field
 		if (polarisation*polarisation >= 1){ // catch rounding errors
@@ -382,12 +384,19 @@ void TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, va
 
 
 	if (B2[3][0] > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
+		double flipprob = 0.5*(1 - y2[7]*polarisation);
+		if ((integrate1 || integrate2) && B1[3][0] < Bmax)
+			std::cout << x2 << "s flipprob " << flipprob << "\n";
 		if (flipspin)
 			y2[7] = mc->DicePolarisation(polarisation); // set new polarisation weighted by spin-projection on magnetic field
+		if (y2[7] != y1[7])
+			Nspinflip++;
 		spin[0] = B2[0][0]*y2[7]/B2[3][0];
 		spin[1] = B2[1][0]*y2[7]/B2[3][0];
 		spin[2] = B2[2][0]*y2[7]/B2[3][0];
+		return flipprob;
 	}
+	return 0;
 }
 
 

@@ -31,9 +31,10 @@ struct TParticle{
 protected:
 	typedef double value_type; ///< data type used for trajectory integration
 	typedef std::vector<value_type> state_type; ///< type representing current particle state
-	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type> stepper_type; ///< basic integration stepper
+	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type, value_type> stepper_type; ///< basic integration stepper
 	typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type; ///< integration step length controller
 	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type; ///< integration step interpolator
+	typedef boost::numeric::odeint::bulirsch_stoer_dense_out<state_type, value_type> dense_stepper_type2;
 public:
 	const char *name; ///< particle name (has to be initialized in all derived classes!)
 	const long double q; ///< charge [C] (has to be initialized in all derived classes!)
@@ -238,8 +239,10 @@ protected:
 	 * @param flipspin If set to one, polarisation in y2 will be randomly set when magnetic field rises above Bmax, weighted by spin projection onto the magnetic field
 	 * @param spinlog Set to one to print spin trajectory to file [0,1]
 	 * @param spinloginterval Time interval at which spin trajectory will be printed to file [s]
+	 *
+	 * @return Return probability of spin flip
 	 */
-	void IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval);
+	double IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval);
 
 
 	/**
