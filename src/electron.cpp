@@ -13,7 +13,6 @@ std::ofstream TElectron::snapshotout; ///< snapshot file stream
 std::ofstream TElectron::trackout; ///< tracklog file stream
 std::ofstream TElectron::hitout; ///< hitlog file stream
 std::ofstream TElectron::spinout; ///< spinlog file stream
-std::ofstream TElectron::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
 TElectron::TElectron(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
@@ -21,8 +20,8 @@ TElectron::TElectron(int number, double t, double x, double y, double z, double 
 }
 
 
-void TElectron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TElectron::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	traversed = true;
 	trajectoryaltered = false;
 }

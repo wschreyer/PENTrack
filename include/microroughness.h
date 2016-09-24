@@ -10,13 +10,7 @@
 
 #include "geometry.h"
 
-class TMicroRoughness{
-private:
-	bool ftransmit, fintegral;
-	const double *fv;
-	const double *fnormal;
-	solid *fleaving, *fentering;
-public:
+namespace MR{
 	/**
 	 * Check if the MicroRoughness is model is applicable to the current interaction
 	 *
@@ -27,7 +21,7 @@ public:
 	 *
 	 * @return Returns true, if the MicroRoughness model can be used.
 	 */
-	bool MRValid(const double v[3], const double normal[3], solid *leaving, solid *entering);
+	bool MRValid(const double v[3], const double normal[3], const solid &leaving, const solid &entering);
 
 	/**
 	 * Return MicroRoughness model probability distribution for scattering angles theta, phi
@@ -43,7 +37,7 @@ public:
 	 *
 	 * @return Returns probability of reflection/transmission, in direction (theta, phi) or its integration over phi=0..2pi if integral == true
 	 */
-	double MRDist(bool transmit, bool integral, const double v[3], const double normal[3], solid *leaving, solid *entering, double theta, double phi);
+	double MRDist(const bool transmit, const bool integral, const double v[3], const double normal[3], const solid &leaving, const solid &entering, const double theta, const double phi);
 
 	/**
 	 * Calculate total diffuse scattering probability according to MicroRoughness model by doing numerical theta-integration of MRDist with integral = true
@@ -56,7 +50,7 @@ public:
 	 *
 	 * @return Returns probability of reflection/transmission
 	 */
-	double MRProb(bool transmit, const double v[3], const double normal[3], solid *leaving, solid *entering);
+	double MRProb(const bool transmit, const double v[3], const double normal[3], const solid &leaving, const solid &entering);
 
 	/*
 	 * Calculate maximum of MicroRoughness model distribution by doing numerical minimization of TNeutron::NegMRDist
@@ -69,30 +63,7 @@ public:
 	 *
 	 * @return Returns maximal value of MicroRoughness model distribution in range (theta = 0..pi/2, phi = 0..2pi)
 	 */
-	double MRDistMax(bool transmit, const double v[3], const double normal[3], solid *leaving, solid *entering);
-
-	/**
-	 * Wrapper function to allow ALGLIB integration of MicroRoughness model distribution
-	 *
-	 * @param theta Polar angle of reflected/transmitted velocity
-	 * @param xminusa Required by ALGLIB???
-	 * @param bminusx Required by ALGLIB???
-	 * @param params Contains TMRParams struct
-	 *
-	 * @return Returns value of TNeutron::MRDist at (theta, phi = 0) with given params
-	 */
-	static void MRDist(double theta, double xminusa, double bminusx, double &y, void *params);
-
-	/**
-	 * Wrapper function to allow ALGLIB maximization of MicroRoughness model distribution
-	 *
-	 * Maximum of scattering distribution must lie on the line phi = 0
-	 *
-	 * @param x Array of x1,x2,... values. Contains only single variable theta in this case.
-	 * @param f NEGATIVE value of distribution at (theta = x[0], phi = 0)
-	 * @param params Contains TMRParams struct
-	 */
-	static void NegMRDist(const alglib::real_1d_array &x, double &f, void *params);
+	double MRDistMax(const bool transmit, const double v[3], const double normal[3], const solid &leaving, const solid &entering);
 };
 
 

@@ -18,21 +18,19 @@ ofstream TNeutron::snapshotout; ///< snapshot file stream
 ofstream TNeutron::trackout; ///< tracklog file stream
 ofstream TNeutron::hitout; ///< hitlog file stream
 ofstream TNeutron::spinout; ///< spinlog file stream
-ofstream TNeutron::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration 
-TMicroRoughness TNeutron::MR;
 
 TNeutron::TNeutron(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
 }
 
-void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TNeutron::Transmit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 
 	// specular transmission (refraction)
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
 	double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
 	for (int i = 0; i < 3; i++)
@@ -42,27 +40,27 @@ void TNeutron::Transmit(value_type x1, state_type y1, value_type &x2, state_type
 	trajectoryaltered = true;
 }
 
-void TNeutron::TransmitMR(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
+	material mat = vnormal < 0 ? entering.mat : leaving.mat;
 
-	if (!mat->UseMRModel || !MR.MRValid(&y1[3], normal, leaving, entering)) // check if MicroRoughness model should be applied
+	if (!mat.UseMRModel || !MR::MRValid(&y1[3], normal, leaving, entering)) // check if MicroRoughness model should be applied
 		return;
 
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
 	double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
 	for (int i = 0; i < 3; i++)
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
 	double theta_t, phi_t;
-	double MRmax = 1.5 * MR.MRDistMax(true, &y1[3], normal, leaving, entering); // scale up maximum to make sure it lies above all values of scattering distribution
+	double MRmax = 1.5 * MR::MRDistMax(true, &y1[3], normal, leaving, entering); // scale up maximum to make sure it lies above all values of scattering distribution
 	do{
 		phi_t = mc->UniformDist(0, 2*pi);
 		theta_t = mc->SinDist(0, pi/2);
-	}while (mc->UniformDist(0, MRmax) > MR.MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
+	}while (mc->UniformDist(0, MRmax) > MR::MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
 
 	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
 	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
@@ -75,11 +73,11 @@ void TNeutron::TransmitMR(value_type x1, state_type y1, value_type &x2, state_ty
 	trajectoryaltered = true;
 }
 
-void TNeutron::TransmitLambert(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TNeutron::TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
 	double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
 	for (int i = 0; i < 3; i++)
@@ -100,8 +98,8 @@ void TNeutron::TransmitLambert(value_type x1, state_type y1, value_type &x2, sta
 	trajectoryaltered = true;
 }
 
-void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TNeutron::Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
 
@@ -117,20 +115,20 @@ void TNeutron::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 	trajectoryaltered = true;
 }
 
-void TNeutron::ReflectMR(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
-	if (!mat->UseMRModel || !MR.MRValid(&y1[3], normal, leaving, entering))
+	material mat = vnormal < 0 ? entering.mat : leaving.mat;
+	if (!mat.UseMRModel || !MR::MRValid(&y1[3], normal, leaving, entering))
 		return;
 
 	double phi_r, theta_r;
-	double MRmax = 1.5 * MR.MRDistMax(false, &y1[3], normal, leaving, entering);  // scale up maximum to make sure it lies above all values of scattering distribution
+	double MRmax = 1.5 * MR::MRDistMax(false, &y1[3], normal, leaving, entering);  // scale up maximum to make sure it lies above all values of scattering distribution
 //			cout << "max: " << MRmax << '\n';
 	do{
 		phi_r = mc->UniformDist(0, 2*pi);
 		theta_r = mc->SinDist(0, pi/2);
-	}while (mc->UniformDist(0, MRmax) > MR.MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
+	}while (mc->UniformDist(0, MRmax) > MR::MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 	x2 = x1;
@@ -147,8 +145,8 @@ void TNeutron::ReflectMR(value_type x1, state_type y1, value_type &x2, state_typ
 	trajectoryaltered = true;
 }
 
-void TNeutron::ReflectLambert(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
 
@@ -171,26 +169,26 @@ void TNeutron::ReflectLambert(value_type x1, state_type y1, value_type &x2, stat
 	trajectoryaltered = true;
 }
 
-void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	trajectoryaltered = false;
 	traversed = true;
 
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
 
-	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat; // use material properties of the solid whose surface was hit
+	material mat = vnormal < 0 ? entering.mat : leaving.mat; // use material properties of the solid whose surface was hit
 	//material *mat = &entering->mat;
 
 //		cout << "Leaving " << leaving->ID << " Entering " << entering->ID << " Enormal = " << Enormal << " Estep = " << Estep;
 
-	bool UseMRModel = mat->UseMRModel && MR.MRValid(&y1[3], normal, leaving, entering);
+	bool UseMRModel = mat.UseMRModel && MR::MRValid(&y1[3], normal, leaving, entering);
 	double MRreflprob = 0, MRtransprob = 0;
 	if (UseMRModel){ 	// handle MicroRoughness reflection/transmission separately
-		MRreflprob = MR.MRProb(false, &y1[3], normal, leaving, entering);
+		MRreflprob = MR::MRProb(false, &y1[3], normal, leaving, entering);
 		if (0.5*m_n*(y1[0]*y1[0] + y1[1]*y1[1] + y1[2]*y1[2]) > Estep) // MicroRoughness transmission can happen if neutron energy > potential step
-			MRtransprob = MR.MRProb(true, &y1[3], normal, leaving, entering);
+			MRtransprob = MR::MRProb(true, &y1[3], normal, leaving, entering);
 	}
 	double prob = mc->UniformDist(0, 1);
 	if (UseMRModel && prob < MRreflprob)
@@ -204,13 +202,13 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 
 		double reflprob = pow((k1 - k2)/(k1 + k2), 2); // specular reflection probability
 		if (prob < MRreflprob + MRtransprob + reflprob*(1 - MRreflprob - MRtransprob)){ // reflection, scale down reflprob so MRreflprob + MRtransprob + reflprob + transprob = 1
-			if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
+			if (!UseMRModel && mc->UniformDist(0,1) < mat.DiffProb)
 				ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, trajectoryaltered, traversed); // Lambert reflection
 			else
 				Reflect(x1, y1, x2, y2, normal, leaving, entering, trajectoryaltered, traversed); // specular reflection
 		}
 		else{
-			if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
+			if (!UseMRModel && mc->UniformDist(0,1) < mat.DiffProb)
 				TransmitLambert(x1, y1, x2, y2, normal, leaving, entering, trajectoryaltered, traversed); // Lambert transmission
 			else
 				Transmit(x1, y1, x2, y2, normal, leaving, entering, trajectoryaltered, traversed); // specular transmission
@@ -218,13 +216,13 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 	}
 	else{ // total reflection (Enormal < Estep)
 		double k1 = sqrt(Enormal); // wavenumber in first solid (only real part)
-		complex<double> iEstep(Estep, -entering->mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
+		complex<double> iEstep(Estep, -entering.mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
 		complex<double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
 		double absprob = 1 - norm((k1 - k2)/(k1 + k2)); // absorption probability
 
-		if (entering->mat.UseMRModel){
+		if (entering.mat.UseMRModel){
 			double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
-			double addtrans = 2*pow(entering->mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering->mat.CorrelLength + 2*kc*kc*pow(entering->mat.CorrelLength, 2));
+			double addtrans = 2*pow(entering.mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering.mat.CorrelLength + 2*kc*kc*pow(entering.mat.CorrelLength, 2));
 			absprob *= sqrt(1 + addtrans); // second order correction for reflection on MicroRoughness surfaces
 		}
 //			cout << " ReflProb = " << reflprob << '\n';
@@ -232,19 +230,19 @@ void TNeutron::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 		if (prob < MRreflprob + MRtransprob + absprob*(1 - MRreflprob - MRtransprob)){ // -> absorption on reflection, scale down absprob so MRreflprob + MRtransprob + absprob + reflprob = 1
 			x2 = x1;
 			y2 = y1; // set end point to point right before collision and set ID to absorbed
-			StopIntegration(ID_ABSORBED_ON_SURFACE, x2, y2, *entering);
+			StopIntegration(ID_ABSORBED_ON_SURFACE, x2, y2, entering);
 			traversed = false;
 			trajectoryaltered = true;
 		}
 		else{ // no absorption -> reflection
-			if (!UseMRModel && mc->UniformDist(0,1) < mat->DiffProb)
+			if (!UseMRModel && mc->UniformDist(0,1) < mat.DiffProb)
 				ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, trajectoryaltered, traversed); // Lambert reflection
 			else
 				Reflect(x1, y1, x2, y2, normal, leaving, entering, trajectoryaltered, traversed); // specular reflection
 		}
 	}
 
-	if (mc->UniformDist(0,1) < entering->mat.SpinflipProb){ // should spin be flipped?
+	if (mc->UniformDist(0,1) < entering.mat.SpinflipProb){ // should spin be flipped?
 		y2[7] *= -1;
 		Nspinflip++;
 	}
@@ -323,6 +321,6 @@ void TNeutron::Decay(){
 }
 
 
-double TNeutron::Epot(value_type t, state_type y, TFieldManager *field, solid sld){
+double TNeutron::Epot(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const{
 	return TParticle::Epot(t, y, field, sld) + sld.mat.FermiReal*1e-9;
 }

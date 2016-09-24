@@ -43,7 +43,6 @@ protected:
 	static std::ofstream trackout; ///< tracklog file stream
 	static std::ofstream hitout; ///< hitlog file stream
 	static std::ofstream spinout; ///< spinlog file stream
-	static std::ofstream spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 	
 	/**
 	 * This method is executed, when a particle crosses a material boundary.
@@ -61,8 +60,8 @@ protected:
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
-				const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed);
+	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversedd);
 
 
 	/**
@@ -86,89 +85,24 @@ protected:
 	 */
 	void Decay();
 
-	/**
-	 * Write the particle's start properties and current values into a file.
-	 *
-	 * Calls the simple prototype TParticle::Print.
-	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param polarisation Current polarisation
-	 * @param sld Solid in which the particle is currently.
-	 */
-	void Print(value_type x, state_type y, solid sld){
-		TParticle::Print(endout, x, y, sld);
-	};
-
 
 	/**
-	 * Write the particle's start properties and current values into a file.
+	 * Return this particle type's log files
 	 *
-	 * Calls the simple prototype TParticle::Print.
+	 * @param str Enum specifying, which log file should be returned.
 	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param polarisation Current polarisation
-	 * @param sld Solid in which the particle is currently.
+	 * @return log file
 	 */
-	virtual void PrintSnapshot(value_type x, state_type y, solid sld){
-		TParticle::Print(snapshotout, x, y, sld, "snapshot.out");
+	std::ofstream& GetLogStream(const LogStream str) const{
+		switch (str){
+			case endLog: return endout;
+			case snapshotLog: return snapshotout;
+			case hitLog: return hitout;
+			case trackLog: return trackout;
+			case spinLog: return spinout;
+		}
+		throw std::out_of_range("Unknown LogStream requested!\n");
 	};
-
-
-	/**
-	 * Write the particle's trajectory into a file.
-	 *
-	 * Calls the simple prototype TParticle::PrintTrack.
-	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param polarisation Current polarisation
-	 * @param sld Solid in which the particle is currently.
-	 */
-	virtual void PrintTrack(value_type x, state_type y, solid sld){
-		TParticle::PrintTrack(trackout, x, y, sld);
-	};
-
-
-	/**
-	 * Write the particle properties into a file, before and after it hit a material boundary.
-	 *
-	 * Calls the simple prototype TParticle::PrintHit.
-	 *
-	 * @param x Time of material hit
-	 * @param y1 State vector before material hit
-	 * @param y2 State vector after material hit
-	 * @param pol1 Polarisation before material hit
-	 * @param pol2 Polarisation after material hit
-	 * @param normal Normal vector of hit surface
-	 * @param leaving Material which is left at this boundary
-	 * @param entering Material which is entered at this boundary
-	 */
-	virtual void PrintHit(value_type x, state_type y1, state_type y2, const double *normal, solid *leaving, solid *entering){
-		TParticle::PrintHit(hitout, x, y1, y2, normal, leaving, entering);
-	};
-
-
-	/**
-	 * Get spin log stream.
-	 *
-	 * @return Returns static spinout stream to use same stream for all TElectrons
-	 */
-	std::ofstream& GetSpinOut(){
-		return spinout;
-	};
-
-	
-	/**
-	 * Get secondary spin log stream used for spin integration of anti-parallel E-field.
-	 *
-	 * @return Returns static spinout stream to use same stream for all TElectrons
-	 */
-	std::ofstream& GetSpinOut2(){
-		return spinout2;
-	};
-
 };
 
 #endif // ELECTRON_H_

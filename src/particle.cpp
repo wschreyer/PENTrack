@@ -15,22 +15,22 @@
 
 using namespace std;
 
-double TParticle::Hstart(){
+double TParticle::Hstart() const{
 	return Ekin(&ystart[3]) + Epot(tstart, ystart, field, geom->GetSolid(tstart, &ystart[0]));
 }
 
 
-double TParticle::Hend(){
+double TParticle::Hend() const{
 	return Ekin(&yend[3]) + Epot(tend, yend, field, geom->GetSolid(tend, &yend[0]));
 }
 
 
-double TParticle::Estart(){
+double TParticle::Estart() const{
 	return Ekin(&ystart[3]);
 }
 
 
-double TParticle::Eend(){
+double TParticle::Eend() const{
 	return Ekin(&yend[3]);
 }
 
@@ -38,7 +38,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 		double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
 		  tstart(t), tend(t), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0),
-		  wL(0), delwL(0), geom(&geometry), mc(&amc), field(afield){
+		  wL(0), geom(&geometry), mc(&amc), field(afield){
 	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
 	value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
 	value_type vstart;
@@ -93,12 +93,7 @@ TParticle::~TParticle(){
 }
 
 
-void TParticle::operator()(state_type y, state_type &dydx, value_type x){
-	derivs(x,y,dydx);
-}
-
-
-void TParticle::Integrate(double tmax, map<string, string> &conf){
+void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf){
 	if (currentsolids.empty())
 		geom->GetSolids(tend, &yend[0], currentsolids);
 
@@ -168,7 +163,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 		y1 = y;
 
 		try{
-			stepper.do_step(boost::ref(*this));
+			stepper.do_step(boost::bind(&TParticle::derivs, this, _1, _2, _3));
 			x = stepper.current_time();
 			y = stepper.current_state();
 			h = stepper.current_time_step();
@@ -217,7 +212,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 					stepper.calc_state(nextsnapshot, ysnap);
 					cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
-					PrintSnapshot(nextsnapshot, ysnap, GetCurrentsolid());
+					Print(nextsnapshot, ysnap, GetCurrentsolid(), snapshotLog);
 					snapshots >> nextsnapshot;
 				}
 			}
@@ -239,7 +234,7 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 			StopIntegration(ID_NOT_FINISH, x, y, GetCurrentsolid());
 	}
 
-	Print(tend, yend, solidend);
+	Print(tend, yend, solidend, endLog);
 
 	if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
 		cout << "Decayed!\n";
@@ -261,7 +256,42 @@ void TParticle::Integrate(double tmax, map<string, string> &conf){
 }
 
 
-double TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval){
+void TParticle::derivs(const state_type &y, state_type &dydx,  const value_type x) const{
+	dydx[0] = y[3]; // time derivatives of position = velocity
+	dydx[1] = y[4];
+	dydx[2] = y[5];
+
+	value_type F[3] = {0,0,0}; // Force in lab frame
+	F[2] += -gravconst*m*ele_e; // add gravitation to force
+	if (field){
+		double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
+		if (q != 0 || (mu != 0 && y[7] != 0))
+			field->BField(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
+		if (q != 0)
+			field->EField(y[0],y[1],y[2], x, V, E); // if particle has charge caculate electric field+potential
+		if (q != 0){
+			F[0] += q*(E[0] + y[4]*B[2][0] - y[5]*B[1][0]); // add Lorentz-force
+			F[1] += q*(E[1] + y[5]*B[0][0] - y[3]*B[2][0]);
+			F[2] += q*(E[2] + y[3]*B[1][0] - y[4]*B[0][0]);
+		}
+		if (mu != 0 && y[7] != 0){
+			F[0] += y[7]*mu*B[3][1]; // add force on magnetic dipole moment
+			F[1] += y[7]*mu*B[3][2];
+			F[2] += y[7]*mu*B[3][3];
+		}
+	}
+	value_type inversegamma = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0)); // relativstic factor 1/gamma
+	dydx[3] = inversegamma/m/ele_e*(F[0] - (y[3]*y[3]*F[0] + y[3]*y[4]*F[1] + y[3]*y[5]*F[2])/c_0/c_0); // general relativstic equation of motion
+	dydx[4] = inversegamma/m/ele_e*(F[1] - (y[4]*y[3]*F[0] + y[4]*y[4]*F[1] + y[4]*y[5]*F[2])/c_0/c_0); // dv/dt = 1/gamma/m*(F - v * v^T * F / c^2)
+	dydx[5] = inversegamma/m/ele_e*(F[2] - (y[5]*y[3]*F[0] + y[5]*y[4]*F[1] + y[5]*y[5]*F[2])/c_0/c_0);
+
+	dydx[6] = inversegamma; // derivative of proper time is 1/gamma
+	dydx[7] = 0; // polarisaton does not change
+}
+
+
+double TParticle::IntegrateSpin(state_type &spin, const value_type x1, const state_type &y1, const value_type x2, state_type &y2,
+								const std::vector<double> &times, const double Bmax, const bool flipspin, const bool spinlog, const double spinloginterval){
 	if (gamma == 0 || x1 == x2 || !field)
 		return 0;
 
@@ -319,7 +349,7 @@ double TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, 
 			double B[4][4], V, E[3];
 			state_type y(STATE_VARIABLES), dydt(STATE_VARIABLES);
 			stepper.calc_state(t, y);
-			derivs(t, y, dydt);
+			derivs(y, dydt, t);
 			field->BField(y[0], y[1], y[2], t, B);
 			field->EField(y[0], y[1], y[2], t, V, E);
 			ts[i] = t;
@@ -350,6 +380,10 @@ double TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, 
 		for (int i = 0; i < 3; i++)
 			alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
 
+		if (spinlog)
+			PrintSpin(x1, spin, omega_int);
+		double lastlog = x1;
+
 		dense_stepper_type2 spinstepper(1e-12, 1e-12, 1., 1., true);
 		spinstepper.initialize(spin, x1, std::abs(pi/gamma/B1[3][0])); // initialize integrator with step size = half rotation
 		unsigned int steps = 0;
@@ -357,7 +391,11 @@ double TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, 
 			// take an integration step, SpinDerivs contains right-hand side of equation of motion
 			spinstepper.do_step(boost::bind(&TParticle::SpinDerivs, this, _1, _2, _3, omega_int));
 			steps++;
-			if (spinstepper.current_time() >= x2){ // if stepper overshot, calculate end point and stop
+			double t = spinstepper.current_time();
+			if (spinlog && t >= lastlog + spinloginterval){
+				PrintSpin(t, spinstepper.current_state(), omega_int);
+			}
+			if (t >= x2){ // if stepper overshot, calculate end point and stop
 				spinstepper.calc_state(x2, spin);
 				break;
 			}
@@ -400,7 +438,7 @@ double TParticle::IntegrateSpin(state_type &spin, value_type x1, state_type y1, 
 }
 
 
-void TParticle::SpinDerivs(state_type y, state_type &dydx, value_type x, std::vector<alglib::spline1dinterpolant> &omega){
+void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const std::vector<alglib::spline1dinterpolant> &omega) const{
 	double omegat[3];
 	for (int i = 0; i < 3; i++)
 		omegat[i] = alglib::spline1dcalc(omega[i], x);
@@ -410,58 +448,24 @@ void TParticle::SpinDerivs(state_type y, state_type &dydx, value_type x, std::ve
 }
 
 
-solid TParticle::GetCurrentsolid(){
-	map<solid, bool>::iterator it = currentsolids.begin();
+const solid& TParticle::GetCurrentsolid() const{
+	map<solid, bool>::const_iterator it = currentsolids.begin();
 	while (it->second) // skip over ignored solids
 		it++;
 	return it->first; // return first non-ignored solid in list
 }
 
 
-void TParticle::derivs(value_type x, state_type y, state_type &dydx){
-	dydx[0] = y[3]; // time derivatives of position = velocity
-	dydx[1] = y[4];
-	dydx[2] = y[5];
-
-	value_type F[3] = {0,0,0}; // Force in lab frame
-	F[2] += -gravconst*m*ele_e; // add gravitation to force
-	if (field){
-		double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
-		if (q != 0 || (mu != 0 && y[7] != 0))
-			field->BField(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
-		if (q != 0)
-			field->EField(y[0],y[1],y[2], x, V, E); // if particle has charge caculate electric field+potential
-		if (q != 0){
-			F[0] += q*(E[0] + y[4]*B[2][0] - y[5]*B[1][0]); // add Lorentz-force
-			F[1] += q*(E[1] + y[5]*B[0][0] - y[3]*B[2][0]);
-			F[2] += q*(E[2] + y[3]*B[1][0] - y[4]*B[0][0]);
-		}
-		if (mu != 0 && y[7] != 0){
-			F[0] += y[7]*mu*B[3][1]; // add force on magnetic dipole moment
-			F[1] += y[7]*mu*B[3][2];
-			F[2] += y[7]*mu*B[3][3];
-		}
-	}
-	value_type inversegamma = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0)); // relativstic factor 1/gamma
-	dydx[3] = inversegamma/m/ele_e*(F[0] - (y[3]*y[3]*F[0] + y[3]*y[4]*F[1] + y[3]*y[5]*F[2])/c_0/c_0); // general relativstic equation of motion
-	dydx[4] = inversegamma/m/ele_e*(F[1] - (y[4]*y[3]*F[0] + y[4]*y[4]*F[1] + y[4]*y[5]*F[2])/c_0/c_0); // dv/dt = 1/gamma/m*(F - v * v^T * F / c^2)
-	dydx[5] = inversegamma/m/ele_e*(F[2] - (y[5]*y[3]*F[0] + y[5]*y[4]*F[1] + y[5]*y[5]*F[2])/c_0/c_0);
-
-	dydx[6] = inversegamma; // derivative of proper time is 1/gamma
-	dydx[7] = 0; // polarisaton does not change
-}
-
-
-bool TParticle::CheckHitError(solid *hitsolid, double distnormal){
+bool TParticle::CheckHitError(const solid &hitsolid, double distnormal) const{
 	if (distnormal < 0){ // particle is entering solid
-		if (currentsolids.find(*hitsolid) != currentsolids.end()){ // if solid already is in currentsolids list something went wrong
-			cout << "Particle entering " << hitsolid->name.c_str() << " which it did enter before! Stopping it! Did you define overlapping solids with equal priorities?\n";
+		if (currentsolids.find(hitsolid) != currentsolids.end()){ // if solid already is in currentsolids list something went wrong
+			cout << "Particle entering " << hitsolid.name << " which it did enter before! Stopping it! Did you define overlapping solids with equal priorities?\n";
 			return true;
 		}
 	}
 	else if (distnormal > 0){ // particle is leaving solid
-		if (currentsolids.find(*hitsolid) == currentsolids.end()){ // if solid is not in currentsolids list something went wrong
-			cout << "Particle inside '" << hitsolid->name << "' which it did not enter before! Stopping it!\n";
+		if (currentsolids.find(hitsolid) == currentsolids.end()){ // if solid is not in currentsolids list something went wrong
+			cout << "Particle inside '" << hitsolid.name << "' which it did not enter before! Stopping it!\n";
 			return true;
 		}
 	}
@@ -473,7 +477,7 @@ bool TParticle::CheckHitError(solid *hitsolid, double distnormal){
 }
 
 
-bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, bool hitlog, int iteration){
+bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const bool hitlog, const int iteration){
 	solid currentsolid = GetCurrentsolid();
 	if (!geom->CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
 		printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
@@ -502,7 +506,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 			map<solid, bool> newsolids = currentsolids;
 			for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){ // go through list of collisions
 				solid sld = geom->solids[it->first.sldindex];
-				if (CheckHitError(&sld, it->first.distnormal)){ // check all hits for errors
+				if (CheckHitError(sld, it->first.distnormal)){ // check all hits for errors
 					x2 = x1;
 					y2 = y1;
 					StopIntegration(ID_GEOMETRY_ERROR, x2, y2, currentsolid); // stop trajectory integration if error found
@@ -532,9 +536,9 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 			}
 //			cout << "Leaving " << leaving.name << ", entering " << entering.name << ", currently " << currentsolid.name << '\n';
 			if (leaving.ID != entering.ID){ // if the particle actually traversed a material interface
-				OnHit(x1, y1, x2, y2, coll.normal, &leaving, &entering, trajectoryaltered, traversed); // do particle specific things
+				OnHit(x1, y1, x2, y2, coll.normal, leaving, entering, trajectoryaltered, traversed); // do particle specific things
 				if (hitlog)
-					PrintHit(x1, y1, y2, coll.normal, &leaving, &entering); // print collision to file if requested
+					PrintHit(x1, y1, y2, coll.normal, leaving, entering); // print collision to file if requested
 				Nhit++;
 			}
 
@@ -592,7 +596,7 @@ bool TParticle::CheckHit(value_type x1, state_type y1, value_type &x2, state_typ
 }
 
 
-void TParticle::StopIntegration(int aID, value_type x, state_type y, solid sld){
+void TParticle::StopIntegration(const stopID aID, const value_type x, const state_type &y, const solid &sld){
 	ID = aID;
 	tend = x;
 	yend = y;
@@ -600,10 +604,15 @@ void TParticle::StopIntegration(int aID, value_type x, state_type y, solid sld){
 }
 
 
-void TParticle::Print(std::ofstream &file, value_type x, state_type y, solid sld, std::string filesuffix){
+void TParticle::Print(const value_type x, const state_type &y, const solid &sld, const LogStream logType) const{
+	ofstream &file = GetLogStream(logType);
 	if (!file.is_open()){
 		ostringstream filename;
-		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << filesuffix;
+		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name;
+		if (logType == endLog)
+			filename << "end.out";
+		else if (logType == snapshotLog)
+			filename << "snapshot.out";
 		cout << "Creating " << filename.str() << '\n';
 		file.open(filename.str().c_str());
 		if (!file.is_open()){
@@ -618,7 +627,7 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, solid sld
 					"vxend vyend vzend polend "
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
-					"Nhit Nstep trajlength Hmax blochPolar wL delwL\n";
+					"Nhit Nstep trajlength Hmax blochPolar wL\n";
 		file << std::setprecision(std::numeric_limits<double>::digits); // need maximum precision for wL and delwL 
 	}
 	cout << "Printing status\n";
@@ -645,11 +654,12 @@ void TParticle::Print(std::ofstream &file, value_type x, state_type y, solid sld
 			<< B[3][0] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
 			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " 
-			<< polend << " " << wL << " " << delwL << '\n';
+			<< polend << " " << wL << '\n';
 }
 
 
-void TParticle::PrintTrack(std::ofstream &trackfile, value_type x, state_type y, solid sld){
+void TParticle::PrintTrack(const value_type x, const state_type &y, const solid &sld) const{
+	ofstream &trackfile = GetLogStream(trackLog);
 	if (!trackfile.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
@@ -687,7 +697,8 @@ void TParticle::PrintTrack(std::ofstream &trackfile, value_type x, state_type y,
 }
 
 
-void TParticle::PrintHit(std::ofstream &hitfile, value_type x, state_type y1, state_type y2, const double *normal, solid *leaving, solid *entering){
+void TParticle::PrintHit(const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering) const{
+	ofstream &hitfile = GetLogStream(hitLog);
 	if (!hitfile.is_open()){
 		ostringstream filename;
 		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
@@ -708,11 +719,36 @@ void TParticle::PrintHit(std::ofstream &hitfile, value_type x, state_type y1, st
 	hitfile << jobnumber << " " << particlenumber << " "
 			<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << y1[7] << " "
 			<< y2[3] << " " << y2[4] << " " << y2[5] << " " << y2[7] << " "
-			<< normal[0] << " " << normal[1] << " " << normal[2] << " " << leaving->ID << " " << entering->ID << '\n';
+			<< normal[0] << " " << normal[1] << " " << normal[2] << " " << leaving.ID << " " << entering.ID << '\n';
 }
 
 
-double TParticle::Ekin(value_type v[3]){
+void TParticle::PrintSpin(const value_type x, const state_type &spin, const std::vector<alglib::spline1dinterpolant> &omega) const{
+	ofstream &spinfile = GetLogStream(spinLog);
+	if (!spinfile.is_open()){
+		std::ostringstream filename;
+		filename << outpath << "/" << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << name << "spin.out";
+		std::cout << "Creating " << filename.str() << '\n';
+		spinfile.open(filename.str().c_str());
+		if(!spinfile.is_open())
+		{
+			std::cout << "Could not open " << filename.str() << '\n';
+			exit(-1);
+		}
+
+		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
+		spinfile << std::setprecision(std::numeric_limits<double>::digits);
+		spinfile << "t Sx Sy Sz Wx Wy Wz\n" ;
+	}
+
+	spinfile << x << " " << spin[0] << " " << spin[1] << " " << spin[2] << " ";
+	for (int i = 0; i < 3; i++)
+		spinfile << alglib::spline1dcalc(omega[i], x) << " ";
+	spinfile << "\n";
+}
+
+
+double TParticle::Ekin(const value_type v[3]) const{
 	value_type v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
 	value_type beta2 = v2/c_0/c_0;
 	value_type gammarel = 1/sqrt(1 - beta2); // use relativistic formula for larger beta
@@ -725,7 +761,7 @@ double TParticle::Ekin(value_type v[3]){
 }
 
 
-double TParticle::Epot(value_type t, state_type y, TFieldManager *field, solid sld){
+double TParticle::Epot(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const{
 	value_type result = 0;
 	if ((q != 0 || mu != 0) && field){
 		double B[4][4], E[3], V;

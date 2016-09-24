@@ -13,7 +13,6 @@ std::ofstream TProton::snapshotout; ///< snapshot file stream
 std::ofstream TProton::trackout; ///< tracklog file stream
 std::ofstream TProton::hitout; ///< hitlog file stream
 std::ofstream TProton::spinout; ///< spinlog file stream
-std::ofstream TProton::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
 TProton::TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: TParticle(NAME_PROTON, ele_e, m_p, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
@@ -21,8 +20,8 @@ TProton::TProton(int number, double t, double x, double y, double z, double E, d
 }
 
 
-void TProton::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
-					const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TProton::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	traversed = true;
 	trajectoryaltered = false;
 }

@@ -9,38 +9,40 @@
 
 using namespace std;
 
-bool TMicroRoughness::MRValid(const double v[3], const double normal[3], solid *leaving, solid *entering){
+namespace MR{
+
+bool MRValid(const double v[3], const double normal[3], const solid &leaving, const solid &entering){
 	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
 	double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity projected onto surface normal
 	double E = 0.5*m_n*v2; // kinetic energy
-	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9;
+	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
 	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
-	material *mat;
+	material mat;
 	if (vnormal > 0)
-		mat = &leaving->mat;
+		mat = leaving.mat;
 	else
-		mat = &entering->mat;
+		mat = entering.mat;
 	if (Estep >= 0){
 		double kc = sqrt(2*m_n*Estep)*ele_e/hbar; // critical wave number of potential wall
-		if (2*mat->RMSRoughness*ki < 1 && 2*mat->RMSRoughness*kc < 1)
+		if (2*mat.RMSRoughness*ki < 1 && 2*mat.RMSRoughness*kc < 1)
 			return true;
 	}
 	else{
 		double kt = sqrt(2*m_n*(E - Estep))*ele_e/hbar; // wave number in second solid
-		if (2*mat->RMSRoughness*ki < 1 && 2*mat->RMSRoughness*kt < 1)
+		if (2*mat.RMSRoughness*ki < 1 && 2*mat.RMSRoughness*kt < 1)
 			return true;
 	}
-	std::cout << "MR model not applicable on material " << mat->name << ". Falling back to Lambert model!\n";
+	std::cout << "MR model not applicable on material " << mat.name << ". Falling back to Lambert model!\n";
 	return false;
 }
 
-double TMicroRoughness::MRDist(bool transmit, bool integral, const double v[3], const double normal[3], solid *leaving, solid *entering, double theta, double phi){
+double MRDist(const bool transmit, const bool integral, const double v[3], const double normal[3], const solid &leaving, const solid &entering, const double theta, const double phi){
 	if (theta < 0 || theta > pi/2)
 		return 0;
 	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
 	double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity projected onto surface normal
 	double E = 0.5*m_n*v2; // kinetic energy
-	double Estep = entering->mat.FermiReal*1e-9 - leaving->mat.FermiReal*1e-9; // potential wall
+	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9; // potential wall
 	if (transmit && E <= Estep) // if particle is transmitted: check if energy is higher than potential wall
 		return 0;
 
@@ -62,12 +64,12 @@ double TMicroRoughness::MRDist(bool transmit, bool integral, const double v[3], 
 
 	double b, w;
 	if (vnormal > 0){
-		b = leaving->mat.RMSRoughness;
-		w = leaving->mat.CorrelLength;
+		b = leaving.mat.RMSRoughness;
+		w = leaving.mat.CorrelLength;
 	}
 	else{
-		b = entering->mat.RMSRoughness;
-		w = entering->mat.CorrelLength;
+		b = entering.mat.RMSRoughness;
+		w = entering.mat.CorrelLength;
 	}
 
 	double theta_i = acos(costheta_i);
@@ -90,28 +92,36 @@ double TMicroRoughness::MRDist(bool transmit, bool integral, const double v[3], 
 	return result; // return probability
 }
 
-void TMicroRoughness::MRDist(double theta, double xminusa, double bminusx, double &y, void *params){
-	TMicroRoughness *p = (TMicroRoughness*)params;
-	y = p->MRDist(p->ftransmit, p->fintegral, p->fv, p->fnormal, p->fleaving, p->fentering, theta, 0);
+
+struct TMRParams{ /// struct holding all collision parameters, used to pass them to the wrapper functions below
+	const bool transmit;
+	const bool integral;
+	const double *v;
+	const double *normal;
+	const solid &leaving;
+	const solid &entering;
+};
+
+/**
+ * Wrapper function of MRDist, is passed to numerical-quadrature routine from alglib library
+ * 
+ * @param x Polar angle
+ * @param xminusa Parameter required by alglib, is ignored
+ * @param bminux Parameters required by alglib, is ignored
+ * @param y Returns phi-integrated MRDist value at polar angle x
+ * @param ptr Pointer to data, used to pass TMRParams struct
+ */
+void MRDistWrapper(double x, double xminusa, double bminusx, double &y, void *ptr){
+	TMRParams *p = static_cast<TMRParams*>(ptr);
+	y = MRDist(p->transmit, p->integral, p->v, p->normal, p->leaving, p->entering, x, 0);
 }
 
-void TMicroRoughness::NegMRDist(const alglib::real_1d_array &x, double &f, void *params){
-	TMicroRoughness *p = (TMicroRoughness*)params;
-	f = -p->MRDist(p->ftransmit, p->fintegral, p->fv, p->fnormal, p->fleaving, p->fentering, x[0], 0);
-}
-
-double TMicroRoughness::MRProb(bool transmit, const double v[3], const double normal[3], solid *leaving, solid *entering){
-	ftransmit = transmit;
-	fintegral = true;
-	fv = v;
-	fnormal = normal;
-	fleaving = leaving;
-	fentering = entering;
-
+double MRProb(const bool transmit, const double v[3], const double normal[3], const solid &leaving, const solid &entering){
 	double prob;
 	alglib::autogkstate s;
 	alglib::autogksmooth(0, pi/2, s);
-	alglib::autogkintegrate(s, &MRDist, this);
+	TMRParams p = {transmit, true, v, normal, leaving, entering};
+	alglib::autogkintegrate(s, MRDistWrapper, &p);
 	alglib::autogkreport r;
 	alglib::autogkresults(s, prob, r);
 //	cout << prob << " int: " << r.terminationtype << " in " << r.nintervals << '\n';
@@ -121,19 +131,25 @@ double TMicroRoughness::MRProb(bool transmit, const double v[3], const double no
 
 }
 
-double TMicroRoughness::MRDistMax(bool transmit, const double v[3], const double normal[3], solid *leaving, solid *entering){
-	ftransmit = transmit;
-	fintegral = false;
-	fv = v;
-	fnormal = normal;
-	fleaving = leaving;
-	fentering = entering;
+/**
+ * Wrapper function of MRDist, is passed to numerical-optimization routine from alglib library
+ * 
+ * @param x Array of function parameters, in this case only one: polar angle
+ * @param y Returns MRDist value at theta=x[0] and phi=0
+ * @param ptr Pointer data, used to pass TMRParams struct
+ */
+void NegMRDist(const alglib::real_1d_array &x, double &y, void *ptr){
+	TMRParams *p = static_cast<TMRParams*>(ptr);
+	y = -MRDist(p->transmit, p->integral, p->v, p->normal, p->leaving, p->entering, x[0], 0);
+}
 
+double MRDistMax(const bool transmit, const double v[3], const double normal[3], const solid &leaving, const solid &entering){
 	alglib::mincgstate s;
 	alglib::real_1d_array theta = "[0.7853981635]";
 	alglib::mincgcreatef(1, theta, 1e-10, s);
 	alglib::mincgsetcond(s, 0, 0, 0, 0);
-	alglib::mincgoptimize(s, &NegMRDist, NULL, this);
+	TMRParams p = {transmit, true, v, normal, leaving, entering};
+	alglib::mincgoptimize(s, NegMRDist, NULL, &p);
 	alglib::mincgreport r;
 	alglib::mincgresults(s, theta, r);
 //	cout << theta[0] << " min: " << r.terminationtype << " in " << r.iterationscount << '\n';
@@ -142,4 +158,6 @@ double TMicroRoughness::MRDistMax(bool transmit, const double v[3], const double
 //	if (r.terminationtype < 0)
 //		throw std::runtime_error("microroughness maximization did not converge properly");
 	return MRDist(transmit, false, v, normal, leaving, entering, theta[0], 0);
+}
+
 }

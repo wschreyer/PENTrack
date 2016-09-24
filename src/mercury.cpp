@@ -13,7 +13,6 @@ std::ofstream TMercury::snapshotout; ///< snapshot file stream
 std::ofstream TMercury::trackout; ///< tracklog file stream
 std::ofstream TMercury::hitout; ///< hitlog file stream
 std::ofstream TMercury::spinout; ///< spinlog file stream
-std::ofstream TMercury::spinout2; ///< spinlog file stream for doing simultaneous anti-parallel Efield spin integration
 
 TMercury::TMercury(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 			: TParticle(NAME_MERCURY, 0, m_hg, mu_hgSI, gamma_hg, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
@@ -21,8 +20,8 @@ TMercury::TMercury(int number, double t, double x, double y, double z, double E,
 }
 
 
-void TMercury::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TMercury::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	trajectoryaltered = false;
 	traversed = true;
 	
@@ -30,14 +29,14 @@ void TMercury::OnHit(value_type x1, state_type y1, value_type &x2, state_type &y
 }
 
 
-void TMercury::Reflect(value_type x1, state_type y1, value_type &x2, state_type &y2,
-			const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed){
+void TMercury::Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
 	
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
 	double prob = mc->UniformDist(0,1);
-	material *mat = vnormal < 0 ? &entering->mat : &leaving->mat;
-	double diffprob = mat->DiffProb;
+	material mat = vnormal < 0 ? entering.mat : leaving.mat;
+	double diffprob = mat.DiffProb;
 //	cout << "prob: " << diffprob << '\n';
 	
 	if (prob >= diffprob){
@@ -67,7 +66,7 @@ void TMercury::Reflect(value_type x1, state_type y1, value_type &x2, state_type 
 //				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
 	}
 
-	if (mc->UniformDist(0,1) < entering->mat.SpinflipProb){
+	if (mc->UniformDist(0,1) < entering.mat.SpinflipProb){
 		y2[7] *= -1;
 		Nspinflip++;
 	}

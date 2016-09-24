@@ -19,7 +19,6 @@
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
 static const int STATE_VARIABLES = 8; ///< number of variables in trajectory integration (position, velocity, proper time, polarization)
 
-
 /**
  * Basic particle class (virtual).
  *
@@ -35,6 +34,8 @@ protected:
 	typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type; ///< integration step length controller
 	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type; ///< integration step interpolator
 	typedef boost::numeric::odeint::bulirsch_stoer_dense_out<state_type, value_type> dense_stepper_type2;
+
+	enum LogStream { endLog, snapshotLog, hitLog, trackLog, spinLog };
 public:
 	const char *name; ///< particle name (has to be initialized in all derived classes!)
 	const long double q; ///< charge [C] (has to be initialized in all derived classes!)
@@ -42,7 +43,7 @@ public:
 	const long double mu; ///< magnetic moment [J/T] (has to be initialized in all derived classes!)
 	const long double gamma; ///< gyromagnetic ratio [rad/(s T)] (has to be initialized in all derived classes!)
 	int particlenumber; ///< particle number
-	int ID; ///< particle fate (defined in globals.h)
+	stopID ID; ///< particle fate (defined in globals.h)
 	double tau; ///< particle life time
 	double maxtraj; ///< max. simulated trajectory length
 
@@ -71,19 +72,19 @@ public:
 	solid solidend;
 
 	/// total start energy
-	double Hstart();
+	double Hstart() const;
 
 	/// total end energy
-	double Hend();
+	double Hend() const;
 
 	/// max total energy
 	double Hmax;
 
 	/// kinetic start energy
-	double Estart();
+	double Estart() const;
 
 	/// kinetic end energy
-	double Eend();
+	double Eend() const;
 
 	/// trajectory length
 	double lend;
@@ -102,9 +103,6 @@ public:
 	
 	/// particle larmor precession frequency
 	double wL;
-	
-	/// difference in precession frequency when simultaneous E field integration
-	double delwL;	
 	
 	std::vector<TParticle*> secondaries; ///< list of secondary particles
 
@@ -141,18 +139,6 @@ public:
 
 
 	/**
-	 * Returns equations of motion.
-	 *
-	 * Class TParticle is given to integrator, which calls TParticle(x,y,dydx)
-	 *
-	 * @param x Time
-	 * @param y State vector (position, velocity, and proper time)
-	 * @param dydx Returns derivatives of y with respect to t
-	 */
-	void operator()(state_type y, state_type &dydx, value_type x);
-
-
-	/**
 	 * Integrate particle trajectory.
 	 *
 	 * Takes inital state vector ystart and integrates the trajectory step by step.
@@ -176,20 +162,20 @@ protected:
 	/**
 	 * Return first non-ignored solid in TParticle::currentsolids list
 	 */
-	solid GetCurrentsolid();
+	const solid& GetCurrentsolid() const;
 
 
 	/**
 	 * Equations of motion dy/dx = f(x,y).
 	 *
-	 * Equations of motion (fully relativistic), called by operator().
+	 * Equations of motion (fully relativistic).
 	 * Including gravitation, Lorentz-force and magnetic interaction with magnetic moment.
 	 *
-	 * @param x Time
-	 * @param y	State vector (position, velocity, and proper time)
+	 * @param y	State vector (position, velocity, proper time, and polarization)
 	 * @param dydx Returns derivatives of y with respect to x
+	 * @param x Time
 	 */
-	inline void derivs(value_type x, state_type y, state_type &dydx);
+	inline void derivs(const state_type &y, state_type &dydx, const value_type x) const;
 
 
 	/**
@@ -200,7 +186,7 @@ protected:
 	 *
 	 * @return Returns true, if an inconsistency was found.
 	 */
-	bool CheckHitError(solid *hitsolid, double distnormal);
+	bool CheckHitError(const solid &hitsolid, double distnormal) const;
 
 
 	/**
@@ -220,7 +206,7 @@ protected:
 	 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 	 * @return Returns true if particle was reflected/absorbed
 	 */
-	bool CheckHit(value_type x1, state_type y1, value_type &x2, state_type &y2, bool hitlog, int iteration = 1);
+	bool CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const bool hitlog, const int iteration = 1);
 
 
 	/**
@@ -242,7 +228,8 @@ protected:
 	 *
 	 * @return Return probability of spin flip
 	 */
-	double IntegrateSpin(state_type &spin, value_type x1, state_type y1, value_type x2, state_type &y2, std::vector<double> &times, double Bmax, bool flipspin, bool spinlog, double spinloginterval);
+	double IntegrateSpin(state_type &spin, const value_type x1, const state_type &y1, const value_type x2, state_type &y2,
+						const std::vector<double> &times, const double Bmax, const bool flipspin, const bool spinlog, const double spinloginterval);
 
 
 	/**
@@ -255,7 +242,7 @@ protected:
 	 * @param x Current time
 	 * @param omega Vector of three splines used to interpolate spin-precession axis
 	 */
-	inline void SpinDerivs(state_type y, state_type &dydx, value_type x, std::vector<alglib::spline1dinterpolant> &omega);
+	inline void SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const std::vector<alglib::spline1dinterpolant> &omega) const;
 
 	/**
 	 * This virtual method is executed, when a particle crosses a material boundary.
@@ -273,8 +260,8 @@ protected:
 	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
-	virtual void OnHit(value_type x1, state_type y1, value_type &x2, state_type &y2,
-						const double normal[3], solid *leaving, solid *entering, bool &trajectoryaltered, bool &traversed) = 0;
+	virtual void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+						const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed) = 0;
 
 
 	/**
@@ -307,86 +294,25 @@ protected:
 	 * @param y Current state vector.
 	 * @param sld Solid in which the particle is currently.
 	 */
-	void StopIntegration(int aID, value_type x, state_type y, solid sld);
+	void StopIntegration(const stopID aID, const value_type x, const state_type &y, const solid &sld);
 
 
 	/**
-	 * Write the particle's start properties and current values into a file.
+	 * Return stream for each log type.
 	 *
-	 * This is a purely virtual function that has to be implemented by all derived classes.
-	 * It can e.g. simply call the simple prototype TParticle::Print below.
+	 * Purely virtual function, has to be implemented for each particle type.
 	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param sld Solid in which the particle is currently.
+	 * @param str Enum specifying which stream should be returned
+	 *
+	 * @return Returns stream corresponding to str
 	 */
-	virtual void Print(value_type x, state_type y, solid sld) = 0;
+	virtual std::ofstream& GetLogStream(const LogStream str) const = 0;
 
-
-	/**
-	 * Write the particle's start properties and current values into a file.
-	 *
-	 * This is a purely virtual function that has to be implemented by all derived classes.
-	 * It can e.g. simply call the simple prototype TParticle::Print below.
-	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param sld Solid in which the particle is currently.
-	 */
-	virtual void PrintSnapshot(value_type x, state_type y, solid sld) = 0;
-
-
-	/**
-	 * Write the particle's trajectory into a file.
-	 *
-	 * This is a purely virtual function that has to be implemented by all derived classes.
-	 * It can e.g. simply call the simple prototype TParticle::PrintTrack below.
-	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param sld Solid in which the particle is currently.
-	 */
-	virtual void PrintTrack(value_type x, state_type y, solid sld) = 0;
-
-
-	/**
-	 * Write the particle properties into a file, before and after it hit a material boundary.
-	 *
-	 * This is a purely virtual function that has to be implemented by all derived classes.
-	 * It can e.g. simply call the simple prototype TParticle::PrintHit below.
-	 *
-	 * @param x Time of material hit
-	 * @param y1 State vector before material hit
-	 * @param y2 State vector after material hit
-	 * @param normal Normal vector of hit surface
-	 * @param leaving Material which is left at this boundary
-	 * @param entering Material which is entered at this boundary
-	 */
-	virtual void PrintHit(value_type x, state_type y1, state_type y2, const double *normal, solid *leaving, solid *entering) = 0;
-
-
-	/**
-	 * Get spin log stream.
-	 *
-	 * Has to be derived by all derived classes.
-	 *
-	 * @return Reference to spin log stream
-	 */
-	virtual std::ofstream& GetSpinOut() = 0;
 	
 	/**
-	 * Get secondary spin log stream used for the output from the simultaneous anti-parallel E field spin integration.
+	 * Print start and current values to the endLog returned by GetLogStream.
 	 *
-	 * Has to be derived by all derived classes.
-	 *
-	 * @return Reference to spin log stream
-	 */
-	virtual std::ofstream& GetSpinOut2() = 0;
-
-	/**
-	 * Print start and current values to a stream.
-	 *
-	 * This is a simple prototype that can be called by derived particle classes.
+	 * This is a simple prototype that can be overridden by derived particle classes.
 	 *
 	 * @param file stream to print into
 	 * @param x Current time
@@ -394,26 +320,26 @@ protected:
 	 * @param sld Solid in which the particle is currently.
 	 * @param filesuffix Optional suffix added to the file name (default: "end.out")
 	 */
-	void Print(std::ofstream &file, value_type x, state_type y, solid sld, std::string filesuffix = "end.out");
+	virtual void Print(const value_type x, const state_type &y, const solid &sld, const LogStream logType) const;
 
 
 	/**
-	 * Print current track point into stream to allow visualization of the particle's trajectory.
+	 * Print current track point  to the trackLog returned by GetLogStream.
 	 *
-	 * This is a simple prototype that can be called by derived particle classes.
+	 * This is a simple prototype that can be overridden by derived particle classes.
 	 *
 	 * @param trackfile Stream to print into
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param sld Solid in which the particle is currently.
 	 */
-	void PrintTrack(std::ofstream &trackfile, value_type x, state_type y, solid sld);
+	virtual void PrintTrack(const value_type x, const state_type &y, const solid &sld) const;
 
 
 	/**
-	 * Print material boundary hits into stream.
+	 * Print material boundary hits to the hitLog returned by GetLogStream.
 	 *
-	 * This is a simple prototype that can be called by derived particle classes.
+	 * This is a simple prototype that can be overridden by derived particle classes.
 	 *
 	 * @param hitfile stream to print into
 	 * @param x Time of material hit
@@ -423,7 +349,20 @@ protected:
 	 * @param leaving Material which is left at this boundary
 	 * @param entering Material which is entered at this boundary
 	 */
-	void PrintHit(std::ofstream &hitfile, value_type x, state_type y1, state_type y2, const double *normal, solid *leaving, solid *entering);
+	virtual void PrintHit(const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering) const;
+
+
+	/**
+	 * Write spin state to the spinLog returned by GetLogStream.
+	 *
+	 * This is a simple prototype that can be overridden by derived particle classes.
+	 *
+	 * @param spinfile stream to print into
+	 * @param x time
+	 * @param spin Spin vector
+	 * @param y Particle state vector
+	 */
+	virtual void PrintSpin(const value_type x, const state_type &spin, const std::vector<alglib::spline1dinterpolant> &omega) const;
 
 
 	/**
@@ -435,7 +374,7 @@ protected:
 	 *
 	 * @return Kinetic energy [eV]
 	 */
-	double Ekin(value_type v[3]);
+	double Ekin(const value_type v[3]) const;
 
 
 	/**
@@ -448,7 +387,7 @@ protected:
 	 *
 	 * @return Returns potential energy [eV]
 	 */
-	virtual double Epot(value_type t, state_type y, TFieldManager *field, solid sld);
+	virtual double Epot(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const;
 
 };
 

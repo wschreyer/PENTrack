@@ -46,7 +46,7 @@ void PrintMRThetaIEnergy ( const char *outfile); // produce a 3d table of the to
 
 double SimTime = 1500.; ///< max. simulation time
 int simcount = 1; ///< number of particles for MC simulation (read from config)
-int simtype = PARTICLE; ///< type of particle which shall be simulated (read from config)
+simType simtype = PARTICLE; ///< type of particle which shall be simulated (read from config)
 int secondaries = 1; ///< should secondary particles be simulated? (read from config)
 double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 double MRSolidAngleDRPParams[5]; ///< params to output the  MR-DRP values for given theta_inc and phi_inc [Fermi potential, incident neutron energy, b (nm), w (nm), theta_i] (read from config)
@@ -115,29 +115,27 @@ int main(int argc, char **argv){
 	// read config.in
 	ConfigInit(configin);
 
-	switch(simtype)
-	{
-		case MR_THETA_OUT_ANGLE: PrintMROutAngle (string(outpath+"/MR-SldAngDRP").c_str()); // estimate ramp heating
-						return 0;
-		case MR_THETA_I_ENERGY: PrintMRThetaIEnergy (string(outpath+"/MR-Tot-DRP").c_str()); // print cut through B field
-						return 0;
+	if (simtype == MR_THETA_OUT_ANGLE){
+		PrintMROutAngle(string(outpath+"/MR-SldAngDRP").c_str()); // estimate ramp heating
+		return 0;
+	}
+	else if (simtype == MR_THETA_I_ENERGY){
+		PrintMRThetaIEnergy(string(outpath+"/MR-Tot-DRP").c_str()); // print cut through B field
+		return 0;
 	}
 
 
-	if(simtype == PARTICLE){
-		if (neutdist == 1) prepndist(); // prepare for neutron distribution-calculation
-	}
-	
 	cout << "Loading fields...\n";
 	// load field configuration from geometry.in
 	TFieldManager field(geometryin);
 
-	switch(simtype)
-	{
-		case BF_ONLY:	PrintBField(string(outpath+"/BF.out").c_str(), field); // estimate ramp heating
-						return 0;
-		case BF_CUT:	PrintBFieldCut(string(outpath+"/BFCut.out").c_str(), field); // print cut through B field
-						return 0;
+	if (simtype == BF_ONLY){
+		PrintBField(string(outpath+"/BF.out").c_str(), field); // estimate ramp heating
+		return 0;
+	}
+	else if (simtype == BF_CUT){
+		PrintBFieldCut(string(outpath+"/BFCut.out").c_str(), field); // print cut through B field
+		return 0;
 	}
 
 
@@ -256,7 +254,9 @@ void ConfigInit(TConfig &config){
 	/*end default values*/
 
 	/* read variables from map by casting strings in map into istringstreams and extracting value with ">>"-operator */
-	istringstream(config["global"]["simtype"])		>> simtype;
+	int stype;
+	istringstream(config["global"]["simtype"])		>> stype;
+	simtype = static_cast<simType>(stype);
 	istringstream(config["global"]["neutdist"])		>> neutdist;
 	
 
@@ -314,18 +314,17 @@ void PrintMROutAngle ( const char *outfile) {
 	double v[3] = {0, vabs*sin(theta_inc), -vabs*cos(theta_inc)};
 	double norm[] = { 0, 0, 1 };
 
-	TMicroRoughness MR;
 	//write the mrprob values to the output file
 	for (double phi=-pi; phi<pi; phi+=(2*pi)/100) {
 		
 		for (double theta=0; theta<pi/2; theta+=(pi/2)/100) {
 			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
-			double mrprob = MR.MRDist(false, false, v, norm, &solLeav, &solEnter, theta, phi)*sin(theta);
+			double mrprob = MR::MRDist(false, false, v, norm, solLeav, solEnter, theta, phi)*sin(theta);
 			mrproboutfile << phi << ' ' << theta << ' ' << mrprob << '\n';
 		}
 		for (double theta=0; theta<pi/2; theta+=(pi/2)/100) {
 			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
-			double mrprob = MR.MRDist(true, false, v, norm, &solLeav, &solEnter, theta, phi)*sin(theta);
+			double mrprob = MR::MRDist(true, false, v, norm, solLeav, solEnter, theta, phi)*sin(theta);
 			mrproboutfile << phi << ' ' << pi - theta << ' ' << mrprob << '\n';
 		}
 	}
@@ -371,7 +370,6 @@ void PrintMRThetaIEnergy (const char *outfile) {
 	std::cout << '\n';
 	
 	double norm[] = { 0, 0, 1 };
-	TMicroRoughness MR;
  	//write the integrated mrprob values to the output file 
 	for (double theta = theta_start; theta<theta_end; theta += (theta_end-theta_start)/100) {
 		//since this part can be slow it is helpful to monitor the progress
@@ -382,7 +380,7 @@ void PrintMRThetaIEnergy (const char *outfile) {
 			double vabs = sqrt(2*energy*1e-9/m_n);
 			double v[3] = {0, vabs*sin(theta), -vabs*cos(theta)};
 			//the sin(theta) factor is needed to noramlize for different sizes of surface elements in spherical coordinates
-			double totmrprob = MR.MRProb(false, v, norm, &solLeav, &solEnter);
+			double totmrprob = MR::MRProb(false, v, norm, solLeav, solEnter);
 			mroutfile << theta << ' ' << energy << ' ' << totmrprob << '\n';
 		}
 	}
