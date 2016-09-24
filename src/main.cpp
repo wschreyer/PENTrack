@@ -32,7 +32,6 @@ using namespace std;
 #include "geometry.h"
 #include "source.h"
 #include "mc.h" 
-#include "ndist.h"
 #include "microroughness.h"
 
 void ConfigInit(TConfig &config); // read config.in
@@ -235,7 +234,6 @@ int main(int argc, char **argv){
 
 	ostringstream fileprefix;
 	fileprefix << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0);
-	if (neutdist == 1) outndist((fileprefix.str() + "ndist.out").c_str());   // print neutron distribution into file
 
 	return 0;
 }
@@ -249,7 +247,6 @@ int main(int argc, char **argv){
 void ConfigInit(TConfig &config){
 	/* setting default values */
 	simtype = PARTICLE;
-	neutdist = 0;
 	simcount = 1;
 	/*end default values*/
 
@@ -257,7 +254,6 @@ void ConfigInit(TConfig &config){
 	int stype;
 	istringstream(config["global"]["simtype"])		>> stype;
 	simtype = static_cast<simType>(stype);
-	istringstream(config["global"]["neutdist"])		>> neutdist;
 	
 
 	istringstream(config["global"]["simcount"])		>> simcount;

@@ -7,7 +7,6 @@
 #include "globals.h"
 #include "proton.h"
 #include "electron.h"
-#include "ndist.h"
 
 using namespace std;
 
@@ -267,8 +266,6 @@ bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &
 	}
 
 	// do special calculations for neutrons (spinflipcheck, snapshots, etc)
-	if (neutdist == 1)
-		fillndist(x1, &y1[0], x2, &y2[0]); // write spatial neutron distribution
 /*
 	if (field){
 		long double B[4][4];
