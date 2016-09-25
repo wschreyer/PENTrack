@@ -249,8 +249,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 }
 
 
-bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid){
-	bool result = false;
+bool TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid){
 	if (currentsolid.mat.FermiImag > 0){
 		complex<double> E(0.5*(double)m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
 		complex<double> k = sqrt(2*(double)m_n*E)*(double)ele_e/(double)hbar; // wave vector
@@ -261,48 +260,10 @@ bool TNeutron::OnStep(value_type x1, state_type y1, value_type &x2, state_type &
 			stepper.calc_state(x2, y2);
 			StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, currentsolid);
 			printf("Absorption!\n");
-			result = true; // stop integration
+			return true; // stop integration
 		}
 	}
-
-	// do special calculations for neutrons (spinflipcheck, snapshots, etc)
-/*
-	if (field){
-		long double B[4][4];
-		field->BField(y1[0],y1[1],y1[2],x1,B);
-*//*
-		if (B[3][0] > 0){
-			// spin flip properties according to Vladimirsky and thumbrule
-			vlad = vladimirsky(B[0][0], B[1][0], B[2][0],
-							   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
-							   y1[3], y1[4], y1[5]);
-			frac = thumbrule(B[0][0], B[1][0], B[2][0],
-							   B[0][1], B[0][2], B[0][3], B[1][1], B[1][2], B[1][3], B[2][1], B[2][2], B[2][3], B[3][0],
-							   y1[3], y1[4], y1[5]);
-			vladtotal *= 1-vlad;
-			if (vlad > 1e-99)
-				vladmax = max(vladmax,log10(vlad));
-			if (frac > 1e-99)
-				thumbmax = max(thumbmax,log10(frac));
-		}
-*/
-/*			long double B2[4][4];
-		field->BField(y2[0],y2[1],y2[2],x2,B2);
-		long double sp = BruteForceIntegration(x1,y1,B,x2,y2,B2); // integrate spinflip probability
-//			if (1-sp > 1e-30) logBF = log10(1-sp);
-//			else logBF = -99;
-//			BFsurvprob *= sp;
-		// flip the spin with a probability of 1-BFsurvprob
-		if (flipspin && mc->UniformDist(0,1) < 1-sp)
-		{
-			polarisation *= -1;
-			Nspinflip++;
-			printf("\n The spin has flipped! Number of flips: %i\n",Nspinflip);
-			result = true;
-		}
-	}
-*/
-	return result;
+	return false;
 }
 
 

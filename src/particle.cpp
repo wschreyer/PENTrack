@@ -103,9 +103,8 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 		 << "m E: " << Eend() << "eV t: " << tend << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
 
 	// set initial values for integrator
-	value_type x = tend, x1, x2;
+	value_type x = tend;
 	state_type y = yend; 
-	state_type y1(STATE_VARIABLES), y2(STATE_VARIABLES);
 
 	value_type h = 0.001/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5]); // first guess for stepsize
 
@@ -153,14 +152,14 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
 	state_type spin = spinend;
 
-	stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
+	dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
 
 	while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 		if (resetintegration){
 			stepper.initialize(y, x, h);
 		}
-		x1 = x; // save point before next step
-		y1 = y;
+		value_type x1 = x; // save point before next step
+		state_type y1 = y;
 
 		try{
 			stepper.do_step(boost::bind(&TParticle::derivs, this, _1, _2, _3));
@@ -184,7 +183,8 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 
 		while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) with spatial length SAMPLE_DIST, go through all pieces
 			value_type v1 = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-			x2 = x1 + MAX_SAMPLE_DIST/v1; // time length = spatial length/velocity
+			value_type x2 = x1 + MAX_SAMPLE_DIST/v1; // time length = spatial length/velocity
+			state_type y2(STATE_VARIABLES);
 			if (x2 >= x){
 				x2 = x;
 				y2 = y;
@@ -193,37 +193,37 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 				stepper.calc_state(x2, y2);
 			}
 
-			resetintegration = CheckHit(x1, y1, x2, y2, hitlog); // check if particle hit a material boundary or was absorbed between y1 and y2
+			resetintegration = CheckHit(x1, y1, x2, y2, stepper, hitlog); // check if particle hit a material boundary or was absorbed between y1 and y2
 			if (resetintegration){
 				x = x2; // if particle path was changed: reset integration end point
 				y = y2;
 			}
 
-			noflipprob *= 1 - IntegrateSpin(spin, x1, y1, x2, y2, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval);
-			spinend = spin;
-
 			lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
-			Hmax = max(Ekin(&y2[3]) + Epot(x, y2, field, GetCurrentsolid()), Hmax);
-
-			// take snapshots at certain times
-			if (snapshotlog && snapshots.good()){
-				if (x1 <= nextsnapshot && x2 > nextsnapshot){
-					state_type ysnap(STATE_VARIABLES);
-					stepper.calc_state(nextsnapshot, ysnap);
-					cout << "\n Snapshot at " << nextsnapshot << " s \n";
-
-					Print(nextsnapshot, ysnap, GetCurrentsolid(), snapshotLog);
-					snapshots >> nextsnapshot;
-				}
-			}
-
-			if (tracklog && x2 - lastsave > trackloginterval/v1){
-				PrintTrack(x2, y2, GetCurrentsolid());
-				lastsave = x2;
-			}
 
 			x1 = x2;
 			y1 = y2;
+		}
+
+		noflipprob *= 1 - IntegrateSpin(spin, stepper, y, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval);
+		spinend = spin;
+
+		Hmax = max(Ekin(&y[3]) + Epot(x, y, field, GetCurrentsolid()), Hmax);
+		// take snapshots at certain times
+		if (snapshotlog && snapshots.good()){
+			if (stepper.previous_time() <= nextsnapshot && x > nextsnapshot){
+				state_type ysnap(STATE_VARIABLES);
+				stepper.calc_state(nextsnapshot, ysnap);
+				cout << "\n Snapshot at " << nextsnapshot << " s \n";
+
+				Print(nextsnapshot, ysnap, GetCurrentsolid(), snapshotLog);
+				snapshots >> nextsnapshot;
+			}
+		}
+
+		if (tracklog && x - lastsave > trackloginterval/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])){
+			PrintTrack(x, y, GetCurrentsolid());
+			lastsave = x;
 		}
 
 		PrintPercent(max(y[6]/tau, max((x - tstart)/(tmax - tstart), lend/maxtraj)), perc);
@@ -290,11 +290,14 @@ void TParticle::derivs(const state_type &y, state_type &dydx,  const value_type 
 }
 
 
-double TParticle::IntegrateSpin(state_type &spin, const value_type x1, const state_type &y1, const value_type x2, state_type &y2,
+double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, state_type &y2,
 								const std::vector<double> &times, const double Bmax, const bool flipspin, const bool spinlog, const double spinloginterval){
+	value_type x1 = stepper.previous_time();
+	value_type x2 = stepper.current_time();
 	if (gamma == 0 || x1 == x2 || !field)
 		return 0;
 
+	state_type y1 = stepper.previous_state();
 	double B1[4][4], B2[4][4], polarisation;
 	field->BField(y1[0], y1[1], y1[2], x1, B1);
 	field->BField(y2[0], y2[1], y2[2], x2, B2);
@@ -477,7 +480,7 @@ bool TParticle::CheckHitError(const solid &hitsolid, double distnormal) const{
 }
 
 
-bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const bool hitlog, const int iteration){
+bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const bool hitlog, const int iteration){
 	solid currentsolid = GetCurrentsolid();
 	if (!geom->CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
 		printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
@@ -548,7 +551,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 
 			if (trajectoryaltered)
 				return true;
-			else if (OnStep(x1, y1, x2, y2, GetCurrentsolid())){ // check for absorption
+			else if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid())){ // check for absorption
 				printf("Absorption!\n");
 				return true;
 			}
@@ -567,7 +570,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 				xbisect1 = xbisect2 = xnew;
 				stepper.calc_state(xbisect1, ybisect1);
 				ybisect2 = ybisect1;
-				if (CheckHit(x1, y1, xbisect1, ybisect1, hitlog, iteration+1)){ // recursive call for step before coll. point
+				if (CheckHit(x1, y1, xbisect1, ybisect1, stepper, hitlog, iteration+1)){ // recursive call for step before coll. point
 					x2 = xbisect1;
 					y2 = ybisect1;
 					return true;
@@ -578,18 +581,18 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 			if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
 				xbisect2 = xnew;
 				stepper.calc_state(xbisect2, ybisect2);
-				if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, hitlog, iteration+1)){ // recursive call for step over coll. point
+				if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, stepper, hitlog, iteration+1)){ // recursive call for step over coll. point
 					x2 = xbisect2;
 					y2 = ybisect2;
 					return true;
 				}
 			}
 
-			if (CheckHit(xbisect2, ybisect2, x2, y2, hitlog, iteration+1)) // recursive call for step after coll. point
+			if (CheckHit(xbisect2, ybisect2, x2, y2, stepper, hitlog, iteration+1)) // recursive call for step after coll. point
 				return true;
 		}
 	}
-	else if (OnStep(x1, y1, x2, y2, GetCurrentsolid())){ // if there was no collision: just check for absorption in solid with highest priority
+	else if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid())){ // if there was no collision: just check for absorption in solid with highest priority
 		return true;
 	}
 	return false;

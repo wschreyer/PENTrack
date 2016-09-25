@@ -156,7 +156,6 @@ protected:
 	TGeometry *geom; ///< TGeometry structure passed by "Integrate"
 	TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
 	TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
-	dense_stepper_type stepper; ///< ODE integrator
 
 
 	/**
@@ -202,11 +201,12 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment
 	 * @param y2 End point of line segment
+	 * @param stepper Trajectory integrator, used to calculate intermediate state vectors
 	 * @param hitlog Should hits be logged to file?
 	 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 	 * @return Returns true if particle was reflected/absorbed
 	 */
-	bool CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const bool hitlog, const int iteration = 1);
+	bool CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const bool hitlog, const int iteration = 1);
 
 
 	/**
@@ -216,9 +216,7 @@ protected:
 	 * If the conditions given by times and Bmax are not fulfilled, the spin vector will simply be rotated along the magnetic field, keeping the spin projection onto the magnetic field constant.
 	 *
 	 * @param spin Spin vector, returns new spin vector after step
-	 * @param x1 Time at beginning of step [s]
-	 * @param y1 Particle state vector at beginning of step
-	 * @param x2 Time at end of step [s]
+	 * @param stepper Trajectory integrator containing last step
 	 * @param y2 Particle state vector at end of step
 	 * @param time Absolute time intervals in between spin integration should be carried out [s]
 	 * @param Bmax Spin integration will only be carried out, if magnetic field is below this value [T]
@@ -228,7 +226,7 @@ protected:
 	 *
 	 * @return Return probability of spin flip
 	 */
-	double IntegrateSpin(state_type &spin, const value_type x1, const state_type &y1, const value_type x2, state_type &y2,
+	double IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, state_type &y2,
 						const std::vector<double> &times, const double Bmax, const bool flipspin, const bool spinlog, const double spinloginterval);
 
 
@@ -274,10 +272,11 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
+	 * @param stepper Trajectory integrator, can be used to calculate intermediate state vectors
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle path was changed
 	 */
-	virtual bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid) = 0;
+	virtual bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid) = 0;
 
 
 	/**

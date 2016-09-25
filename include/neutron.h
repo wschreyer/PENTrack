@@ -137,7 +137,7 @@ protected:
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle was absorbed
 	 */
-	bool OnStep(value_type x1, state_type y1, value_type &x2, state_type &y2, solid currentsolid);
+	bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid);
 
 
 	/**
