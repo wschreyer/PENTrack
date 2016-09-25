@@ -286,17 +286,6 @@ protected:
 
 
 	/**
-	 * Set all *end variables to given values and set ID to signal that integration should be stopped
-	 *
-	 * @param aID ID describing particle fate.
-	 * @param x Current time.
-	 * @param y Current state vector.
-	 * @param sld Solid in which the particle is currently.
-	 */
-	void StopIntegration(const stopID aID, const value_type x, const state_type &y, const solid &sld);
-
-
-	/**
 	 * Return stream for each log type.
 	 *
 	 * Purely virtual function, has to be implemented for each particle type.
@@ -319,7 +308,7 @@ protected:
 	 * @param sld Solid in which the particle is currently.
 	 * @param filesuffix Optional suffix added to the file name (default: "end.out")
 	 */
-	virtual void Print(const value_type x, const state_type &y, const solid &sld, const LogStream logType) const;
+	virtual void Print(const value_type x, const state_type &y, const state_type &spin, const solid &sld, const LogStream logType) const;
 
 
 	/**
@@ -332,7 +321,7 @@ protected:
 	 * @param y Current state vector
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintTrack(const value_type x, const state_type &y, const solid &sld) const;
+	virtual void PrintTrack(const value_type x, const state_type &y, const state_type &spin, const solid &sld) const;
 
 
 	/**

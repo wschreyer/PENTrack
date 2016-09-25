@@ -123,7 +123,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 	bool tracklog = false;
 	istringstream(conf["tracklog"]) >> tracklog;
 	if (tracklog)
-		PrintTrack(tend, yend, solidend);
+		PrintTrack(tend, yend, spinend, solidend);
 	double trackloginterval = 1e-3;
 	istringstream(conf["trackloginterval"]) >> trackloginterval;
 	value_type lastsave = x;
@@ -169,7 +169,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 			Nstep++;
 		}
 		catch(...){ // catch Exceptions thrown by numerical recipes routines
-			StopIntegration(ID_ODEINT_ERROR, x, y, GetCurrentsolid());
+			ID = ID_ODEINT_ERROR;
 		}
 
 		if (y[6] > tau){ // if proper time is larger than lifetime
@@ -205,10 +205,6 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 			y1 = y2;
 		}
 
-		noflipprob *= 1 - IntegrateSpin(spin, stepper, y, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval);
-		spinend = spin;
-
-		Hmax = max(Ekin(&y[3]) + Epot(x, y, field, GetCurrentsolid()), Hmax);
 		// take snapshots at certain times
 		if (snapshotlog && snapshots.good()){
 			if (stepper.previous_time() <= nextsnapshot && x > nextsnapshot){
@@ -216,25 +212,32 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 				stepper.calc_state(nextsnapshot, ysnap);
 				cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
-				Print(nextsnapshot, ysnap, GetCurrentsolid(), snapshotLog);
+				Print(nextsnapshot, ysnap, spin, geom->GetSolid(nextsnapshot, &ysnap[0], currentsolids), snapshotLog);
 				snapshots >> nextsnapshot;
 			}
 		}
 
+		noflipprob *= 1 - IntegrateSpin(spin, stepper, y, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval); // calculate spin precession and spin-flip probability
+
+		Hmax = max(Ekin(&y[3]) + Epot(x, y, field, GetCurrentsolid()), Hmax);
 		if (tracklog && x - lastsave > trackloginterval/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])){
-			PrintTrack(x, y, GetCurrentsolid());
+			PrintTrack(x, y, spin, GetCurrentsolid());
 			lastsave = x;
 		}
 
 		PrintPercent(max(y[6]/tau, max((x - tstart)/(tmax - tstart), lend/maxtraj)), perc);
 		
 		if (ID == ID_UNKNOWN && y[6] >= tau) // proper time >= tau?
-			StopIntegration(ID_DECAYED, x, y, GetCurrentsolid());
+			ID = ID_DECAYED;
 		else if (ID == ID_UNKNOWN && (x >= tmax || lend >= maxtraj)) // time > tmax or trajectory length > max length?
-			StopIntegration(ID_NOT_FINISH, x, y, GetCurrentsolid());
+			ID = ID_NOT_FINISH;
 	}
 
-	Print(tend, yend, solidend, endLog);
+	tend = x;
+	yend = y;
+	spinend = spin;
+	solidend = GetCurrentsolid();
+	Print(tend, yend, spinend, solidend, endLog);
 
 	if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
 		cout << "Decayed!\n";
@@ -303,7 +306,6 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 	field->BField(y2[0], y2[1], y2[2], x2, B2);
 
 	if (B2[3][0] == 0){ // if there's no magnetic field or particle is leaving magnetic field, do nothing
-		std::cout << "Magnetic field is zero\n";
 		std::fill(spin.begin(), spin.end(), 0); // set all spin components to zero
 		return 0;
 	}
@@ -484,7 +486,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 	solid currentsolid = GetCurrentsolid();
 	if (!geom->CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
 		printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
-		StopIntegration(ID_HIT_BOUNDARIES, x2, y2, currentsolid);
+		ID = ID_HIT_BOUNDARIES;
 		return true;
 	}
 
@@ -494,7 +496,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 		collfound = geom->GetCollisions(x1, &y1[0], x2, &y2[0], colls);
 	}
 	catch(...){
-		StopIntegration(ID_CGAL_ERROR, x2, y2, currentsolid);
+		ID = ID_CGAL_ERROR;
 		return true;
 	}
 
@@ -510,9 +512,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 			for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){ // go through list of collisions
 				solid sld = geom->solids[it->first.sldindex];
 				if (CheckHitError(sld, it->first.distnormal)){ // check all hits for errors
-					x2 = x1;
-					y2 = y1;
-					StopIntegration(ID_GEOMETRY_ERROR, x2, y2, currentsolid); // stop trajectory integration if error found
+					ID = ID_GEOMETRY_ERROR; // stop trajectory integration if error found
 					return true;
 				}
 
@@ -549,17 +549,16 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 				currentsolids = newsolids; // if surface was traversed (even if it was  physically ignored) replace current solids with list of new solids
 			}
 
-			if (trajectoryaltered)
-				return true;
-			else if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid())){ // check for absorption
-				printf("Absorption!\n");
+			if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid())){ // check for absorption/scattering
 				return true;
 			}
+			if (trajectoryaltered)
+				return true;
 
 		}
 		else{
 			// else cut integration step right before and after first collision point
-			// and call ReflectOrAbsorb again for each smaller step (quite similar to bisection algorithm)
+			// and call CheckHit again for each smaller step (quite similar to bisection algorithm)
 			value_type xnew, xbisect1 = x1, xbisect2 = x1;
 			state_type ybisect1(STATE_VARIABLES);
 			state_type ybisect2(STATE_VARIABLES);
@@ -599,15 +598,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 }
 
 
-void TParticle::StopIntegration(const stopID aID, const value_type x, const state_type &y, const solid &sld){
-	ID = aID;
-	tend = x;
-	yend = y;
-	solidend = sld;
-}
-
-
-void TParticle::Print(const value_type x, const state_type &y, const solid &sld, const LogStream logType) const{
+void TParticle::Print(const value_type x, const state_type &y, const state_type &spin, const solid &sld, const LogStream logType) const{
 	ofstream &file = GetLogStream(logType);
 	if (!file.is_open()){
 		ostringstream filename;
@@ -647,13 +638,29 @@ void TParticle::Print(const value_type x, const state_type &y, const solid &sld,
 			<< ystart[7] << " " << Hstart() << " " << Estart() << " "
 			<< B[3][0] << " " << V << " " << solidstart.ID << " ";
 
+	double H;
+	if (ID == ID_ABSORBED_ON_SURFACE){
+		std::map<solid, bool>::const_iterator nextsolid = currentsolids.begin();
+		do{
+			nextsolid++;
+		}while (nextsolid->second);
+		H = E + Epot(x, y, field, nextsolid->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
+	}
+	else
+		H = E + Epot(x, y, field, GetCurrentsolid());
+
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
-	double polend = (spinend[0]*B[0][0] + spinend[1]*B[1][0] + spinend[2]*B[2][0])/B[3][0]/sqrt(spinend[0]*spinend[0] + spinend[1]*spinend[1] + spinend[2]*spinend[2]);
+
+	double Sabs = sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
+	double polend = 0;
+	if (Sabs > 0 && B[3][0] > 0){
+		polend = (spin[0]*B[0][0] + spin[1]*B[1][0] + spin[2]*B[2][0])/B[3][0]/Sabs;
+	}
 
 	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 			<< y[3] << " " << y[4] << " " << y[5] << " "
-			<< y[7] << " " << E + Epot(x, y, field, GetCurrentsolid()) << " " << E << " " // use GetCurrentsolid() for Epot, since particle may not actually have entered sld
+			<< y[7] << " " << H << " " << E << " "
 			<< B[3][0] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
 			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " 
@@ -661,7 +668,7 @@ void TParticle::Print(const value_type x, const state_type &y, const solid &sld,
 }
 
 
-void TParticle::PrintTrack(const value_type x, const state_type &y, const solid &sld) const{
+void TParticle::PrintTrack(const value_type x, const state_type &y, const state_type &spin, const solid &sld) const{
 	ofstream &trackfile = GetLogStream(trackLog);
 	if (!trackfile.is_open()){
 		ostringstream filename;

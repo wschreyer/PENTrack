@@ -227,10 +227,8 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 //			cout << " ReflProb = " << reflprob << '\n';
 
 		if (prob < MRreflprob + MRtransprob + absprob*(1 - MRreflprob - MRtransprob)){ // -> absorption on reflection, scale down absprob so MRreflprob + MRtransprob + absprob + reflprob = 1
-			x2 = x1;
-			y2 = y1; // set end point to point right before collision and set ID to absorbed
-			StopIntegration(ID_ABSORBED_ON_SURFACE, x2, y2, entering);
-			traversed = false;
+			ID = ID_ABSORBED_ON_SURFACE;
+			traversed = true;
 			trajectoryaltered = true;
 		}
 		else{ // no absorption -> reflection
@@ -258,7 +256,7 @@ bool TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2,
 		if (abspath < l){
 			x2 = x1 + abspath/l*(x2 - x1); // if absorbed, interpolate stopping time and position
 			stepper.calc_state(x2, y2);
-			StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, currentsolid);
+			ID = ID_ABSORBED_IN_MATERIAL;
 			printf("Absorption!\n");
 			return true; // stop integration
 		}

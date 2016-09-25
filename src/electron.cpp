@@ -31,7 +31,7 @@ bool TElectron::OnStep(const value_type x1, const state_type &y1, value_type &x2
 	if (currentsolid.ID != geom->defaultsolid.ID){
 		x2 = x1;
 		y2 = y1;
-		StopIntegration(ID_ABSORBED_IN_MATERIAL, x2, y2, currentsolid);
+		ID = ID_ABSORBED_IN_MATERIAL;
 		printf("Absorption!\n");
 		return true;
 	}
