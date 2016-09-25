@@ -4,6 +4,7 @@
 #include "mc.h"
 #include "globals.h"
 
+const int PIECEWISE_LINEAR_DIST_INTERVALS = 1000;
 
 TMCGenerator::TMCGenerator(const char *infile){
 	// get high resolution timestamp to generate seed

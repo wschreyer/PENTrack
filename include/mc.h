@@ -14,8 +14,6 @@
 
 #include "muParser.h"
 
-#define PIECEWISE_LINEAR_DIST_INTERVALS 1000
-
 /**
  * For each section in particle.in such a struct is created containing all user options
  */
