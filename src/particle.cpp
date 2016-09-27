@@ -131,17 +131,17 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 	bool hitlog = false;
 	istringstream(conf["hitlog"]) >> hitlog;
 
-	bool simulEFieldSpinInteg = false; 
-	istringstream(conf["simulEFieldSpinInteg"]) >> simulEFieldSpinInteg;
-
-	bool flipspin;
+	bool flipspin = false;
 	istringstream(conf["flipspin"]) >> flipspin;
 	
-	int spinlog;
-	double SpinBmax, spinloginterval;
+	bool spininterpolatefields = false;
+	istringstream(conf["interpolatefields"]) >> spininterpolatefields;
+
+	int spinlog = false;
+	double SpinBmax = 0, spinloginterval = 0, nextspinlog = std::numeric_limits<double>::infinity();
 	vector<double> SpinTimes;
-	std::istringstream(conf["BFmaxB"]) >> SpinBmax;
-	std::istringstream SpinTimess(conf["BFtimes"]);
+	std::istringstream(conf["Bmax"]) >> SpinBmax;
+	std::istringstream SpinTimess(conf["spintimes"]);
 	do{
 		double t;
 		SpinTimess >> t;
@@ -150,6 +150,8 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 	}while(SpinTimess.good());
 	std::istringstream(conf["spinlog"]) >> spinlog;
 	std::istringstream(conf["spinloginterval"]) >> spinloginterval;
+	if (spinlog)
+		nextspinlog = 0;
 	state_type spin = spinend;
 
 	dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
@@ -217,7 +219,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 			}
 		}
 
-		noflipprob *= 1 - IntegrateSpin(spin, stepper, y, SpinTimes, SpinBmax, flipspin, spinlog, spinloginterval); // calculate spin precession and spin-flip probability
+		noflipprob *= 1 - IntegrateSpin(spin, stepper, x, y, SpinTimes, spininterpolatefields, SpinBmax, flipspin, spinloginterval, nextspinlog); // calculate spin precession and spin-flip probability
 
 		Hmax = max(Ekin(&y[3]) + Epot(x, y, field, GetCurrentsolid()), Hmax);
 		if (tracklog && x - lastsave > trackloginterval/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])){
@@ -293,10 +295,9 @@ void TParticle::derivs(const state_type &y, state_type &dydx,  const value_type 
 }
 
 
-double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, state_type &y2,
-								const std::vector<double> &times, const double Bmax, const bool flipspin, const bool spinlog, const double spinloginterval){
+double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times,
+								const bool interpolatefields, const double Bmax, const bool flipspin, const double spinloginterval, double &nextspinlog){
 	value_type x1 = stepper.previous_time();
-	value_type x2 = stepper.current_time();
 	if (gamma == 0 || x1 == x2 || !field)
 		return 0;
 
@@ -341,70 +342,47 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		if ((!integrate1 && integrate2) || (B1[3][0] > Bmax && B2[3][0] < Bmax))
 			std::cout << x1 << "s " << y1[7] - polarisation << " ";
 
-		alglib::real_1d_array ts; // set up values for interpolation of precession axis
-		vector<alglib::real_1d_array> omega(3);
-		vector<alglib::spline1dinterpolant> omega_int(3);
-		const int int_points = 10;
-		ts.setlength(int_points + 1);
-		for (int i = 0; i < 3; i++)
-			omega[i].setlength(int_points + 1);
+		vector<alglib::spline1dinterpolant> omega_int;
+		if (interpolatefields){
+			alglib::real_1d_array ts; // set up values for interpolation of precession axis
+			vector<alglib::real_1d_array> omega(3);
+			omega_int.resize(3);
+			const int int_points = 10;
+			ts.setlength(int_points + 1);
+			for (int i = 0; i < 3; i++)
+				omega[i].setlength(int_points + 1);
 
-		for (int i = 0; i <= int_points; i++){ // calculate precession axis at several points along trajectory step
-			double t = x1 + i*(x2 - x1)/int_points;
-			double B[4][4], V, E[3];
-			state_type y(STATE_VARIABLES), dydt(STATE_VARIABLES);
-			stepper.calc_state(t, y);
-			derivs(y, dydt, t);
-			field->BField(y[0], y[1], y[2], t, B);
-			field->EField(y[0], y[1], y[2], t, V, E);
-			ts[i] = t;
-			double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5];
-			double gamma_rel = 1./sqrt(1 - v2/c_0/c_0);
-			double Bparallel[3];
-			for (int j = 0; j < 3; j++)
-				Bparallel[j] = (B[0][0]*y[3] + B[1][0]*y[4] + B[2][0]*y[5])*y[j]/v2; // magnetic-field component parallel to velocity
+			for (int i = 0; i <= int_points; i++){ // calculate precession axis at several points along trajectory step
+				double t = x1 + i*(x2 - x1)/int_points;
+				ts[i] = t;
+				SpinPrecessionAxis(t, stepper, omega[0][i], omega[1][i], omega[2][i]);
+			}
 
-			// spin precession axis due to relativistically distorted magnetic field, omega_B = -gyro/gamma * ( (1 - gamma)*(v.B)*v/v^2 + gamma*B - gamma*(v x E)/c )
-			double OmegaB[3];
-			OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0][0] - gamma_rel*(y[4]*E[2] - y[5]*E[2])/c_0);
-			OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1][0] - gamma_rel*(y[5]*E[0] - y[3]*E[0])/c_0);
-			OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2][0] - gamma_rel*(y[3]*E[1] - y[4]*E[1])/c_0);
-
-			// Thomas precession in lab frame, omega_T = gamma^2/(gamma + 1)*(dv/dt x v)
-			double OmegaT[3];
-			OmegaT[0] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[4]*y[5] - dydt[5]*y[4])/c_0/c_0;
-			OmegaT[1] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[5]*y[3] - dydt[3]*y[5])/c_0/c_0;
-			OmegaT[2] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[3]*y[4] - dydt[4]*y[3])/c_0/c_0;
-
-			// total precession axis is sum of magnetic precession axis and Thomas-precession axis
-			omega[0][i] = OmegaB[0] + OmegaT[0];
-			omega[1][i] = OmegaB[1] + OmegaT[1];
-			omega[2][i] = OmegaB[2] + OmegaT[2];
+			for (int i = 0; i < 3; i++)
+				alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
 		}
 
-		for (int i = 0; i < 3; i++)
-			alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
-
-		if (spinlog)
-			PrintSpin(x1, spin, omega_int);
-		double lastlog = x1;
+		if (x1 >= nextspinlog){
+			PrintSpin(x1, spin, stepper);
+			nextspinlog += spinloginterval;
+		}
 
 		dense_stepper_type2 spinstepper(1e-12, 1e-12, 1., 1., true);
 		spinstepper.initialize(spin, x1, std::abs(pi/gamma/B1[3][0])); // initialize integrator with step size = half rotation
 		unsigned int steps = 0;
 		while (true){
 			// take an integration step, SpinDerivs contains right-hand side of equation of motion
-			spinstepper.do_step(boost::bind(&TParticle::SpinDerivs, this, _1, _2, _3, omega_int));
+			spinstepper.do_step(boost::bind(&TParticle::SpinDerivs, this, _1, _2, _3, stepper, omega_int));
 			steps++;
 			double t = spinstepper.current_time();
-			if (spinlog && t >= lastlog + spinloginterval){
-				PrintSpin(t, spinstepper.current_state(), omega_int);
+			if (t >= nextspinlog){
+				PrintSpin(t, spinstepper.current_state(), stepper);
+				nextspinlog += spinloginterval;
 			}
 			if (t >= x2){ // if stepper overshot, calculate end point and stop
 				spinstepper.calc_state(x2, spin);
 				break;
 			}
-
 		}
 
 		// calculate new spin projection
@@ -443,13 +421,53 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 }
 
 
-void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const std::vector<alglib::spline1dinterpolant> &omega) const{
-	double omegat[3];
-	for (int i = 0; i < 3; i++)
-		omegat[i] = alglib::spline1dcalc(omega[i], x);
-	dydx[0] = omegat[1]*y[2] - omegat[2]*y[1];
-	dydx[1] = omegat[2]*y[0] - omegat[0]*y[2];
-	dydx[2] = omegat[0]*y[1] - omegat[1]*y[0];
+void TParticle::SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, double &Omegax, double &Omegay, double &Omegaz) const{
+	double B[4][4], V, E[3];
+	state_type y(STATE_VARIABLES), dydt(STATE_VARIABLES);
+	stepper.calc_state(t, y);
+	derivs(y, dydt, t);
+	field->BField(y[0], y[1], y[2], t, B);
+	field->EField(y[0], y[1], y[2], t, V, E);
+
+	double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5];
+	double gamma_rel = 1./sqrt(1. - v2/c_0/c_0);
+	double Bparallel[3];
+	for (int j = 0; j < 3; j++)
+		Bparallel[j] = (B[0][0]*y[3] + B[1][0]*y[4] + B[2][0]*y[5])*y[j+3]/v2; // magnetic-field component parallel to velocity
+
+	// spin precession axis due to relativistically distorted magnetic field, omega_B = -gyro/gamma * ( (1 - gamma)*(v.B)*v/v^2 + gamma*B - gamma*(v x E)/c )
+	double OmegaB[3];
+	OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0][0] - gamma_rel*(y[4]*E[2] - y[5]*E[1])/c_0/c_0);
+	OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1][0] - gamma_rel*(y[5]*E[0] - y[3]*E[2])/c_0/c_0);
+	OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2][0] - gamma_rel*(y[3]*E[1] - y[4]*E[0])/c_0/c_0);
+
+	// Thomas precession in lab frame, omega_T = gamma^2/(gamma + 1)*(dv/dt x v)
+	double OmegaT[3] = {0,0,0};
+	OmegaT[0] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[4]*y[5] - dydt[5]*y[4])/c_0/c_0;
+	OmegaT[1] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[5]*y[3] - dydt[3]*y[5])/c_0/c_0;
+	OmegaT[2] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[3]*y[4] - dydt[4]*y[3])/c_0/c_0;
+
+	// Total spin precession is sum of magnetic-field precession and Thomas precession
+	Omegax = OmegaB[0] + OmegaT[0];
+	Omegay = OmegaB[1] + OmegaT[1];
+	Omegaz = OmegaB[2] + OmegaT[2];
+}
+
+
+void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const dense_stepper_type &stepper, const std::vector<alglib::spline1dinterpolant> &omega) const{
+	double omegax, omegay, omegaz;
+	if (omega.size() == 3){
+		omegax = alglib::spline1dcalc(omega[0], x);
+		omegay = alglib::spline1dcalc(omega[1], x);
+		omegaz = alglib::spline1dcalc(omega[2], x);
+	}
+	else
+		SpinPrecessionAxis(x, stepper, omegax, omegay, omegaz);
+
+	dydx[0] = omegay*y[2] - omegaz*y[1];
+	dydx[1] = omegaz*y[0] - omegax*y[2];
+	dydx[2] = omegax*y[1] - omegay*y[0];
+
 }
 
 
@@ -733,7 +751,7 @@ void TParticle::PrintHit(const value_type x, const state_type &y1, const state_t
 }
 
 
-void TParticle::PrintSpin(const value_type x, const state_type &spin, const std::vector<alglib::spline1dinterpolant> &omega) const{
+void TParticle::PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper) const{
 	ofstream &spinfile = GetLogStream(spinLog);
 	if (!spinfile.is_open()){
 		std::ostringstream filename;
@@ -748,12 +766,15 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const std:
 
 		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
 		spinfile << std::setprecision(std::numeric_limits<double>::digits);
-		spinfile << "t Sx Sy Sz Wx Wy Wz\n" ;
+		spinfile << "jobnumber particle t Sx Sy Sz Wx Wy Wz\n";
 	}
+	std::cout << "/";
+	double Omega[3];
+	SpinPrecessionAxis(x, stepper, Omega[0], Omega[1], Omega[2]);
 
-	spinfile << x << " " << spin[0] << " " << spin[1] << " " << spin[2] << " ";
-	for (int i = 0; i < 3; i++)
-		spinfile << alglib::spline1dcalc(omega[i], x) << " ";
+	spinfile << jobnumber << " " << particlenumber << " "
+			<< x << " " << spin[0] << " " << spin[1] << " " << spin[2] << " "
+			<< Omega[0] << " " << Omega[1] << " " << Omega[2] << "\n";
 	spinfile << "\n";
 }
 

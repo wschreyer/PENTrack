@@ -139,74 +139,80 @@ TEDMStaticB0GradZField::TEDMStaticB0GradZField(double xoff, double yoff, double 
 void TEDMStaticB0GradZField::BField(double x, double y, double z, double t, double B[4][4]){
 
 	if(ac==true && (t<on1 || t>off1)){
-	return;
+		return;
 	}
 	else{
 		
-	//point to be rotated into Bfield reference frame
-	double t1[3]={x-edmB0xoff,y-edmB0yoff,z-edmB0zoff};
-	double t2[3]={0};
+		//point to be rotated into Bfield reference frame
+		double t1[3]={x-edmB0xoff,y-edmB0yoff,z-edmB0zoff};
+		double t2[3]={0};
 
-	//rotate specified point to BField coordinate system
-	for(int i=0;i<3;i++){
-		for(int j=0;j<3;j++){
-			t2[i]+=Rot1[i][j]*t1[j];
+		//rotate specified point to BField coordinate system
+		for(int i=0;i<3;i++){
+			for(int j=0;j<3;j++){
+				t2[i]+=Rot1[i][j]*t1[j];
+			}
 		}
-	}
-	
-	//compute Bfield compoenents
-	double BF1[3]; 
-	double BF2[3]={0};
-              
-	BF1[0] = -t2[0]/2*edmdB0z0dz;		// Bx
-	BF1[1] = -t2[1]/2*edmdB0z0dz;		// By
-	BF1[2] = edmB0z0 + edmdB0z0dz*t2[2];	// Bz
-	
 
-	//rotate Bfield components back to global coordinates
-	for(int i=0;i<3;i++){
-		for(int j=0;j<3;j++){
-			BF2[i]+=Rot2[i][j]*BF1[j];
+		//compute Bfield compoenents
+		double BF1[3];
+		double BF2[3]={0};
+
+		BF1[0] = -t2[0]/2*edmdB0z0dz;		// Bx
+		BF1[1] = -t2[1]/2*edmdB0z0dz;		// By
+		BF1[2] = edmB0z0 + edmdB0z0dz*t2[2];	// Bz
+
+	
+		//rotate Bfield components back to global coordinates
+		for(int i=0;i<3;i++){
+			for(int j=0;j<3;j++){
+				BF2[i]+=Rot2[i][j]*BF1[j];
+			}
 		}
-	}
-	
 
-	//Initialize a local instance of dB to be folded
-	double dBScaled[9];
-	for(int i = 0; i < 9; i++)
-		dBScaled[i] = dB[i];
+	
+		//Initialize a local instance of dB to be folded
+		double dBScaled[9];
+		for(int i = 0; i < 9; i++)
+			dBScaled[i] = dB[i];
+
+		//apply AC scaling if necessary
+		if(ac==true){
+			double scalar;
+			scalar=sin((f*t+phase)*2*M_PI);
+		for (int i = 0; i < 9; i++){
+			dBScaled[i]*=scalar;
+			if (i < 3)
+				BF2[i] *= scalar;
+			}
+		}
 		
-	//apply AC scaling if necessary
-	if(ac==true){
-		double scalar;
-		scalar=sin((f*t+phase)*2*M_PI);
-	for (int i = 0; i < 9; i++){
-		dBScaled[i]*=scalar;
-		if (i < 3)
-			BF2[i] *= scalar;
+		//Fold the field near its boundaries
+		for (int i = 0; i < 3; i++){
+			FieldSmthr(x, y, z, BF2, dBScaled, i);
 		}
-	}
-	
-	//Fold the field near its boundaries
-	for (int i = 0; i < 3; i++){
-		FieldSmthr(x, y, z, BF2, dBScaled, i);
-	}
-	
-	//Update the simulation BField to include the EDM component
-	B[0][0]+=BF2[0];
-	B[1][0]+=BF2[1];
-	B[2][0]+=BF2[2];
 
-	//update the simulation BField gradient to include the EDM component
-	B[0][1]+=dBScaled[0];
-	B[1][1]+=dBScaled[1];
-	B[2][1]+=dBScaled[2];
-	B[0][2]+=dBScaled[3];
-	B[1][2]+=dBScaled[4];
-	B[2][2]+=dBScaled[5];
-	B[0][3]+=dBScaled[6];
-	B[1][3]+=dBScaled[7];
-	B[2][3]+=dBScaled[8];
+		//Update the simulation BField to include the EDM component
+		B[0][0]+=BF2[0];
+		B[1][0]+=BF2[1];
+		B[2][0]+=BF2[2];
+	
+		//update the simulation BField gradient to include the EDM component
+		B[0][1]+=dBScaled[0];
+		B[1][1]+=dBScaled[1];
+		B[2][1]+=dBScaled[2];
+		B[0][2]+=dBScaled[3];
+		B[1][2]+=dBScaled[4];
+		B[2][2]+=dBScaled[5];
+		B[0][3]+=dBScaled[6];
+		B[1][3]+=dBScaled[7];
+		B[2][3]+=dBScaled[8];
+	
+		for (int i = 0; i < 4; i++){
+			for (int j = 0; j < 4; j++){
+				B[i][j] *= BScaling(t);
+			}
+		}
 	}
 }
 

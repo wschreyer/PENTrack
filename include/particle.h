@@ -152,11 +152,11 @@ public:
 	void Integrate(double tmax, std::map<std::string, std::string> &conf);
 
 protected:
-	std::map<solid, bool> currentsolids; ///< solids in which particle is currently inside
 	TGeometry *geom; ///< TGeometry structure passed by "Integrate"
 	TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
 	TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
-
+private:
+	std::map<solid, bool> currentsolids; ///< solids in which particle is currently inside
 
 	/**
 	 * Return first non-ignored solid in TParticle::currentsolids list
@@ -174,7 +174,7 @@ protected:
 	 * @param dydx Returns derivatives of y with respect to x
 	 * @param x Time
 	 */
-	inline void derivs(const state_type &y, state_type &dydx, const value_type x) const;
+	void derivs(const state_type &y, state_type &dydx, const value_type x) const;
 
 
 	/**
@@ -217,31 +217,47 @@ protected:
 	 *
 	 * @param spin Spin vector, returns new spin vector after step
 	 * @param stepper Trajectory integrator containing last step
-	 * @param y2 Particle state vector at end of step
-	 * @param time Absolute time intervals in between spin integration should be carried out [s]
+	 * @param x2 Time at end of step [s]
+	 * @param y2 Particle state vector at end of step (position, velocity, proper time, and polarisation)
+	 * @param times Absolute time intervals in between spin integration should be carried out [s]
+	 * @param interpolatefields If this is set to true, the magnetic and electric fields will be interpolated between the trajectory-step points. This will speed up spin tracking in high, static fields, but might break spin tracking in small, quickly varying fields (e.g. spin-flip pulses)
 	 * @param Bmax Spin integration will only be carried out, if magnetic field is below this value [T]
-	 * @param flipspin If set to one, polarisation in y2 will be randomly set when magnetic field rises above Bmax, weighted by spin projection onto the magnetic field
-	 * @param spinlog Set to one to print spin trajectory to file [0,1]
-	 * @param spinloginterval Time interval at which spin trajectory will be printed to file [s]
+	 * @param flipspin If set to true, polarisation in y2 will be randomly set when magnetic field rises above Bmax, weighted by spin projection onto the magnetic field
+	 * @param spinloginterval Min. distance [s] between spin-trajectory prints
+	 * @param nextspinlog Time at which the next spin-trajectory point should be written to file
 	 *
 	 * @return Return probability of spin flip
 	 */
-	double IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, state_type &y2,
-						const std::vector<double> &times, const double Bmax, const bool flipspin, const bool spinlog, const double spinloginterval);
+	double IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times,
+						const bool interpolatefields, const double Bmax, const bool flipspin, const double spinloginterval, double &nextspinlog);
 
+private:
+	/**
+	 * Calculate spin precession axis.
+	 *
+	 * Includes relativistic distortion of magnetic and electric fields and Thomas precession.
+	 *
+	 * @param t Time
+	 * @param stepper Trajectory integrator used to calculate position and velocity at time t
+	 * @param Omega Returns precession axis as 3-vector in lab frame
+	 */
+	void SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, double &Omegax, double &Omegay, double &Omegaz) const;
 
 	/**
 	 * Equations of motion of spin vector.
 	 *
-	 * Calculates spin-precession axis from pre-calculated splines
+	 * Calculates spin-precession axis either directly or from pre-calculated splines
 	 *
 	 * @param y Current spin vector
 	 * @param dydx Calculated time derivative of spin vector
 	 * @param x Current time
-	 * @param omega Vector of three splines used to interpolate spin-precession axis
+	 * @param omega Pointer to vector of three splines used to interpolate spin-precession axis
+	 * @param stepper Pointer to trajectory integrator used to calculate spin-precession axis (can be NULL)
 	 */
-	inline void SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const std::vector<alglib::spline1dinterpolant> &omega) const;
+	void SpinDerivs(const state_type &y, state_type &dydx, const value_type x,
+			const dense_stepper_type &stepper, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
 
+protected:
 	/**
 	 * This virtual method is executed, when a particle crosses a material boundary.
 	 *
@@ -345,12 +361,11 @@ protected:
 	 *
 	 * This is a simple prototype that can be overridden by derived particle classes.
 	 *
-	 * @param spinfile stream to print into
 	 * @param x time
 	 * @param spin Spin vector
-	 * @param y Particle state vector
+	 * @param stepper Trajectory integrator used to calculate spin-precession axis at time t
 	 */
-	virtual void PrintSpin(const value_type x, const state_type &spin, const std::vector<alglib::spline1dinterpolant> &omega) const;
+	virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper) const;
 
 
 	/**

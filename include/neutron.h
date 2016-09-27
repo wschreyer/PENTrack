@@ -124,11 +124,6 @@ protected:
 	/**
 	 * Checks for absorption in solids using Fermi-potential formalism and does some additional calculations for neutrons
 	 *
-	 * Caclulates adiabacity condition (TNeutron::frac).
-	 * Estimates spin flip probability according to Vladimirskii (TNeutron::vlad)
-	 * and by doing a bruteforce integration of the Bloch equation describing spin precession.
-	 * Additionally it can print out a spatial neutron distribution matrix.
-	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
