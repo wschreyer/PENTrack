@@ -6,11 +6,15 @@
 
 const int PIECEWISE_LINEAR_DIST_INTERVALS = 1000;
 
-TMCGenerator::TMCGenerator(const char *infile){
-	// get high resolution timestamp to generate seed
-	timespec highrestime;
-	clock_gettime(CLOCK_REALTIME, &highrestime);
-	seed = (uint64_t)highrestime.tv_sec * (uint64_t)1000000000 + (uint64_t)highrestime.tv_nsec;
+TMCGenerator::TMCGenerator(const char *infile, const uint64_t aseed){
+	if (aseed == 0){
+		// get high resolution timestamp to generate seed
+		timespec highrestime;
+		clock_gettime(CLOCK_REALTIME, &highrestime);
+		seed = (uint64_t)highrestime.tv_sec * (uint64_t)1000000000 + (uint64_t)highrestime.tv_nsec;
+	}
+	else
+		seed = aseed;
 	std::cout << "Random Seed: " << seed << "\n\n";
 	rangen.seed(seed);
 

@@ -72,13 +72,13 @@ void catch_alarm (int sig){
  * main function.
  *
  * @param argc Number of parameters passed via the command line
- * @param argv Array of parameters passed via the command line (./Track [jobnumber [configpath [outputpath]]])
+ * @param argv Array of parameters passed via the command line (./Track [jobnumber [configpath [outputpath [seed]]]])
  * @return Return 0 on success, value !=0 on failure
  *
  */
 int main(int argc, char **argv){
 	if ((argc > 1) && (strcmp(argv[1], "-h") == 0)){
-		cout << "Usage:\nPENTrack [jobnumber [path/to/in/files [path/to/out/files]]]" << endl;
+		cout << "Usage:\nPENTrack [jobnumber [path/to/in/files [path/to/out/files [seed]]]]" << endl;
 		exit(0);
 	}
 
@@ -91,12 +91,15 @@ int main(int argc, char **argv){
 	jobnumber = 0;
 	outpath = "./out";
 	string inpath = "./in";
-	if(argc>1) // if user supplied at least 1 arg (outputfilestamp)
+	uint64_t seed = 0;
+	if(argc>1) // if user supplied at least 1 arg (jobnumber)
 		istringstream(argv[1]) >> jobnumber;
-	if(argc>2) // if user supplied 2 or more args (outputfilestamp, inpath)
+	if(argc>2) // if user supplied 2 or more args (jobnumber, inpath)
 		inpath = argv[2]; // input path pointer set
-	if(argc>3) // if user supplied all 3 args (outputfilestamp, inpath, outpath)
+	if(argc>3) // if user supplied 3 or more args (jobnumber, inpath, outpath)
 		outpath = argv[3]; // set the output path pointer
+	if (argc>4) // if user supplied 4 or more args (jobnumber, inpath, outpath, seed)
+		istringstream(argv[4]) >> seed;
 	
 	TConfig configin;
 	ReadInFile(string(inpath + "/config.in").c_str(), configin);
@@ -150,7 +153,7 @@ int main(int argc, char **argv){
 	
 	cout << "Loading random number generator...\n";
 	// load random number generator from all3inone.in
-	TMCGenerator mc(string(inpath + "/particle.in").c_str());
+	TMCGenerator mc(string(inpath + "/particle.in").c_str(), seed);
 	
 	cout << "Loading source...\n";
 	// load source configuration from geometry.in

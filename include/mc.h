@@ -44,8 +44,9 @@ public:
 	 * Create random seed and read infile.
 	 *
 	 * @param infile Path to configuration file
+	 * @param aseed Set a custom seed (optional), if set to zero seed is determined from high-resolution clock
 	 */
-	TMCGenerator(const char *infile);
+	TMCGenerator(const char *infile, const uint64_t aseed = 0);
 
 	/**
 	 * Destructor.
