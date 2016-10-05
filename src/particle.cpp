@@ -106,8 +106,6 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 	value_type x = tend;
 	state_type y = yend; 
 
-	value_type h = 0.001/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5]); // first guess for stepsize
-
 	bool resetintegration = true;
 
 	float nextsnapshot = -1;
@@ -158,7 +156,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 
 	while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 		if (resetintegration){
-			stepper.initialize(y, x, h);
+			stepper.initialize(y, x, MAX_SAMPLE_DIST/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])); // (re-)start integration with first guess of step size
 		}
 		value_type x1 = x; // save point before next step
 		state_type y1 = y;
@@ -167,7 +165,6 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 			stepper.do_step(boost::bind(&TParticle::derivs, this, _1, _2, _3));
 			x = stepper.current_time();
 			y = stepper.current_state();
-			h = stepper.current_time_step();
 			Nstep++;
 		}
 		catch(...){ // catch Exceptions thrown by numerical recipes routines
@@ -178,9 +175,9 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 			x = x1 + (x - x1)*(tau - y1[6])/(y[6] - y1[6]); // interpolate decay time in lab frame
 			stepper.calc_state(x, y);
 		}
-		if (stepper.current_time() > tmax){	//If stepsize overshot max simulation time
+		if (x > tmax){	//If stepsize overshot max simulation time
 			x = tmax;
-			stepper.calc_state(tmax, y);
+			stepper.calc_state(x, y);
 		}
 
 		while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) with spatial length SAMPLE_DIST, go through all pieces
@@ -375,14 +372,19 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 			spinstepper.do_step(boost::bind(&TParticle::SpinDerivs, this, _1, _2, _3, stepper, omega_int));
 			steps++;
 			double t = spinstepper.current_time();
+			if (t > x2){ // if stepper overshot, calculate end point and stop
+				t = x2;
+				spinstepper.calc_state(t, spin);
+			}
+			else
+				spin = spinstepper.current_state();
+
 			if (t >= nextspinlog){
-				PrintSpin(t, spinstepper.current_state(), stepper);
+				PrintSpin(t, spin, stepper);
 				nextspinlog += spinloginterval;
 			}
-			if (t >= x2){ // if stepper overshot, calculate end point and stop
-				spinstepper.calc_state(x2, spin);
+			if (t >= x2)
 				break;
-			}
 		}
 
 		// calculate new spin projection
@@ -435,13 +437,13 @@ void TParticle::SpinPrecessionAxis(const double t, const dense_stepper_type &ste
 	for (int j = 0; j < 3; j++)
 		Bparallel[j] = (B[0][0]*y[3] + B[1][0]*y[4] + B[2][0]*y[5])*y[j+3]/v2; // magnetic-field component parallel to velocity
 
-	// spin precession axis due to relativistically distorted magnetic field, omega_B = -gyro/gamma * ( (1 - gamma)*(v.B)*v/v^2 + gamma*B - gamma*(v x E)/c )
+	// spin precession axis due to relativistically distorted magnetic field, omega_B = -gyro/gamma * ( (1 - gamma)*(v.B)*v/v^2 + gamma*B - gamma*(v x E)/c^2 )
 	double OmegaB[3];
 	OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0][0] - gamma_rel*(y[4]*E[2] - y[5]*E[1])/c_0/c_0);
 	OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1][0] - gamma_rel*(y[5]*E[0] - y[3]*E[2])/c_0/c_0);
 	OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2][0] - gamma_rel*(y[3]*E[1] - y[4]*E[0])/c_0/c_0);
 
-	// Thomas precession in lab frame, omega_T = gamma^2/(gamma + 1)*(dv/dt x v)
+	// Thomas precession in lab frame, omega_T = gamma^2/(gamma + 1)/c^2*(dv/dt x v)
 	double OmegaT[3] = {0,0,0};
 	OmegaT[0] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[4]*y[5] - dydt[5]*y[4])/c_0/c_0;
 	OmegaT[1] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[5]*y[3] - dydt[3]*y[5])/c_0/c_0;
@@ -634,12 +636,14 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 		file <<	"jobnumber particle "
 					"tstart xstart ystart zstart "
 					"vxstart vystart vzstart polstart "
+					"Sxstart Systart Szstart "
 					"Hstart Estart Bstart Ustart solidstart "
 					"tend xend yend zend "
 					"vxend vyend vzend polend "
+					"Sxend Syend Szend "
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
-					"Nhit Nstep trajlength Hmax blochPolar wL\n";
+					"Nhit Nstep trajlength Hmax\n";
 		file << std::setprecision(std::numeric_limits<double>::digits); // need maximum precision for wL and delwL 
 	}
 	cout << "Printing status\n";
@@ -652,8 +656,8 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 
 	file	<< jobnumber << " " << particlenumber << " "
 			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
-			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " "
-			<< ystart[7] << " " << Hstart() << " " << Estart() << " "
+			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " " << ystart[7] << " "
+			<< spinstart[0] << " " << spinstart[1] << " " << spinstart[2] << " " << Hstart() << " " << Estart() << " "
 			<< B[3][0] << " " << V << " " << solidstart.ID << " ";
 
 	double H;
@@ -670,19 +674,12 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
 
-	double Sabs = sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
-	double polend = 0;
-	if (Sabs > 0 && B[3][0] > 0){
-		polend = (spin[0]*B[0][0] + spin[1]*B[1][0] + spin[2]*B[2][0])/B[3][0]/Sabs;
-	}
-
 	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
-			<< y[3] << " " << y[4] << " " << y[5] << " "
-			<< y[7] << " " << H << " " << E << " "
+			<< y[3] << " " << y[4] << " " << y[5] << " " << y[7] << " "
+			<< spinend[0] << " " << spinend[1] << " " << spinend[2] << " " << H << " " << E << " "
 			<< B[3][0] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " 
-			<< polend << " " << wL << '\n';
+			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
 }
 
 
@@ -775,7 +772,6 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const dens
 	spinfile << jobnumber << " " << particlenumber << " "
 			<< x << " " << spin[0] << " " << spin[1] << " " << spin[2] << " "
 			<< Omega[0] << " " << Omega[1] << " " << Omega[2] << "\n";
-	spinfile << "\n";
 }
 
 
