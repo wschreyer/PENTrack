@@ -3,9 +3,7 @@ PENTrack
 
 PENTrack - a simulation tool for ultracold neutrons, protons and electrons
 
-If you just want to do simulations, you should check out the stable releases, which have been tested. If you want the latest and greatest features and probably some bugs, or even want to contribute, you should check out the latest revision from master branch.
-
-For more information see [arXiv:1610.06358](https://arxiv.org/abs/1610.06358).
+The stable releases are quite outdated. The new release described in [arXiv:1610.06358](https://arxiv.org/abs/1610.06358) is coming up soon.
 
 
 Required libraries
