@@ -54,7 +54,6 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, set to x1 if reflection happened
 	 * @param y2 End point of line segment, returns reflected velocity
-	 * @param polarisation Polarisation of particle, may be altered
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the proton is leaving
 	 * @param entering Solid that the proton is entering
@@ -74,7 +73,7 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
-	 * @param polarisation Polarisation of particle, may be altered
+	 * @param stepper Trajectory integrator, can be used to calculate intermediate state vectors
 	 * @param currentsolid Solid in which the proton is at the moment
 	 * @return Returns true if particle was absorbed
 	 */

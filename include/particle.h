@@ -29,13 +29,23 @@ static const int STATE_VARIABLES = 8; ///< number of variables in trajectory int
 struct TParticle{
 protected:
 	typedef double value_type; ///< data type used for trajectory integration
-	typedef std::vector<value_type> state_type; ///< type representing current particle state
-	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type, value_type> stepper_type; ///< basic integration stepper
+	typedef std::vector<value_type> state_type; ///< type representing current particle state (position, velocity, proper time, and polarization) or spin state (x,y,z component)
+	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type, value_type> stepper_type; ///< basic integration stepper (5th-order Runge-Kutta)
 	typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type; ///< integration step length controller
 	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type; ///< integration step interpolator
-	typedef boost::numeric::odeint::bulirsch_stoer_dense_out<state_type, value_type> dense_stepper_type2;
+	typedef boost::numeric::odeint::bulirsch_stoer_dense_out<state_type, value_type> dense_stepper_type2; ///< alternative stepper type (Bulirsch-Stoer)
 
-	enum LogStream { endLog, snapshotLog, hitLog, trackLog, spinLog };
+	/**
+	 * Enum containing all types of log files.
+	 *
+	 * Is passed to GetLogStream to identify, which file stream should be returned.
+	 */
+	enum LogStream { endLog, ///< end log
+					snapshotLog, ///< snapshot log
+					hitLog, ///< hit log
+					trackLog, ///< track log
+					spinLog ///< spin log
+					};
 public:
 	const char *name; ///< particle name (has to be initialized in all derived classes!)
 	const long double q; ///< charge [C] (has to be initialized in all derived classes!)
@@ -318,11 +328,11 @@ protected:
 	 *
 	 * This is a simple prototype that can be overridden by derived particle classes.
 	 *
-	 * @param file stream to print into
 	 * @param x Current time
 	 * @param y Current state vector
+	 * @param spin Current spin vector
 	 * @param sld Solid in which the particle is currently.
-	 * @param filesuffix Optional suffix added to the file name (default: "end.out")
+	 * @param logType Select either endlog or snapshotlog
 	 */
 	virtual void Print(const value_type x, const state_type &y, const state_type &spin, const solid &sld, const LogStream logType) const;
 
@@ -332,9 +342,9 @@ protected:
 	 *
 	 * This is a simple prototype that can be overridden by derived particle classes.
 	 *
-	 * @param trackfile Stream to print into
 	 * @param x Current time
 	 * @param y Current state vector
+	 * @param spin Spin vector
 	 * @param sld Solid in which the particle is currently.
 	 */
 	virtual void PrintTrack(const value_type x, const state_type &y, const state_type &spin, const solid &sld) const;
@@ -345,7 +355,6 @@ protected:
 	 *
 	 * This is a simple prototype that can be overridden by derived particle classes.
 	 *
-	 * @param hitfile stream to print into
 	 * @param x Time of material hit
 	 * @param y1 State vector before material hit
 	 * @param y2 State vector after material hit

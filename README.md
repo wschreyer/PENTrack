@@ -1,7 +1,7 @@
 PENTrack
 ========
 
-PENTrack - a simulation tool for ultra-cold neutrons, protons and electrons
+PENTrack - a simulation tool for ultracold neutrons, protons and electrons
 
 If you just want to do simulations, you should check out the stable releases, which have been tested. If you want the latest and greatest features and probably some bugs, or even want to contribute, you should check out the latest revision from master branch.
 
@@ -45,9 +45,9 @@ Defining your experiment
 
 ### Configuration files
 
-Simulation parameters are defined in three configuration files---config.in, geometry.in, and particle.in. By default, they are located in the in directory.
+Simulation parameters are defined in three configuration files - config.in, geometry.in, and particle.in. By default, they are located in the in directory.
 
-General simulation parameters are defined in config.in. Geometry, electromagnetic fields, and particle sources are defined in geometry.in. Particle-specific parameters---spectra, directions, polarization, and output data---are defined in particle.in.
+General simulation parameters are defined in config.in. Geometry, electromagnetic fields, and particle sources are defined in geometry.in. Particle-specific parameters - spectra, directions, polarization, and output options - are defined in particle.in.
 
 More information can be found in each in file.
 
@@ -73,7 +73,7 @@ If you want to export several parts of a Solidworks assembly you can do the foll
 
 Magnetic and electric fields (rotationally symmetric 2D and 3D) can be included from text-based field maps
 (right now, only "[Vectorfields OPERA](http://www.operafea.com)" maps in cgs units are supported).
-You can also define analytic fields from straight, finite conductors.
+You can also define analytic fields from straight, finite conductors and homogeneous field with small gradients.
 
 ### Particle sources
 
@@ -85,7 +85,7 @@ Run the simulation
 
 Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
 
-Three command-line parameters can be passed to the executable: a job number (default: 0) which is prepended to all log-file names, a path from where the *.in files should be read (default: in/) and a path where the output files will be written (default: out/).
+Four optional command-line parameters can be passed to the executable: a job number (default: 0) which is prepended to all log-file names, a path from where the *.in files should be read (default: in/), a path where the output files will be written (default: out/), and a fixed random seed (default: 0 - random seed is determined from high-resolution clock at program start).
 
 
 Physics
@@ -120,21 +120,23 @@ Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 
 The endlog keeps track of the starting and end parameters of the particles simulated. In the endlog, you get the following parameters:
 
-- jobnumber: corresponds to job number of the PENTrack run (command line parameter of PENTrack). Only used when running multiple instances of PENTrack simultaneously.
-- particle: number which corresponds to particle being simulated 
+- jobnumber: job number of the PENTrack run (passed per command line parameter)
+- particle: number of particle being simulated
 - tstart: time at which particle is created in the simulation [s]
-- xstart, ystart, zstart: coordinate from which the particle starts [m]
-- vxstart, vystart,vzstart: velocity with which the particle starts [m/s]
+- xstart, ystart, zstart: initial coordinates [m]
+- vxstart, vystart,vzstart: initial velocity [m/s]
 - polstart: initial polarization of the particle (-1,1)
+- Sxstart, Systart, Szstart: components of initial spin vector of particle (-1..1)
 - Hstart: initial total energy of particle [eV]
 - Estart: initial kinetic energy of the particle [eV]
 - Bstart: magnetic field at starting point [T]
 - Ustart: electric potential at starting point [V]
 - solidstart: number of geometry part the particle started in, see geometry.in
 - tend: time at which particle simulation is stopped [s]
-- xend, yend, zend: coordinate at which the particle ends [m]
-- vxend, vyend, vzend: velocity with which the particle ends [m/s]
+- xend, yend, zend: final coordinates [m]
+- vxend, vyend, vzend: final velocity [m/s]
 - polend: final polarization of the particle (-1,1)
+- Sxend, Syend, Szend: components of final spin vector of particle (-1..1)
 - Hend: final total energy of particle [eV]
 - Eend: final kinetic energy of the particle [eV]
 - Bend: magnetic field at stopping point [T]
@@ -152,8 +154,8 @@ The endlog keeps track of the starting and end parameters of the particles simul
   - 1: absorbed in bulk material (see solidend)
   - 2: absorbed on total reflection on surface (see solidend)
 - NSpinflip: number of spin flips that the particle underwent during simulation
-- spinflipprob: probability that the particle has undergone a spinflip, calculated by bruteforce integration of the Bloch equation
-- Nhit: number of times particle hit a geometry surface (e.g. wall of guidetube)
+- spinflipprob: probability that the particle has undergone a spinflip, calculated by integration of the BMT equation
+- Nhit: number of times particle hit a geometry surface
 - Nstep: number of steps that it took to simulate particle
 - trajlength: the total length of the particle trajectory from creation to finish [m]
 - Hmax: the maximum total energy that the particle had during trajectory [eV]
@@ -166,8 +168,8 @@ Switching on snapshotlog in "particle.in" will output the particle parameters at
 
 The tracklog contains the complete trajectory of the particle, with following parameters:
 
-- jobnumber: corresponds to job number of the PENTrack run (command line parameter of PENTrack). Only used when running multiple instances of PENTrack simultaneously.
-- particle: number which corresponds to particle being simulated 
+- jobnumber: job number of the PENTrack run (passed per command line parameter)
+- particle: number of particle being simulated
 - polarization: the polarization of the particle (-1,1)
 - t: time [s]
 - x,y,z coordinates [m]
@@ -189,8 +191,8 @@ This log contains all the points at which particle hits a surface of the experim
 
 In the hitlog, you get the following parameters:
 
-- jobnumber: number which corresponds to job number of the PENTrack run (command line parameter of PENTrack). Only used when running multiple instances of PENTrack simultaneously.
-- particle: number which corresponds to particle being simulated
+- jobnumber: job number of the PENTrack run (passed per command line parameter)
+- particle: number of particle being simulated
 - t: time at which particle hit the surface [s]
 - x, y, z: coordinate of the hit [m]
 - v1x, v1y,v1z: velocity of the particle before it interacts with the new geometry/surface [m/s]
@@ -205,24 +207,11 @@ In the hitlog, you get the following parameters:
 
 If bruteforce integration of particle spin precession is active, it will be logged into the spinlog. In the spinlog, you get the following parameters:
 
+- jobnumber: job number of the PENTrack run (passed per command line parameter)
+- particle: number of particle being simulated
 - t: time [s]
-- Polar: projection of Bloch spin vector onto magnetic field direction vector (Bloch vector has dimensionless length 0.5, so this quantity is also dimensionless)
-- logPolar: logarithm of above value [dimensionless]
-- Ix, Iy, Iz: x, y and z components of the Bloch vector (times 2) [dimensionless]
-- Bx, By, Bz: x, y and z components of magnetic field direction vector [T]
-- wL: Larmor precession frequency (Hz)
-- x1, y1, z1: Position of the neutron at the starting step of TBFIntegrator integration
-- v1x, v1y. v1z: Velocity of the neutron at the starting step of TBFIntegrator integration
-- E1x, E1y, E1z: Electric field at the neutron's position at the starting step of TBFIntegrator integration
-- dE1xdx, dE1xdy, dE1xdz: gradient of the x-component of the electric field at the neutron's position at the starting step of TBFIntegrator integration
-- dE1ydx, dE1ydy, dE1ydz: gradient of the y-component of the electric field at the neutron's position at the starting step of TBFIntegrator integration
-- dE1zdx, dE1zdy, dE1zdz: gradient of the z-component of the electric field at the neutron's position at the starting step of TBFIntegrator integration
-- x2, y2, z2: Position of the neutron at the ending step of TBFInterator integration
-- v2x, v2y, v2z: Velocity of the neutron at the ending step of TBFIntegrator integration
-- E2x, E2y, E2z: Electric field at the neutron's position at the ending step of TBFIntegrator integration
-- dE2xdx, dE2xdy, dE2xdz: gradient of the x-component of the electric field at the neutron's position at the ending step of TBFIntegrator integration
-- dE2ydx, dE2ydy, dE2ydz: gradient of the y-component of the electric field at the neutron's position at the ending step of TBFIntegrator integration
-- dE2zdx, dE2zdy, dE2zdz: gradient of the z-component of the electric field at the neutron's position at the ending step of TBFIntegrator integration
+- Sx, Sy, Sz: components of the spin vector [dimensionless]
+- Wx, Wy, Wz: components of precession-axis vector [1/s]
 
 ### Merging output files into ROOT trees
 

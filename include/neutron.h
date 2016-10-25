@@ -56,7 +56,6 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
-	 * @param polarisation Polarisation of particle, may be altered
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering (can be modified by method)
@@ -128,7 +127,7 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
-	 * @param polarisation Polarisation of particle, may be altered
+	 * @param stepper Trajectory integrator, can be used to calculate intermediate state vectors
 	 * @param currentsolid Solid through which the particle is moving
 	 * @return Returns true if particle was absorbed
 	 */
@@ -148,7 +147,6 @@ protected:
 	 *
 	 * @param t Time
 	 * @param y Position vector
-	 * @param polarisation Particle polarisation
 	 * @param field TFieldManager for electromagnetic potential
 	 * @param sld Solid in which the particle is currently.
 	 *

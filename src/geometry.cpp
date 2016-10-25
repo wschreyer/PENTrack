@@ -134,8 +134,8 @@ solid TGeometry::GetSolid(const double t, const double p[3]){
 	return GetSolid(t, p, currentsolids);
 }
 
-solid TGeometry::GetSolid(const double t, const double p[3], map<solid, bool> currentsolids){
-	for (std::map<solid, bool>::iterator i = currentsolids.begin(); i != currentsolids.end(); i++)
+solid TGeometry::GetSolid(const double t, const double p[3], const map<solid, bool> &currentsolids){
+	for (std::map<solid, bool>::const_iterator i = currentsolids.begin(); i != currentsolids.end(); i++)
 		if (!i->second)
 			return i->first;
 	return defaultsolid;

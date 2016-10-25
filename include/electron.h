@@ -53,7 +53,6 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, set to x1 if reflection happened
 	 * @param y2 End point of line segment, returns reflected velocity
-	 * @param polarisation Polarisation of particle, may be altered
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the electron is leaving
 	 * @param entering Solid that the electron is entering
@@ -61,7 +60,7 @@ protected:
 	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 */
 	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversedd);
+			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
 
 
 	/**
@@ -73,7 +72,7 @@ protected:
 	 * @param y1 Start point of line segment
 	 * @param x2 End time of line segment, may be altered
 	 * @param y2 End point of line segment, may be altered
-	 * @param polarisation Polarisation of particle, may be altered
+	 * @param stepper Trajectory integrator, can be used to calculate intermediate state vectors
 	 * @param currentsolid Solid in which the electron is at the moment
 	 * @return Returns true if particle trajectory was altered
 	 */

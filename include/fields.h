@@ -28,9 +28,6 @@ struct TFieldManager{
 		 * Reads [FIELDS] section of configuration file and loads all field maps/conductors given there
 		 *
 		 * @param conf TConfig map containing field options
-		 * @param aFieldOscillation Turn on field oscillations
-		 * @param aOscillationFraction Amplitude of field oscillation
-		 * @param aOscillationFrequency Frequency of field oscillation
 		 */
 		TFieldManager(TConfig &conf);
 

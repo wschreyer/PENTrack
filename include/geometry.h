@@ -128,7 +128,7 @@ struct TGeometry{
 		 *
 		 * @return Returns solid with highest priority, that was not ignored at time t
 		 */
-		solid GetSolid(const double t, const double p[3], std::map<solid, bool> currentsolids);
+		solid GetSolid(const double t, const double p[3], const std::map<solid, bool> &currentsolids);
 };
 
 #endif /*GEOMETRY_H_*/

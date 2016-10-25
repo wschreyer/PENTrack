@@ -92,14 +92,16 @@ double MRDist(const bool transmit, const bool integral, const double v[3], const
 	return result; // return probability
 }
 
-
-struct TMRParams{ /// struct holding all collision parameters, used to pass them to the wrapper functions below
-	const bool transmit;
-	const bool integral;
-	const double *v;
-	const double *normal;
-	const solid &leaving;
-	const solid &entering;
+/**
+ * struct containing all collision parameters, used to pass them to the wrapper functions below
+ */
+struct TMRParams{
+	const bool transmit; ///< True, if the scattering distribution for transmission through the surface should be returned
+	const bool integral; ///< True, if the phi-integrated scattering distribution should be returned
+	const double *v; ///< Icident velocity vector
+	const double *normal; ///< Normal vector
+	const solid &leaving; ///< Material that the partice currently is in
+	const solid &entering; ///< Material that the particle is entering
 };
 
 /**

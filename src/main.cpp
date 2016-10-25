@@ -278,7 +278,7 @@ void ConfigInit(TConfig &config){
  * 
  * Output a table containing the MR diffuse reflection probability for the specified range of solid angles from the config.in file
  *
- * @param outfile, the file name of the file to which results will be printed
+ * @param outfile The file name of the file to which results will be printed
  *  
  * Other params are read in from the config.in file
 */
@@ -334,7 +334,7 @@ void PrintMROutAngle ( const char *outfile) {
  * 
  * Output a table in root format giving the total MR DRP for a set of incident theta angles and neutron energy. 
  *
- * @param outfile, the file name to which the results will be printed 
+ * @param outfile The file name to which the results will be printed
 */
 void PrintMRThetaIEnergy (const char *outfile) {
 	
@@ -387,8 +387,10 @@ void PrintMRThetaIEnergy (const char *outfile) {
 } // end PrintMRThetaIEnergy
 
 
-/*i
+/**
  * Print final particles statistics.
+ *
+ * @param ID_counter A list of counters indicating the numbers of particles with each stopID.
  */
 void OutputCodes(map<string, map<int, int> > &ID_counter){
 	cout << "\nThe simulated particles suffered following fates:\n";
