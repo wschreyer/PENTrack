@@ -6,18 +6,18 @@ perfect		1000			0			0				0			0			0			0
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	test/HollowUnitCube.STL		perfect
+2	test/nEDMchamber_R200x100.STL	perfect
 
 [SOURCE]
-#boxvolume	particles	x_min	x_max	y_min	y_max		z_min	z_max	ActiveTime	PhaseSpaceWeighting
-boxvolume	neutron		0	1	0	1		0	1	0			0
+#cylvolume	particles	r_min   r_max   phi_min phi_max	z_min   z_max   ActiveTime	PhaseSpaceWeighting
+cylvolume	neutron         0	0.199	0	360	-0.05  	0.05	0		1
 
 [FIELDS]
 #EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
-1 EDMStaticB0GradZField     0.5       0.5       0.5       0       0       1E-6    0            0       2       -1      2       -1      2       -1      1
+1 EDMStaticB0GradZField     0         0          0       0       0       1E-6    0          0         1       -1      1       -1      1       -1      1
 #EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)        scale
-2 EDMStaticEField                      0                       0                       1E6             1
+2 EDMStaticEField                      0                       0                    1E6                  1
 
 #EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
-3 EDMStaticB0GradZField 0.5 0.5 0.5 90 0 1E-8 0 0 2 -1 2 -1 2 -1 t<(2-1.7144)?0:(t<2?sin(183.019*t):(t<52?0:(t<53.7144?sin(183.019*t):0)))
+3 EDMStaticB0GradZField 0 0 0 90 0 1E-8 0 0 1 -1 1 -1 1 -1 t<(2-1.7144)?0:(t<2?sin(183.019*t):(t<52?0:(t<53.7144?sin(183.019*t):0)))
 

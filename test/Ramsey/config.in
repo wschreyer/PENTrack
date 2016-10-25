@@ -6,7 +6,7 @@ simtype 1
 # output neutron spatial distribution?
 neutdist 0
 # number of primary particles to be simulated
-simcount 1
+simcount 50
 #simtime = max. simulation time
 simtime 54
 
