@@ -364,7 +364,7 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 			nextspinlog += spinloginterval;
 		}
 
-		dense_stepper_type2 spinstepper(1e-12, 1e-12, 1., 1., true);
+		dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(1e-12, 1e-12, stepper_type());
 		spinstepper.initialize(spin, x1, std::abs(pi/gamma/B1[3][0])); // initialize integrator with step size = half rotation
 		unsigned int steps = 0;
 		while (true){
