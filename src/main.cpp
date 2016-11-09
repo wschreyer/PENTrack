@@ -227,8 +227,8 @@ int main(int argc, char **argv){
 	// print statistics
 	printf("The integrator made %d steps. \n", ntotalsteps);
 	chrono::time_point<chrono::steady_clock> simend = chrono::steady_clock::now();
-	float SimulationTime = chrono::duration_cast<chrono::nanoseconds>(simend - simstart).count();
-	printf("Init: %.2fs, Simulation: %.2fs",
+	float SimulationTime = chrono::duration_cast<chrono::milliseconds>(simend - simstart).count()/1000.;
+	printf("Init: %.2fs, Simulation: %.2fs\n",
 			InitTime, SimulationTime);
 	printf("That's it... Have a nice day!\n");
 	
