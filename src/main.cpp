@@ -9,7 +9,6 @@
 #include <cstdio>
 #include <csignal>
 #include <cmath>
-#include <ctime>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -19,7 +18,7 @@
 #include <fstream>
 #include <iomanip>
 #include <numeric>
-#include <sys/time.h>
+#include <chrono>
 
 using namespace std;
 
@@ -163,8 +162,7 @@ int main(int argc, char **argv){
 	float InitTime = (1.*clock())/CLOCKS_PER_SEC; // time statistics
 
 	// simulation time counter
-	timespec simstart, simend;
-	clock_gettime(CLOCK_REALTIME, &simstart);
+	chrono::time_point<chrono::steady_clock> simstart = chrono::steady_clock::now();
 
 	printf(
 	" ########################################################################\n"
@@ -228,8 +226,8 @@ int main(int argc, char **argv){
 	
 	// print statistics
 	printf("The integrator made %d steps. \n", ntotalsteps);
-	clock_gettime(CLOCK_REALTIME, &simend);
-	float SimulationTime = simend.tv_sec - simstart.tv_sec + (float)(simend.tv_nsec - simstart.tv_nsec)/1e9;
+	chrono::time_point<chrono::steady_clock> simend = chrono::steady_clock::now();
+	float SimulationTime = chrono::duration_cast<chrono::nanoseconds>(simend - simstart).count();
 	printf("Init: %.2fs, Simulation: %.2fs",
 			InitTime, SimulationTime);
 	printf("That's it... Have a nice day!\n");
@@ -541,8 +539,7 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
     f << "x y z ID" << '\n'; // print file header
 
     srand(time(NULL));
-	timespec collstart,collend;
-	clock_gettime(CLOCK_REALTIME, &collstart);
+	chrono::time_point<chrono::steady_clock> collstart = chrono::steady_clock::now();
 	for (unsigned i = 0; i < count; i++){
     	// random segment start point
         for (int j = 0; j < 3; j++)
@@ -563,8 +560,8 @@ void PrintGeometry(const char *outfile, TGeometry &geom){
 			}
 		}
     }
-	clock_gettime(CLOCK_REALTIME, &collend);
-	float colltimer = (collend.tv_sec - collstart.tv_sec)*1e9 + collend.tv_nsec - collstart.tv_nsec;
+	chrono::time_point<chrono::steady_clock> collend = chrono::steady_clock::now();
+	float colltimer = chrono::duration_cast<chrono::nanoseconds>(collend - collstart).count();
     // print some time statistics
     printf("%u tests, %u collisions in %fms (%fms per Test, %fms per Collision)\n",count,collcount,colltimer/1e6,colltimer/count/1e6,colltimer/collcount/1e6);
     f.close();	

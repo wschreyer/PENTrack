@@ -1,5 +1,5 @@
 #include <cmath>
-#include <sys/time.h>
+#include <chrono>
 
 #include "mc.h"
 #include "globals.h"
@@ -8,10 +8,9 @@ const int PIECEWISE_LINEAR_DIST_INTERVALS = 1000;
 
 TMCGenerator::TMCGenerator(const char *infile, const uint64_t aseed){
 	if (aseed == 0){
-		// get high resolution timestamp to generate seed
-		timespec highrestime;
-		clock_gettime(CLOCK_REALTIME, &highrestime);
-		seed = (uint64_t)highrestime.tv_sec * (uint64_t)1000000000 + (uint64_t)highrestime.tv_nsec;
+		// get high-resolution timestamp to generate seed
+		using namespace std::chrono;
+		seed = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 	}
 	else
 		seed = aseed;
@@ -75,7 +74,7 @@ TMCGenerator::~TMCGenerator(){
 double TMCGenerator::UniformDist(double min, double max){
 	if (min == max)
 		return min;
-	boost::random::uniform_real_distribution<double> unidist(min, max);
+	std::uniform_real_distribution<double> unidist(min, max);
 	return unidist(rangen);
 }
 
@@ -100,12 +99,12 @@ double TMCGenerator::SqrtDist(double min, double max){
 }
 
 double TMCGenerator::NormalDist(double mean, double sigma){
-	boost::random::normal_distribution<double> normaldist(mean, sigma);
+	std::normal_distribution<double> normaldist(mean, sigma);
 	return normaldist(rangen);
 }
 
 double TMCGenerator::ExpDist(double exponent){
-	boost::random::exponential_distribution<double> expdist(exponent);
+	std::exponential_distribution<double> expdist(exponent);
 	return expdist(rangen);
 }
 
@@ -390,7 +389,7 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 
 
 
-boost::random::piecewise_linear_distribution<double> TMCGenerator::ParseDist(mu::Parser &func, double range_min, double range_max){
+std::piecewise_linear_distribution<double> TMCGenerator::ParseDist(mu::Parser &func, double range_min, double range_max){
 	if (range_min > range_max)
 		std::swap(range_min, range_max); // swap min/mix if necessary
 	std::vector<double> range, dist;
@@ -407,12 +406,12 @@ boost::random::piecewise_linear_distribution<double> TMCGenerator::ParseDist(mu:
 		}
 	}
 
-	boost::random::piecewise_linear_distribution<double> randist(range.begin(), range.end(), dist.begin()); // create piecewise linear distribution from parameter- and distribution-value lists
+	std::piecewise_linear_distribution<double> randist(range.begin(), range.end(), dist.begin()); // create piecewise linear distribution from parameter- and distribution-value lists
 //	std::cout << randist << '\n';
 	return randist;
 }
 
-boost::random::piecewise_linear_distribution<double> TMCGenerator::ParseDist(double (*func)(double), double range_min, double range_max){
+std::piecewise_linear_distribution<double> TMCGenerator::ParseDist(double (*func)(double), double range_min, double range_max){
 	if (range_min > range_max)
 		std::swap(range_min, range_max); // swap min/mix if necessary
 	std::vector<double> range, dist;
@@ -427,7 +426,7 @@ boost::random::piecewise_linear_distribution<double> TMCGenerator::ParseDist(dou
 		}
 	}
 
-	boost::random::piecewise_linear_distribution<double> randist(range.begin(), range.end(), dist.begin()); // create piecewise linear distribution from parameter- and distribution-value lists
+	std::piecewise_linear_distribution<double> randist(range.begin(), range.end(), dist.begin()); // create piecewise linear distribution from parameter- and distribution-value lists
 //	std::cout << randist << '\n';
 	return randist;
 }

@@ -42,8 +42,6 @@ else()
 	message(SEND_ERROR "CGAL library not found! For installation instructions see README.md.")
 endif()
 
-find_library(RT_LIB rt)
-
 include_directories("include")
 add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/edmfields.cpp 
 						src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
@@ -60,4 +58,4 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif()
 	
 				
-target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${RT_LIB})
+target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
