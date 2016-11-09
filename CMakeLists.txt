@@ -50,13 +50,12 @@ add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/ge
 						src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp 
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)		
 
+set_property(TARGET PENTrack PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET PENTrack PROPERTY CXX_STANDARD 11)
 if (CMAKE_COMPILER_IS_GNUCXX)
 	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -Wno-unused-local-typedefs)
 	if (Boost_VERSION GREATER 105500)
-		set_property(TARGET PENTrack PROPERTY CXX_STANDARD_REQUIRED ON)
-		set_property(TARGET PENTrack PROPERTY CXX_STANDARD 11)
 		target_compile_options(PENTrack PUBLIC -Wno-deprecated-declarations)
-		message(STATUS "Boost 1.56.0+ requires C++11. I hope it is supported by your compiler.")
 	endif()
 endif()
 	

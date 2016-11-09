@@ -6,21 +6,27 @@ PENTrack - a simulation tool for ultracold neutrons, protons and electrons
 The stable releases are quite outdated. The new release described in [arXiv:1610.06358](https://arxiv.org/abs/1610.06358) is coming up soon.
 
 
-Required libraries
+Prerequisites
 -----------
+
+### Compiler
+
+A C++11-compatible compiler is required.
+
+GCC 4.7.2 and newer should work. GCC 4.8.2 seems to break the CGAL library on some machines and can cause particles flying through walls.
 
 ### CGAL
 
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
 Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package. If yours does not, you can run the bash script `install_cgal.sh`, which will download and compile CGAL for you. If you choose to manually download and compile it yourself, you will have to adjust cmake's search path by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
 
-CGAL v4.1 - v4.8 have been tested.
+CGAL v4.1 - v4.9 have been tested.
 
 ### Boost
 
 The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses a 64bit Mersenne Twister pseudo-random number generator and the [odeint integrator](http://headmyshoulder.github.io/odeint-v2/) included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the cmake search path by setting the BOOST_ROOT variable by calling cmake with `-DBOOST_ROOT=/path/to/boost`.
 
-Boost 1.53.0 - 1.59.0 have been tested. 1.56.0 and newer require a C++11 capable compiler (i.e. GCC 4.8+).
+Boost 1.53.0 - 1.59.0 have been tested.
 
 ### muparser
 
@@ -45,11 +51,11 @@ Defining your experiment
 
 ### Configuration files
 
-Simulation parameters are defined in three configuration files - config.in, geometry.in, and particle.in. By default, they are located in the in directory.
+Simulation parameters are defined in three configuration files - config.in, geometry.in, and particle.in. By default, they are located in the `in` directory.
 
 General simulation parameters are defined in config.in. Geometry, electromagnetic fields, and particle sources are defined in geometry.in. Particle-specific parameters - spectra, directions, polarization, and output options - are defined in particle.in.
 
-More information can be found in each in file.
+More information can be found in each configuration file.
 
 ### Geometry
 
