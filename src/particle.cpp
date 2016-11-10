@@ -7,7 +7,6 @@
 #include <vector>
 #include <algorithm>
 #include <iomanip>
-#include <sys/time.h>
 
 #include <boost/numeric/odeint.hpp>
 
@@ -162,7 +161,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 		state_type y1 = y;
 
 		try{
-			stepper.do_step(boost::bind(&TParticle::derivs, this, _1, _2, _3));
+			stepper.do_step(std::bind(&TParticle::derivs, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 			x = stepper.current_time();
 			y = stepper.current_state();
 			Nstep++;
@@ -369,7 +368,7 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		unsigned int steps = 0;
 		while (true){
 			// take an integration step, SpinDerivs contains right-hand side of equation of motion
-			spinstepper.do_step(boost::bind(&TParticle::SpinDerivs, this, _1, _2, _3, stepper, omega_int));
+			spinstepper.do_step(std::bind(&TParticle::SpinDerivs, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, stepper, omega_int));
 			steps++;
 			double t = spinstepper.current_time();
 			if (t > x2){ // if stepper overshot, calculate end point and stop
