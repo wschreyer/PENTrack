@@ -14,11 +14,6 @@ add_library(alglib OBJECT alglib-3.10.0/cpp/src/alglibinternal.cpp
 						alglib-3.10.0/cpp/src/ap.cpp alglib-3.10.0/cpp/src/fasttransforms.cpp 
 						alglib-3.10.0/cpp/src/linalg.cpp alglib-3.10.0/cpp/src/specialfunctions.cpp)						
 						
-include_directories("muparser-2.2.5/include")
-add_library(muparser OBJECT muparser-2.2.5/src/muParser.cpp muparser-2.2.5/src/muParserBase.cpp 
-						muparser-2.2.5/src/muParserBytecode.cpp muparser-2.2.5/src/muParserCallback.cpp 
-						muparser-2.2.5/src/muParserError.cpp muparser-2.2.5/src/muParserTokenReader.cpp)						
-						
 include_directories("tricubic-1.0/src/libtricubic")
 add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
 
@@ -42,11 +37,12 @@ else()
 	message(SEND_ERROR "CGAL library not found! For installation instructions see README.md.")
 endif()
 
+include_directories("exprtk")
 include_directories("include")
 add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/edmfields.cpp 
 						src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
 						src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp 
-						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:muparser> $<TARGET_OBJECTS:libtricubic>)		
+						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)		
 
 set_property(TARGET PENTrack PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET PENTrack PROPERTY CXX_STANDARD 11)

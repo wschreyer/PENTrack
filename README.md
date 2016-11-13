@@ -24,13 +24,13 @@ CGAL v4.1 - v4.9 have been tested.
 
 ### Boost
 
-The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses the [odeint integrator](http://headmyshoulder.github.io/odeint-v2/) included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust search path of cmake by calling cmake with `-DBOOST_ROOT=/path/to/boost`.
+The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses the [odeint integrator](http://headmyshoulder.github.io/odeint-v2/) included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the search path of cmake by calling cmake with `-DBOOST_ROOT=/path/to/boost`.
 
 Boost 1.53.0 - 1.59.0 have been tested.
 
-### muparser
+### ExprTk
 
-[muparser](http://muparser.beltoforion.de/) is a fast formula parser and is used to interpret energy distributions etc. given by the user in particle.in.
+The [C++ Mathematical Expression Toolkit Library](http://partow.net/programming/exprtk/index.html) is a fast formula parser and is used to interpret user-defined formulas in configuration files.
 
 It is included in the repository.
 

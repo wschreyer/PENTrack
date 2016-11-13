@@ -1,5 +1,8 @@
 #include <cmath>
 #include <chrono>
+#include <iostream>
+
+#include "exprtk.hpp"
 
 #include "mc.h"
 #include "globals.h"
@@ -43,26 +46,10 @@ TMCGenerator::TMCGenerator(const char *infile, const uint64_t aseed){
 		std::istringstream(i->second["theta_v_max"]) >> theta_v_max;
 		std::istringstream(i->second["Emax"]) >> Emax;
 		std::istringstream(i->second["Emin"]) >> Emin;
-		try{
-			mu::Parser spectrum;
-			spectrum.SetExpr(i->second["spectrum"]);
-			spectrum.DefineFun("ProtonBetaSpectrum", &ProtonBetaSpectrum);
-			spectrum.DefineFun("ElectronBetaSpectrum", &ElectronBetaSpectrum);
-			spectrum.DefineFun("MaxwellBoltzSpectrum", &MaxwellBoltzSpectrum);
-			pconf->spectrum = ParseDist(spectrum, Emin, Emax);
 
-			mu::Parser phi_v, theta_v;
-			phi_v.SetExpr(i->second["phi_v"]);
-			pconf->phi_v = ParseDist(phi_v, phi_v_min, phi_v_max);
-
-			theta_v.SetExpr(i->second["theta_v"]);
-			pconf->theta_v = ParseDist(theta_v, theta_v_min, theta_v_max);
-
-		}
-		catch (mu::Parser::exception_type &exc){
-			std::cout << exc.GetMsg();
-			exit(-1);
-		}
+		pconf->spectrum = ParseDist(i->second["spectrum"], Emin, Emax);
+		pconf->phi_v = ParseDist(i->second["phi_v"], phi_v_min, phi_v_max);
+		pconf->theta_v = ParseDist(i->second["theta_v"], theta_v_min, theta_v_max);
 	}
 }
 
@@ -389,19 +376,31 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 
 
 
-std::piecewise_linear_distribution<double> TMCGenerator::ParseDist(mu::Parser &func, double range_min, double range_max){
+std::piecewise_linear_distribution<double> TMCGenerator::ParseDist(std::string &func, double range_min, double range_max){
 	if (range_min > range_max)
 		std::swap(range_min, range_max); // swap min/mix if necessary
 	std::vector<double> range, dist;
 	double x;
-	func.DefineVar("x", &x); // define x variable in muParser function
+	exprtk::symbol_table<double> symbol_table;
+	symbol_table.add_variable("x", x);
+	symbol_table.add_function("ProtonBetaSpectrum", ProtonBetaSpectrum);
+	symbol_table.add_function("ElectronBetaSpectrum", ElectronBetaSpectrum);
+	symbol_table.add_function("MaxwellBoltzSpectrum", MaxwellBoltzSpectrum);
+	symbol_table.add_constants();
+	
+	exprtk::expression<double> expression;
+	expression.register_symbol_table(symbol_table);
+
+	exprtk::parser<double> parser;
+	parser.compile(func, expression);
+
 	for (x = range_min; x <= range_max; x += (range_max - range_min)/PIECEWISE_LINEAR_DIST_INTERVALS){ // go through parameter range
 		range.push_back(x); // create list of parameter values
-		dist.push_back(func.Eval()); // create list of function values
+		dist.push_back(expression.value()); // create list of function values
 		if (range_min == range_max){ // if min and max of parameter range are equal
 			x = std::nextafter(range_max, std::numeric_limits<double>::max()); // add another parameter value slightly larger than min, else piecewise linear distribution defaults to range 0..1
 			range.push_back(x);
-			dist.push_back(func.Eval());
+			dist.push_back(expression.value());
 			break; // stop list creation
 		}
 	}

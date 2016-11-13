@@ -8,16 +8,17 @@
 #define FIELD_H_
 
 #include <cstddef>
+#include <iostream>
 
-#include "muParser.h"
+#include "exprtk.hpp"
 
 /**
  * Virtual base class for all field calculation methods
  */
 class TField{
 private:
-	mu::Parser Bscaler; ///< formula parser for time-dependent magnetic field scaling formula
-	mu::Parser Escaler; ///< formula parser for time-dependent electric field scaling formula
+	exprtk::expression<double> Bscaler;
+	exprtk::expression<double> Escaler;
 	double tvar; ///< time variable for use in scaling formular parsers
 
 protected:
@@ -31,11 +32,11 @@ protected:
 	double BScaling(double t){
 		tvar = t;
 		try{
-			return Bscaler.Eval();
+			return Bscaler.value();
 		}
-		catch (mu::Parser::exception_type &e)
+		catch (std::exception &e)
 		{
-			std::cout << e.GetMsg() << std::endl;
+			std::cout << e.what() << std::endl;
 		}
 		return 0;
 	};
@@ -50,11 +51,11 @@ protected:
 	double EScaling(double t){
 		tvar = t;
 		try{
-			return Escaler.Eval();
+			return Escaler.value();
 		}
-		catch (mu::Parser::exception_type &e)
+		catch (std::exception &e)
 		{
-			std::cout << e.GetMsg() << std::endl;
+			std::cout << e.what() << std::endl;
 		}
 		return 0;
 	};
@@ -97,10 +98,15 @@ public:
 	 * Generic constructor, should be called by every derived class.
 	 */
 	TField(std::string Bscale, std::string Escale){
-		Bscaler.DefineVar("t", &tvar);
-		Bscaler.SetExpr(Bscale);
-		Escaler.DefineVar("t", &tvar);
-		Escaler.SetExpr(Escale);
+		exprtk::symbol_table<double> symbol_table;
+		symbol_table.add_variable("t",tvar);
+		symbol_table.add_constants();
+		Bscaler.register_symbol_table(symbol_table);
+		exprtk::parser<double> parser;
+		parser.compile(Bscale, Bscaler);
+
+		Escaler.register_symbol_table(symbol_table);
+		parser.compile(Escale, Escaler);
 	}
 
 	/**

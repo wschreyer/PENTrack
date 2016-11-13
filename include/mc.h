@@ -11,8 +11,6 @@
 #include <map>
 #include <random>
 
-#include "muParser.h"
-
 /**
  * For each section in particle.in such a struct is created containing all user options
  */
@@ -195,13 +193,13 @@ private:
 	/**
 	 * Create a piecewise linear distribution from a muParser function
 	 *
-	 * @param func Function parsed by muParser
+	 * @param func Formula string to parse
 	 * @param range_min Lower range limit of distribution
 	 * @param range_max Upper range limit of distribution
 	 *
 	 * @return Return piecewise linear distribution
 	 */
-	std::piecewise_linear_distribution<double> ParseDist(mu::Parser &func, double range_min, double range_max);
+	std::piecewise_linear_distribution<double> ParseDist(std::string &func, double range_min, double range_max);
 
 	/**
 	 * Create a piecewise linear distribution from a function with single parameter
