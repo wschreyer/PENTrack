@@ -258,6 +258,18 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 
 
 void TParticle::derivs(const state_type &y, state_type &dydx,  const value_type x) const{
+	double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
+	if (field){
+		if (q != 0 || (mu != 0 && y[7] != 0)) // if particle has charge or magnetic moment, calculate magnetic field
+			field->BField(y[0],y[1],y[2], x, B);
+		if (q != 0) // if particle has charge caculate electric field
+			field->EField(y[0],y[1],y[2], x, V, E);
+
+	}
+	EquationOfMOtion(y, dydx, x, B, E);
+}
+
+void TParticle::EquationOfMOtion(const state_type &y, state_type &dydx,  const value_type x, const double B[4][4], const double E[3]) const{
 	dydx[0] = y[3]; // time derivatives of position = velocity
 	dydx[1] = y[4];
 	dydx[2] = y[5];
@@ -265,11 +277,6 @@ void TParticle::derivs(const state_type &y, state_type &dydx,  const value_type 
 	value_type F[3] = {0,0,0}; // Force in lab frame
 	F[2] += -gravconst*m*ele_e; // add gravitation to force
 	if (field){
-		double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
-		if (q != 0 || (mu != 0 && y[7] != 0))
-			field->BField(y[0],y[1],y[2], x, B); // if particle has charge or magnetic moment, calculate magnetic field
-		if (q != 0)
-			field->EField(y[0],y[1],y[2], x, V, E); // if particle has charge caculate electric field+potential
 		if (q != 0){
 			F[0] += q*(E[0] + y[4]*B[2][0] - y[5]*B[1][0]); // add Lorentz-force
 			F[1] += q*(E[1] + y[5]*B[0][0] - y[3]*B[2][0]);
@@ -426,9 +433,9 @@ void TParticle::SpinPrecessionAxis(const double t, const dense_stepper_type &ste
 	double B[4][4], V, E[3];
 	state_type y(STATE_VARIABLES), dydt(STATE_VARIABLES);
 	stepper.calc_state(t, y);
-	derivs(y, dydt, t);
 	field->BField(y[0], y[1], y[2], t, B);
 	field->EField(y[0], y[1], y[2], t, V, E);
+	EquationOfMOtion(y, dydt, t, B, E);
 
 	double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5];
 	double gamma_rel = 1./sqrt(1. - v2/c_0/c_0);

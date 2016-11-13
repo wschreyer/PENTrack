@@ -185,6 +185,7 @@ private:
 	 * @param x Time
 	 */
 	void derivs(const state_type &y, state_type &dydx, const value_type x) const;
+	void EquationOfMOtion(const state_type &y, state_type &dydx, const value_type x, const double aB[4][4], const double aE[3]) const;
 
 
 	/**
