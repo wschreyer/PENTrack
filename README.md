@@ -165,6 +165,7 @@ The endlog keeps track of the starting and end parameters of the particles simul
 - Nstep: number of steps that it took to simulate particle
 - trajlength: the total length of the particle trajectory from creation to finish [m]
 - Hmax: the maximum total energy that the particle had during trajectory [eV]
+- wL: average Larmor-precession frequency determined during integration of BMT equation [1/s]
 
 ### Snapshotlog
 

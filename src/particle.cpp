@@ -37,7 +37,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 		double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield)
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
 		  tstart(t), tend(t), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0),
-		  wL(0), geom(&geometry), mc(&amc), field(afield){
+		  geom(&geometry), mc(&amc), field(afield){
 	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
 	value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
 	value_type vstart;
@@ -63,7 +63,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	ystart[7] = amc.DicePolarisation(polarisation); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
 	yend = ystart;
 
-	spinstart.resize(3, 0);
+	spinstart.resize(SPIN_STATE_VARIABLES, 0);
 	if (field){
 		double B[4][4];
 		field->BField(x, y, z, t, B);
@@ -74,6 +74,9 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 			spinstart[2] = polarisation;
 			double B0[3] = {B[0][0], B[1][0], B[2][0]};
 			RotateVector(&spinstart[0], B0); // rotate initial spin vector such that its z-component is parallel to magnetic field
+
+			spinstart[3] = 0; // initial integration time is zero
+			spinstart[4] = 0; // initial phase is zero
 		}
 	}
 	spinend = spinstart;
@@ -257,7 +260,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 }
 
 
-void TParticle::derivs(const state_type &y, state_type &dydx,  const value_type x) const{
+void TParticle::derivs(const state_type &y, state_type &dydx, const value_type x) const{
 	double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
 	if (field){
 		if (q != 0 || (mu != 0 && y[7] != 0)) // if particle has charge or magnetic moment, calculate magnetic field
@@ -266,10 +269,10 @@ void TParticle::derivs(const state_type &y, state_type &dydx,  const value_type 
 			field->EField(y[0],y[1],y[2], x, V, E);
 
 	}
-	EquationOfMOtion(y, dydx, x, B, E);
+	EquationOfMotion(y, dydx, x, B, E);
 }
 
-void TParticle::EquationOfMOtion(const state_type &y, state_type &dydx,  const value_type x, const double B[4][4], const double E[3]) const{
+void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[4][4], const double E[3]) const{
 	dydx[0] = y[3]; // time derivatives of position = velocity
 	dydx[1] = y[4];
 	dydx[2] = y[5];
@@ -432,28 +435,31 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 void TParticle::SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, double &Omegax, double &Omegay, double &Omegaz) const{
 	double B[4][4], V, E[3];
 	state_type y(STATE_VARIABLES), dydt(STATE_VARIABLES);
-	stepper.calc_state(t, y);
+	stepper.calc_state(t, y); // calculate particle state at time t
 	field->BField(y[0], y[1], y[2], t, B);
 	field->EField(y[0], y[1], y[2], t, V, E);
-	EquationOfMOtion(y, dydt, t, B, E);
+	EquationOfMotion(y, dydt, t, B, E); // calculate velocity and acceleration required for vxE effect and Thomas precession
+	SpinPrecessionAxis(t, B, E, dydt, Omegax, Omegay, Omegaz); // calculate precession axis
+}
 
-	double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5];
+void TParticle::SpinPrecessionAxis(const double t, const double B[4][4], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const{
+	double v2 = dydt[0]*dydt[0] + dydt[1]*dydt[1] + dydt[2]*dydt[2];
 	double gamma_rel = 1./sqrt(1. - v2/c_0/c_0);
 	double Bparallel[3];
 	for (int j = 0; j < 3; j++)
-		Bparallel[j] = (B[0][0]*y[3] + B[1][0]*y[4] + B[2][0]*y[5])*y[j+3]/v2; // magnetic-field component parallel to velocity
+		Bparallel[j] = (B[0][0]*dydt[0] + B[1][0]*dydt[1] + B[2][0]*dydt[2])*dydt[j]/v2; // magnetic-field component parallel to velocity
 
 	// spin precession axis due to relativistically distorted magnetic field, omega_B = -gyro/gamma * ( (1 - gamma)*(v.B)*v/v^2 + gamma*B - gamma*(v x E)/c^2 )
 	double OmegaB[3];
-	OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0][0] - gamma_rel*(y[4]*E[2] - y[5]*E[1])/c_0/c_0);
-	OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1][0] - gamma_rel*(y[5]*E[0] - y[3]*E[2])/c_0/c_0);
-	OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2][0] - gamma_rel*(y[3]*E[1] - y[4]*E[0])/c_0/c_0);
+	OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0][0] - gamma_rel*(dydt[1]*E[2] - dydt[2]*E[1])/c_0/c_0);
+	OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1][0] - gamma_rel*(dydt[2]*E[0] - dydt[0]*E[2])/c_0/c_0);
+	OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2][0] - gamma_rel*(dydt[0]*E[1] - dydt[1]*E[0])/c_0/c_0);
 
 	// Thomas precession in lab frame, omega_T = gamma^2/(gamma + 1)/c^2*(dv/dt x v)
 	double OmegaT[3] = {0,0,0};
-	OmegaT[0] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[4]*y[5] - dydt[5]*y[4])/c_0/c_0;
-	OmegaT[1] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[5]*y[3] - dydt[3]*y[5])/c_0/c_0;
-	OmegaT[2] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[3]*y[4] - dydt[4]*y[3])/c_0/c_0;
+	OmegaT[0] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[4]*dydt[2] - dydt[5]*dydt[1])/c_0/c_0;
+	OmegaT[1] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[5]*dydt[0] - dydt[3]*dydt[2])/c_0/c_0;
+	OmegaT[2] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[3]*dydt[1] - dydt[4]*dydt[0])/c_0/c_0;
 
 	// Total spin precession is sum of magnetic-field precession and Thomas precession
 	Omegax = OmegaB[0] + OmegaT[0];
@@ -464,18 +470,19 @@ void TParticle::SpinPrecessionAxis(const double t, const dense_stepper_type &ste
 
 void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const dense_stepper_type &stepper, const std::vector<alglib::spline1dinterpolant> &omega) const{
 	double omegax, omegay, omegaz;
-	if (omega.size() == 3){
+	if (omega.size() == 3){ // if interpolator exists, use it
 		omegax = alglib::spline1dcalc(omega[0], x);
 		omegay = alglib::spline1dcalc(omega[1], x);
 		omegaz = alglib::spline1dcalc(omega[2], x);
 	}
 	else
-		SpinPrecessionAxis(x, stepper, omegax, omegay, omegaz);
+		SpinPrecessionAxis(x, stepper, omegax, omegay, omegaz); // else calculate precession axis directly
 
-	dydx[0] = omegay*y[2] - omegaz*y[1];
+	dydx[0] = omegay*y[2] - omegaz*y[1]; // dS/dt = W x S
 	dydx[1] = omegaz*y[0] - omegax*y[2];
 	dydx[2] = omegax*y[1] - omegay*y[0];
-
+	dydx[3] = 1.; // integrate time
+	dydx[4] = sqrt(omegax*omegax + omegay*omegay + omegaz*omegaz); // integrate precession phase
 }
 
 
@@ -649,7 +656,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 					"Sxend Syend Szend "
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
-					"Nhit Nstep trajlength Hmax\n";
+					"Nhit Nstep trajlength Hmax wL\n";
 		file << std::setprecision(std::numeric_limits<double>::digits); // need maximum precision for wL and delwL 
 	}
 	cout << "Printing status\n";
@@ -685,7 +692,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 			<< spinend[0] << " " << spinend[1] << " " << spinend[2] << " " << H << " " << E << " "
 			<< B[3][0] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << '\n';
+			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " << spinend[4]/spinend[3] << '\n';
 }
 
 

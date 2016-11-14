@@ -18,6 +18,7 @@
 
 static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
 static const int STATE_VARIABLES = 8; ///< number of variables in trajectory integration (position, velocity, proper time, polarization)
+static const int SPIN_STATE_VARIABLES = 5; ///< number of variables in spin integration (spin vector, time, total phase)
 
 /**
  * Basic particle class (virtual).
@@ -111,9 +112,6 @@ public:
 	/// number of integration steps
 	int Nstep;
 	
-	/// particle larmor precession frequency
-	double wL;
-	
 	std::vector<TParticle*> secondaries; ///< list of secondary particles
 
 	/**
@@ -185,7 +183,21 @@ private:
 	 * @param x Time
 	 */
 	void derivs(const state_type &y, state_type &dydx, const value_type x) const;
-	void EquationOfMOtion(const state_type &y, state_type &dydx, const value_type x, const double aB[4][4], const double aE[3]) const;
+
+
+	/**
+	 * Equations of motion dy/dx = f(x,y).
+	 *
+	 * Equations of motion (fully relativistic).
+	 * Including gravitation, Lorentz-force and magnetic interaction with magnetic moment.
+	 *
+	 * @param y	State vector (position, velocity, proper time, and polarization)
+	 * @param dydx Returns derivatives of y with respect to x
+	 * @param x Time
+	 * @param B Magnetic field
+	 * @param E Electric field
+	 */
+	void EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[4][4], const double E[3]) const;
 
 
 	/**
@@ -255,6 +267,20 @@ private:
 	void SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, double &Omegax, double &Omegay, double &Omegaz) const;
 
 	/**
+	 * Calculate spin precession axis.
+	 *
+	 * Includes relativistic distortion of magnetic and electric fields and Thomas precession.
+	 *
+	 * @param t Time
+	 * @param stepper Trajectory integrator used to calculate position and velocity at time t
+	 * @param B Magnetic field
+	 * @param E Electric field
+	 * @param dydt Right-hand side of particle's equation of motion, velocity and acceleration requried to calculate vxE effect and Thomas precession
+	 * @param Omega Returns precession axis as 3-vector in lab frame
+	 */
+	void SpinPrecessionAxis(const double t, const double B[4][4], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const;
+
+	/**
 	 * Equations of motion of spin vector.
 	 *
 	 * Calculates spin-precession axis either directly or from pre-calculated splines
@@ -262,8 +288,8 @@ private:
 	 * @param y Current spin vector
 	 * @param dydx Calculated time derivative of spin vector
 	 * @param x Current time
-	 * @param omega Pointer to vector of three splines used to interpolate spin-precession axis
-	 * @param stepper Pointer to trajectory integrator used to calculate spin-precession axis (can be NULL)
+	 * @param stepper Trajectory integrator used to calculate spin-precession axis
+	 * @param omega Vector of three splines used to interpolate spin-precession axis (can be empty)
 	 */
 	void SpinDerivs(const state_type &y, state_type &dydx, const value_type x,
 			const dense_stepper_type &stepper, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
