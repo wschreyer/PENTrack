@@ -52,18 +52,10 @@ protected:
 	 * Uses Fermi-potential formalism to calculate reflection/transmission probabilities.
 	 * Diffuse reflection can be done according to Lambert model or Micro Roughness model.
 	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @param normal Normal vector of hit surface
-	 * @param leaving Solid that the particle is leaving
-	 * @param entering Solid that the particle is entering (can be modified by method)
-	 * @param trajectoryaltered Returns true if the particle trajectory was altered
-	 * @param traversed Returns true if the material boundary was traversed by the particle
+	 * For parameter doc see TParticle::OnHit
 	 */
-	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
+	bool OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+			const solid &leaving, const solid &entering, bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
@@ -72,8 +64,8 @@ protected:
 	 * Refracts neutron velocity.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void Transmit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
+	bool Transmit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
 	 * Transmit neutron through surface.
@@ -81,8 +73,8 @@ protected:
 	 * Refracts or scatters the neutron according to Micro Roughness model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
+	bool TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
 	 * Transmit neutron through surface.
@@ -90,8 +82,8 @@ protected:
 	 * Refracts or scatters the neutron according to Lambert model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
+	bool TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
 	 * Reflect neutron from surface.
@@ -99,8 +91,8 @@ protected:
 	 * Reflects neutron specularly.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
+	bool Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
 	 * Reflect neutron from surface.
@@ -108,8 +100,8 @@ protected:
 	 * Reflects or scatters the neutron according to Micro Roughness model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
+	bool ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
 	 * Reflect neutron from surface.
@@ -117,29 +109,26 @@ protected:
 	 * Reflects or scatters the neutron according to Lambert model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
+	bool ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
 	 * Checks for absorption in solids using Fermi-potential formalism and does some additional calculations for neutrons
 	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @param stepper Trajectory integrator, can be used to calculate intermediate state vectors
-	 * @param currentsolid Solid through which the particle is moving
-	 * @return Returns true if particle was absorbed
+	 * For parameter doc see TParticle::OnStep
 	 */
-	bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid);
+	bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+			const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
 	 * Neutron decay.
 	 *
 	 * Create decay proton and electron and add them to secondaries list
+	 *
+	 * For parameter doc see TParticle::Decay
 	 */
-	void Decay();
+	void Decay(std::vector<TParticle*> &secondaries) const;
 
 
 	/**
@@ -152,7 +141,7 @@ protected:
 	 *
 	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
-	value_type Epot(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const;
+	value_type GetPotentialEnergy(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const;
 
 
 	/**

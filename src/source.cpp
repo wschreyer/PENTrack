@@ -107,7 +107,7 @@ void TVolumeSource::FindPotentialMinimum(){
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z); // dice point in source volume
 		TParticle *p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarisation); // create dummy particle with Ekin = 0
-		double V = p->Hstart(); // potential at particle position equals its total energy
+		double V = p->GetInitialTotalEnergy(); // potential at particle position equals its total energy
 		if (V < MinPot)
 			MinPot = V; // remember minimal potential
 		delete p;
@@ -142,7 +142,7 @@ TParticle* TVolumeSource::CreateParticle(){
 			double x, y, z;
 			RandomPointInSourceVolume(x, y, z); // dice point in source volume
 			TParticle *proposed_p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarisation); // create new particle with Ekin = 0
-			double V = proposed_p->Hstart(); // potential at particle position equals its total energy
+			double V = proposed_p->GetInitialTotalEnergy(); // potential at particle position equals its total energy
 			delete proposed_p;
 			ParticleCounter--; // delete particle and decrement particle counter
 

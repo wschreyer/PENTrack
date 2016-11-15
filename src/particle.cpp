@@ -14,23 +14,23 @@
 
 using namespace std;
 
-double TParticle::Hstart() const{
-	return Ekin(&ystart[3]) + Epot(tstart, ystart, field, geom->GetSolid(tstart, &ystart[0]));
+double TParticle::GetInitialTotalEnergy() const{
+	return GetKineticEnergy(&ystart[3]) + GetPotentialEnergy(tstart, ystart, field, geom->GetSolid(tstart, &ystart[0]));
 }
 
 
-double TParticle::Hend() const{
-	return Ekin(&yend[3]) + Epot(tend, yend, field, geom->GetSolid(tend, &yend[0]));
+double TParticle::GetFinalTotalEnergy() const{
+	return GetKineticEnergy(&yend[3]) + GetPotentialEnergy(tend, yend, field, geom->GetSolid(tend, &yend[0]));
 }
 
 
-double TParticle::Estart() const{
-	return Ekin(&ystart[3]);
+double TParticle::GetInitialKineticEnergy() const{
+	return GetKineticEnergy(&ystart[3]);
 }
 
 
-double TParticle::Eend() const{
-	return Ekin(&yend[3]);
+double TParticle::GetFinalKineticEnergy() const{
+	return GetKineticEnergy(&yend[3]);
 }
 
 TParticle::TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, int number,
@@ -81,7 +81,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	}
 	spinend = spinstart;
 
-	Hmax = Hstart();
+	Hmax = GetInitialTotalEnergy();
 	maxtraj = mc->MaxTrajLength(name); // max. trajectory length
 	tau = mc->LifeTime(name); // lifetime either exponentially distributed or fixed
 	geom->GetSolids(t, &ystart[0], currentsolids); // detect solids that surround the particle
@@ -102,7 +102,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 	int perc = 0;
 	cout << "Particle no.: " << particlenumber << " particle type: " << name << '\n';
 	cout << "x: " << yend[0] << "m y: " << yend[1] << "m z: " << yend[2]
-		 << "m E: " << Eend() << "eV t: " << tend << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
+		 << "m E: " << GetFinalKineticEnergy() << "eV t: " << tend << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
 
 	// set initial values for integrator
 	value_type x = tend;
@@ -218,9 +218,12 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 			}
 		}
 
+		double prevpol = y[7];
 		noflipprob *= 1 - IntegrateSpin(spin, stepper, x, y, SpinTimes, spininterpolatefields, SpinBmax, flipspin, spinloginterval, nextspinlog); // calculate spin precession and spin-flip probability
+		if (y[7] != prevpol)
+			Nspinflip++;
 
-		Hmax = max(Ekin(&y[3]) + Epot(x, y, field, GetCurrentsolid()), Hmax);
+		Hmax = max(GetKineticEnergy(&y[3]) + GetPotentialEnergy(x, y, field, GetCurrentsolid()), Hmax);
 		if (tracklog && x - lastsave > trackloginterval/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])){
 			PrintTrack(x, y, spin, GetCurrentsolid());
 			lastsave = x;
@@ -242,13 +245,13 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 
 	if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
 		cout << "Decayed!\n";
-		Decay();
+		Decay(secondaries);
 	}
 
 	cout << "x: " << yend[0];
 	cout << " y: " << yend[1];
 	cout << " z: " << yend[2];
-	cout << " E: " << Eend();
+	cout << " E: " << GetFinalKineticEnergy();
 	cout << " Code: " << ID;
 	cout << " t: " << tend;
 	cout << " l: " << lend;
@@ -302,7 +305,7 @@ void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const va
 
 
 double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times,
-								const bool interpolatefields, const double Bmax, const bool flipspin, const double spinloginterval, double &nextspinlog){
+								const bool interpolatefields, const double Bmax, const bool flipspin, const double spinloginterval, double &nextspinlog) const{
 	value_type x1 = stepper.previous_time();
 	if (gamma == 0 || x1 == x2 || !field)
 		return 0;
@@ -326,8 +329,6 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 			else
 				polarisation = -1;
 			y2[7] = polarisation;
-			if (y2[7] != y1[7])
-				Nspinflip++;
 		}
 		spin[0] = polarisation*B2[0][0]/B2[3][0]; // set spin (anti-)parallel to field
 		spin[1] = polarisation*B2[1][0]/B2[3][0];
@@ -421,8 +422,6 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 			std::cout << x2 << "s flipprob " << flipprob << "\n";
 		if (flipspin)
 			y2[7] = mc->DicePolarisation(polarisation); // set new polarisation weighted by spin-projection on magnetic field
-		if (y2[7] != y1[7])
-			Nspinflip++;
 		spin[0] = B2[0][0]*y2[7]/B2[3][0];
 		spin[1] = B2[1][0]*y2[7]/B2[3][0];
 		spin[2] = B2[2][0]*y2[7]/B2[3][0];
@@ -572,7 +571,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 			}
 //			cout << "Leaving " << leaving.name << ", entering " << entering.name << ", currently " << currentsolid.name << '\n';
 			if (leaving.ID != entering.ID){ // if the particle actually traversed a material interface
-				OnHit(x1, y1, x2, y2, coll.normal, leaving, entering, trajectoryaltered, traversed); // do particle specific things
+				trajectoryaltered = OnHit(x1, y1, x2, y2, coll.normal, leaving, entering, traversed, ID, secondaries); // do particle specific things
 				if (hitlog)
 					PrintHit(x1, y1, y2, coll.normal, leaving, entering); // print collision to file if requested
 				Nhit++;
@@ -582,7 +581,9 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 				currentsolids = newsolids; // if surface was traversed (even if it was  physically ignored) replace current solids with list of new solids
 			}
 
-			if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid())){ // check for absorption/scattering
+			if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), ID, secondaries)){ // check for absorption/scattering
+				if (y2[7] != y1[7])
+					Nspinflip++;
 				return true;
 			}
 			if (trajectoryaltered)
@@ -624,7 +625,9 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 				return true;
 		}
 	}
-	else if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid())){ // if there was no collision: just check for absorption in solid with highest priority
+	else if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), ID, secondaries)){ // if there was no collision: just check for absorption in solid with highest priority
+		if (y2[7] != y1[7])
+			Nspinflip++;
 		return true;
 	}
 	return false;
@@ -661,7 +664,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	}
 	cout << "Printing status\n";
 
-	value_type E = Ekin(&y[3]);
+	value_type E = GetKineticEnergy(&y[3]);
 	double B[4][4], Ei[3], V;
 
 	field->BField(ystart[0], ystart[1], ystart[2], tstart, B);
@@ -670,7 +673,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	file	<< jobnumber << " " << particlenumber << " "
 			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " " << ystart[7] << " "
-			<< spinstart[0] << " " << spinstart[1] << " " << spinstart[2] << " " << Hstart() << " " << Estart() << " "
+			<< spinstart[0] << " " << spinstart[1] << " " << spinstart[2] << " " << GetInitialTotalEnergy() << " " << GetInitialKineticEnergy() << " "
 			<< B[3][0] << " " << V << " " << solidstart.ID << " ";
 
 	double H;
@@ -679,10 +682,10 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 		do{
 			nextsolid++;
 		}while (nextsolid->second);
-		H = E + Epot(x, y, field, nextsolid->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
+		H = E + GetPotentialEnergy(x, y, field, nextsolid->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
 	}
 	else
-		H = E + Epot(x, y, field, GetCurrentsolid());
+		H = E + GetPotentialEnergy(x, y, field, GetCurrentsolid());
 
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
@@ -726,8 +729,8 @@ void TParticle::PrintTrack(const value_type x, const state_type &y, const state_
 		field->BField(y[0],y[1],y[2],x,B);
 		field->EField(y[0],y[1],y[2],x,V,E);
 	}
-	value_type Ek = Ekin(&y[3]);
-	value_type H = Ek + Epot(x, y, field, sld);
+	value_type Ek = GetKineticEnergy(&y[3]);
+	value_type H = Ek + GetPotentialEnergy(x, y, field, sld);
 
 	trackfile << jobnumber << " " << particlenumber << " " << y[7] << " "
 				<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
@@ -792,7 +795,7 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const dens
 }
 
 
-double TParticle::Ekin(const value_type v[3]) const{
+double TParticle::GetKineticEnergy(const value_type v[3]) const{
 	value_type v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
 	value_type beta2 = v2/c_0/c_0;
 	value_type gammarel = 1/sqrt(1 - beta2); // use relativistic formula for larger beta
@@ -805,7 +808,7 @@ double TParticle::Ekin(const value_type v[3]) const{
 }
 
 
-double TParticle::Epot(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const{
+double TParticle::GetPotentialEnergy(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const{
 	value_type result = 0;
 	if ((q != 0 || mu != 0) && field){
 		double B[4][4], E[3], V;

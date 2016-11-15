@@ -36,7 +36,8 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+	TProton(int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation,
+			TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
 
 protected:
 	static std::ofstream endout; ///< endlog file stream
@@ -50,18 +51,10 @@ protected:
 	 *
 	 * Nothing happens to protons.
 	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, set to x1 if reflection happened
-	 * @param y2 End point of line segment, returns reflected velocity
-	 * @param normal Normal vector of hit surface
-	 * @param leaving Solid that the proton is leaving
-	 * @param entering Solid that the proton is entering
-	 * @param trajectoryaltered Returns true if the particle trajectory was altered
-	 * @param traversed Returns true if the material boundary was traversed by the particle
+	 * For parameter doc see TParticle::OnHit
 	 */
-	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed);
+	bool OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+			const solid &leaving, const solid &entering, bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
@@ -69,21 +62,18 @@ protected:
 	 *
 	 * Protons are immediately absorbed in solids other than TParticle::geom::defaultsolid
 	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment, may be altered
-	 * @param y2 End point of line segment, may be altered
-	 * @param stepper Trajectory integrator, can be used to calculate intermediate state vectors
-	 * @param currentsolid Solid in which the proton is at the moment
-	 * @return Returns true if particle was absorbed
+	 * For parameter doc see TParticle::OnStep
 	 */
-	bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid);
+	bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+			const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
 	 * Proton decay (not used)
+	 *
+	 * For parameter doc see TParticle::Decay
 	 */
-	void Decay();
+	void Decay(std::vector<TParticle*> &secondaries) const;
 
 
 	/**

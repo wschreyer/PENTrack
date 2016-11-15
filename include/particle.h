@@ -47,8 +47,9 @@ protected:
 					trackLog, ///< track log
 					spinLog ///< spin log
 					};
-public:
-	const char *name; ///< particle name (has to be initialized in all derived classes!)
+
+private:
+	std::string name; ///< particle name (has to be initialized in all derived classes!)
 	const long double q; ///< charge [C] (has to be initialized in all derived classes!)
 	const long double m; ///< mass [eV/c^2] (has to be initialized in all derived classes!)
 	const long double mu; ///< magnetic moment [J/T] (has to be initialized in all derived classes!)
@@ -57,62 +58,228 @@ public:
 	stopID ID; ///< particle fate (defined in globals.h)
 	double tau; ///< particle life time
 	double maxtraj; ///< max. simulated trajectory length
-
-	/// start time
-	value_type tstart;
-
-	/// stop time
-	value_type tend;
-
-	/// state vector before integration (position, velocity, proper time, and polarization)
-	state_type ystart;
-
-	/// state vector after integration (position, velocity, proper time, and polarization)
-	state_type yend;
-
-	/// spin vector before integration
-	state_type spinstart;
-
-	/// spin vector after integration
-	state_type spinend;
-
-	/// solid in which the particle started
-	solid solidstart;
-
-	/// solid in which particle stopped
-	solid solidend;
-
-	/// total start energy
-	double Hstart() const;
-
-	/// total end energy
-	double Hend() const;
-
-	/// max total energy
-	double Hmax;
-
-	/// kinetic start energy
-	double Estart() const;
-
-	/// kinetic end energy
-	double Eend() const;
-
-	/// trajectory length
-	double lend;
-
-	/// number of material boundary hits
-	int Nhit;
-
-	/// number of spin flips
-	int Nspinflip;
-
-	/// total probability of NO spinflip calculated by spin tracking
-	long double noflipprob;
-
-	/// number of integration steps
-	int Nstep;
 	
+	value_type tstart; ///< start time
+	value_type tend; ///< stop time
+	state_type ystart; ///< state vector before integration (position, velocity, proper time, and polarization)
+	state_type yend; ///< state vector after integration (position, velocity, proper time, and polarization)
+	state_type spinstart; ///< spin vector before integration
+	state_type spinend; ///< spin vector after integration
+	solid solidstart; ///< solid in which the particle started
+	solid solidend; ///< solid in which particle stopped
+
+	double Hmax; ///< max total energy
+	double lend; ///< trajectory length
+	int Nhit; ///< number of material boundary hits
+	int Nspinflip; ///< number of spin flips
+	long double noflipprob; ///< total probability of NO spinflip calculated by spin tracking
+	int Nstep; ///< number of integration steps
+	double wL; ///< particle larmor precession frequency
+
 	std::vector<TParticle*> secondaries; ///< list of secondary particles
+
+	TGeometry *geom; ///< TGeometry structure passed by "Integrate"
+	TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
+	TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
+
+	std::map<solid, bool> currentsolids; ///< solids in which particle is currently inside
+
+public:
+	/**
+	 * Return name of particle
+	 *
+	 * @return Name of particle
+	 */
+	std::string GetName() const { return name; };
+
+	/**
+	 * Return mass of particle
+	 *
+	 * @return Mass of particle
+	 */
+	double GetMass() const { return m; };
+
+	/**
+	 * Return charge of particle
+	 *
+	 * @return Charge of particle
+	 */
+	double GetCharge() const { return q; };
+
+	/**
+	 * Return magnetic moment of particle
+	 *
+	 * @return Magnetic moment of particle
+	 */
+	double GetMagneticMoment() const { return mu; };
+
+	/**
+	 * Return gyromagnetic ratio of particle
+	 *
+	 * @return Gyromagnetic ratio
+	 */
+	double GetGyromagneticRatio() const { return gamma; };
+
+	/**
+	 * Return number of particle
+	 *
+	 * @return Number of particle
+	 */
+	int GetParticleNumber() const { return particlenumber; };
+
+	/**
+	 * Return ID indicating why particle was stopped
+	 *
+	 * @return ID indicating why particle was stopped
+	 */
+	stopID GetStopID() const { return ID; };
+
+	/**
+	 * Return time when particle was created
+	 *
+	 * @return Time when particle was created
+	 */
+	value_type GetInitialTime() const { return tstart; };
+
+	/**
+	 * Return time when particle was stopped
+	 *
+	 * @return Time when particle was stopped
+	 */
+	value_type GetFinalTime() const { return tend; };
+
+	/**
+	 * Return initial state of particle (position, velocity, proper time, and polarization)
+	 *
+	 * @return Initial state of particle
+	 */
+	state_type GetInitialState() const { return ystart; };
+
+	/**
+	 * Return final state of particle (position, velocity, proper time, and polarization)
+	 *
+	 * @return Final state of particle
+	 */
+	state_type GetFinalState() const { return yend; };
+
+	/**
+	 * Return initial spin vector of particle
+	 *
+	 * @return Initial spin vector of particle
+	 */
+	state_type GetInitialSpin() const { return spinstart; };
+
+	/**
+	 * Return final spin vector of particle
+	 *
+	 * @return Final spin vector of particle
+	 */
+	state_type GetFinalSpin() const { return spinend; };
+
+	/**
+	 * Return solid in which particle was created
+	 *
+	 * @return Solid in which particle was created
+	 */
+	solid GetInitialSolid() const { return solidstart; };
+
+	/**
+	 * Return solid in which particle was stopped
+	 *
+	 * @return Solid in which particle stopped
+	 */
+	solid GetFinalSolid() const { return solidend; };
+
+	/**
+	 * Return maximal total energy on trajectory of particle
+	 *
+	 * @return Maximal total energy
+	 */
+	double GetMaxTotalEnergy() const { return Hmax; };
+
+	/**
+	 * Return total length of particle trajectory
+	 *
+	 * @return Length of trajectory
+	 */
+	double GetTrajectoryLength() const { return lend; };
+
+	/**
+	 * Return number of times particle hit any part of geometry
+	 *
+	 * @return Number of hits
+	 */
+	int GetNumberOfHits() const { return Nhit; };
+
+	/**
+	 * Return probability that spin of particle was not flipped, determined with integration of BMT equation
+	 *
+	 * @return Probability of no spin flip
+	 */
+	double GetNoSpinFlipProbability() const { return noflipprob; };
+
+	/**
+	 * Return number of steps taken by integrator
+	 *
+	 * @return number of integration steps
+	 */
+	int GetNumberOfSteps() const { return Nstep; };
+
+	/**
+	 * Return vector containing all secondary particles
+	 *
+	 * @return Vector containing all secondary particles
+	 */
+	std::vector<TParticle*> GetSecondaryParticles() const { return secondaries; };
+
+	/**
+	 * Return TGeometry class particle was created in
+	 *
+	 * @return TGeometry class particle was created in
+	 */
+	TGeometry* GetGeometry() const { return geom; };
+
+	/**
+	 * Return TMCGenerator class that was used to create particle
+	 *
+	 * @return TMCGenerator class used to create particle
+	 */
+	TMCGenerator* GetRandomGenerator() const { return mc; };
+
+	/**
+	 * Return TFieldManager class that was used to create particle
+	 *
+	 * @return TFieldManager class used to create particle
+	 */
+	TFieldManager* GetFieldManager() const { return field; };
+
+	/**
+	 * Return initial total energy
+	 *
+	 * @return Initial total energy
+	 */
+	double GetInitialTotalEnergy() const;
+
+	/**
+	 * Return final total energy
+	 *
+	 * @return Final total energy
+	 */
+	double GetFinalTotalEnergy() const;
+
+	/**
+	 * Return initial kinetic energy
+	 *
+	 * @return Initial kinetic energy
+	 */
+	double GetInitialKineticEnergy() const;
+
+	/**
+	 * Return final kinetic energy
+	 *
+	 * @return Final kinetic energy
+	 */
+	double GetFinalKineticEnergy() const;
 
 	/**
 	 * Constructor, initializes TParticle::type, TParticle::q, TParticle::m, TParticle::mu
@@ -159,12 +326,7 @@ public:
 	 */
 	void Integrate(double tmax, std::map<std::string, std::string> &conf);
 
-protected:
-	TGeometry *geom; ///< TGeometry structure passed by "Integrate"
-	TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
-	TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
 private:
-	std::map<solid, bool> currentsolids; ///< solids in which particle is currently inside
 
 	/**
 	 * Return first non-ignored solid in TParticle::currentsolids list
@@ -252,9 +414,8 @@ private:
 	 * @return Return probability of spin flip
 	 */
 	double IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times,
-						const bool interpolatefields, const double Bmax, const bool flipspin, const double spinloginterval, double &nextspinlog);
+						const bool interpolatefields, const double Bmax, const bool flipspin, const double spinloginterval, double &nextspinlog) const;
 
-private:
 	/**
 	 * Calculate spin precession axis.
 	 *
@@ -262,7 +423,9 @@ private:
 	 *
 	 * @param t Time
 	 * @param stepper Trajectory integrator used to calculate position and velocity at time t
-	 * @param Omega Returns precession axis as 3-vector in lab frame
+	 * @param Omegax Returns x component of precession axis in lab frame
+	 * @param Omegay Returns y component of precession axis in lab frame
+	 * @param Omegaz Returns z component of precession axis in lab frame
 	 */
 	void SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, double &Omegax, double &Omegay, double &Omegaz) const;
 
@@ -275,7 +438,7 @@ private:
 	 * @param stepper Trajectory integrator used to calculate position and velocity at time t
 	 * @param B Magnetic field
 	 * @param E Electric field
-	 * @param dydt Right-hand side of particle's equation of motion, velocity and acceleration requried to calculate vxE effect and Thomas precession
+	 * @param dydt Right-hand side of particle's equation of motion, velocity and acceleration required to calculate vxE effect and Thomas precession
 	 * @param Omega Returns precession axis as 3-vector in lab frame
 	 */
 	void SpinPrecessionAxis(const double t, const double B[4][4], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const;
@@ -294,6 +457,17 @@ private:
 	void SpinDerivs(const state_type &y, state_type &dydx, const value_type x,
 			const dense_stepper_type &stepper, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
 
+	/**
+	 * Calculate kinetic energy.
+	 *
+	 * Kinetic energy is calculated by series expansion of rel. gamma factor for small velocities, else it is calculated exactly by (gamma-1)mc^2
+	 *
+	 * @param v Velocity vector [m/s]
+	 *
+	 * @return Kinetic energy [eV]
+	 */
+	double GetKineticEnergy(const value_type v[3]) const;
+
 protected:
 	/**
 	 * This virtual method is executed, when a particle crosses a material boundary.
@@ -308,11 +482,14 @@ protected:
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering
-	 * @param trajectoryaltered Returns true if the particle trajectory was altered
 	 * @param traversed Returns true if the material boundary was traversed by the particle
+	 * @param ID If particle is stopped, set this to the appropriate stopID
+	 * @param secondaries Add any secondary particles produced in this interaction
+	 * @return Return true if path of particle was changed
 	 */
-	virtual void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-						const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed) = 0;
+	virtual bool OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+						const double normal[3], const solid &leaving, const solid &entering,
+						bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
@@ -327,15 +504,20 @@ protected:
 	 * @param y2 End point of line segment, may be altered
 	 * @param stepper Trajectory integrator, can be used to calculate intermediate state vectors
 	 * @param currentsolid Solid through which the particle is moving
+	 * @param ID If particle is stopped, set this to the appropriate stopID
+	 * @param secondaries Add any secondary particles produced in this interaction
 	 * @return Returns true if particle path was changed
 	 */
-	virtual bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid) = 0;
+	virtual bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+						const dense_stepper_type &stepper, const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
 	 * Virtual routine which is called when particles reaches its lifetime, has to be implemented for each derived particle.
+	 *
+	 * @param secondaries Add any secondary particles produced in this decay
 	 */
-	virtual void Decay() = 0;
+	virtual void Decay(std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
@@ -405,18 +587,6 @@ protected:
 
 
 	/**
-	 * Calculate kinetic energy.
-	 *
-	 * Kinetic energy is calculated by series expansion of rel. gamma factor for small velocities, else it is calculated exactly by (gamma-1)mc^2
-	 *
-	 * @param v Velocity vector [m/s]
-	 *
-	 * @return Kinetic energy [eV]
-	 */
-	double Ekin(const value_type v[3]) const;
-
-
-	/**
 	 * Calculate potential energy of particle
 	 *
 	 * @param t Time
@@ -426,7 +596,7 @@ protected:
 	 *
 	 * @return Returns potential energy [eV]
 	 */
-	virtual double Epot(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const;
+	virtual double GetPotentialEnergy(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const;
 
 };
 

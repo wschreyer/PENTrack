@@ -19,22 +19,20 @@ TXenon::TXenon(int number, double t, double x, double y, double z, double E, dou
 
 }
 
-void TXenon::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
-	
-	trajectoryaltered = false;
+bool TXenon::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+		const solid &leaving, const solid &entering, bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	traversed = true;
 	
-	Reflect(x1, y1, x2, y2, normal, leaving, entering, trajectoryaltered, traversed);
+	return Reflect(x1, y1, x2, y2, normal, leaving, entering, traversed);
 	
 } //end OnHit method
 
-void TXenon::Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &trajectoryaltered, bool &traversed){
+bool TXenon::Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+		const solid &leaving, const solid &entering, bool &traversed) const{
 	
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
-	double prob = mc->UniformDist(0,1);
+	double prob = GetRandomGenerator()->UniformDist(0,1);
 	material mat = vnormal < 0 ? entering.mat : leaving.mat;
 	double diffprob = mat.DiffProb;
 //	cout << "prob: " << diffprob << '\n';
@@ -52,8 +50,8 @@ void TXenon::Reflect(const value_type x1, const state_type &y1, value_type &x2, 
 		//************** diffuse reflection no MR model ************
 		double phi_r, theta_r;	
 //		std::cout << "Diffuse reflection!" << std::endl;
-		phi_r = mc->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
-		theta_r = mc->SinCosDist(0, 0.5*pi);
+		phi_r = GetRandomGenerator()->UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
+		theta_r = GetRandomGenerator()->SinCosDist(0, 0.5*pi);
 		
 		if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 		x2 = x1;
@@ -66,19 +64,21 @@ void TXenon::Reflect(const value_type x1, const state_type &y1, value_type &x2, 
 //				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
 	}
 
-	if (mc->UniformDist(0,1) < entering.mat.SpinflipProb){
+	if (GetRandomGenerator()->UniformDist(0,1) < entering.mat.SpinflipProb){
 		y2[7] *= -1;
-		Nspinflip++;
 	}
 
 	traversed = false;
-	trajectoryaltered = true;
+	return true;
 } // end reflect method
 
 //do nothing for each for step
-bool TXenon::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid){
+bool TXenon::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+		const dense_stepper_type &stepper, const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	return false;
 }
 
 //Xenon does not decay
-void TXenon::Decay() {}
+void TXenon::Decay(std::vector<TParticle*> &secondaries) const{
+
+}

@@ -200,15 +200,16 @@ int main(int argc, char **argv){
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			TParticle *p = source.CreateParticle();
-			p->Integrate(SimTime, particlein[p->name]); // integrate particle
-			ID_counter[p->name][p->ID]++; // increment counters
-			ntotalsteps += p->Nstep;
+			p->Integrate(SimTime, particlein[p->GetName()]); // integrate particle
+			ID_counter[p->GetName()][p->GetStopID()]++; // increment counters
+			ntotalsteps += p->GetNumberOfSteps();
 
 			if (secondaries == 1){
-				for (vector<TParticle*>::iterator i = p->secondaries.begin(); i != p->secondaries.end(); i++){
-					(*i)->Integrate(SimTime, particlein[(*i)->name]); // integrate secondary particles
-					ID_counter[(*i)->name][(*i)->ID]++;
-					ntotalsteps += (*i)->Nstep;
+				std::vector<TParticle*> secondaries = p->GetSecondaryParticles();
+				for (auto i = secondaries.begin(); i != secondaries.end(); i++){
+					(*i)->Integrate(SimTime, particlein[(*i)->GetName()]); // integrate secondary particles
+					ID_counter[(*i)->GetName()][(*i)->GetStopID()]++;
+					ntotalsteps += (*i)->GetNumberOfSteps();
 				}
 			}
 
