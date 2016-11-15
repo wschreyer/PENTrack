@@ -660,7 +660,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
 					"Nhit Nstep trajlength Hmax wL\n";
-		file << std::setprecision(std::numeric_limits<double>::digits); // need maximum precision for wL and delwL 
+		file << std::setprecision(std::numeric_limits<double>::digits10); // need maximum precision for wL and delwL 
 	}
 	cout << "Printing status\n";
 
@@ -782,7 +782,7 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const dens
 		}
 
 		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
-		spinfile << std::setprecision(std::numeric_limits<double>::digits);
+		spinfile << std::setprecision(std::numeric_limits<double>::digits10);
 		spinfile << "jobnumber particle t Sx Sy Sz Wx Wy Wz\n";
 	}
 	std::cout << "/";
