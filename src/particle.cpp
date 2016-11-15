@@ -687,12 +687,16 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	field->BField(y[0], y[1], y[2], x, B);
 	field->EField(y[0], y[1], y[2], x, V, Ei);
 
+	double wL = 0;
+	if (spin[3] > 0)
+		wL = spin[4]/spin[3];
+
 	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 			<< y[3] << " " << y[4] << " " << y[5] << " " << y[7] << " "
-			<< spinend[0] << " " << spinend[1] << " " << spinend[2] << " " << H << " " << E << " "
+			<< spin[0] << " " << spin[1] << " " << spin[2] << " " << H << " " << E << " "
 			<< B[3][0] << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " << spinend[4]/spinend[3] << '\n';
+			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " << wL << '\n';
 }
 
 
