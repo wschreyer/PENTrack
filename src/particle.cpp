@@ -559,7 +559,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 
 				if (sld.ID > geom->solids[coll.sldindex].ID)
 					coll = it->first; // use geometry from collision with highest priority
-}
+			}
 //			cout << '\n';
 
 			solid leaving = currentsolid; // particle can only leave highest-priority solid
@@ -571,7 +571,29 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 			}
 //			cout << "Leaving " << leaving.name << ", entering " << entering.name << ", currently " << currentsolid.name << '\n';
 			if (leaving.ID != entering.ID){ // if the particle actually traversed a material interface
-				trajectoryaltered = OnHit(x1, y1, x2, y2, coll.normal, leaving, entering, traversed, ID, secondaries); // do particle specific things
+				value_type x2temp = x2;
+				state_type y2temp = y2;
+				OnHit(x1, y1, x2, y2, coll.normal, leaving, entering, ID, secondaries); // do particle specific things
+				if (x2temp == x2 && y2temp == y2){ // if end point of step was not modified
+					trajectoryaltered = false;
+					traversed = true;
+				}
+				else{
+					trajectoryaltered = true;
+					if (y2temp[7] != y2[7])
+						Nspinflip++;
+					if (x2 == x2temp && y2[0] == y2temp[0] && y2[1] == y2temp[1] && y2[2] == y2temp[2]){
+						traversed = true;
+					}
+					else if (x2 == x1 && y2[0] == y1[0] && y2[1] == y1[1] && y2[2] == y1[2]){
+						traversed = false;
+					}
+					else{
+						std::cout << "\nOnHit routine returned inconsistent position. That should not happen!\n";
+						exit(-1);
+					}
+				}
+
 				if (hitlog)
 					PrintHit(x1, y1, y2, coll.normal, leaving, entering); // print collision to file if requested
 				Nhit++;
@@ -581,14 +603,17 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 				currentsolids = newsolids; // if surface was traversed (even if it was  physically ignored) replace current solids with list of new solids
 			}
 
-			if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), ID, secondaries)){ // check for absorption/scattering
-				if (y2[7] != y1[7])
+			value_type x2temp = x2;
+			state_type y2temp = y2;
+			OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), ID, secondaries); // check for absorption/scattering
+			if (x2temp != x2 || y2 != y2temp){
+				trajectoryaltered = true;
+				if (y2temp[7] != y2[7])
 					Nspinflip++;
-				return true;
 			}
+
 			if (trajectoryaltered)
 				return true;
-
 		}
 		else{
 			// else cut integration step right before and after first collision point
@@ -625,10 +650,17 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 				return true;
 		}
 	}
-	else if (OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), ID, secondaries)){ // if there was no collision: just check for absorption in solid with highest priority
-		if (y2[7] != y1[7])
-			Nspinflip++;
-		return true;
+	else{ // if there was no collision: just check for absorption in solid with highest priority
+		value_type x2temp = x2;
+		state_type y2temp = y2;
+		OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), ID, secondaries);
+		if (x2temp == x2 && y2temp == y2)
+			return false;
+		else{
+			if (y2temp[7] != y2[7])
+				Nspinflip++;
+			return true;
+		}
 	}
 	return false;
 }

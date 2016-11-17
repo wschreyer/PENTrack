@@ -50,18 +50,9 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnHit
 	 */
-	bool OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-			const solid &leaving, const solid &entering, bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const;
+	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+			const solid &leaving, const solid &entering, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
-	/**
-	 * Reflect mercury-199 from surface.
-	 *
-	 * Reflects or scatters the neutron according to specular or Lambert.
-	 *
-	 * For parameter doc see TXenon::OnHit
-	 */
-	bool Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-			const solid &leaving, const solid &entering, bool &traversed) const;
 	
 	/**
 	 * This method is executed on each step.
@@ -70,7 +61,7 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnStep
 	 */
-	bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 			const dense_stepper_type &stepper, const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 

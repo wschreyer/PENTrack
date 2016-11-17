@@ -54,8 +54,8 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnHit
 	 */
-	bool OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-			const solid &leaving, const solid &entering, bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const;
+	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+			const solid &leaving, const solid &entering, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
@@ -64,7 +64,7 @@ protected:
 	 * Refracts neutron velocity.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	bool Transmit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void Transmit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
@@ -73,7 +73,7 @@ protected:
 	 * Refracts or scatters the neutron according to Micro Roughness model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	bool TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
@@ -82,7 +82,7 @@ protected:
 	 * Refracts or scatters the neutron according to Lambert model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	bool TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
@@ -91,7 +91,7 @@ protected:
 	 * Reflects neutron specularly.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	bool Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
@@ -100,7 +100,7 @@ protected:
 	 * Reflects or scatters the neutron according to Micro Roughness model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	bool ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
@@ -109,7 +109,7 @@ protected:
 	 * Reflects or scatters the neutron according to Lambert model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	bool ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
@@ -117,7 +117,7 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnStep
 	 */
-	bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+	void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
 			const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 

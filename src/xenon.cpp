@@ -19,17 +19,8 @@ TXenon::TXenon(int number, double t, double x, double y, double z, double E, dou
 
 }
 
-bool TXenon::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-		const solid &leaving, const solid &entering, bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const{
-	traversed = true;
-	
-	return Reflect(x1, y1, x2, y2, normal, leaving, entering, traversed);
-	
-} //end OnHit method
-
-bool TXenon::Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-		const solid &leaving, const solid &entering, bool &traversed) const{
-	
+void TXenon::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+		const solid &leaving, const solid &entering, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
 	double prob = GetRandomGenerator()->UniformDist(0,1);
@@ -67,15 +58,12 @@ bool TXenon::Reflect(const value_type x1, const state_type &y1, value_type &x2, 
 	if (GetRandomGenerator()->UniformDist(0,1) < entering.mat.SpinflipProb){
 		y2[7] *= -1;
 	}
-
-	traversed = false;
-	return true;
-} // end reflect method
+} //end OnHit method
 
 //do nothing for each for step
-bool TXenon::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+void TXenon::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 		const dense_stepper_type &stepper, const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const{
-	return false;
+
 }
 
 //Xenon does not decay

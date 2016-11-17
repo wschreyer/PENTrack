@@ -482,14 +482,12 @@ protected:
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering
-	 * @param traversed Returns true if the material boundary was traversed by the particle
 	 * @param ID If particle is stopped, set this to the appropriate stopID
 	 * @param secondaries Add any secondary particles produced in this interaction
-	 * @return Return true if path of particle was changed
 	 */
-	virtual bool OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	virtual void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 						const double normal[3], const solid &leaving, const solid &entering,
-						bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
+						stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
@@ -506,9 +504,8 @@ protected:
 	 * @param currentsolid Solid through which the particle is moving
 	 * @param ID If particle is stopped, set this to the appropriate stopID
 	 * @param secondaries Add any secondary particles produced in this interaction
-	 * @return Returns true if particle path was changed
 	 */
-	virtual bool OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	virtual void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 						const dense_stepper_type &stepper, const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 

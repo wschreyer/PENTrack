@@ -21,17 +21,8 @@ TMercury::TMercury(int number, double t, double x, double y, double z, double E,
 }
 
 
-bool TMercury::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-		const solid &leaving, const solid &entering, bool &traversed, stopID &ID, std::vector<TParticle*> &secondaries) const{
-	traversed = true;
-	
-	return Reflect(x1, y1, x2, y2, normal, leaving, entering, traversed);
-}
-
-
-bool TMercury::Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, bool &traversed) const{
-	
+void TMercury::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+		const solid &leaving, const solid &entering, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
 	double prob = GetRandomGenerator()->UniformDist(0,1);
@@ -69,15 +60,13 @@ bool TMercury::Reflect(const value_type x1, const state_type &y1, value_type &x2
 	if (GetRandomGenerator()->UniformDist(0,1) < entering.mat.SpinflipProb){
 		y2[7] *= -1;
 	}
+}
 
-	traversed = false;
-	return true;
-} // end reflect method
 
 //do nothing for each for step
-bool TMercury::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+void TMercury::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 		const dense_stepper_type &stepper, const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const{
-	return false;
+
 }
 
 //Mercury does not decay
