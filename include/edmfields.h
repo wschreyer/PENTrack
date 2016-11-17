@@ -13,7 +13,8 @@
  *
  * Typically used in nEDM experiments
  */
-struct TEDMStaticB0GradZField: public TField{
+class TEDMStaticB0GradZField: public TField{
+private:
 	double edmB0xoff; ///< the x-coordinate offset from the origin
 	double edmB0yoff; ///< the y-coordinate offset from the origin
 	double edmB0zoff; ///< the z-coordinate offset from the origin
@@ -39,7 +40,7 @@ struct TEDMStaticB0GradZField: public TField{
 	double dB[9]; ///< Theory values for derivatives in the BField frame
 	double Bd[6][3]; ///< change in B field in this coordinate system to be transformed into original coordinate system
 	
-	
+public:
 	/**
 	 * Magnetic field definition for the static B_0 field experienced by neutrons throughout the Ramsey cycle.
 	 *
@@ -66,7 +67,9 @@ struct TEDMStaticB0GradZField: public TField{
 	 * @param _zmin minimum z value for the field to permiate
 	 * @param Bscale Formula to scale magnetic field
 	 */
-	TEDMStaticB0GradZField(double xoff, double yoff, double zoff, double ang1, double ang2, double abz, double adB0zdz, bool AC, double frq, double tstart1, double tend1, double pshift, double bW, double _xmax, double _xmin, double _ymax, double _ymin, double _zmax, double _zmin, std::string Bscale);
+	TEDMStaticB0GradZField(const double xoff, const double yoff, const double zoff, const double ang1, const double ang2,
+			const double abz, const double adB0zdz, const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
+			const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale);
 	
 	/**
 	 * The calculation for the B0 components are derived from a first order approximation of
@@ -78,7 +81,7 @@ struct TEDMStaticB0GradZField: public TField{
 	 * @param t the time (not used since the field is presumed to be static)
 	 * @param B Magnetic field component matrix to which the values are added
 	**/
-	void BField(double x, double y, double z, double t, double B[4][4]);
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
 	
 	/**
 	 * Adds no electric field. 
@@ -92,8 +95,9 @@ struct TEDMStaticB0GradZField: public TField{
 	 * @param Ei Electric field components
 	 * @param dEidxj Spatial derivatives of electric field components
 	 **/
-	void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL) {};
+	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3], double dEidxj[3][3] = NULL) const  {};
 	
+private:
 	/**
 	 * Folds the BField component (Bx, By, or Bz) and its spatial derivative components 
 	 *
@@ -104,7 +108,7 @@ struct TEDMStaticB0GradZField: public TField{
 	 * @param dBScaled The three derivatives of each Bfield component; Only the ones pertaining to Bxi are updated in a call
 	 * @param i Integer to specify which Bxi component you passed; x = 0, y = 1, z = 2
 	 **/
-	void FieldSmthr(double x, double y, double z, double *Bxi, double *dBScaled, int i);
+	void FieldSmthr(const double x, const double y, const double z, double Bxi[3], double dBScaled[9], const int i) const;
 	
 	/**
 	 * Computes how much scale the field and its derivatives in the x y and z direction based off of how close they are to their respective boundaries
@@ -114,7 +118,7 @@ struct TEDMStaticB0GradZField: public TField{
 	 * @param z Cartesian z coordinate
 	 * @param compFactors First three elements to compress in the x,y,z directions respectively. The next 3 are to indicate upper boundary (a value of 1) or a lower boundary (a value of 0)
 	 **/
-	void CompressionFactor(double x, double y, double z, double *compFactors);
+	void CompressionFactor(const double x, const double y, const double z, double *compFactors) const;
 	
 	/**
 	 * Smooth function used to scale the field at the edges
@@ -123,7 +127,7 @@ struct TEDMStaticB0GradZField: public TField{
 	 *
 	 * @return Returns number between 0 and 1, smoothly rising with x
 	 **/
-	double SmthrStp(double x);
+	double SmthrStp(const double x) const;
 	
 	/**
 	 * Derivative of SmthStp
@@ -133,18 +137,20 @@ struct TEDMStaticB0GradZField: public TField{
 	 * @return Returns derivative of SmthrStp at parameter x
 	 **/
 
-	double SmthrStpDer(double x);		
+	double SmthrStpDer(const double x) const;
 };
 
 /**
  * The static homogenous field that is parallel to the B0 field.
  * 
  */
-struct TEDMStaticEField: public TField {
+class TEDMStaticEField: public TField {
+private:
 	double exMag; ///< X component of electric field
 	double eyMag; ///< Y component of electric field
 	double ezMag; ///< Z component of electric field
 
+public:
 	/**
  	* Constructor requires just the magnitude of the field.
  	*
@@ -153,7 +159,7 @@ struct TEDMStaticEField: public TField {
  	* @param aezMag Z component of electric field
  	* @param Escale Formula used to scale electric field
  	*/
-	TEDMStaticEField(double aexMag, double aeyMag, double aezMag, std::string Escale);
+	TEDMStaticEField(const double aexMag, const double aeyMag, const double aezMag, const std::string &Escale);
 
 	/**
 	 * Adds no magnetic field.
@@ -164,7 +170,7 @@ struct TEDMStaticEField: public TField {
 	 * @param t the time (not used since the field is presumed to be static)
 	 * @param B Magnetic field component matrix to which the values are added
 	**/
-	void BField(double x, double y, double z, double t, double B[4][4]) {};
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const{};
 	
 	/**
 	 * The static E field should be parallel to the B0 field in Ramsey cycle.
@@ -177,7 +183,8 @@ struct TEDMStaticEField: public TField {
 	 * @param Ei Electric field components
 	 * @param dEidxj Spatial derivatives of electric field components
 	 */
-	void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL);
+	void EField(const double x, const double y, const double z, const double t,
+			double &V, double Ei[3], double dEidxj[3][3] = NULL) const;
 
 };
 

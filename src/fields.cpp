@@ -38,46 +38,11 @@ TFieldManager::TFieldManager(TConfig &conf){
 			if (ss)
 				f = new TabField3(ft.c_str(), Bscale, Escale, BoundaryWidth);
 		}
-		else if (type == "InfiniteWireZ"){
-			ss >> Ibar >> p1 >> p2 >> Bscale;
-			if (ss)
-				f = new TInfiniteWireZ(p1, p2, Ibar, Bscale);
-		}
-		else if (type == "InfiniteWireZCenter"){
-			ss >> Ibar >> Bscale;
-			if (ss)
-				f = new TInfiniteWireZCenter(Ibar, Bscale);
-		}
-		else if (type == "FiniteWire"){
+		else if (type == "Conductor"){
 			ss >> Ibar >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> Bscale;
 			if (ss)
-				f = new TFiniteWire(p1, p2, p3, p4, p5, p6, Ibar, Bscale);
+				f = new TConductorField(p1, p2, p3, p4, p5, p6, Ibar, Bscale);
 		}
-		else if (type == "FiniteWireX"){
-			ss >> Ibar >> p1 >> p2 >> p3 >> Bscale;
-			if (ss)
-				f = new TFiniteWireX(p1, p2, p3, Ibar, Bscale);
-		}
-		else if (type == "FiniteWireY"){
-			ss >> Ibar >> p1 >> p2 >> p3 >> Bscale;
-			if (ss)
-				f = new TFiniteWireY(p1, p2, p3, Ibar, Bscale);
-		}
-		else if (type == "FiniteWireZ"){
-			ss >> Ibar >> p1 >> p2 >> p3 >> p4 >> Bscale;
-			if (ss)
-				f = new TFiniteWireZ(p1, p2, p3, p4, Ibar, Bscale);
-		}
-		else if (type == "FiniteWireZCenter"){
-			ss >> Ibar >> p1 >> p2 >> Bscale;
-			if (ss)
-				f = new TFiniteWireZCenter(p1, p2, Ibar, Bscale);
-		}
-		else if (type == "FullRacetrack"){
-			ss >> Ibar >> p1 >> p2 >> p3 >> Bscale;
-			if (ss)
-				f = new TFullRacetrack(p1, p2, p3, Ibar, Bscale);
-		} 
 		else if (type == "EDMStaticB0GradZField") {
 			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
 			
@@ -122,19 +87,22 @@ TFieldManager::~TFieldManager(){
 }
 
 
-void TFieldManager::BField (double x, double y, double z, double t, double B[4][4]){
+void TFieldManager::BField(const double x, const double y, const double z, const double t, double B[4][4]) const{
 	for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			B[i][j] = 0;
 
-	for (std::vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++){
-		double Btmp[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+	for (std::vector<TField*>::const_iterator i = fields.begin(); i != fields.end(); i++){
+		double Btmp[3] = {0,0,0};
+		double dBtmp[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 
-		(*i)->BField(x, y, z, t, Btmp);
+		(*i)->BField(x, y, z, t, Btmp, dBtmp);
 
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 4; j++)
-				B[i][j] += Btmp[i][j];
+		for (int i = 0; i < 3; i++){
+			B[i][0] += Btmp[i];
+			for (int j = 0; j < 3; j++)
+				B[i][j+1] += dBtmp[i][j];
+		}
 	}
 
 	B[3][0] = sqrt(B[0][0]*B[0][0] + B[1][0]*B[1][0] + B[2][0]*B[2][0]); // absolute value of B-Vector
@@ -147,7 +115,8 @@ void TFieldManager::BField (double x, double y, double z, double t, double B[4][
 }
 
 
-void TFieldManager::EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]){
+void TFieldManager::EField(const double x, const double y, const double z, const double t,
+		double &V, double Ei[3], double dEidxj[3][3]) const{
 	V = 0;
 	for (int i = 0; i < 3; i++){
 		Ei[i] = 0;
@@ -156,7 +125,7 @@ void TFieldManager::EField(double x, double y, double z, double t, double &V, do
 				dEidxj[i][j] = 0;
 		}
 	}
-	for (std::vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++){
+	for (std::vector<TField*>::const_iterator i = fields.begin(); i != fields.end(); i++){
 		double Vtmp = 0, Etmp[3] = {0,0,0};
 
 		if (dEidxj != NULL){

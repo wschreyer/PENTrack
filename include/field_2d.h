@@ -50,7 +50,7 @@ class TabField: public TField{
 		 * @param ETabs Three vectors containing electric field components at each grid point
 		 * @param VTab Vector containing electric potential at each grid point
 		 */
-		void ReadTabFile(const char *tabfile, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+		void ReadTabFile(const std::string &tabfile, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
 						alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab);
 
 
@@ -63,8 +63,8 @@ class TabField: public TField{
 		 * @param ETabs Three vectors containing electric field components at each grid point
 		 * @param VTab Vector containing electric potential at each grid point
 		 */
-		void CheckTab(alglib::real_1d_array &rind, alglib::real_1d_array &zind,
-				alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab);
+		void CheckTab(const alglib::real_1d_array &rind, const alglib::real_1d_array &zind,
+				const alglib::real_1d_array BTabs[3], const alglib::real_1d_array ETabs[3], const alglib::real_1d_array &VTab);
 
 
 	public:
@@ -80,8 +80,8 @@ class TabField: public TField{
 		 * @param aBconv Factor to convert magnetic field units in file to PENTrack units (default: expect Gauss (cgs), convert to Tesla)
 		 * @param aEconv Factor to convert electric field units in file to PENTrack units (default: expect V/cm (cgs), convert to V/m)
 		 */
-		TabField(const char *tabfile, std::string Bscale, std::string Escale,
-				double alengthconv = 0.01, double aBconv = 1e-4, double aEconv = 100.);
+		TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale,
+				const double alengthconv = 0.01, const double aBconv = 1e-4, const double aEconv = 100.);
 
 		~TabField();
 
@@ -97,7 +97,7 @@ class TabField: public TField{
 		 * @param t Time
 		 * @param B Return magnetic field components B[0..2][0], their derivatives B[0..2][1..3], the absolute value B[3][0] and its derivatives B[3][1..3]
 		 */
-		void BField(double x, double y, double z, double t, double B[4][4]);
+		void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
 
 
 		/**
@@ -114,7 +114,8 @@ class TabField: public TField{
 		 * @param Ei Return electric field (negative spatial derivatives of V)
 		 * @param dEidxj Return spatial derivatives of electric field components (optional) !!!NOT YET IMPLEMENTED!!!
 		 */
-		void EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL);
+		void EField(const double x, const double y, const double z, const double t,
+				double &V, double Ei[3], double dEidxj[3][3] = NULL) const;
 };
 
 

@@ -23,13 +23,13 @@ using namespace std;
  * @param v_x Returns x component of vector
  * @param v_y Returns y component of vector
  */
-void CylToCart(double v_r, double v_phi, double phi, double &v_x, double &v_y){
+void CylToCart(const double v_r, const double v_phi, const double phi, double &v_x, double &v_y){
 	v_x = v_r*cos(phi) - v_phi*sin(phi);
 	v_y = v_r*sin(phi) + v_phi*cos(phi);
 }
 
 
-void TabField::ReadTabFile(const char *tabfile, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+void TabField::ReadTabFile(const std::string &tabfile, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
 		alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab){
 	ifstream FIN(tabfile, ifstream::in);
 	if (!FIN.is_open()){
@@ -83,7 +83,7 @@ void TabField::ReadTabFile(const char *tabfile, alglib::real_1d_array &rind, alg
 	}
 
 	if (!FIN || line.substr(0,2) != " 0"){
-		printf("%s not found or corrupt! Exiting...\n",tabfile);
+		std::cout << tabfile << " not found or corrupt! Exiting...\n";
 		exit(-1);
 	}
 
@@ -140,26 +140,26 @@ void TabField::ReadTabFile(const char *tabfile, alglib::real_1d_array &rind, alg
 		FIN >> ws;
 	}
 
-	printf("\n");
+	std::cout << "\n";
 	if (ri+1 != (int)m || zi+1 != (int)n){
-		printf("The header says the size is %u by %u, actually it is %i by %i! Exiting...\n", m, n, ri+1, zi+1);
+		std::cout << "The header says the size is " << m << " by " << n << ", actually it is " << ri+1 << " by " << zi+1 << "! Exiting...\n";
 		exit(-1);
 	}
 	FIN.close();
 }
 
 
-void TabField::CheckTab(alglib::real_1d_array &rind, alglib::real_1d_array &zind,
-		alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab){
+void TabField::CheckTab(const alglib::real_1d_array &rind, const alglib::real_1d_array &zind,
+		const alglib::real_1d_array BTabs[3], const alglib::real_1d_array ETabs[3], const alglib::real_1d_array &VTab){
 	//  calculate factors for conversion of coordinates to indexes  r = conv_rA + index * conv_rB
 	r_mi = rind[0];
 	z_mi = zind[0];
 	rdist = rind[1] - rind[0];
 	zdist = zind[1] - zind[0];
-	printf("The arrays are %u by %u.\n",m,n);
-	printf("The r values go from %G to %G\n", rind[0], rind[m-1]);
-	printf("The z values go from %G to %G.\n", zind[0], zind[n-1]);
-	printf("rdist = %G zdist = %G\n", rdist, zdist);
+	std::cout << "The arrays are " << m << " by " << n << "\n";
+	std::cout << "The r values go from " << rind[0] << " to " << rind[m-1] << "\n";
+	std::cout << "The z values go from " << zind[0] << " to " << zind[n-1] << ".\n";
+	std::cout << "rdist = " << rdist << " zdist = " << zdist << "\n";
 
 	double Babsmax = 0, Babsmin = 9e99, Babs;
 	double Vmax = 0, Vmin = 9e99;
@@ -183,11 +183,11 @@ void TabField::CheckTab(alglib::real_1d_array &rind, alglib::real_1d_array &zind
 		}
 	}
 
-	printf("The input table file has values of |B| from %G T to %G T and values of V from %G V to %G V\n",Babsmin,Babsmax,Vmin,Vmax);
+	std::cout << "The input table file has values of |B| from " << Babsmin << " T to " << Babsmax << " T and values of V from " << Vmin << " V to " << Vmax << " V\n";
 }
 
-TabField::TabField(const char *tabfile, std::string Bscale, std::string Escale, double alengthconv, double aBconv, double aEconv)
-	: TField(Bscale, Escale){
+TabField::TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale,
+		const double alengthconv, const double aBconv, const double aEconv): TField(Bscale, Escale){
 	lengthconv = alengthconv;
 	Bconv = aBconv;
 	Econv = aEconv;
@@ -197,7 +197,7 @@ TabField::TabField(const char *tabfile, std::string Bscale, std::string Escale, 
 
 	CheckTab(rind, zind, BTabs, ETabs, VTab); // print some info
 
-	printf("Starting Preinterpolation ... ");
+	std::cout << "Starting Preinterpolation ... ";
 	fBrc = fBphic = fBzc = fErc = fEphic = fEzc = fVc = false;
 	if (BTabs[0].length() > 0){
 		cout << "Br ... ";
@@ -250,45 +250,57 @@ TabField::~TabField(){
 }
 
 
-void TabField::BField(double x, double y, double z, double t, double B[4][4]){
+void TabField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double r = sqrt(x*x+y*y);
 	double Bscale = BScaling(t);
 	if (Bscale != 0 && r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
 		// bicubic interpolation
-		double Br = 0, dBrdr = 0, dBrdz = 0, Bphi = 0, dBphidr = 0, dBphidz = 0, dBzdr = 0;
-		double Bx = 0, By = 0, Bz = 0, dBxdz = 0, dBydz = 0, dBzdz = 0;
-		double dummy;
+		double Br = 0, Bphi = 0;
+		double Bx = 0, By = 0, Bz = 0;
 		double phi = atan2(y,x);
-		if (fBrc){
-			alglib::spline2ddiff(Brc, r, z, Br, dBrdr, dBrdz, dummy);
+		if (dBidxj != NULL){
+			double dBrdr = 0, dBrdz = 0, dBphidr = 0, dBphidz = 0, dBzdr = 0, dBxdz = 0, dBydz = 0, dBzdz = 0;
+			double dummy;
+			if (fBrc){
+				alglib::spline2ddiff(Brc, r, z, Br, dBrdr, dBrdz, dummy);
+			}
+			if (fBphic){
+				alglib::spline2ddiff(Bphic, r, z, Bphi, dBphidr, dBphidz, dummy);
+			}
+			if (r > 0){
+				dBidxj[0][0] = Bscale*(dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r);
+				dBidxj[0][1] = Bscale*(dBrdr*cos(phi)*sin(phi) - dBphidr*sin(phi)*sin(phi) - (Br*cos(phi)*sin(phi) + Bphi*cos(phi)*cos(phi))/r);
+				dBidxj[1][0] = Bscale*(dBrdr*cos(phi)*sin(phi) + dBphidr*cos(phi)*cos(phi) - (Br*cos(phi)*sin(phi) - Bphi*sin(phi)*sin(phi))/r);
+				dBidxj[1][1] = Bscale*(dBrdr*sin(phi)*sin(phi) + dBphidr*cos(phi)*sin(phi) + (Br*cos(phi)*cos(phi) - Bphi*cos(phi)*sin(phi))/r);
+			}
+			CylToCart(dBrdz,dBphidz,phi,dBxdz,dBydz);
+			dBidxj[0][2] = dBxdz*Bscale;
+			dBidxj[1][2] = dBydz*Bscale;
+			if (fBzc){
+				alglib::spline2ddiff(Bzc, r, z, Bz, dBzdr, dBzdz, dummy);
+				dBidxj[2][0] = dBzdr*cos(phi)*Bscale;
+				dBidxj[2][1] = dBzdr*sin(phi)*Bscale;
+				dBidxj[2][2] = dBzdz*Bscale;
+			}
 		}
-		if (fBphic){
-			alglib::spline2ddiff(Bphic, r, z, Bphi, dBphidr, dBphidz, dummy);
+		else{
+			if (fBrc)
+				Br = alglib::spline2dcalc(Brc, r, z);
+			if (fBphic)
+				Bphi = alglib::spline2dcalc(Bphic, r, z);
+			if (fBzc)
+				Bz = alglib::spline2dcalc(Bzc, r, z);
 		}
 		CylToCart(Br,Bphi,phi,Bx,By);
-		B[0][0] = Bx*Bscale;
-		B[1][0] = By*Bscale;
-		if (r > 0){
-			B[0][1] = Bscale*(dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r);
-			B[0][2] = Bscale*(dBrdr*cos(phi)*sin(phi) - dBphidr*sin(phi)*sin(phi) - (Br*cos(phi)*sin(phi) + Bphi*cos(phi)*cos(phi))/r);
-			B[1][1] = Bscale*(dBrdr*cos(phi)*sin(phi) + dBphidr*cos(phi)*cos(phi) - (Br*cos(phi)*sin(phi) - Bphi*sin(phi)*sin(phi))/r);
-			B[1][2] = Bscale*(dBrdr*sin(phi)*sin(phi) + dBphidr*cos(phi)*sin(phi) + (Br*cos(phi)*cos(phi) - Bphi*cos(phi)*sin(phi))/r);
-		}
-		CylToCart(dBrdz,dBphidz,phi,dBxdz,dBydz);
-		B[0][3] = dBxdz*Bscale;
-		B[1][3] = dBydz*Bscale;
-		if (fBzc){
-			alglib::spline2ddiff(Bzc, r, z, Bz, dBzdr, dBzdz, dummy);
-		}
-		B[2][0] = Bz*Bscale;
-		B[2][1] = dBzdr*cos(phi)*Bscale;
-		B[2][2] = dBzdr*sin(phi)*Bscale;
-		B[2][3] = dBzdz*Bscale;
+		B[0] = Bx*Bscale;
+		B[1] = By*Bscale;
+		B[2] = Bz*Bscale;
 	}
 }
 
 
-void TabField::EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]){
+void TabField::EField(const double x, const double y, const double z, const double t,
+		double &V, double Ei[3], double dEidxj[3][3]) const{
 	double r = sqrt(x*x+y*y);
 	double Escale = EScaling(t);
 	if (Escale != 0 && r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){

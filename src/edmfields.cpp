@@ -11,7 +11,10 @@
 
 
 //TEDMStaticB0GradZField constructor
-TEDMStaticB0GradZField::TEDMStaticB0GradZField(double xoff, double yoff, double zoff, double ang1, double ang2, double abz, double adB0zdz, bool AC, double frq, double tstart1, double tend1, double pshift, double bW, double _xmax, double _xmin, double _ymax, double _ymin, double _zmax, double _zmin, std::string Bscale): TField(Bscale, "1") {
+TEDMStaticB0GradZField::TEDMStaticB0GradZField(const double xoff, const double yoff, const double zoff, const double ang1, const double ang2,
+		const double abz, const double adB0zdz, const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
+		const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale)
+			: TField(Bscale, "0") {
 	edmB0xoff = xoff;
 	edmB0yoff = yoff;
 	edmB0zoff = zoff;
@@ -117,8 +120,8 @@ TEDMStaticB0GradZField::TEDMStaticB0GradZField(double xoff, double yoff, double 
 	for(int k=0;k<3;k++){
 		for(int i=0;i<3;i++){
 			Bd[k+3][i]=0;
-		   for(int j=0;j<3;j++){
-			   Bd[k+3][i]+=Rot3[i][j]*Bd[k][j];
+			for(int j=0;j<3;j++){
+				Bd[k+3][i]+=Rot3[i][j]*Bd[k][j];
 			}
 		}
 	}
@@ -136,7 +139,7 @@ TEDMStaticB0GradZField::TEDMStaticB0GradZField(double xoff, double yoff, double 
 
 	}
 
-void TEDMStaticB0GradZField::BField(double x, double y, double z, double t, double B[4][4]){
+void TEDMStaticB0GradZField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 
 	if(ac==true && (t<on1 || t>off1)){
 		return;
@@ -170,20 +173,20 @@ void TEDMStaticB0GradZField::BField(double x, double y, double z, double t, doub
 			}
 		}
 
-	
-		//Initialize a local instance of dB to be folded
 		double dBScaled[9];
+		//Initialize a local instance of dB to be folded
 		for(int i = 0; i < 9; i++)
 			dBScaled[i] = dB[i];
 
 		//apply AC scaling if necessary
-		if(ac==true){
+		if(ac){
 			double scalar;
 			scalar=sin((f*t+phase)*2*M_PI);
-		for (int i = 0; i < 9; i++){
-			dBScaled[i]*=scalar;
-			if (i < 3)
+			for (int i = 0; i < 3; i++)
 				BF2[i] *= scalar;
+			if (dBidxj != NULL){
+				for (int i = 0; i < 9; i++)
+					dBScaled[i]*=scalar;
 			}
 		}
 		
@@ -192,31 +195,28 @@ void TEDMStaticB0GradZField::BField(double x, double y, double z, double t, doub
 			FieldSmthr(x, y, z, BF2, dBScaled, i);
 		}
 
-		//Update the simulation BField to include the EDM component
-		B[0][0]+=BF2[0];
-		B[1][0]+=BF2[1];
-		B[2][0]+=BF2[2];
-	
-		//update the simulation BField gradient to include the EDM component
-		B[0][1]+=dBScaled[0];
-		B[1][1]+=dBScaled[1];
-		B[2][1]+=dBScaled[2];
-		B[0][2]+=dBScaled[3];
-		B[1][2]+=dBScaled[4];
-		B[2][2]+=dBScaled[5];
-		B[0][3]+=dBScaled[6];
-		B[1][3]+=dBScaled[7];
-		B[2][3]+=dBScaled[8];
-	
-		for (int i = 0; i < 4; i++){
-			for (int j = 0; j < 4; j++){
-				B[i][j] *= BScaling(t);
-			}
+		//set BField to EDM component
+		double Bscale = BScaling(t);
+		B[0] = BF2[0]*Bscale;
+		B[1] = BF2[1]*Bscale;
+		B[2] = BF2[2]*Bscale;
+
+		if (dBidxj != NULL){
+			//set BField gradient to EDM component
+			dBidxj[0][0] = dBScaled[0]*Bscale;
+			dBidxj[1][0] = dBScaled[1]*Bscale;
+			dBidxj[2][0] = dBScaled[2]*Bscale;
+			dBidxj[0][1] = dBScaled[3]*Bscale;
+			dBidxj[1][1] = dBScaled[4]*Bscale;
+			dBidxj[2][1] = dBScaled[5]*Bscale;
+			dBidxj[0][2] = dBScaled[6]*Bscale;
+			dBidxj[1][2] = dBScaled[7]*Bscale;
+			dBidxj[2][2] = dBScaled[8]*Bscale;
 		}
 	}
 }
 
-void TEDMStaticB0GradZField::FieldSmthr(double x, double y, double z, double *Bxi, double *dBScaled, int xi){		
+void TEDMStaticB0GradZField::FieldSmthr(const double x, const double y, const double z, double Bxi[3], double dBScaled[9], const int xi) const{
 	
 		// Fscale = P(x')*P(y')*P(z') in the boundary where P(xi') = SmthrStp(xi-xi_min / BoundaryWidth) for the lower boundary and SmthrStp(xi-xi_max / BoundaryWidth) for the upper boundary
 		double compressionArray[6] = {1,1,1,0,0,0};
@@ -225,7 +225,7 @@ void TEDMStaticB0GradZField::FieldSmthr(double x, double y, double z, double *Bx
 		
 		// Throw an error if two edges to be scaled overlap, otherwise compute how far into each boundary (x,y,z) is
 		try{
-		CompressionFactor(x,y,z,compressionArray);
+			CompressionFactor(x,y,z,compressionArray);
 		}
 		catch (const std::invalid_argument& e){
 			std::cout << "max-min distance has to be at least twice the BoundaryWidth!" << "\n";
@@ -261,72 +261,72 @@ void TEDMStaticB0GradZField::FieldSmthr(double x, double y, double z, double *Bx
 	}
 	
 // Compute the percentage into the boundary widthy the coordinate is in the x,y,z directions
-void TEDMStaticB0GradZField::CompressionFactor(double x, double y, double z, double *compFactors){
+void TEDMStaticB0GradZField::CompressionFactor(const double x, const double y, const double z, double *compFactors) const{
 	
 	// Do nothing if BoundaryWidth is set to zero
 	if (BoundaryWidth != 0){
 	
-	// throw error if the min/max distances are insufficient (min > max or not twice BoundaryWidth apart)
-	if ((xmax - xmin) < 2*BoundaryWidth || (ymax - ymin) < 2*BoundaryWidth || (zmax - zmin) < 2*BoundaryWidth){
-		throw std::invalid_argument( "max - min has to be at least twice the BoundaryWidth!" );
-	}
-		
-	// Scale x,y,z if they are within BoundaryWidth of max or min
-	if ((x < xmax) && (x >= (xmax - BoundaryWidth))){
-		compFactors[0] = (xmax - x)/BoundaryWidth;
-		compFactors[3] = 1;
+		// throw error if the min/max distances are insufficient (min > max or not twice BoundaryWidth apart)
+		if ((xmax - xmin) < 2*BoundaryWidth || (ymax - ymin) < 2*BoundaryWidth || (zmax - zmin) < 2*BoundaryWidth){
+			throw std::invalid_argument( "max - min has to be at least twice the BoundaryWidth!" );
 		}
 
-	if ((x > xmin) && (x <= (xmin + BoundaryWidth)))
-		compFactors[0] = (x - xmin)/BoundaryWidth;
-
-
-	if ((y < ymax) && (y >= (ymax - BoundaryWidth))){
-		compFactors[1] = (ymax - y)/BoundaryWidth;
-		compFactors[4] = 1;
+		// Scale x,y,z if they are within BoundaryWidth of max or min
+		if ((x < xmax) && (x >= (xmax - BoundaryWidth))){
+			compFactors[0] = (xmax - x)/BoundaryWidth;
+			compFactors[3] = 1;
 		}
 
-	if ((y > ymin) && (y <= (ymin + BoundaryWidth)))
-		compFactors[1] = (y - ymin)/BoundaryWidth;
-
-		
-	if ((z < zmax) && (z >= (zmax - BoundaryWidth))){
-		compFactors[2] = (zmax - z)/BoundaryWidth;
-		compFactors[5] = 1;
-		}
-
-	if ((z > zmin) && (z <= (zmin + BoundaryWidth)))
-		compFactors[2] = (z - zmin)/BoundaryWidth;
+		if ((x > xmin) && (x <= (xmin + BoundaryWidth)))
+			compFactors[0] = (x - xmin)/BoundaryWidth;
 
 
-	// Nullify the field outside of the min/max
-	if (x >= xmax || x <= xmin)
-		compFactors[0] = 0;
-		
-	if (y >= ymax || y <= ymin)
-		compFactors[1] = 0;
-		
-	if (z >= zmax || z <= zmin)
-		compFactors[2] = 0;
+		if ((y < ymax) && (y >= (ymax - BoundaryWidth))){
+			compFactors[1] = (ymax - y)/BoundaryWidth;
+			compFactors[4] = 1;
+			}
+
+		if ((y > ymin) && (y <= (ymin + BoundaryWidth)))
+			compFactors[1] = (y - ymin)/BoundaryWidth;
+
+
+		if ((z < zmax) && (z >= (zmax - BoundaryWidth))){
+			compFactors[2] = (zmax - z)/BoundaryWidth;
+			compFactors[5] = 1;
+			}
+
+		if ((z > zmin) && (z <= (zmin + BoundaryWidth)))
+			compFactors[2] = (z - zmin)/BoundaryWidth;
+
+
+		// Nullify the field outside of the min/max
+		if (x >= xmax || x <= xmin)
+			compFactors[0] = 0;
+
+		if (y >= ymax || y <= ymin)
+			compFactors[1] = 0;
+
+		if (z >= zmax || z <= zmin)
+			compFactors[2] = 0;
 	}
 }
 
-double TEDMStaticB0GradZField::SmthrStp(double x) {
+double TEDMStaticB0GradZField::SmthrStp(const double x) const{
 	return 6*pow(x, 5) - 15*pow(x, 4) + 10*pow(x, 3);
 }
 
-double TEDMStaticB0GradZField::SmthrStpDer(double x) {
+double TEDMStaticB0GradZField::SmthrStpDer(const double x) const{
 	return 30*pow(x, 4) - 60*pow(x, 3) + 30*pow(x,2);
 }
 
 //TEDMStaticEField constructor
-TEDMStaticEField::TEDMStaticEField (double aexMag, double aeyMag, double aezMag, std::string Escale): TField("1", Escale){
+TEDMStaticEField::TEDMStaticEField(const double aexMag, const double aeyMag, const double aezMag, const std::string &Escale): TField("1", Escale){
 	exMag = aexMag;
 	eyMag = aeyMag;
 	ezMag = aezMag;
-	} 
+}
 
-void TEDMStaticEField::EField (double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]) {
+void TEDMStaticEField::EField (const double x, const double y, const double z, const double t, double &V, double Ei[3], double dEidxj[3][3]) const{
 	double Escale = EScaling(t);
 	Ei[0] = exMag*Escale;
 	Ei[1] = eyMag*Escale;

@@ -29,14 +29,14 @@ int INDEX_3D(int xi, int yi, int zi, int xsize, int ysize, int zsize){
 }
 
 
-void TabField3::ReadTabFile(const char *tabfile,
+void TabField3::ReadTabFile(const std::string &tabfile,
 		std::vector<double> &BxTab, std::vector<double> &ByTab, std::vector<double> &BzTab, std::vector<double> &VTab){
 	std::ifstream FIN(tabfile, std::ifstream::in);
 	if (!FIN.is_open()){
-		printf("\nCould not open %s!\n",tabfile);
+		std::cout << "\nCould not open " << tabfile << "!\n";
 		exit(-1);
 	}
-	printf("\nReading %s ",tabfile);
+	std::cout << "\nReading " << tabfile << " ";
 	std::string line;
 	FIN >> xl >> yl >> zl;
 
@@ -65,7 +65,7 @@ void TabField3::ReadTabFile(const char *tabfile,
 	}
 
 	if (!FIN || line.substr(0,2) != " 0"){
-		printf("%s not found or corrupt! Exiting...\n",tabfile);
+		std::cout << tabfile << " not found or corrupt! Exiting...\n";
 		exit(-1);
 	}
 
@@ -117,9 +117,9 @@ void TabField3::ReadTabFile(const char *tabfile,
 
 	}
 
-	printf("\n");
+	std::cout << "\n";
 	if (xi+1 != xl || yi + 1 != yl || zi+1 != zl){
-		printf("The header says the size is %i by %i by %i, actually it is %i by %i by %i! Exiting...\n", xl, yl, zl, xi+1, yi+1, zi+1);
+		std::cout << "The header says the size is " << xl << " by " << yl << " by " << zl << ", actually it is " << xi+1 << " by " << yi+1 << " by " << zi+1 << "! Exiting...\n";
 		exit(-1);
 	}
 	FIN.close();
@@ -134,13 +134,14 @@ void TabField3::ReadTabFile(const char *tabfile,
 };
 
 
-void TabField3::CheckTab(std::vector<double> &BxTab, std::vector<double> &ByTab, std::vector<double> &BzTab, std::vector<double> &VTab){
+void TabField3::CheckTab(const std::vector<double> &BxTab, const std::vector<double> &ByTab,
+		const std::vector<double> &BzTab, const std::vector<double> &VTab){
 	//  calculate factors for conversion of coordinates to indexes  r = conv_rA + index * conv_rB
-	printf("The arrays are %d by %d by %d.\n",xl,yl,zl);
-	printf("The x values go from %G to %G\n",x_mi,x_mi + xdist*(xl-1));
-	printf("The y values go from %G to %G\n",y_mi,y_mi + ydist*(yl-1));
-	printf("The z values go from %G to %G.\n",z_mi,z_mi + zdist*(zl-1));
-	printf("xdist = %G ydist = %G zdist = %G\n",xdist,ydist,zdist);
+	std::cout << "The arrays are " << xl << " by " << yl << " by " << zl << ".\n";
+	std::cout << "The x values go from " << x_mi << " to " << x_mi + xdist*(xl-1) << "\n";
+	std::cout << "The y values go from " << y_mi << " to " << y_mi + ydist*(yl-1) << "\n";
+	std::cout << "The z values go from " << z_mi << " to " << z_mi + zdist*(zl-1) << ".\n";
+	std::cout << "xdist = " << xdist << " ydist = " << ydist << " zdist = " << zdist << "\n";
 
 	double Babsmax = 0, Babsmin = 9e99, Babs;
 	double Vmax = 0, Vmin = 9e99;
@@ -170,12 +171,12 @@ void TabField3::CheckTab(std::vector<double> &BxTab, std::vector<double> &ByTab,
 		}
 	}
 
-	printf("The input table file has values of |B| from %G T to %G T and values of V from %G V to %G V\n",Babsmin,Babsmax,Vmin,Vmax);
+	std::cout << "The input table file has values of |B| from " << Babsmin << " T to " << Babsmax << " T and values of V from " << Vmin << " V to " << Vmax << " V\n";
 };
 
 
-void TabField3::CalcDerivs(std::vector<double> &Tab, std::vector<double> &Tab1, std::vector<double> &Tab2, std::vector<double> &Tab3,
-							std::vector<double> &Tab12, std::vector<double> &Tab13, std::vector<double> &Tab23, std::vector<double> &Tab123)
+void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &Tab1, std::vector<double> &Tab2, std::vector<double> &Tab3,
+		std::vector<double> &Tab12, std::vector<double> &Tab13, std::vector<double> &Tab23, std::vector<double> &Tab123) const
 {
 	alglib::real_1d_array x, y, diff;
 
@@ -281,7 +282,7 @@ void TabField3::CalcDerivs(std::vector<double> &Tab, std::vector<double> &Tab1, 
 };
 
 
-void TabField3::PreInterpol(std::vector<std::vector<double> > &coeff, std::vector<double> &Tab){
+void TabField3::PreInterpol(std::vector<std::vector<double> > &coeff, const std::vector<double> &Tab) const{
 	std::vector<double> Tab1(xl*yl*zl), Tab2(xl*yl*zl), Tab3(xl*yl*zl);
 	std::vector<double> Tab12(xl*yl*zl), Tab13(xl*yl*zl), Tab23(xl*yl*zl), Tab123(xl*yl*zl);
 	CalcDerivs(Tab,Tab1,Tab2,Tab3,Tab12,Tab13,Tab23,Tab123);
@@ -328,7 +329,8 @@ void TabField3::PreInterpol(std::vector<std::vector<double> > &coeff, std::vecto
 };
 
 
-TabField3::TabField3(const char *tabfile, std::string Bscale, std::string Escale, double aBoundaryWidth, double alengthconv, double aBconv)
+TabField3::TabField3(const std::string &tabfile, const std::string &Bscale, const std::string &Escale,
+		const double aBoundaryWidth, const double alengthconv, const double aBconv)
 	: TField(Bscale, Escale){
 	BoundaryWidth = aBoundaryWidth;
 	lengthconv = alengthconv;
@@ -341,41 +343,41 @@ TabField3::TabField3(const char *tabfile, std::string Bscale, std::string Escale
 
 	CheckTab(BxTab,ByTab,BzTab,VTab); // print some info
 
-	printf("Starting Preinterpolation ... ");
+	std::cout << "Starting Preinterpolation ... ";
 	float size = 0;
 	if (BxTab.size() > 0){
-		printf("Bx ... ");
-		fflush(stdout);
+		std::cout << "Bx ... ";
+		std::cout.flush();
 		PreInterpol(Bxc,BxTab); // precalculate interpolation coefficients for B field
 		size += float(Bxc.size()*64*sizeof(double)/1024/1024);
 		BxTab.clear();
 	}
 	if (ByTab.size() > 0){
-		printf("By ... ");
-		fflush(stdout);
+		std::cout << "By ... ";
+		std::cout.flush();
 		PreInterpol(Byc,ByTab);
 		size += float(Byc.size()*64*sizeof(double)/1024/1024);
 		ByTab.clear();
 	}
 	if (BzTab.size() > 0){
-		printf("Bz ... ");
-		fflush(stdout);
+		std::cout << "Bz ... ";
+		std::cout.flush();
 		PreInterpol(Bzc,BzTab);
 		size += float(Bzc.size()*64*sizeof(double)/1024/1024);
 		BzTab.clear();
 	}
 	if (VTab.size() > 0){
-		printf("V ... ");
-		fflush(stdout);
+		std::cout << "V ... ";
+		std::cout.flush();
 		PreInterpol(Vc,VTab);
 		size += float(Vc.size()*64*sizeof(double)/1024/1024);
 		VTab.clear();
 	}
-	printf("Done (%.f MB)\n",size);
+	std::cout << "Done (" << size << " MB)\n";
 }
 
 
-void TabField3::BField(double x, double y, double z, double t, double B[4][4]){
+void TabField3::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double Bscale = BScaling(t);
 	// get coordinate index
 	int indx = (int)floor((x - x_mi)/xdist);
@@ -389,31 +391,44 @@ void TabField3::BField(double x, double y, double z, double t, double B[4][4]){
 		int i3 = INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
 		// tricubic interpolation
 		if (Bxc.size() > 0){
-			B[0][0] = Bscale*tricubic_eval(&Bxc[i3][0], xu, yu, zu);
-			B[0][1] = Bscale*tricubic_eval(&Bxc[i3][0], xu, yu, zu, 1, 0, 0)/xdist;
-			B[0][2] = Bscale*tricubic_eval(&Bxc[i3][0], xu, yu, zu, 0, 1, 0)/ydist;
-			B[0][3] = Bscale*tricubic_eval(&Bxc[i3][0], xu, yu, zu, 0, 0, 1)/zdist;
+			double *coeff = const_cast<double*>(&Bxc[i3][0]);
+			B[0] = Bscale*tricubic_eval(coeff, xu, yu, zu);
+			if (dBidxj != NULL){
+				dBidxj[0][0] = Bscale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
+				dBidxj[0][1] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
+				dBidxj[0][2] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
+			}
 		}
 		if (Byc.size() > 0){
-			B[1][0] = Bscale*tricubic_eval(&Byc[i3][0], xu, yu, zu);
-			B[1][1] = Bscale*tricubic_eval(&Byc[i3][0], xu, yu, zu, 1, 0, 0)/xdist;
-			B[1][2] = Bscale*tricubic_eval(&Byc[i3][0], xu, yu, zu, 0, 1, 0)/ydist;
-			B[1][3] = Bscale*tricubic_eval(&Byc[i3][0], xu, yu, zu, 0, 0, 1)/zdist;
+			double *coeff = const_cast<double*>(&Byc[i3][0]);
+			B[1] = Bscale*tricubic_eval(coeff, xu, yu, zu);
+			if (dBidxj != NULL){
+				dBidxj[1][0] = Bscale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
+				dBidxj[1][1] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
+				dBidxj[1][2] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
+			}
 		}
 		if (Bzc.size() > 0){
-			B[2][0] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu);
-			B[2][1] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu, 1, 0, 0)/xdist;
-			B[2][2] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu, 0, 1, 0)/ydist;
-			B[2][3] = Bscale*tricubic_eval(&Bzc[i3][0], xu, yu, zu, 0, 0, 1)/zdist;
+			double *coeff = const_cast<double*>(&Bzc[i3][0]);
+			B[2] = Bscale*tricubic_eval(coeff, xu, yu, zu);
+			if (dBidxj != NULL){
+				dBidxj[2][0] = Bscale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
+				dBidxj[2][1] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
+				dBidxj[2][2] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
+			}
 		}
 
-		for (int i = 0; i < 3; i++)
-			FieldSmthr(x, y, z, B[i][0], &B[i][1]); // apply field smoothing to each component
+		for (int i = 0; i < 3; i++){
+			if (dBidxj != NULL)
+				FieldSmthr(x, y, z, B[i], dBidxj[i]); // apply field smoothing to each component
+			else
+				FieldSmthr(x, y, z, B[i], NULL);
+		}
 
 	}
 }
 
-void TabField3::FieldSmthr(double x, double y, double z, double &F, double dFdxi[3]){
+void TabField3::FieldSmthr(const double x, const double y, const double z, double &F, double dFdxi[3]) const{
 	if (BoundaryWidth != 0 && F != 0){ // skip, if BoundaryWidth is set to zero
 		double dxlo = (x - x_mi)/BoundaryWidth; // calculate distance to edges in units of BoundaryWidth
 		double dxhi = (x_mi + xdist*(xl - 1) - x)/BoundaryWidth;
@@ -430,49 +445,58 @@ void TabField3::FieldSmthr(double x, double y, double z, double &F, double dFdxi
 
 		if (dxhi < 1) { // if point in upper x boundary (distance smaller than BoundaryWidth)
 			Fscale *= SmthrStp(dxhi); // scale field by value of smoother function
-			dFadd[0] = -F*SmthrStpDer(dxhi)/BoundaryWidth/SmthrStp(dxhi); // add derivative of smoother function according to product rule
+			if (dFdxi != NULL)
+				dFadd[0] = -F*SmthrStpDer(dxhi)/BoundaryWidth/SmthrStp(dxhi); // add derivative of smoother function according to product rule
 		}
 		if (dyhi < 1){ // if point in upper y boundary
 			Fscale *= SmthrStp(dyhi);
-			dFadd[1] = -F*SmthrStpDer(dyhi)/BoundaryWidth/SmthrStp(dyhi);
+			if (dFdxi != NULL)
+				dFadd[1] = -F*SmthrStpDer(dyhi)/BoundaryWidth/SmthrStp(dyhi);
 		}
 		if (dzhi < 1){ // if point in upper z boundary
 			Fscale *= SmthrStp(dzhi);
-			dFadd[2] = -F*SmthrStpDer(dzhi)/BoundaryWidth/SmthrStp(dzhi);
+			if (dFdxi != NULL)
+				dFadd[2] = -F*SmthrStpDer(dzhi)/BoundaryWidth/SmthrStp(dzhi);
 		}
 
 		if (dxlo < 1){ // if point in lower x boundary
 			Fscale *= SmthrStp(dxlo);
-			dFadd[0] = F*SmthrStpDer(dxlo)/BoundaryWidth/SmthrStp(dxlo);
+			if (dFdxi != NULL)
+				dFadd[0] = F*SmthrStpDer(dxlo)/BoundaryWidth/SmthrStp(dxlo);
 		}
 		if (dylo < 1){ // if point in lower y boundary
 			Fscale *= SmthrStp(dylo);
-			dFadd[1] = F*SmthrStpDer(dylo)/BoundaryWidth/SmthrStp(dylo);
+			if (dFdxi != NULL)
+				dFadd[1] = F*SmthrStpDer(dylo)/BoundaryWidth/SmthrStp(dylo);
 		}
 		if (dzlo < 1){ // if point in lower z boundary
 			Fscale *= SmthrStp(dzlo);
-			dFadd[2] = F*SmthrStpDer(dzlo)/BoundaryWidth/SmthrStp(dzlo);
+			if (dFdxi != NULL)
+				dFadd[2] = F*SmthrStpDer(dzlo)/BoundaryWidth/SmthrStp(dzlo);
 		}
 
 		if (Fscale != 1){
 			F *= Fscale; // scale field value
-			for (int i = 0; i < 3; i++){
-				dFdxi[i] = dFdxi[i]*Fscale + dFadd[i]*Fscale; // scale derivatives according to product rule
+			if (dFdxi != NULL){
+				for (int i = 0; i < 3; i++){
+					dFdxi[i] = dFdxi[i]*Fscale + dFadd[i]*Fscale; // scale derivatives according to product rule
+				}
 			}
 		}
 
 	}
 }
 
-double TabField3::SmthrStp(double x) {
+double TabField3::SmthrStp(const double x) const{
 	return 6*pow(x, 5) - 15*pow(x, 4) + 10*pow(x, 3);
 }
 
-double TabField3::SmthrStpDer(double x) {
+double TabField3::SmthrStpDer(const double x) const{
 	return 30*pow(x, 4) - 60*pow(x, 3) + 30*pow(x,2);
 }
 
-void TabField3::EField(double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3]){
+void TabField3::EField(const double x, const double y, const double z, const double t,
+		double &V, double Ei[3], double dEidxj[3][3]) const{
 	double Escale = EScaling(t);
 	if (Escale != 0 && Vc.size() > 0 &&
 		(x - x_mi)/xdist > 0 && (x - x_mi - xl*xdist)/xdist < 0 &&
@@ -483,25 +507,26 @@ void TabField3::EField(double x, double y, double z, double t, double &V, double
 		int indy = (int)floor((y - y_mi)/ydist);
 		int indz = (int)floor((z - z_mi)/zdist);
 		// scale coordinates to unit cube
-		x = (x - x_mi - indx*xdist)/xdist;
-		y = (y - y_mi - indy*ydist)/ydist;
-		z = (z - z_mi - indz*zdist)/zdist;
+		double xu = (x - x_mi - indx*xdist)/xdist;
+		double yu = (y - y_mi - indy*ydist)/ydist;
+		double zu = (z - z_mi - indz*zdist)/zdist;
 		int i3 = INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
 		// tricubic interpolation
-		V = tricubic_eval(&Vc[i3][0], x, y, z);
-		Ei[0] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 1, 0, 0)/xdist;
-		Ei[1] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 0, 1, 0)/ydist;
-		Ei[2] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 0, 0, 1)/zdist;
+		double *coeff = const_cast<double*>(&Vc[i3][0]);
+		V = tricubic_eval(coeff, xu, yu, zu);
+		Ei[0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
+		Ei[1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
+		Ei[2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
 		if (dEidxj != NULL){ // calculate higher derivatives
-			dEidxj[0][0] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 2, 0, 0)/xdist/xdist;
-			dEidxj[0][1] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 1, 1, 0)/xdist/ydist;
-			dEidxj[0][2] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 1, 0, 1)/xdist/zdist;
-			dEidxj[1][0] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 1, 1, 0)/ydist/xdist;
-			dEidxj[1][1] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 0, 2, 0)/ydist/ydist;
-			dEidxj[1][2] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 0, 1, 1)/ydist/zdist;
-			dEidxj[2][0] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 1, 0, 1)/zdist/xdist;
-			dEidxj[2][1] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 0, 1, 1)/zdist/ydist;
-			dEidxj[2][2] = -Escale*tricubic_eval(&Vc[i3][0], x, y, z, 0, 0, 2)/zdist/zdist;
+			dEidxj[0][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 2, 0, 0)/xdist/xdist;
+			dEidxj[0][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 1, 0)/xdist/ydist;
+			dEidxj[0][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 1)/xdist/zdist;
+			dEidxj[1][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 1, 0)/ydist/xdist;
+			dEidxj[1][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 2, 0)/ydist/ydist;
+			dEidxj[1][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 1)/ydist/zdist;
+			dEidxj[2][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 1)/zdist/xdist;
+			dEidxj[2][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 1)/zdist/ydist;
+			dEidxj[2][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 2)/zdist/zdist;
 		}
 
 		for (int i = 0; i < 3; i++)

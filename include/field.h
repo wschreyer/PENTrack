@@ -19,7 +19,7 @@ class TField{
 private:
 	exprtk::expression<double> Bscaler;
 	exprtk::expression<double> Escaler;
-	double tvar; ///< time variable for use in scaling formular parsers
+	mutable double tvar; ///< time variable for use in scaling-formula parsers
 
 protected:
 	/**
@@ -29,7 +29,7 @@ protected:
 	 *
 	 * @return Return scaling factor
 	 */
-	double BScaling(double t){
+	double BScaling(const double t) const{
 		tvar = t;
 		try{
 			return Bscaler.value();
@@ -48,7 +48,7 @@ protected:
 	 *
 	 * @return Return scaling factor
 	 */
-	double EScaling(double t){
+	double EScaling(const double t) const{
 		tvar = t;
 		try{
 			return Escaler.value();
@@ -64,20 +64,17 @@ public:
 	/**
 	 * Add magnetic field at a given position and time.
 	 *
-	 * Add field components to the given field matrix B:
-	 *	Bx,		dBxdx,	dBxdy,	dBxdz;
-	 *	By,		dBydx,	dBydy,	dBydz;
-	 *	Bz,		dBzdx,	dBzdy,	dBzdz;
-	 *	Babs,	dBdx,	dBdy,	dBdz;
 	 * Has to be implemented by all derived field calculation classes.
 	 *
 	 * @param x Cartesian x coordinate
 	 * @param y Cartesian y coordinate
 	 * @param z Cartesian z coordinate
 	 * @param t Time
-	 * @param B Returns magnetic field component matrix
+	 * @param B Returns magnetic field vector
+	 * @param dBidxj Return spatial derivatives of magnetic field components (optional)
 	 */
-	virtual void BField (double x, double y, double z, double t, double B[4][4]) = 0;
+	virtual void BField (const double x, const double y, const double z, const double t,
+			double B[3], double dBidxj[3][3] = NULL) const = 0;
 
 	/**
 	 * Add electric field and potential at a given position.
@@ -92,12 +89,16 @@ public:
 	 * @param Ei Returns electric field vector
 	 * @param dEidxj Returns spatial derivatives of electric field components (optional)
 	 */
-	virtual void EField (double x, double y, double z, double t, double &V, double Ei[3], double dEidxj[3][3] = NULL) = 0;
+	virtual void EField (const double x, const double y, const double z, const double t,
+			double &V, double Ei[3], double dEidxj[3][3] = NULL) const = 0;
 
 	/**
 	 * Generic constructor, should be called by every derived class.
+	 *
+	 * @param Bscale String containing formula describing time-dependence of magnetic field
+	 * @param Escale String containing formula describing time-dependence of electric field
 	 */
-	TField(std::string Bscale, std::string Escale){
+	TField(const std::string &Bscale, const std::string &Escale){
 		exprtk::symbol_table<double> symbol_table;
 		symbol_table.add_variable("t",tvar);
 		symbol_table.add_constants();
