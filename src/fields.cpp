@@ -87,30 +87,30 @@ TFieldManager::~TFieldManager(){
 }
 
 
-void TFieldManager::BField(const double x, const double y, const double z, const double t, double B[4][4]) const{
-	for (int i = 0; i < 4; i++)
-		for (int j = 0; j < 4; j++)
-			B[i][j] = 0;
+void TFieldManager::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
+	for (int i = 0; i < 3; i++){
+		B[i] = 0;
+		if (dBidxj != NULL){
+			for (int j = 0; j < 3; j++)
+				dBidxj[i][j] = 0;
+		}
+	}
 
 	for (std::vector<TField*>::const_iterator i = fields.begin(); i != fields.end(); i++){
 		double Btmp[3] = {0,0,0};
 		double dBtmp[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
-
-		(*i)->BField(x, y, z, t, Btmp, dBtmp);
+		if (dBidxj != NULL)
+			(*i)->BField(x, y, z, t, Btmp, dBtmp);
+		else
+			(*i)->BField(x, y, z, t, Btmp);
 
 		for (int i = 0; i < 3; i++){
-			B[i][0] += Btmp[i];
-			for (int j = 0; j < 3; j++)
-				B[i][j+1] += dBtmp[i][j];
+			B[i] += Btmp[i];
+			if (dBidxj != NULL){
+				for (int j = 0; j < 3; j++)
+					dBidxj[i][j] += dBtmp[i][j];
+			}
 		}
-	}
-
-	B[3][0] = sqrt(B[0][0]*B[0][0] + B[1][0]*B[1][0] + B[2][0]*B[2][0]); // absolute value of B-Vector
-	if (B[3][0]>1e-31)
-	{
-		B[3][1] = (B[0][0]*B[0][1] + B[1][0]*B[1][1] + B[2][0]*B[2][1])/B[3][0]; // derivatives of absolute value
-		B[3][2] = (B[0][0]*B[0][2] + B[1][0]*B[1][2] + B[2][0]*B[2][2])/B[3][0];
-		B[3][3] = (B[0][0]*B[0][3] + B[1][0]*B[1][3] + B[2][0]*B[2][3])/B[3][0];
 	}
 }
 

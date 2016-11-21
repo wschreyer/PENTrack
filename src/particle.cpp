@@ -65,15 +65,15 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 
 	spinstart.resize(SPIN_STATE_VARIABLES, 0);
 	if (field){
-		double B[4][4];
+		double B[3];
 		field->BField(x, y, z, t, B);
-		if (B[3][0] > 0){
+		double Babs = sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
+		if (Babs > 0){
 			double spinaz = mc->UniformDist(0, 2*pi); // random azimuth angle of spin
 			spinstart[0] = sqrt(1 - polarisation*polarisation)*sin(spinaz); // set initial spin vector
 			spinstart[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
 			spinstart[2] = polarisation;
-			double B0[3] = {B[0][0], B[1][0], B[2][0]};
-			RotateVector(&spinstart[0], B0); // rotate initial spin vector such that its z-component is parallel to magnetic field
+			RotateVector(&spinstart[0], B); // rotate initial spin vector such that its z-component is parallel to magnetic field
 
 			spinstart[3] = 0; // initial integration time is zero
 			spinstart[4] = 0; // initial phase is zero
@@ -264,18 +264,18 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 
 
 void TParticle::derivs(const state_type &y, state_type &dydx, const value_type x) const{
-	double B[4][4], E[3], V; // magnetic/electric field and electric potential in lab frame
+	double B[3], dBidxj[3][3], E[3], V; // magnetic/electric field and electric potential in lab frame
 	if (field){
 		if (q != 0 || (mu != 0 && y[7] != 0)) // if particle has charge or magnetic moment, calculate magnetic field
-			field->BField(y[0],y[1],y[2], x, B);
+			field->BField(y[0],y[1],y[2], x, B, dBidxj);
 		if (q != 0) // if particle has charge caculate electric field
 			field->EField(y[0],y[1],y[2], x, V, E);
 
 	}
-	EquationOfMotion(y, dydx, x, B, E);
+	EquationOfMotion(y, dydx, x, B, dBidxj, E);
 }
 
-void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[4][4], const double E[3]) const{
+void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[3], const double dBidxj[3][3], const double E[3]) const{
 	dydx[0] = y[3]; // time derivatives of position = velocity
 	dydx[1] = y[4];
 	dydx[2] = y[5];
@@ -284,14 +284,18 @@ void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const va
 	F[2] += -gravconst*m*ele_e; // add gravitation to force
 	if (field){
 		if (q != 0){
-			F[0] += q*(E[0] + y[4]*B[2][0] - y[5]*B[1][0]); // add Lorentz-force
-			F[1] += q*(E[1] + y[5]*B[0][0] - y[3]*B[2][0]);
-			F[2] += q*(E[2] + y[3]*B[1][0] - y[4]*B[0][0]);
+			F[0] += q*(E[0] + y[4]*B[2] - y[5]*B[1]); // add Lorentz-force
+			F[1] += q*(E[1] + y[5]*B[0] - y[3]*B[2]);
+			F[2] += q*(E[2] + y[3]*B[1] - y[4]*B[0]);
 		}
-		if (mu != 0 && y[7] != 0){
-			F[0] += y[7]*mu*B[3][1]; // add force on magnetic dipole moment
-			F[1] += y[7]*mu*B[3][2];
-			F[2] += y[7]*mu*B[3][3];
+		if (mu != 0 && y[7] != 0 && (B[0] != 0 || B[1] != 0 || B[2] != 0)){
+			double Babs = sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
+			double dBdxi[3] = {	(B[0]*dBidxj[0][0] + B[1]*dBidxj[1][0] + B[2]*dBidxj[2][0])/Babs,
+								(B[0]*dBidxj[0][1] + B[1]*dBidxj[1][1] + B[2]*dBidxj[2][1])/Babs,
+								(B[0]*dBidxj[0][2] + B[1]*dBidxj[1][2] + B[2]*dBidxj[2][2])/Babs}; // derivatives of |B|
+			F[0] += y[7]*mu*dBdxi[0]; // add force on magnetic dipole moment
+			F[1] += y[7]*mu*dBdxi[1];
+			F[2] += y[7]*mu*dBdxi[2];
 		}
 	}
 	value_type inversegamma = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0)); // relativstic factor 1/gamma
@@ -311,15 +315,17 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		return 0;
 
 	state_type y1 = stepper.previous_state();
-	double B1[4][4], B2[4][4], polarisation;
+	double B1[3], B2[3], polarisation;
 	field->BField(y1[0], y1[1], y1[2], x1, B1);
 	field->BField(y2[0], y2[1], y2[2], x2, B2);
+	double Babs1 = sqrt(B1[0]*B1[0] + B1[1]*B1[1] + B1[2]*B1[2]);
+	double Babs2 = sqrt(B2[0]*B2[0] + B2[1]*B2[1] + B2[2]*B2[2]);
 
-	if (B2[3][0] == 0){ // if there's no magnetic field or particle is leaving magnetic field, do nothing
+	if (Babs2 == 0){ // if there's no magnetic field or particle is leaving magnetic field, do nothing
 		std::fill(spin.begin(), spin.end(), 0); // set all spin components to zero
 		return 0;
 	}
-	else if (B1[3][0] == 0 && B2[3][0] > 0){ // if particle enters magnetic field
+	else if (Babs1 == 0 && Babs2 > 0){ // if particle enters magnetic field
 		std::cout << "Entering magnetic field\n";
 		if (!flipspin) // if polarization should stay constant
 			polarisation = y1[7]; // take polarization from state vector
@@ -330,13 +336,13 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 				polarisation = -1;
 			y2[7] = polarisation;
 		}
-		spin[0] = polarisation*B2[0][0]/B2[3][0]; // set spin (anti-)parallel to field
-		spin[1] = polarisation*B2[1][0]/B2[3][0];
-		spin[2] = polarisation*B2[2][0]/B2[3][0];
+		spin[0] = polarisation*B2[0]/Babs2; // set spin (anti-)parallel to field
+		spin[1] = polarisation*B2[1]/Babs2;
+		spin[2] = polarisation*B2[2]/Babs2;
 		return 0.5;
 	}
 	else{ // if particle already is in magnetic field, calculate spin-projection on magnetic field
-		polarisation = (spin[0]*B1[0][0] + spin[1]*B1[1][0] + spin[2]*B1[2][0])/B1[3][0]/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
+		polarisation = (spin[0]*B1[0] + spin[1]*B1[1] + spin[2]*B1[2])/Babs1/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
 	}
 
 	bool integrate1 = false, integrate2 = false;;
@@ -345,8 +351,8 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		integrate2 |= (x2 >= times[i] && x2 < times[i+1]);
 	}
 
-	if ((integrate1 || integrate2) && (B1[3][0] < Bmax || B2[3][0] < Bmax)){ // do spin integration only, if time is in specified range and field is smaller than Bmax
-		if ((!integrate1 && integrate2) || (B1[3][0] > Bmax && B2[3][0] < Bmax))
+	if ((integrate1 || integrate2) && (Babs1 < Bmax || Babs2 < Bmax)){ // do spin integration only, if time is in specified range and field is smaller than Bmax
+		if ((!integrate1 && integrate2) || (Babs1 > Bmax && Babs2 < Bmax))
 			std::cout << x1 << "s " << y1[7] - polarisation << " ";
 
 		vector<alglib::spline1dinterpolant> omega_int;
@@ -375,7 +381,7 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		}
 
 		dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(1e-12, 1e-12, stepper_type());
-		spinstepper.initialize(spin, x1, std::abs(pi/gamma/B1[3][0])); // initialize integrator with step size = half rotation
+		spinstepper.initialize(spin, x1, std::abs(pi/gamma/Babs1)); // initialize integrator with step size = half rotation
 		unsigned int steps = 0;
 		while (true){
 			// take an integration step, SpinDerivs contains right-hand side of equation of motion
@@ -398,9 +404,9 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		}
 
 		// calculate new spin projection
-		polarisation = (spin[0]*B2[0][0] + spin[1]*B2[1][0] + spin[2]*B2[2][0])/B2[3][0]/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
+		polarisation = (spin[0]*B2[0] + spin[1]*B2[1] + spin[2]*B2[2])/Babs2/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
 	}
-	else if ((B1[3][0] < Bmax || B2[3][0] < Bmax)){ // if time outside selected ranges, parallel-transport spin along magnetic field
+	else if ((Babs1 < Bmax || Babs2 < Bmax)){ // if time outside selected ranges, parallel-transport spin along magnetic field
 		if (polarisation*polarisation >= 1){ // catch rounding errors
 			spin[0] = 0;
 			spin[1] = 0;
@@ -411,20 +417,19 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 			spin[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
 		}
 		spin[2] = polarisation;
-		double B0[3] = {B2[0][0], B2[1][0], B2[2][0]};
-		RotateVector(&spin[0], B0); // rotate spin vector onto magnetic field vector
+		RotateVector(&spin[0], B2); // rotate spin vector onto magnetic field vector
 	}
 
 
-	if (B2[3][0] > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
+	if (Babs2 > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
 		double flipprob = 0.5*(1 - y2[7]*polarisation);
-		if ((integrate1 || integrate2) && B1[3][0] < Bmax)
+		if ((integrate1 || integrate2) && Babs1 < Bmax)
 			std::cout << x2 << "s flipprob " << flipprob << "\n";
 		if (flipspin)
 			y2[7] = mc->DicePolarisation(polarisation); // set new polarisation weighted by spin-projection on magnetic field
-		spin[0] = B2[0][0]*y2[7]/B2[3][0];
-		spin[1] = B2[1][0]*y2[7]/B2[3][0];
-		spin[2] = B2[2][0]*y2[7]/B2[3][0];
+		spin[0] = B2[0]*y2[7]/Babs2;
+		spin[1] = B2[1]*y2[7]/Babs2;
+		spin[2] = B2[2]*y2[7]/Babs2;
 		return flipprob;
 	}
 	return 0;
@@ -432,27 +437,28 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 
 
 void TParticle::SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, double &Omegax, double &Omegay, double &Omegaz) const{
-	double B[4][4], V, E[3];
+	double B[3], dBidxj[3][3], V, E[3];
 	state_type y(STATE_VARIABLES), dydt(STATE_VARIABLES);
 	stepper.calc_state(t, y); // calculate particle state at time t
-	field->BField(y[0], y[1], y[2], t, B);
+	field->BField(y[0], y[1], y[2], t, B, dBidxj);
 	field->EField(y[0], y[1], y[2], t, V, E);
-	EquationOfMotion(y, dydt, t, B, E); // calculate velocity and acceleration required for vxE effect and Thomas precession
+	EquationOfMotion(y, dydt, t, B, dBidxj, E); // calculate velocity and acceleration required for vxE effect and Thomas precession
 	SpinPrecessionAxis(t, B, E, dydt, Omegax, Omegay, Omegaz); // calculate precession axis
 }
 
-void TParticle::SpinPrecessionAxis(const double t, const double B[4][4], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const{
+void TParticle::SpinPrecessionAxis(const double t, const double B[3], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const{
 	double v2 = dydt[0]*dydt[0] + dydt[1]*dydt[1] + dydt[2]*dydt[2];
 	double gamma_rel = 1./sqrt(1. - v2/c_0/c_0);
+	double Bdotv = B[0]*dydt[0] + B[1]*dydt[1] + B[2]*dydt[2];
 	double Bparallel[3];
 	for (int j = 0; j < 3; j++)
-		Bparallel[j] = (B[0][0]*dydt[0] + B[1][0]*dydt[1] + B[2][0]*dydt[2])*dydt[j]/v2; // magnetic-field component parallel to velocity
+		Bparallel[j] = Bdotv*dydt[j]/v2; // magnetic-field component parallel to velocity
 
 	// spin precession axis due to relativistically distorted magnetic field, omega_B = -gyro/gamma * ( (1 - gamma)*(v.B)*v/v^2 + gamma*B - gamma*(v x E)/c^2 )
 	double OmegaB[3];
-	OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0][0] - gamma_rel*(dydt[1]*E[2] - dydt[2]*E[1])/c_0/c_0);
-	OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1][0] - gamma_rel*(dydt[2]*E[0] - dydt[0]*E[2])/c_0/c_0);
-	OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2][0] - gamma_rel*(dydt[0]*E[1] - dydt[1]*E[0])/c_0/c_0);
+	OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0] - gamma_rel*(dydt[1]*E[2] - dydt[2]*E[1])/c_0/c_0);
+	OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1] - gamma_rel*(dydt[2]*E[0] - dydt[0]*E[2])/c_0/c_0);
+	OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2] - gamma_rel*(dydt[0]*E[1] - dydt[1]*E[0])/c_0/c_0);
 
 	// Thomas precession in lab frame, omega_T = gamma^2/(gamma + 1)/c^2*(dv/dt x v)
 	double OmegaT[3] = {0,0,0};
@@ -697,7 +703,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	cout << "Printing status\n";
 
 	value_type E = GetKineticEnergy(&y[3]);
-	double B[4][4], Ei[3], V;
+	double B[3], Ei[3], V;
 
 	field->BField(ystart[0], ystart[1], ystart[2], tstart, B);
 	field->EField(ystart[0], ystart[1], ystart[2], tstart, V, Ei);
@@ -706,7 +712,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
 			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " " << ystart[7] << " "
 			<< spinstart[0] << " " << spinstart[1] << " " << spinstart[2] << " " << GetInitialTotalEnergy() << " " << GetInitialKineticEnergy() << " "
-			<< B[3][0] << " " << V << " " << solidstart.ID << " ";
+			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << solidstart.ID << " ";
 
 	double H;
 	if (ID == ID_ABSORBED_ON_SURFACE){
@@ -729,7 +735,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 			<< y[3] << " " << y[4] << " " << y[5] << " " << y[7] << " "
 			<< spin[0] << " " << spin[1] << " " << spin[2] << " " << H << " " << E << " "
-			<< B[3][0] << " " << V << " " << sld.ID << " "
+			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
 			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " << wL << '\n';
 }
@@ -749,16 +755,17 @@ void TParticle::PrintTrack(const value_type x, const state_type &y, const state_
 		trackfile << 	"jobnumber particle polarisation "
 						"t x y z vx vy vz "
 						"H E Bx dBxdx dBxdy dBxdz By dBydx "
-						"dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n";
+						"dBydy dBydz Bz dBzdx dBzdy dBzdz Ex Ey Ez V\n";
 		trackfile.precision(10);
 	}
 
 	cout << "-";
-	double B[4][4] = {{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
+	double B[3] = {0,0,0};
+	double dBidxj[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 	double E[3] = {0,0,0};
 	double V = 0;
 	if (field){
-		field->BField(y[0],y[1],y[2],x,B);
+		field->BField(y[0],y[1],y[2],x,B, dBidxj);
 		field->EField(y[0],y[1],y[2],x,V,E);
 	}
 	value_type Ek = GetKineticEnergy(&y[3]);
@@ -767,9 +774,11 @@ void TParticle::PrintTrack(const value_type x, const state_type &y, const state_
 	trackfile << jobnumber << " " << particlenumber << " " << y[7] << " "
 				<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
 				<< H << " " << Ek << " ";
-	for (int i = 0; i < 4; i++)
-		for (int j = 0; j < 4; j++)
-			trackfile << B[i][j] << " ";
+	for (int i = 0; i < 3; i++){
+		trackfile << B[i] << " ";
+		for (int j = 0; j < 3; j++)
+			trackfile << dBidxj[i][j] << " ";
+	}
 	trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
 }
 
@@ -843,10 +852,10 @@ double TParticle::GetKineticEnergy(const value_type v[3]) const{
 double TParticle::GetPotentialEnergy(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const{
 	value_type result = 0;
 	if ((q != 0 || mu != 0) && field){
-		double B[4][4], E[3], V;
+		double B[3], E[3], V;
 		if (mu != 0){
 			field->BField(y[0],y[1],y[2],t,B);
-			result += -y[7]*mu/ele_e*B[3][0];
+			result += -y[7]*mu/ele_e*sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
 		}
 		if (q != 0){
 			field->EField(y[0],y[1],y[2],t,V,E);

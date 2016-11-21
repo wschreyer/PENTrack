@@ -74,7 +74,6 @@ private:
 	int Nspinflip; ///< number of spin flips
 	long double noflipprob; ///< total probability of NO spinflip calculated by spin tracking
 	int Nstep; ///< number of integration steps
-	double wL; ///< particle larmor precession frequency
 
 	std::vector<TParticle*> secondaries; ///< list of secondary particles
 
@@ -357,9 +356,10 @@ private:
 	 * @param dydx Returns derivatives of y with respect to x
 	 * @param x Time
 	 * @param B Magnetic field
+	 * @param dBidxj Spatial derivatives of magnetic field
 	 * @param E Electric field
 	 */
-	void EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[4][4], const double E[3]) const;
+	void EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[3], const double dBidxj[3][3], const double E[3]) const;
 
 
 	/**
@@ -441,7 +441,7 @@ private:
 	 * @param dydt Right-hand side of particle's equation of motion, velocity and acceleration required to calculate vxE effect and Thomas precession
 	 * @param Omega Returns precession axis as 3-vector in lab frame
 	 */
-	void SpinPrecessionAxis(const double t, const double B[4][4], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const;
+	void SpinPrecessionAxis(const double t, const double B[3], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const;
 
 	/**
 	 * Equations of motion of spin vector.

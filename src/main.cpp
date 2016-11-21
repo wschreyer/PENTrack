@@ -34,12 +34,12 @@ using namespace std;
 #include "microroughness.h"
 
 void ConfigInit(TConfig &config); // read config.in
-void OutputCodes(map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
-void PrintBFieldCut(const char *outfile, TFieldManager &field); // evaluate fields on given plane and write to outfile
-void PrintBField(const char *outfile, TFieldManager &field);
-void PrintGeometry(const char *outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
-void PrintMROutAngle ( const char *outfile); // produce a 3d table of the MR-DRP for each outgoing solid angle
-void PrintMRThetaIEnergy ( const char *outfile); // produce a 3d table of the total (integrated) MR-DRP for a given incident angle and energy
+void OutputCodes(const map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
+void PrintBFieldCut(const std::string &outfile, const TFieldManager &field); // evaluate fields on given plane and write to outfile
+void PrintBField(const std::string &outfile, const TFieldManager &field);
+void PrintGeometry(const std::string &outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
+void PrintMROutAngle(const std::string &outfile); // produce a 3d table of the MR-DRP for each outgoing solid angle
+void PrintMRThetaIEnergy(const std::string &outfile); // produce a 3d table of the total (integrated) MR-DRP for a given incident angle and energy
 
 
 double SimTime = 1500.; ///< max. simulation time
@@ -281,7 +281,7 @@ void ConfigInit(TConfig &config){
  *  
  * Other params are read in from the config.in file
 */
-void PrintMROutAngle ( const char *outfile) {
+void PrintMROutAngle(const std::string &outfile) {
 	
 	cout << "\nGenerating table of MR diffuse reflection probability for all solid angles ..." << endl;	
 	
@@ -299,7 +299,7 @@ void PrintMROutAngle ( const char *outfile) {
 	
 	ofstream mrproboutfile(fileName.c_str());
 	if (!mrproboutfile) {
-		printf("Could not open %s!", fileName.c_str());
+		cout << "Could not open " << fileName.c_str() << "!\n";
 		exit (-1);
 	} 
 
@@ -335,7 +335,7 @@ void PrintMROutAngle ( const char *outfile) {
  *
  * @param outfile The file name to which the results will be printed
 */
-void PrintMRThetaIEnergy (const char *outfile) {
+void PrintMRThetaIEnergy(const std::string &outfile) {
 	
 	cout << "\nGenerating table of integrated MR diffuse reflection probability for different incident angle and energy ..." << endl;	
 
@@ -353,7 +353,7 @@ void PrintMRThetaIEnergy (const char *outfile) {
 	
 	ofstream mroutfile(fileName.c_str());
 	if (!mroutfile){
-		printf("Could not open %s!", fileName.c_str());
+		cout << "Could not open " << fileName.c_str() << "!\n";
 		exit(-1);
 	}
 
@@ -391,9 +391,9 @@ void PrintMRThetaIEnergy (const char *outfile) {
  *
  * @param ID_counter A list of counters indicating the numbers of particles with each stopID.
  */
-void OutputCodes(map<string, map<int, int> > &ID_counter){
+void OutputCodes(const map<string, map<int, int> > &ID_counter){
 	cout << "\nThe simulated particles suffered following fates:\n";
-	for (map<string, map<int, int> >::iterator i = ID_counter.begin(); i != ID_counter.end(); i++){
+	for (auto i = ID_counter.begin(); i != ID_counter.end(); i++){
 		map<int, int> counts = i->second;
 		const char *name = i->first.c_str();
 		printf("%4i: %6i %10s(s) were absorbed on a surface\n",	 2, counts[ 2], name);
@@ -419,22 +419,22 @@ void OutputCodes(map<string, map<int, int> > &ID_counter){
  * @param outfile filename of result file
  * @param field TFieldManager structure which should be evaluated
  */
-void PrintBFieldCut(const char *outfile, TFieldManager &field){
+void PrintBFieldCut(const std::string &outfile, const TFieldManager &field){
 	// get directional vectors from points on plane by u = p2-p1, v = p3-p1
 	double u[3] = {BCutPlanePoint[3] - BCutPlanePoint[0], BCutPlanePoint[4] - BCutPlanePoint[1], BCutPlanePoint[5] - BCutPlanePoint[2]};
 	double v[3] = {BCutPlanePoint[6] - BCutPlanePoint[0], BCutPlanePoint[7] - BCutPlanePoint[1], BCutPlanePoint[8] - BCutPlanePoint[2]};
 	
 	// open output file
-	FILE *cutfile = fopen(outfile, "w");
+	ofstream cutfile(outfile);
 	if (!cutfile){
-		printf("Could not open %s!",outfile);
+		std::cout << "Could not open " << outfile << "!\n";
 		exit(-1);
 	}
 	// print file header
-	fprintf(cutfile, "x y z Bx dBxdx dBxdy dBxdz By dBydx dBydy dBydz Bz dBzdx dBzdy dBzdz Babs dBdx dBdy dBdz Ex Ey Ez V\n");
+	cutfile << "x y z Bx dBxdx dBxdy dBxdz By dBydx dBydy dBydz Bz dBzdx dBzdy dBzdz Ex Ey Ez V\n";
 	
 	double Pp[3];
-	double B[4][4],Ei[3],V;
+	double B[3], dBidxj[3][3],Ei[3],V;
 	float start = clock(); // do some time statistics
 	// sample field BCutPlaneSmapleCount1 times in u-direction and BCutPlaneSampleCount2 time in v-direction
 	for (int i = 0; i < BCutPlaneSampleCount1; i++) {
@@ -442,21 +442,22 @@ void PrintBFieldCut(const char *outfile, TFieldManager &field){
 			for (int k = 0; k < 3; k++)
 				Pp[k] = BCutPlanePoint[k] + i*u[k]/BCutPlaneSampleCount1 + j*v[k]/BCutPlaneSampleCount2;
 			// print B-/E-Field to file
-			fprintf(cutfile, "%g %g %g ", Pp[0],Pp[1],Pp[2]);
+			cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << "\n";
 			
-			field.BField(Pp[0], Pp[1], Pp[2], 0, B);
-			for (int k = 0; k < 4; k++)
-				for (int l = 0; l < 4; l++)
-					fprintf(cutfile, "%G ",B[k][l]);
+			field.BField(Pp[0], Pp[1], Pp[2], 0, B, dBidxj);
+			for (int k = 0; k < 3; k++){
+				cutfile << B[k] << " ";
+				for (int l = 0; l < 3; l++)
+					cutfile << dBidxj[k][l] << " ";
+			}
 
 			field.EField(Pp[0], Pp[1], Pp[2], 0, V, Ei);
-			fprintf(cutfile, "%G %G %G %G\n",
-							  Ei[0],Ei[1],Ei[2],V);
+			cutfile << Ei[0] << " " << Ei[1] << " " << Ei[2] << " " << V << "\n";
 		}
 	}
 	start = (clock() - start)/CLOCKS_PER_SEC;
 	//close file
-	fclose(cutfile);
+	cutfile.close();
 	// print time statistics
 	printf("Called BFeld and EFeld %u times in %fs (%fms per call)\n",BCutPlaneSampleCount1*BCutPlaneSampleCount2, start, start/BCutPlaneSampleCount1/BCutPlaneSampleCount2*1000);
 }
@@ -471,15 +472,15 @@ void PrintBFieldCut(const char *outfile, TFieldManager &field){
  * @param outfile Filename of output file
  * @param field TField structure which should be evaluated
  */
-void PrintBField(const char *outfile, TFieldManager &field){
+void PrintBField(const std::string &outfile, const TFieldManager &field){
 	// print BField to file
-	FILE *bfile = fopen(outfile, "w");
+	ofstream bfile(outfile);
 	if (!bfile){
-		printf("Could not open %s!",outfile);
+		std::cout << "Could not open " << outfile << "!\n";
 		exit(-1);
 	}
 
-	fprintf(bfile,"r phi z Bx By Bz 0 0 Babs\n");
+	bfile << "r phi z Bx By Bz 0 0 Babs\n";
 	double rmin = 0.12, rmax = 0.5, zmin = 0, zmax = 1.2;
 	int E;
 	const int Emax = 108;
@@ -488,18 +489,19 @@ void PrintBField(const char *outfile, TFieldManager &field){
 	for (E = 0; E <= Emax; E++) VolumeB[E] = 0;
 	
 	double EnTest;
-	double B[4][4];
+	double B[3];
 	// sample space in cylindrical pattern
 	for (double r = rmin; r <= rmax; r += dr){
 		for (double z = zmin; z <= zmax; z += dz){
 			field.BField(r, 0, z, 500.0, B); // evaluate field
+			double Babs = sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
 			// print field values
-			fprintf(bfile,"%g %g %g %G %G %G %G %G %G \n",r,0.0,z,B[0][0],B[1][0],B[2][0],0.0,0.0,B[3][0]);
-			printf("r=%g, z=%g, Br=%G T, Bz=%G T\n",r,z,B[0][0],B[2][0]);
+			bfile << r << " " << 0.0 << " " << z << " " << B[0] << " " << B[1] << " " << B[2] << " " << 0.0 << " " << 0.0 << " " << Babs << "\n";
+			std::cout << "r=" << r << ", z=" << z << ", Br=" << B[0] << " T, Bz=" << B[2] << " T\n";
 			
 			// Ramp Heating Analysis
 			for (E = 0; E <= Emax; E++){
-				EnTest = E*1.0e-9 - m_n*gravconst*z - mu_nSI/ele_e * B[3][0];
+				EnTest = E*1.0e-9 - m_n*gravconst*z - mu_nSI/ele_e * Babs;
 				if (EnTest >= 0){
 					// add the volume segment to the volume that is accessible to a neutron with energy Energie
 					VolumeB[E] = VolumeB[E] + pi * dz * ((r+0.5*dr)*(r+0.5*dr) - (r-0.5*dr)*(r-0.5*dr));
@@ -507,6 +509,7 @@ void PrintBField(const char *outfile, TFieldManager &field){
 			}
 		}
 	}
+	bfile.close();
 
 	// for investigating ramp heating of neutrons, volume accessible to neutrons with and
 	// without B-field is calculated and the heating approximated by thermodynamical means
@@ -530,7 +533,7 @@ void PrintBField(const char *outfile, TFieldManager &field){
  * @param outfile File name of output file
  * @param geom TGeometry structure which shall be sampled
  */
-void PrintGeometry(const char *outfile, TGeometry &geom){
+void PrintGeometry(const std::string &outfile, TGeometry &geom){
     double p1[3], p2[3];
     double theta, phi;
     // create count line segments with length raylength

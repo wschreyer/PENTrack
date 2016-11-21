@@ -141,7 +141,8 @@ TEDMStaticB0GradZField::TEDMStaticB0GradZField(const double xoff, const double y
 
 void TEDMStaticB0GradZField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 
-	if(ac==true && (t<on1 || t>off1)){
+	double Bscale = BScaling(t);
+	if((ac && (t<on1 || t>off1)) || Bscale == 0){
 		return;
 	}
 	else{
@@ -196,7 +197,6 @@ void TEDMStaticB0GradZField::BField(const double x, const double y, const double
 		}
 
 		//set BField to EDM component
-		double Bscale = BScaling(t);
 		B[0] = BF2[0]*Bscale;
 		B[1] = BF2[1]*Bscale;
 		B[2] = BF2[2]*Bscale;

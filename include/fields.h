@@ -55,7 +55,7 @@ public:
 	 * @param t Time
 	 * @param B Returns magnetic field component matrix
 	 */
-	void BField(const double x, const double y, const double z, const double t, double B[4][4]) const;
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
 
 
 	/**
