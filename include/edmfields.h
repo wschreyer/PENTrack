@@ -79,7 +79,8 @@ public:
 	 * @param y the x-coordinate in the field's coordinate system
 	 * @param z the x-coordinate in the field's coordinate system
 	 * @param t the time (not used since the field is presumed to be static)
-	 * @param B Magnetic field component matrix to which the values are added
+	 * @param B Returns magnetic-field components
+	 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 	**/
 	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
 	
@@ -168,7 +169,8 @@ public:
 	 * @param y the x-coordinate in the field's coordinate system
 	 * @param z the x-coordinate in the field's coordinate system
 	 * @param t the time (not used since the field is presumed to be static)
-	 * @param B Magnetic field component matrix to which the values are added
+	 * @param B Returns magnetic-field components
+	 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 	**/
 	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const{};
 	

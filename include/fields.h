@@ -40,20 +40,14 @@ public:
 
 
 	/**
-	 * Calculate magnetic field at a given position and time.
-	 *
-	 * Chooses the right map for this position and adds racetrack fields.
-	 * field matrix B:
-	 *	Bx,		dBxdx,	dBxdy,	dBxdz;
-	 *	By,		dBydx,	dBydy,	dBydz;
-	 *	Bz,		dBzdx,	dBzdy,	dBzdz;
-	 *	Babs,	dBdx,	dBdy,	dBdz;
+	 * Calculate superposition of all loaded magnetic fields at a given position and time.
 	 *
 	 * @param x Cartesian x coordinate
 	 * @param y Cartesian y coordinate
 	 * @param z Cartesian z coordinate
 	 * @param t Time
-	 * @param B Returns magnetic field component matrix
+	 * @param B Returns magnetic x, y, and z components of magnetic field
+	 * @param dBidxj Returns spatial derivatives of each magnetic-field component (optional)
 	 */
 	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
 

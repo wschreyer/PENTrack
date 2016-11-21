@@ -95,7 +95,8 @@ class TabField: public TField{
 		 * @param y Y coordinate where the field shall be evaluated
 		 * @param z Z coordinate where the field shall be evaluated
 		 * @param t Time
-		 * @param B Return magnetic field components B[0..2][0], their derivatives B[0..2][1..3], the absolute value B[3][0] and its derivatives B[3][1..3]
+		 * @param B Return magnetic-field components
+		 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 		 */
 		void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
 
