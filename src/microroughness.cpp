@@ -150,7 +150,7 @@ double MRDistMax(const bool transmit, const double v[3], const double normal[3],
 	alglib::real_1d_array theta = "[0.7853981635]";
 	alglib::mincgcreatef(1, theta, 1e-10, s);
 	alglib::mincgsetcond(s, 0, 0, 0, 0);
-	TMRParams p = {transmit, true, v, normal, leaving, entering};
+	TMRParams p = {transmit, false, v, normal, leaving, entering};
 	alglib::mincgoptimize(s, NegMRDist, NULL, &p);
 	alglib::mincgreport r;
 	alglib::mincgresults(s, theta, r);
