@@ -19,5 +19,5 @@ UCNdet		0.1			1			0				0	0	0	0
 boxvolume	neutron		0.1	0.1	0.5	0.5		0.01	0.01	0			0
 
 [FIELDS]
-2Dtable test/VerticalLinearGradientField2D.tab	0.5	0.5	0	0	1	0	0
-3Dtable	test/VerticalLinearGradientField3D.tab	0.5	0.5	0	0	1	0	0
+1 2Dtable test/VerticalLinearGradientField2D.tab	0.5	0.5	0
+2 3Dtable	test/VerticalLinearGradientField3D.tab	0.5	0.5	0
