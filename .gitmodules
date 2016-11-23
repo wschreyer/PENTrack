@@ -1,3 +1,0 @@
-[submodule "cgal"]
-	path = cgal/src
-	url = https://github.com/cgal/cgal.git
