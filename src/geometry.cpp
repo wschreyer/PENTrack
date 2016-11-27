@@ -45,8 +45,7 @@ TGeometry::TGeometry(TConfig &geometryin){
 				if (matname == materials[i].name){
 					model.mat = materials[i];
 					if (model.ID > 1){
-						mesh.ReadFile(STLfile.c_str(),solids.size(),name);
-						model.name = name;
+						model.name = mesh.ReadFile(STLfile, solids.size());
 					}
 					else
 						model.name = "default solid";
@@ -86,16 +85,14 @@ TGeometry::TGeometry(TConfig &geometryin){
 		else
 			solids.push_back(model);
 	}
-	mesh.Init();
 	cout << '\n';
 }
 
 
 bool TGeometry::GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], map<TCollision, bool> &colls){
-	set<TCollision> c;
-	mesh.Collision(p1,p2,c);
+	vector<TCollision> c = mesh.Collision(std::vector<double>{p1[0], p1[1], p1[2]}, std::vector<double>{p2[0], p2[1], p2[2]});
 	colls.clear();
-	for (set<TCollision>::iterator it = c.begin(); it != c.end(); it++){
+	for (vector<TCollision>::iterator it = c.begin(); it != c.end(); it++){
 		colls[*it] = false;
 		std::vector<double> *times = &solids[it->sldindex].ignoretimes;
 		if (!times->empty()){
@@ -113,7 +110,7 @@ bool TGeometry::GetCollisions(const double x1, const double p1[3], const double 
 
 
 void TGeometry::GetSolids(const double t, const double p[3], std::map<solid, bool> &currentsolids){
-	double p2[3] = {p[0], p[1], mesh.tree.bbox().zmin() - REFLECT_TOLERANCE};
+	double p2[3] = {p[0], p[1], mesh.GetBoundingBox().zmin() - REFLECT_TOLERANCE};
 	map<TCollision, bool> c;
 	currentsolids.clear();
 	currentsolids[defaultsolid] = false;

@@ -77,7 +77,7 @@ struct TGeometry{
 		 * @return Returns true if segment is intersecting bounding box
 		 */
 		bool CheckSegment(const double y1[3], const double y2[3]){
-			return CGAL::do_intersect(mesh.tree.bbox(), CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
+			return CGAL::do_intersect(mesh.GetBoundingBox(), CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
 		};
 		
 

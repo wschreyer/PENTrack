@@ -542,12 +542,13 @@ void PrintGeometry(const std::string &outfile, TGeometry &geom){
     ofstream f(outfile);
     f << "x y z ID" << '\n'; // print file header
 
+    CBox bbox = geom.mesh.GetBoundingBox();
     srand(time(NULL));
 	chrono::time_point<chrono::steady_clock> collstart = chrono::steady_clock::now();
 	for (unsigned i = 0; i < count; i++){
     	// random segment start point
         for (int j = 0; j < 3; j++)
-        	p1[j] = (double)rand()/RAND_MAX * (geom.mesh.tree.bbox().max(j) - geom.mesh.tree.bbox().min(j)) + geom.mesh.tree.bbox().min(j);
+        	p1[j] = (double)rand()/RAND_MAX * (bbox.max(j) - bbox.min(j)) + bbox.min(j);
 		// random segment direction
         theta = (double)rand()/RAND_MAX*pi;
 		phi = (double)rand()/RAND_MAX*2*pi;
@@ -556,13 +557,12 @@ void PrintGeometry(const std::string &outfile, TGeometry &geom){
 		p2[1] = p1[1] + raylength*sin(theta)*sin(phi);
 		p2[2] = p1[2] + raylength*cos(theta);
 
-	    set<TCollision> c;
-		if (geom.mesh.Collision(p1,p2,c)){ // check if segment intersected with surfaces
-			collcount++;
-			for (set<TCollision>::iterator i = c.begin(); i != c.end(); i++){ // print all intersection points into file
-				f << p1[0] + i->s*(p2[0]-p1[0]) << " " << p1[1] + i->s*(p2[1] - p1[1]) << " " << p1[2] + i->s*(p2[2] - p1[2]) << " " << geom.solids[i->sldindex].ID << '\n';
-			}
-		}
+	    map<TCollision, bool> c;
+	    geom.GetCollisions(0,p1,0,p2,c);
+		collcount += c.size();
+
+		for (auto i = c.begin(); i != c.end(); i++)
+			f << p1[0] + i->first.s*(p2[0]-p1[0]) << " " << p1[1] + i->first.s*(p2[1] - p1[1]) << " " << p1[2] + i->first.s*(p2[2] - p1[2]) << " " << geom.solids[i->first.sldindex].ID << '\n'; // print all intersection points into file
     }
 	chrono::time_point<chrono::steady_clock> collend = chrono::steady_clock::now();
 	float colltimer = chrono::duration_cast<chrono::nanoseconds>(collend - collstart).count();

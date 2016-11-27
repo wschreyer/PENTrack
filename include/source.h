@@ -8,6 +8,7 @@
 #define SOURCE_H_
 
 #include <string>
+#include <limits>
 
 #include "particle.h"
 #include "mc.h"
@@ -33,12 +34,17 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TParticleSource(const std::string ParticleName, double ActiveTime, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TParticleSource(const std::string ParticleName, double ActiveTime, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field):
+		fActiveTime(ActiveTime), fParticleName(ParticleName), fmc(&mc), fgeom(&geometry), ffield(field), ParticleCounter(0){
+
+	}
 
 	/**
 	 * Destructor
 	 */
-	virtual ~TParticleSource();
+	virtual ~TParticleSource(){
+
+	}
 
 	/**
 	 * Basic creation of a new particle. Maps particle name to the corresponding class
@@ -73,9 +79,15 @@ public:
  */
 class TSurfaceSource: public TParticleSource{
 protected:
-	double sourcearea; ///< Net area of source surface
 	double Enormal; ///< Boost given to particles starting from this surface
-	std::vector<TTriangle> sourcetris; ///< List of triangles making up the source surface
+	std::vector<double> area_sum; ///< list of areas of corresponding triangles in TGeometry class, each entry accumulates areas of all preceding triangles that are contained in the source volume
+
+	/**
+	 * Check if point is inside the source volume.
+	 *
+	 * Abstract function, has to be implemented by every derived class.
+	 */
+	virtual bool InSourceVolume(const double x, const double y, const double z) const = 0;
 public:
 	/**
 	 * Constructor.
@@ -87,7 +99,10 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field):
+		TParticleSource(ParticleName, ActiveTime, mc, geometry, field), Enormal(E_normal){
+
+	}
 
 	/**
 	 * Create new particle on surface
@@ -124,7 +139,7 @@ protected:
 	 * @param y Returns y coordinate
 	 * @param z Returns z coordinate
 	 */
-	virtual void RandomPointInSourceVolume(double &x, double &y, double &z) = 0;
+	virtual void RandomPointInSourceVolume(double &x, double &y, double &z) const = 0;
 public:
 	/**
 	 * Constructor
@@ -138,7 +153,10 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TVolumeSource(std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TVolumeSource(std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field):
+		TParticleSource(ParticleName, ActiveTime, mc, geometry, field), MinPot(std::numeric_limits<double>::infinity()), fPhaseSpaceWeighting(PhaseSpaceWeighting){
+
+	}
 
 	/**
 	 * Create particle in source volume
@@ -155,6 +173,19 @@ public:
 class TCuboidVolumeSource: public TVolumeSource{
 private:
 	double xmin, xmax, ymin, ymax, zmin, zmax;
+
+	/**
+	 * Produce random point in the source volume
+	 *
+	 * @param x Returns x coordinate
+	 * @param y Returns y coordinate
+	 * @param z Returns z coordinate
+	 */
+	virtual void RandomPointInSourceVolume(double &x, double &y, double &z) const final{
+		x = fmc->UniformDist(xmin, xmax);
+		y = fmc->UniformDist(ymin, ymax);
+		z = fmc->UniformDist(zmin, zmax);
+	}
 public:
 	/**
 	 * Constructor.
@@ -172,17 +203,10 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCuboidVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TCuboidVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field):
+		TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field), xmin(x_min), xmax(x_max), ymin(y_min), ymax(y_max), zmin(z_min), zmax(z_max){
 
-
-	/**
-	 * Produce random point in the source volume
-	 *
-	 * @param x Returns x coordinate
-	 * @param y Returns y coordinate
-	 * @param z Returns z coordinate
-	 */
-	virtual void RandomPointInSourceVolume(double &x, double &y, double &z);
+	}
 };
 
 
@@ -192,6 +216,21 @@ public:
 class TCylindricalVolumeSource: public TVolumeSource{
 private:
 	double rmin, rmax, phimin, phimax, zmin, zmax;
+
+	/**
+	 * Produce random point in the source volume
+	 *
+	 * @param x Returns x coordinate
+	 * @param y Returns y coordinate
+	 * @param z Returns z coordinate
+	 */
+	void RandomPointInSourceVolume(double &x, double &y, double &z) const final{
+		double r = fmc->LinearDist(rmin, rmax); // weighting because of the volume element and a r^2 probability outwards
+		double phi_r = fmc->UniformDist(phimin,phimax);
+		x = r*cos(phi_r);
+		y = r*sin(phi_r);
+		z = fmc->UniformDist(zmin,zmax);
+	}
 public:
 	/**
 	 * Constructor.
@@ -209,17 +248,10 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCylindricalVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TCylindricalVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field):
+		TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
 
-
-	/**
-	 * Produce random point in the source volume
-	 *
-	 * @param x Returns x coordinate
-	 * @param y Returns y coordinate
-	 * @param z Returns z coordinate
-	 */
-	virtual void RandomPointInSourceVolume(double &x, double &y, double &z);
+	}
 };
 
 /**
@@ -232,7 +264,22 @@ private:
 	/**
 	 * Check if a point is inside the cylindrical coordinate range
 	 */
-	bool InSourceVolume(CPoint p);
+	bool InSourceVolume(const double x, const double y, const double z) const final{
+		double r = sqrt(x*x + y*y);
+		double phi = atan2(y, x);
+		return r > rmin && r < rmax && phi > phimin && phi < phimax && z > zmin && z < zmax;
+	}
+
+	/**
+	 * Check if a triangle is inside the cylidrical coordinate range
+	 */
+	bool InSourceVolume(const CTriangle &tri) const{
+		for (int i = 0; i < 3; i++){
+			if (!InSourceVolume(tri[i][0], tri[i][1], tri[i][2]))
+				return false;
+		}
+		return true;
+	}
 
 public:
 	/**
@@ -253,7 +300,20 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCylindricalSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TCylindricalSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field):
+			TSurfaceSource(ParticleName, ActiveTime, E_normal, mc, geometry, field), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
+		std::transform(	geometry.mesh.GetTrianglesBegin(),
+						geometry.mesh.GetTrianglesEnd(),
+						std::back_inserter(area_sum),
+						[this](std::pair<CTriangle, double> tri){
+							if (InSourceVolume(tri.first))
+								return sqrt(tri.first.squared_area());
+							return 0.;
+						}
+		);
+		std::partial_sum(area_sum.begin(), area_sum.end(), area_sum.begin());
+		std::cout << "Source area " << area_sum.back() << "m^2\n";
+	}
 };
 
 /**
@@ -263,7 +323,23 @@ public:
  */
 class TSTLVolumeSource: public TVolumeSource{
 private:
-	TTriangleMesh kdtree; ///< internal AABB tree storing the STL solid
+	TTriangleMesh sourcevol; ///< internal AABB tree storing the STL solid
+
+	/**
+	 * Produce random point in the source volume
+	 *
+	 * @param x Returns x coordinate
+	 * @param y Returns y coordinate
+	 * @param z Returns z coordinate
+	 */
+	void RandomPointInSourceVolume(double &x, double &y, double &z) const final{
+		CBox bbox = sourcevol.GetBoundingBox();
+		do{
+			x = fmc->UniformDist(bbox.xmin(), bbox.xmax()); // random point
+			y = fmc->UniformDist(bbox.ymin(), bbox.ymax()); // random point
+			z = fmc->UniformDist(bbox.zmin(), bbox.zmax()); // random point
+		}while (!sourcevol.InSolid(x, y, z));
+	}
 public:
 	/**
 	 * Constructor.
@@ -276,17 +352,10 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSTLVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, std::string sourcefile, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
-
-
-	/**
-	 * Produce random point in the source volume
-	 *
-	 * @param x Returns x coordinate
-	 * @param y Returns y coordinate
-	 * @param z Returns z coordinate
-	 */
-	virtual void RandomPointInSourceVolume(double &x, double &y, double &z);
+	TSTLVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, std::string sourcefile, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field):
+		TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field){
+		sourcevol.ReadFile(sourcefile, 0);
+	}
 };
 
 
@@ -296,6 +365,18 @@ public:
  * Starting points are created on a surface of the experiment geometry whose triangles are all inside the given STL solid
  */
 class TSTLSurfaceSource: public TSurfaceSource{
+private:
+	TTriangleMesh sourcevol;
+	bool InSourceVolume(const double x, const double y, const double z) const{
+		return sourcevol.InSolid(x, y, z);
+	}
+	bool InSourceVolume(const CTriangle &tri) const{
+		for (int i = 0; i < 3; i++){
+			if (!sourcevol.InSolid(tri[i]))
+				return false;
+		}
+		return true;
+	}
 public:
 	/**
 	 * Constructor.
@@ -310,7 +391,22 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSTLSurfaceSource(const std::string ParticleName, double ActiveTime, std::string sourcefile, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field);
+	TSTLSurfaceSource(const std::string ParticleName, double ActiveTime, std::string sourcefile, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field):
+		TSurfaceSource(ParticleName, ActiveTime, E_normal, mc, geometry, field){
+		sourcevol.ReadFile(sourcefile, 0);
+
+		std::transform(	geometry.mesh.GetTrianglesBegin(),
+						geometry.mesh.GetTrianglesEnd(),
+						std::back_inserter(area_sum),
+						[this](std::pair<CTriangle, double> tri){
+							if (InSourceVolume(tri.first))
+								return sqrt(tri.first.squared_area());
+							return 0.;
+						}
+		);
+		std::partial_sum(area_sum.begin(), area_sum.end(), area_sum.begin());
+		std::cout << "Source area " << area_sum.back() << "m^2\n";
+	}
 };
 
 /**
