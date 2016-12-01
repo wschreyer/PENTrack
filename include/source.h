@@ -54,7 +54,7 @@ public:
 	 *
 	 * @return Returns newly created particle, memory has to be freed by user
 	 */
-	TParticle* CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, int polarisation);
+	TParticle* CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, double polarisation);
 
 
 	/**

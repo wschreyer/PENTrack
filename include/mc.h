@@ -18,7 +18,7 @@ struct TParticleConfig{
 	double tau; ///< lifetime
 	double tmax; ///< max. simulation time
 	double lmax; ///< max. trajectory length
-	int polarization; ///< initial polarization
+	double polarization; ///< initial polarization
 	std::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
 	std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
 	std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
@@ -176,7 +176,7 @@ public:
 	 * @param pol_p Returns polarisation of proton spin
 	 * @param pol_e Returns polarisation of electron spin
 	 */
-	void NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, int &pol_p, int &pol_e);
+	void NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, double &pol_p, double &pol_e);
 
 
 	/**
