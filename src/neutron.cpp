@@ -251,7 +251,7 @@ void TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2,
 
 void TNeutron::Decay(std::vector<TParticle*> &secondaries) const{
 	double E_p, E_e, phi_p, phi_e, theta_p, theta_e;
-	int pol_p, pol_e;
+	double pol_p, pol_e;
 	TParticle *p;
 	GetRandomGenerator()->NeutronDecay(&GetFinalState()[3], E_p, E_e, phi_p, phi_e, theta_p, theta_e, pol_p, pol_e);
 	p = new TProton(GetParticleNumber(), GetFinalTime(), GetFinalState()[0], GetFinalState()[1], GetFinalState()[2],

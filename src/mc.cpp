@@ -251,7 +251,7 @@ double TMCGenerator::DicePolarisation(const double polarisation){
 		return -1;
 }
 
-void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, int &pol_p, int &pol_e)
+void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, double &pol_p, double &pol_e)
 {
 	double m_nue = 1 / pow(c_0, 2); // [eV/c^2]
 
@@ -331,7 +331,8 @@ void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double 
 	phi_e = atan2(e[2], e[1]);
 	theta_p = acos(p[3]/sqrt(p[1]*p[1] + p[2]*p[2] + p[3]*p[3]));
 	theta_e = acos(e[3]/sqrt(e[1]*e[1] + e[2]*e[2] + e[3]*e[3]));
-	pol_e = pol_p = UniformDist(0, 1) < 0.5 ? 1 : -1;
+	pol_p = UniformDist(0, 1) < 0.5 ? 1 : -1;
+	pol_e = UniformDist(0, 1) < 0.5 ? 1 : -1;
 }
 
 

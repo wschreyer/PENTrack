@@ -15,7 +15,7 @@
 
 using namespace std;
 
-TParticle* TParticleSource::CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, int polarisation){
+TParticle* TParticleSource::CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, double polarisation){
 	TParticle *p;
 	if (fParticleName == NAME_NEUTRON)
 		p = new TNeutron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
@@ -82,7 +82,7 @@ void TVolumeSource::FindPotentialMinimum(){
 	for (int i = 0; i < N; i++){
 		PrintPercent((double)i/N, percent);
 		double t = fmc->UniformDist(0, fActiveTime); // dice start time
-		int polarisation = fmc->pconfigs[fParticleName].polarization; // dice polarisation
+		double polarisation = fmc->pconfigs[fParticleName].polarization; // dice polarisation
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z); // dice point in source volume
 		TParticle *p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarisation); // create dummy particle with Ekin = 0
