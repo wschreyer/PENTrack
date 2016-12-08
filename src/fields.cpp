@@ -96,13 +96,13 @@ void TFieldManager::BField(const double x, const double y, const double z, const
 		}
 	}
 
-	for (std::vector<TField*>::const_iterator i = fields.begin(); i != fields.end(); i++){
+	for (std::vector<TField*>::const_iterator it = fields.begin(); it != fields.end(); ++it){
 		double Btmp[3] = {0,0,0};
 		double dBtmp[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 		if (dBidxj != NULL)
-			(*i)->BField(x, y, z, t, Btmp, dBtmp);
+			(*it)->BField(x, y, z, t, Btmp, dBtmp);
 		else
-			(*i)->BField(x, y, z, t, Btmp);
+			(*it)->BField(x, y, z, t, Btmp);
 
 		for (int i = 0; i < 3; i++){
 			B[i] += Btmp[i];
@@ -125,13 +125,13 @@ void TFieldManager::EField(const double x, const double y, const double z, const
 				dEidxj[i][j] = 0;
 		}
 	}
-	for (std::vector<TField*>::const_iterator i = fields.begin(); i != fields.end(); i++){
+	for (std::vector<TField*>::const_iterator it = fields.begin(); it != fields.end(); ++it){
 		double Vtmp = 0, Etmp[3] = {0,0,0};
 
 		if (dEidxj != NULL){
 			double dEtmp[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 
-			(*i)->EField(x, y, z, t, Vtmp, Etmp, dEtmp);
+			(*it)->EField(x, y, z, t, Vtmp, Etmp, dEtmp);
 
 			V += Vtmp;
 			for (int i = 0; i < 3; i++){
@@ -141,7 +141,7 @@ void TFieldManager::EField(const double x, const double y, const double z, const
 			}
 		}
 		else{
-			(*i)->EField(x, y, z, t, Vtmp, Etmp);
+			(*it)->EField(x, y, z, t, Vtmp, Etmp);
 
 			V += Vtmp;
 			for (int i = 0; i < 3; i++)
