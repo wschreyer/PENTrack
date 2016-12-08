@@ -86,7 +86,7 @@ void BOOST(double beta[3], double p[4]);
  *
  * @return Returns a probability between 0 and 1 that a proton with energy E is created.
  */
-double ProtonBetaSpectrum(double E);
+double ProtonBetaSpectrum(const double E);
 
 
 /**
@@ -98,7 +98,7 @@ double ProtonBetaSpectrum(double E);
  *
  * @return Returns probability between 0 and 1 that an electron with energy E is created.
  */
-double ElectronBetaSpectrum(double E);
+double ElectronBetaSpectrum(const double E);
 
 /**
  * Energy distribution of comagnetometer gasses from Maxwell-Boltzmann distribution. 
@@ -110,7 +110,7 @@ double ElectronBetaSpectrum(double E);
  *
  * @return Returns probability between 0 and 1 that a gas molecule with energy E being created. 
  */
-double MaxwellBoltzSpectrum (double T, double E); 
+double MaxwellBoltzSpectrum (const double T, const double E);
 
 typedef std::map<std::string, std::map<std::string, std::string> > TConfig; ///< map of sections containing a map of key-value pairs
 
@@ -127,6 +127,6 @@ typedef std::map<std::string, std::map<std::string, std::string> > TConfig; ///<
  * @param inpath Path to in file.
  * @param vars Return TConfig map
  */
-void ReadInFile(const char *inpath, TConfig &vars);
+TConfig ReadInFile(const std::string &inpath);
 
 #endif /*GLOBALS_H_*/

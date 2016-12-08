@@ -90,7 +90,7 @@ void BOOST(double beta[3], double p[4]){
 // energy distribution of protons (0 < E < 750 eV)
 // proton recoil spectrum from "Diplomarbeit M. Simson"
 // result always < 1!
-double ProtonBetaSpectrum(double E){
+double ProtonBetaSpectrum(const double E){
 	double DeltaM = m_n - m_p;
 	double Xi = m_e / DeltaM;
 	double Sigma = 1 - 2*E*m_n / pow(DeltaM, 2) / pow(c_0, 2);
@@ -104,7 +104,7 @@ double ProtonBetaSpectrum(double E){
 // energy distribution of electrons (0 < E < 782 keV)
 // from "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
 // result always < 1!
-double ElectronBetaSpectrum(double E){
+double ElectronBetaSpectrum(const double E){
 	double Qvalue = 0.782; //[MeV]
 	return 8.2*sqrt(E*1e-6*E*1e-6 + 2*E*1e-6*m_e*c_0*c_0*1e-6) * pow(Qvalue - E*1e-6, 2) * (E*1e-6 + m_e*c_0*c_0*1e-6);
 }
@@ -112,7 +112,7 @@ double ElectronBetaSpectrum(double E){
 // energy distribution of comagnetometer gases using Maxwell-Boltzmann distribution
 // from en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
 // result always < 1!
-double MaxwellBoltzSpectrum (double T, double E) {
+double MaxwellBoltzSpectrum (const double T, const double E) {
 	double kT = boltzconst*T;  
 	return 2*sqrt(E/pi)/sqrt(kT*kT*kT)*exp(-E/kT) / (2*sqrt(0.5/pi)/kT*exp(-0.5)); // return distribution divided by its maximum at E/kt = 0.5
 }
@@ -120,7 +120,8 @@ double MaxwellBoltzSpectrum (double T, double E) {
 typedef std::map<std::string, std::map<std::string, std::string> > TConfig;
 
 //read variables from *.in file into map
-void ReadInFile(const char *inpath, TConfig &vars){
+TConfig ReadInFile(const std::string &inpath){
+	TConfig vars;
 	std::ifstream infile(inpath);
 	char c;
 	std::string rest,section,key;
@@ -152,4 +153,5 @@ void ReadInFile(const char *inpath, TConfig &vars){
 		else
 			std::getline(infile,rest);
 	}
+	return vars;
 }

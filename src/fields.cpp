@@ -3,6 +3,8 @@
  * Manage all the fields.
  */
 
+#include "fields.h"
+
 #include <string>
 #include <map>
 #include <sstream>
@@ -10,8 +12,6 @@
 #include <cmath>
 #include <vector>
 
-#include "fields.h"
-#include "field.h"
 #include "field_2d.h"
 #include "field_3d.h"
 #include "conductor.h"

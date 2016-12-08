@@ -76,7 +76,7 @@ struct TGeometry{
 		 *
 		 * @return Returns true if segment is intersecting bounding box
 		 */
-		bool CheckSegment(const double y1[3], const double y2[3]){
+		bool CheckSegment(const double y1[3], const double y2[3]) const{
 			return CGAL::do_intersect(mesh.GetBoundingBox(), CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
 		};
 		
@@ -95,7 +95,7 @@ struct TGeometry{
 		 *
 		 * @return Returns true if line segment collides with a surface
 		 */
-		bool GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], std::map<TCollision, bool> &colls);
+		bool GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], std::map<TCollision, bool> &colls) const;
 		
 			
 		/**
@@ -105,7 +105,7 @@ struct TGeometry{
 		 * @param p Point to test
 		 * @param currentsolids Map of solids in which the point is inside paired with information if it was ignored or not
 		 */
-		void GetSolids(const double t, const double p[3], std::map<solid, bool> &currentsolids);
+		void GetSolids(const double t, const double p[3], std::map<solid, bool> &currentsolids) const;
 
 
 		/**
@@ -116,7 +116,7 @@ struct TGeometry{
 		 *
 		 * @return Returns solid with highest priority, that was not ignored at time t
 		 */
-		solid GetSolid(const double t, const double p[3]);
+		solid GetSolid(const double t, const double p[3]) const;
 
 
 		/**
@@ -128,7 +128,7 @@ struct TGeometry{
 		 *
 		 * @return Returns solid with highest priority, that was not ignored at time t
 		 */
-		solid GetSolid(const double t, const double p[3], const std::map<solid, bool> &currentsolids);
+		solid GetSolid(const double t, const double p[3], const std::map<solid, bool> &currentsolids) const;
 };
 
 #endif /*GEOMETRY_H_*/

@@ -12,29 +12,16 @@
 #include <random>
 
 /**
- * For each section in particle.in such a struct is created containing all user options
- */
-struct TParticleConfig{
-	double tau; ///< lifetime
-	double tmax; ///< max. simulation time
-	double lmax; ///< max. trajectory length
-	double polarization; ///< initial polarization
-	std::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
-	std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
-	std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
-};
-
-/**
  * Class to generate random numbers in several distributions.
  */
 class TMCGenerator{
-public:
-	std::mt19937_64 rangen; ///< random number generator
-	std::map<std::string, TParticleConfig> pconfigs; ///< TParticleConfig for each particle type
+private:
+	mutable std::mt19937_64 rangen;
 	uint64_t seed; ///< initial random seed
-	std::piecewise_linear_distribution<double> ProtonBetaSpectrumDist; ///< predefined energy distribution of protons from free-neutron decay
-	std::piecewise_linear_distribution<double> ElectronBetaSpectrumDist; ///< predefined energy distribution of electron from free-neutron decay
+	mutable std::piecewise_linear_distribution<double> ProtonBetaSpectrumDist; ///< predefined energy distribution of protons from free-neutron decay
+	mutable std::piecewise_linear_distribution<double> ElectronBetaSpectrumDist; ///< predefined energy distribution of electron from free-neutron decay
 
+public:
 	/**
 	 * Constructor.
 	 *
@@ -43,45 +30,38 @@ public:
 	 * @param infile Path to configuration file
 	 * @param aseed Set a custom seed (optional), if set to zero seed is determined from high-resolution clock
 	 */
-	TMCGenerator(const char *infile, const uint64_t aseed = 0);
-
-	/**
-	 * Destructor.
-	 *
-	 * Delete random number generator.
-	 */
-	~TMCGenerator();
+	TMCGenerator(const uint64_t aseed = 0);
 
 	/// return uniformly distributed random number in [min..max]
-	double UniformDist(double min, double max);
+	double UniformDist(const double min, const double max) const;
 	
 
 	/// return sine distributed random number in [min..max] (in rad!)
-	double SinDist(double min, double max);
+	double SinDist(const double min, const double max) const;
 	
 
 	/// return sin(x)*cos(x) distributed random number in [min..max] (0 <= min/max < pi/2!)
-	double SinCosDist(double min, double max);
+	double SinCosDist(const double min, const double max) const;
 	
 
 	/// return x^2 distributed random number in [min..max]
-	double SquareDist(double min, double max);
+	double SquareDist(const double min, const double max) const;
 	
 
 	/// return linearly distributed random number in [min..max]
-	double LinearDist(double min, double max);
+	double LinearDist(const double min, const double max) const;
 
 
 	/// return sqrt(x) distributed random number in [min..max]
-	double SqrtDist(double min, double max);
+	double SqrtDist(const double min, const double max) const;
 	
 
 	/// return normally distributed random number
-	double NormalDist(double mean, double sigma);
+	double NormalDist(const double mean, const double sigma) const;
 
 
 	/// return exp(-exponent*x) distributed random number
-	double ExpDist(double exponent);
+	double ExpDist(const double exponent) const;
 
 
 	/**
@@ -90,45 +70,7 @@ public:
 	 * @param phi Azimuth
 	 * @param theta Polar angle
 	 */
-	void IsotropicDist(double &phi, double &theta);
-	
-
-	/// energy distribution of UCNs
-	double NeutronSpectrum();
-
-	/**
-	 * Energy distribution for each particle type
-	 */
-	double Spectrum(const std::string &particlename);
-
-
-	/**
-	 * Angular velocity distribution for each particle type
-	 * 
-	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
-	 * @param phi_v Returns velocity azimuth
-	 * @param theta_v Returns velocity polar angle
-	 */
-	void AngularDist(const std::string &particlename, double &phi_v, double &theta_v);
-
-	/**
-	 * Lifetime of different particles
-	 *
-	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
-	 *
-	 * @return Returns lifetimes using an exponentially decaying or flat distribution, depending on user choice in particle.in
-	 */
-	double LifeTime(const std::string &particlename);
-	
-
-	/**
-	 * Max. trajectory length of different particles
-	 *
-	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
-	 *
-	 * @return Returns max. trajectory length, depending on user choice in particle.in
-	 */
-	double MaxTrajLength(const std::string &particlename);
+	void IsotropicDist(double &phi, double &theta) const;
 	
 
 	/**
@@ -138,7 +80,7 @@ public:
 	 *
 	 * @return Returns random polarisation (-1,1), weighted by spin projection onto magnetic field vector
 	 */
-	double DicePolarisation(const double polarisation);
+	double DicePolarisation(const double polarisation) const;
 
 
 	/**
@@ -176,7 +118,7 @@ public:
 	 * @param pol_p Returns polarisation of proton spin
 	 * @param pol_e Returns polarisation of electron spin
 	 */
-	void NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, double &pol_p, double &pol_e);
+	void NeutronDecay(const double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, double &pol_p, double &pol_e) const;
 
 
 	/**
@@ -187,9 +129,8 @@ public:
 	 * @param phi - azimuthal associated with velocity
 	 * @param theta - polar associated with velocity
 	 */
-	void tofDist(double &Ekin, double &phi, double &theta);
+	void tofDist(double &Ekin, double &phi, double &theta) const;
 
-private:
 	/**
 	 * Create a piecewise linear distribution from a muParser function
 	 *
@@ -199,7 +140,7 @@ private:
 	 *
 	 * @return Return piecewise linear distribution
 	 */
-	std::piecewise_linear_distribution<double> ParseDist(std::string &func, double range_min, double range_max);
+	std::piecewise_linear_distribution<double> ParseDist(const std::string &func, const double range_min, const double range_max) const;
 
 	/**
 	 * Create a piecewise linear distribution from a function with single parameter
@@ -210,8 +151,11 @@ private:
 	 *
 	 * @return Return piecewise linear distribution
 	 */
-	std::piecewise_linear_distribution<double> ParseDist(double (*func)(double), double range_min, double range_max);
+	std::piecewise_linear_distribution<double> ParseDist(double (*func)(double), const double range_min, const double range_max) const;
 
+	double SampleDist(std::piecewise_linear_distribution<double> &dist) const{
+		return dist(rangen);
+	}
 };
 
 #endif /*MC_H_*/

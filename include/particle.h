@@ -11,6 +11,7 @@
 #include <map>
 
 #include <boost/numeric/odeint.hpp>
+#include "interpolation.h"
 
 #include "geometry.h"
 #include "mc.h"
@@ -56,8 +57,6 @@ private:
 	const long double gamma; ///< gyromagnetic ratio [rad/(s T)] (has to be initialized in all derived classes!)
 	int particlenumber; ///< particle number
 	stopID ID; ///< particle fate (defined in globals.h)
-	double tau; ///< particle life time
-	double maxtraj; ///< max. simulated trajectory length
 	
 	value_type tstart; ///< start time
 	value_type tend; ///< stop time
@@ -76,10 +75,6 @@ private:
 	int Nstep; ///< number of integration steps
 
 	std::vector<TParticle*> secondaries; ///< list of secondary particles
-
-	TGeometry *geom; ///< TGeometry structure passed by "Integrate"
-	TMCGenerator *mc; ///< TMCGenerator structure passed by "Integrate"
-	TFieldManager *field; ///< TFieldManager structure passed by "Integrate"
 
 	std::map<solid, bool> currentsolids; ///< solids in which particle is currently inside
 
@@ -232,39 +227,18 @@ public:
 	std::vector<TParticle*> GetSecondaryParticles() const { return secondaries; };
 
 	/**
-	 * Return TGeometry class particle was created in
-	 *
-	 * @return TGeometry class particle was created in
-	 */
-	TGeometry* GetGeometry() const { return geom; };
-
-	/**
-	 * Return TMCGenerator class that was used to create particle
-	 *
-	 * @return TMCGenerator class used to create particle
-	 */
-	TMCGenerator* GetRandomGenerator() const { return mc; };
-
-	/**
-	 * Return TFieldManager class that was used to create particle
-	 *
-	 * @return TFieldManager class used to create particle
-	 */
-	TFieldManager* GetFieldManager() const { return field; };
-
-	/**
 	 * Return initial total energy
 	 *
 	 * @return Initial total energy
 	 */
-	double GetInitialTotalEnergy() const;
+	double GetInitialTotalEnergy(const TGeometry &geom, const TFieldManager &field) const;
 
 	/**
 	 * Return final total energy
 	 *
 	 * @return Final total energy
 	 */
-	double GetFinalTotalEnergy() const;
+	double GetFinalTotalEnergy(const TGeometry &geom, const TFieldManager &field) const;
 
 	/**
 	 * Return initial kinetic energy
@@ -303,8 +277,12 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, int number,
-			double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+	TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
+			const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+			const TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
+
+	TParticle(const TParticle &p) = delete;
+	TParticle& operator=(const TParticle &p) = delete;
 
 	/**
 	 * Destructor, deletes secondaries
@@ -323,7 +301,7 @@ public:
 	 * @param tmax Max. absolute time at which integration will be stopped
 	 * @param conf Option map containing particle specific options from particle.in
 	 */
-	void Integrate(double tmax, std::map<std::string, std::string> &conf);
+	void Integrate(double tmax, std::map<std::string, std::string> &particleconf, const TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
 private:
 
@@ -343,7 +321,7 @@ private:
 	 * @param dydx Returns derivatives of y with respect to x
 	 * @param x Time
 	 */
-	void derivs(const state_type &y, state_type &dydx, const value_type x) const;
+	void derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager *field) const;
 
 
 	/**
@@ -391,7 +369,8 @@ private:
 	 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 	 * @return Returns true if particle was reflected/absorbed
 	 */
-	bool CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const bool hitlog, const int iteration = 1);
+	bool CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+			const TMCGenerator &mc, const TGeometry &geom, const bool hitlog, const int iteration = 1);
 
 
 	/**
@@ -413,8 +392,8 @@ private:
 	 *
 	 * @return Return probability of spin flip
 	 */
-	double IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times,
-						const bool interpolatefields, const double Bmax, const bool flipspin, const double spinloginterval, double &nextspinlog) const;
+	double IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
+						const bool interpolatefields, const double Bmax, const TMCGenerator &mc, const bool flipspin, const double spinloginterval, double &nextspinlog) const;
 
 	/**
 	 * Calculate spin precession axis.
@@ -427,7 +406,7 @@ private:
 	 * @param Omegay Returns y component of precession axis in lab frame
 	 * @param Omegaz Returns z component of precession axis in lab frame
 	 */
-	void SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, double &Omegax, double &Omegay, double &Omegaz) const;
+	void SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, const TFieldManager &field, double &Omegax, double &Omegay, double &Omegaz) const;
 
 	/**
 	 * Calculate spin precession axis.
@@ -455,7 +434,7 @@ private:
 	 * @param omega Vector of three splines used to interpolate spin-precession axis (can be empty)
 	 */
 	void SpinDerivs(const state_type &y, state_type &dydx, const value_type x,
-			const dense_stepper_type &stepper, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
+			const dense_stepper_type &stepper, const TFieldManager *field, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
 
 	/**
 	 * Calculate kinetic energy.
@@ -487,7 +466,7 @@ protected:
 	 */
 	virtual void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 						const double normal[3], const solid &leaving, const solid &entering,
-						stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
+						const TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
@@ -505,8 +484,8 @@ protected:
 	 * @param ID If particle is stopped, set this to the appropriate stopID
 	 * @param secondaries Add any secondary particles produced in this interaction
 	 */
-	virtual void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-						const dense_stepper_type &stepper, const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
+	virtual void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+			const solid &currentsolid, const TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
@@ -514,7 +493,7 @@ protected:
 	 *
 	 * @param secondaries Add any secondary particles produced in this decay
 	 */
-	virtual void Decay(std::vector<TParticle*> &secondaries) const = 0;
+	virtual void Decay(const TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
@@ -540,7 +519,7 @@ protected:
 	 * @param sld Solid in which the particle is currently.
 	 * @param logType Select either endlog or snapshotlog
 	 */
-	virtual void Print(const value_type x, const state_type &y, const state_type &spin, const solid &sld, const LogStream logType) const;
+	virtual void Print(const value_type x, const state_type &y, const state_type &spin, const TGeometry &geom, const TFieldManager &field, const LogStream logType) const;
 
 
 	/**
@@ -553,7 +532,7 @@ protected:
 	 * @param spin Spin vector
 	 * @param sld Solid in which the particle is currently.
 	 */
-	virtual void PrintTrack(const value_type x, const state_type &y, const state_type &spin, const solid &sld) const;
+	virtual void PrintTrack(const value_type x, const state_type &y, const state_type &spin, const solid &sld, const TFieldManager &field) const;
 
 
 	/**
@@ -580,7 +559,7 @@ protected:
 	 * @param spin Spin vector
 	 * @param stepper Trajectory integrator used to calculate spin-precession axis at time t
 	 */
-	virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper) const;
+	virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
 
 
 	/**
@@ -593,7 +572,7 @@ protected:
 	 *
 	 * @return Returns potential energy [eV]
 	 */
-	virtual double GetPotentialEnergy(const value_type t, const state_type &y, TFieldManager *field, const solid &sld) const;
+	virtual double GetPotentialEnergy(const value_type t, const state_type &y, const TFieldManager &field, const solid &sld) const;
 
 };
 

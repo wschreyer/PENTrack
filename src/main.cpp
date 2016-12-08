@@ -24,8 +24,6 @@ using namespace std;
 
 #include "particle.h"
 #include "neutron.h"
-#include "proton.h"
-#include "electron.h"
 #include "globals.h"
 #include "fields.h"
 #include "geometry.h"
@@ -33,24 +31,19 @@ using namespace std;
 #include "mc.h" 
 #include "microroughness.h"
 
-void ConfigInit(TConfig &config); // read config.in
+TConfig ConfigInit(const std::string &inpath); // read config.in
 void OutputCodes(const map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
-void PrintBFieldCut(const std::string &outfile, const TFieldManager &field); // evaluate fields on given plane and write to outfile
+void PrintBFieldCut(TConfig &config, const std::string &outfile, const TFieldManager &field); // evaluate fields on given plane and write to outfile
 void PrintBField(const std::string &outfile, const TFieldManager &field);
 void PrintGeometry(const std::string &outfile, TGeometry &geom); // do many random collisionchecks and write all collisions to outfile
-void PrintMROutAngle(const std::string &outfile); // produce a 3d table of the MR-DRP for each outgoing solid angle
-void PrintMRThetaIEnergy(const std::string &outfile); // produce a 3d table of the total (integrated) MR-DRP for a given incident angle and energy
+void PrintMROutAngle(TConfig &config, const std::string &outfile); // produce a 3d table of the MR-DRP for each outgoing solid angle
+void PrintMRThetaIEnergy(TConfig &config, const std::string &outfile); // produce a 3d table of the total (integrated) MR-DRP for a given incident angle and energy
 
 
 double SimTime = 1500.; ///< max. simulation time
 int simcount = 1; ///< number of particles for MC simulation (read from config)
 simType simtype = PARTICLE; ///< type of particle which shall be simulated (read from config)
 int secondaries = 1; ///< should secondary particles be simulated? (read from config)
-double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
-double MRSolidAngleDRPParams[5]; ///< params to output the  MR-DRP values for given theta_inc and phi_inc [Fermi potential, incident neutron energy, b (nm), w (nm), theta_i] (read from config)
-double MRThetaIEnergyParams[7]; ///< params for which to output the integrated MR-DRP values [Fermi potential, b (nm), w (nm), theta_i_start, theta_i_end, neut_energy_start, neut_energy_end] (read from config.in)
-int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
-int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
 
 /**
  * Catch signals.
@@ -77,9 +70,15 @@ void catch_alarm (int sig){
  */
 int main(int argc, char **argv){
 	if ((argc > 1) && (strcmp(argv[1], "-h") == 0)){
-		cout << "Usage:\nPENTrack [jobnumber [path/to/in/files [path/to/out/files [seed]]]]" << endl;
-		exit(0);
+		cout << "Usage:\nPENTrack [jobnumber [location/of/config.in [path/to/out/files [seed]]]]" << endl;
+		return 0;
 	}
+
+	cout <<
+	" #######################################################################\n"
+	" ###                      Welcome to PENTrack,                       ###\n"
+	" ### a simulation tool for ultracold neutrons, protons and electrons ###\n"
+	" #######################################################################\n";
 
 	//Initialize signal-analizing
 	signal (SIGINT, catch_alarm);
@@ -89,7 +88,7 @@ int main(int argc, char **argv){
 	
 	jobnumber = 0;
 	outpath = "./out";
-	string inpath = "./in";
+	string inpath = "./in/config.in";
 	uint64_t seed = 0;
 	if(argc>1) // if user supplied at least 1 arg (jobnumber)
 		istringstream(argv[1]) >> jobnumber;
@@ -100,49 +99,36 @@ int main(int argc, char **argv){
 	if (argc>4) // if user supplied 4 or more args (jobnumber, inpath, outpath, seed)
 		istringstream(argv[4]) >> seed;
 	
-	TConfig configin;
-	ReadInFile(string(inpath + "/config.in").c_str(), configin);
-	TConfig geometryin;
-	ReadInFile(string(inpath + "/geometry.in").c_str(), geometryin);
-	TConfig particlein;
-	ReadInFile(string(inpath + "/particle.in").c_str(), particlein); // read particle specific log configuration from particle.in
-	for (TConfig::iterator i = particlein.begin(); i != particlein.end(); i++){
-		if (i->first != "all"){
-			i->second = particlein["all"]; // set all particle specific settings to the "all" settings
-		}
-	}
-	ReadInFile(string(inpath+"/particle.in").c_str(), particlein); // read again to overwrite "all" settings with particle specific settings
-
-	// read config.in
-	ConfigInit(configin);
+	// read config
+	TConfig configin = ConfigInit(inpath);
 
 	if (simtype == MR_THETA_OUT_ANGLE){
-		PrintMROutAngle(string(outpath+"/MR-SldAngDRP").c_str()); // estimate ramp heating
+		PrintMROutAngle(configin, string(outpath+"/MR-SldAngDRP").c_str()); // estimate ramp heating
 		return 0;
 	}
 	else if (simtype == MR_THETA_I_ENERGY){
-		PrintMRThetaIEnergy(string(outpath+"/MR-Tot-DRP").c_str()); // print cut through B field
+		PrintMRThetaIEnergy(configin, string(outpath+"/MR-Tot-DRP").c_str()); // print cut through B field
 		return 0;
 	}
 
 
 	cout << "Loading fields...\n";
 	// load field configuration from geometry.in
-	TFieldManager field(geometryin);
+	TFieldManager field(configin);
 
 	if (simtype == BF_ONLY){
 		PrintBField(string(outpath+"/BF.out").c_str(), field); // estimate ramp heating
 		return 0;
 	}
 	else if (simtype == BF_CUT){
-		PrintBFieldCut(string(outpath+"/BFCut.out").c_str(), field); // print cut through B field
+		PrintBFieldCut(configin, string(outpath+"/BFCut.out").c_str(), field); // print cut through B field
 		return 0;
 	}
 
 
 	cout << "Loading geometry...\n";
 	//load geometry configuration from geometry.in
-	TGeometry geom(geometryin);
+	TGeometry geom(configin);
 	
 	if (simtype == GEOMETRY){
 		// print random points on walls in file to visualize geometry
@@ -151,12 +137,12 @@ int main(int argc, char **argv){
 	}
 	
 	cout << "Loading random number generator...\n";
-	// load random number generator from all3inone.in
-	TMCGenerator mc(string(inpath + "/particle.in").c_str(), seed);
+	// load random number generator
+	TMCGenerator mc(seed);
 	
 	cout << "Loading source...\n";
 	// load source configuration from geometry.in
-	TSource source(geometryin, mc, geom, &field);
+	unique_ptr<TParticleSource> source(CreateParticleSource(configin, mc, geom));
 
 	int ntotalsteps = 0;     // counters to determine average steps per integrator call
 	float InitTime = (1.*clock())/CLOCKS_PER_SEC; // time statistics
@@ -164,50 +150,19 @@ int main(int argc, char **argv){
 	// simulation time counter
 	chrono::time_point<chrono::steady_clock> simstart = chrono::steady_clock::now();
 
-	printf(
-	" ########################################################################\n"
-	" ###                      Welcome to PENTrack,                        ###\n"
-	" ### a simulation tool for ultra-cold neutrons, protons and electrons ###\n"
-	" ########################################################################\n");
-
 	map<string, map<int, int> > ID_counter; // 2D map to store number of each ID for each particle type
-	
-	/*
-	stringstream filename;
-	filename << "in/42_0063eout2000m_" << jobnumber << ".out";
-	ifstream infile(filename.str().c_str());
-	if (!infile.is_open()){
-		printf("\ninfile %s not found!\n",filename.str().c_str());
-		exit(-1);
-	}
-	infile.ignore(1024*1024, '\n');
-	int i = 0;
-	long double r,phi,z,phieuler,thetaeuler,E_n,Ekin,dt,dummy;
-	while (infile.good()){
-		i++;
-		infile >> r >> phi >> z >> phieuler >> thetaeuler >> E_n >> Ekin >> dummy >> dummy >> dummy >>  dummy >> dummy >> dummy >> dummy >> dt;
-		infile.ignore(1024*1024, '\n');
-		TParticle particle(ELECTRON, i, 0, dt, r, phi*conv, z, Ekin, (phieuler-phi)*conv, thetaeuler*conv, E_n, 0, field);
-		particle.Integrate(geom, mc, field, endlog, tracklog, snap, &snapshots, reflectlog);
-		ID_counter[particle.protneut % 3][particle.ID]++; // increase ID-counter
-		ntotalsteps += particle.nsteps;
-		IntegratorTime += particle.comptime;
-		ReflTime += particle.refltime;
-		infile >> ws;
-	}
-*/
-	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
+		if (simtype == PARTICLE){ // if proton or neutron shall be simulated
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
-			TParticle *p = source.CreateParticle();
-			p->Integrate(SimTime, particlein[p->GetName()]); // integrate particle
+			TParticle *p = source->CreateParticle(mc, geom, field);
+			p->Integrate(SimTime, configin[p->GetName()], mc, geom, field); // integrate particle
 			ID_counter[p->GetName()][p->GetStopID()]++; // increment counters
 			ntotalsteps += p->GetNumberOfSteps();
 
 			if (secondaries == 1){
 				std::vector<TParticle*> secondaries = p->GetSecondaryParticles();
 				for (auto i = secondaries.begin(); i != secondaries.end(); i++){
-					(*i)->Integrate(SimTime, particlein[(*i)->GetName()]); // integrate secondary particles
+					(*i)->Integrate(SimTime, configin[(*i)->GetName()], mc, geom, field); // integrate secondary particles
 					ID_counter[(*i)->GetName()][(*i)->GetStopID()]++;
 					ntotalsteps += (*i)->GetNumberOfSteps();
 				}
@@ -220,8 +175,6 @@ int main(int argc, char **argv){
 		printf("\nDon't know simtype %i! Exiting...\n",simtype);
 		exit(-1);
 	}
-
-
 
 	OutputCodes(ID_counter); // print particle IDs
 	
@@ -246,7 +199,8 @@ int main(int argc, char **argv){
  *
  * @param config TConfig struct containing [global] options map
  */
-void ConfigInit(TConfig &config){
+TConfig ConfigInit(const std::string &inpath){
+	TConfig config = ReadInFile(inpath);
 	/* setting default values */
 	simtype = PARTICLE;
 	simcount = 1;
@@ -254,23 +208,22 @@ void ConfigInit(TConfig &config){
 
 	/* read variables from map by casting strings in map into istringstreams and extracting value with ">>"-operator */
 	int stype;
-	istringstream(config["global"]["simtype"])		>> stype;
+	istringstream(config["GLOBAL"]["simtype"])		>> stype;
 	simtype = static_cast<simType>(stype);
 	
 
-	istringstream(config["global"]["simcount"])		>> simcount;
-	istringstream(config["global"]["simtime"])		>> SimTime;
-	istringstream(config["global"]["secondaries"])	>> secondaries;
-	istringstream(config["global"]["BCutPlane"])	>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2]
-													>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
-													>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
-													>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
+	istringstream(config["GLOBAL"]["simcount"])		>> simcount;
+	istringstream(config["GLOBAL"]["simtime"])		>> SimTime;
+	istringstream(config["GLOBAL"]["secondaries"])	>> secondaries;
+	for (auto i = config["PARTICLES"].begin(); i != config["PARTICLES"].end(); ++i){
+		config["neutron"].insert(*i);
+		config["proton"].insert(*i);
+		config["electron"].insert(*i);
+		config["mercury"].insert(*i);
+		config["xenon"].insert(*i);
+	}
 
-	istringstream(config["global"]["MRSolidAngleDRP"]) >> MRSolidAngleDRPParams[0] >> MRSolidAngleDRPParams[1] >> MRSolidAngleDRPParams[2] >> MRSolidAngleDRPParams[3]
-													>> MRSolidAngleDRPParams[4];
-
-	istringstream(config["global"]["MRThetaIEnergy"]) >> MRThetaIEnergyParams[0] >>  MRThetaIEnergyParams[1] >> MRThetaIEnergyParams[2] >> MRThetaIEnergyParams[3]
-										     >>	 MRThetaIEnergyParams[4] >> MRThetaIEnergyParams[5] >> MRThetaIEnergyParams[6];
+	return config;
 }
 
 /**
@@ -281,7 +234,12 @@ void ConfigInit(TConfig &config){
  *  
  * Other params are read in from the config.in file
 */
-void PrintMROutAngle(const std::string &outfile) {
+void PrintMROutAngle(TConfig &config, const std::string &outfile) {
+	vector<double> MRSolidAngleDRPParams; ///< params to output the  MR-DRP values for given theta_inc and phi_inc [Fermi potential, incident neutron energy, b (nm), w (nm), theta_i] (read from config)
+	istringstream ss(config["GLOBAL"]["MRSolidAngleDRP"]);
+	copy(istream_iterator<double>(ss), istream_iterator<double>(), back_inserter(MRSolidAngleDRPParams));
+	if (MRSolidAngleDRPParams.size() != 5)
+		throw std::runtime_error("Incorrect number of parameters to print micro-roughness distribution!");
 	
 	cout << "\nGenerating table of MR diffuse reflection probability for all solid angles ..." << endl;	
 	
@@ -298,10 +256,8 @@ void PrintMROutAngle(const std::string &outfile) {
  	string fileName = oss.str();
 	
 	ofstream mrproboutfile(fileName.c_str());
-	if (!mrproboutfile) {
-		cout << "Could not open " << fileName.c_str() << "!\n";
-		exit (-1);
-	} 
+	if (!mrproboutfile)
+		throw ((boost::format("Could not open %1%!") % fileName).str());
 
 	//print file header
 	mrproboutfile << "phi_out theta_out mrdrp\n";
@@ -335,8 +291,14 @@ void PrintMROutAngle(const std::string &outfile) {
  *
  * @param outfile The file name to which the results will be printed
 */
-void PrintMRThetaIEnergy(const std::string &outfile) {
-	
+void PrintMRThetaIEnergy(TConfig &config, const std::string &outfile) {
+	vector<double> MRThetaIEnergyParams; ///< params for which to output the integrated MR-DRP values [Fermi potential, b (nm), w (nm), theta_i_start, theta_i_end, neut_energy_start, neut_energy_end] (read from config.in)
+	istringstream ss(config["GLOBAL"]["MRThetaIEnergy"]);
+	copy(istream_iterator<double>(ss), istream_iterator<double>(), back_inserter(MRThetaIEnergyParams));
+	if (MRThetaIEnergyParams.size() != 7)
+		throw std::runtime_error("Incorrect number of parameters to print total micro-roughness-scattering probability!");
+
+
 	cout << "\nGenerating table of integrated MR diffuse reflection probability for different incident angle and energy ..." << endl;	
 
 	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
@@ -352,10 +314,8 @@ void PrintMRThetaIEnergy(const std::string &outfile) {
  	string fileName = oss.str();	
 	
 	ofstream mroutfile(fileName.c_str());
-	if (!mroutfile){
-		cout << "Could not open " << fileName.c_str() << "!\n";
-		exit(-1);
-	}
+	if (!mroutfile)
+		throw ((boost::format("Could not open %1%!") % fileName).str());
 
 	mroutfile << "theta_i neut_en totmrdrp\n"; //print the header
 	
@@ -419,7 +379,15 @@ void OutputCodes(const map<string, map<int, int> > &ID_counter){
  * @param outfile filename of result file
  * @param field TFieldManager structure which should be evaluated
  */
-void PrintBFieldCut(const std::string &outfile, const TFieldManager &field){
+void PrintBFieldCut(TConfig &config, const std::string &outfile, const TFieldManager &field){
+	double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
+	int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
+	int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
+	istringstream(config["GLOBAL"]["BCutPlane"])	>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2]
+													>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
+													>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
+													>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
+
 	// get directional vectors from points on plane by u = p2-p1, v = p3-p1
 	double u[3] = {BCutPlanePoint[3] - BCutPlanePoint[0], BCutPlanePoint[4] - BCutPlanePoint[1], BCutPlanePoint[5] - BCutPlanePoint[2]};
 	double v[3] = {BCutPlanePoint[6] - BCutPlanePoint[0], BCutPlanePoint[7] - BCutPlanePoint[1], BCutPlanePoint[8] - BCutPlanePoint[2]};
