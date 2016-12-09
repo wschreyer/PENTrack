@@ -1,11 +1,10 @@
+#include "microroughness.h"
+
 #include <complex>
-#include <vector>
 
 #include "optimization.h"
-#include "integration.h"
 #include "specialfunctions.h"
-
-#include "microroughness.h"
+#include <boost/numeric/odeint.hpp>
 
 using namespace std;
 
@@ -104,33 +103,13 @@ struct TMRParams{
 	const solid &entering; ///< Material that the particle is entering
 };
 
-/**
- * Wrapper function of MRDist, is passed to numerical-quadrature routine from alglib library
- * 
- * @param x Polar angle
- * @param xminusa Parameter required by alglib, is ignored
- * @param bminux Parameters required by alglib, is ignored
- * @param y Returns phi-integrated MRDist value at polar angle x
- * @param ptr Pointer to data, used to pass TMRParams struct
- */
-void MRDistWrapper(double x, double xminusa, double bminusx, double &y, void *ptr){
-	TMRParams *p = static_cast<TMRParams*>(ptr);
-	y = MRDist(p->transmit, p->integral, p->v, p->normal, p->leaving, p->entering, x, 0);
-}
-
 double MRProb(const bool transmit, const double v[3], const double normal[3], const solid &leaving, const solid &entering){
-	double prob;
-	alglib::autogkstate s;
-	alglib::autogksmooth(0, pi/2, s);
-	TMRParams p = {transmit, true, v, normal, leaving, entering};
-	alglib::autogkintegrate(s, MRDistWrapper, &p);
-	alglib::autogkreport r;
-	alglib::autogkresults(s, prob, r);
-//	cout << prob << " int: " << r.terminationtype << " in " << r.nintervals << '\n';
-//	if (r.terminationtype != 1)
-//		throw std::runtime_error("microroughness integration did not converge properly");
-	return prob;
-
+	vector<double> total(1, 0);
+	auto integrand = [transmit, v, normal, leaving, entering](const vector<double> &dummy, std::vector<double> &result, const double theta){ // use lambda expression to define local function that has the proper parameters for odeint
+		result[0] = MRDist(transmit, true, v, normal, leaving, entering, theta, 0);
+	};
+	boost::numeric::odeint::integrate(integrand, total, 0.0, (double)pi/2, 0.01); // integrate "differential equation" dP/dtheta = MRdist(theta) from 0 to pi/2
+	return total[0];
 }
 
 /**
