@@ -1,7 +1,7 @@
-#include <iostream>
-#include <sstream>
-
 #include "geometry.h"
+
+#include <iostream>
+
 #include "globals.h"
 
 using namespace std;

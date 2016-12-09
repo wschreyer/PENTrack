@@ -1,8 +1,6 @@
 #include "mc.h"
 
-#include <cmath>
 #include <chrono>
-#include <iostream>
 
 #include "exprtk.hpp"
 

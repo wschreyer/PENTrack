@@ -6,9 +6,6 @@
 #ifndef MC_H_
 #define MC_H_
 
-#include <cstdlib>
-#include <string>
-#include <map>
 #include <random>
 
 /**

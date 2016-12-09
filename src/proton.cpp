@@ -3,8 +3,9 @@
  * Proton class definition.
  */
 
-#include "globals.h"
 #include "proton.h"
+
+#include "globals.h"
 
 const char* NAME_PROTON = "proton";
 

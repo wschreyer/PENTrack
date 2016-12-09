@@ -6,10 +6,7 @@
 #include "fields.h"
 
 #include <string>
-#include <map>
-#include <sstream>
 #include <iostream>
-#include <cmath>
 #include <vector>
 
 #include "field_2d.h"

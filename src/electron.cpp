@@ -3,8 +3,9 @@
  * Electron class definition.
  */
 
-#include "globals.h"
 #include "electron.h"
+
+#include "globals.h"
 
 const char* NAME_ELECTRON = "electron";
 

@@ -1,10 +1,11 @@
+#include "globals.h"
+
 #include <iostream>
 #include <fstream>
 #include <cmath>
 
 #include <CGAL/Simple_cartesian.h>
 
-#include "globals.h"
 
 const long double pi = 3.1415926535897932384626L; ///< Pi
 const long double ele_e = 1.602176487E-19L; ///< elementary charge [C]

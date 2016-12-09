@@ -7,10 +7,7 @@
 #define GEOMETRY_H_
 
 #include <string>
-#include <fstream>
 #include <vector>
-#include <set>
-#include <limits>
 #include <map>
 
 #include "trianglemesh.h"

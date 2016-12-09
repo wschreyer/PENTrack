@@ -3,7 +3,6 @@
  * Particle base class definition.
  */
 
-#include <cmath>
 #include <vector>
 #include <algorithm>
 #include <iomanip>

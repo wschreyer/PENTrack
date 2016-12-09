@@ -3,8 +3,9 @@
  * Mercury class definition. Mercury-199 is used as a comagnetometer for the EDM experiment at TRIUMF. 
  */
 
-#include "globals.h"
 #include "mercury.h"
+
+#include "globals.h"
 
 const char* NAME_MERCURY = "mercury";
 

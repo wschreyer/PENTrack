@@ -6,11 +6,9 @@
 #ifndef FIELD_2D_H_
 #define FIELD_2D_H_
 
-#include <vector>
+#include "field.h"
 
 #include "interpolation.h"
-
-#include "field.h"
 
 /**
  * Class for bicubic field interpolation, create one for every table file you want to use.

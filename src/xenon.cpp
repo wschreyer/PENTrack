@@ -3,8 +3,9 @@
  * Xenon class definition. Xenon-129 is used as a comagnetometer used in the TRIUMF EDM experiment. 
  */
 
-#include "globals.h"
 #include "xenon.h"
+
+#include "globals.h"
 
 const char* NAME_XENON = "xenon";
 

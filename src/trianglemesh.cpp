@@ -1,6 +1,5 @@
 #include "trianglemesh.h"
 
-#include <cstdint>
 #include <fstream>
 #include "boost/format.hpp"
 

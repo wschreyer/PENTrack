@@ -5,25 +5,20 @@
  * Create particles to your liking...
  */
 
-#include <cstdlib>
-#include <cstdio>
 #include <csignal>
-#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <map>
-#include <set>
 #include <sstream>
 #include <fstream>
 #include <iomanip>
-#include <numeric>
 #include <chrono>
+#include <memory>
 
 using namespace std;
 
 #include "particle.h"
-#include "neutron.h"
 #include "globals.h"
 #include "fields.h"
 #include "geometry.h"
