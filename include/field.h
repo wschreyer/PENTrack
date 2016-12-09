@@ -31,14 +31,7 @@ protected:
 	 */
 	double BScaling(const double t) const{
 		tvar = t;
-		try{
-			return Bscaler.value();
-		}
-		catch (std::exception &e)
-		{
-			std::cout << e.what() << std::endl;
-		}
-		return 0;
+		return Bscaler.value();
 	};
 
 	/**
@@ -50,14 +43,7 @@ protected:
 	 */
 	double EScaling(const double t) const{
 		tvar = t;
-		try{
-			return Escaler.value();
-		}
-		catch (std::exception &e)
-		{
-			std::cout << e.what() << std::endl;
-		}
-		return 0;
+		return Escaler.value();
 	};
 
 public:
