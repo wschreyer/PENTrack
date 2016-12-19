@@ -57,6 +57,8 @@ General simulation parameters are defined in config.in. Geometry, electromagneti
 
 More information can be found in each configuration file.
 
+The default configuration simulates a full cycle of the neutron-lifetime experiment [PENeLOPE](http://e18.ph.tum.de/en/research/measuring-the-neutron-lifetime-penelope). It is filled with UCN from a source in the guide below the storage volume for 200s and higher-energy UCN are removed by absorbers for 200s. Then, PENeLOPE's superconducting magnets are ramped up and UCN are stored for 200s. Afterwards, the magnet is ramped down again and remaining UCN are counted in a detector below the storage volume. During magnetic storage, spins of the UCNs are simulated to estimate their probability to flip.
+
 ### Geometry
 
 Geometry can be imported using [binary STL files] (http://en.wikipedia.org/wiki/STL_%28file_format%29).
