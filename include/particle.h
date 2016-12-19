@@ -279,7 +279,7 @@ public:
 	 */
 	TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
 			const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
-			const TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
+			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
 
 	TParticle(const TParticle &p) = delete;
 	TParticle& operator=(const TParticle &p) = delete;
@@ -301,7 +301,7 @@ public:
 	 * @param tmax Max. absolute time at which integration will be stopped
 	 * @param conf Option map containing particle specific options from particle.in
 	 */
-	void Integrate(double tmax, std::map<std::string, std::string> &particleconf, const TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
+	void Integrate(double tmax, std::map<std::string, std::string> &particleconf, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
 private:
 
@@ -370,7 +370,7 @@ private:
 	 * @return Returns true if particle was reflected/absorbed
 	 */
 	bool CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-			const TMCGenerator &mc, const TGeometry &geom, const bool hitlog, const int iteration = 1);
+			TMCGenerator &mc, const TGeometry &geom, const bool hitlog, const int iteration = 1);
 
 
 	/**
@@ -393,7 +393,7 @@ private:
 	 * @return Return probability of spin flip
 	 */
 	double IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
-						const bool interpolatefields, const double Bmax, const TMCGenerator &mc, const bool flipspin, const double spinloginterval, double &nextspinlog) const;
+						const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin, const double spinloginterval, double &nextspinlog) const;
 
 	/**
 	 * Calculate spin precession axis.
@@ -466,7 +466,7 @@ protected:
 	 */
 	virtual void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 						const double normal[3], const solid &leaving, const solid &entering,
-						const TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
+						TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
@@ -485,7 +485,7 @@ protected:
 	 * @param secondaries Add any secondary particles produced in this interaction
 	 */
 	virtual void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-			const solid &currentsolid, const TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
+			const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**
@@ -493,7 +493,7 @@ protected:
 	 *
 	 * @param secondaries Add any secondary particles produced in this decay
 	 */
-	virtual void Decay(const TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const = 0;
+	virtual void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**

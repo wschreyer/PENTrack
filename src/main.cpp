@@ -133,7 +133,16 @@ int main(int argc, char **argv){
 	
 	cout << "Loading random number generator...\n";
 	// load random number generator
-	TMCGenerator mc(seed);
+	TMCGenerator mc;
+	if (seed == 0){
+		// get high-resolution timestamp to generate seed
+		using namespace std::chrono;
+		seed = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+	}
+	std::cout << "Random Seed: " << seed << "\n\n";
+	mc.seed(seed);
+
+
 	
 	cout << "Loading source...\n";
 	// load source configuration from geometry.in

@@ -37,7 +37,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TParticleSource(std::map<std::string, std::string> &sourceconf, const TMCGenerator &mc);
+	TParticleSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc);
 
 	/**
 	 * Destructor
@@ -61,7 +61,7 @@ public:
 	 * @return Returns newly created particle, memory has to be freed by user
 	 */
 	TParticle* CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, double polarisation,
-			const TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
+			TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
 
 
 	/**
@@ -69,7 +69,7 @@ public:
 	 *
 	 * @return Returns newly created particle, memory has to be freed by user
 	 */
-	virtual TParticle* CreateParticle(const TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field) = 0;
+	virtual TParticle* CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field) = 0;
 };
 
 
@@ -100,7 +100,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSurfaceSource(std::map<std::string, std::string> &sourceconf, const TMCGenerator &mc):
+	TSurfaceSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
 		TParticleSource(sourceconf, mc), Enormal(0){
 		std::istringstream(sourceconf["Enormal"]) >> Enormal;
 	}
@@ -110,7 +110,7 @@ public:
 	 *
 	 * @return Returns newly created particle, memory has to be freed by user
 	 */
-	TParticle* CreateParticle(const TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
+	TParticle* CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
 };
 
 
@@ -126,7 +126,7 @@ private:
 	/**
 	 * find potential minimum in source volume
 	 */
-	void FindPotentialMinimum(const TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
+	void FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
 protected:
 	double MinPot; ///< minimal potential energy in source volume
 	bool fPhaseSpaceWeighting; ///< Tells source to weight particle density according to available phase space.
@@ -140,7 +140,7 @@ protected:
 	 * @param y Returns y coordinate
 	 * @param z Returns z coordinate
 	 */
-	virtual void RandomPointInSourceVolume(double &x, double &y, double &z, const TMCGenerator &mc) const = 0;
+	virtual void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const = 0;
 public:
 	/**
 	 * Constructor
@@ -154,7 +154,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TVolumeSource(std::map<std::string, std::string> &sourceconf, const TMCGenerator &mc):
+	TVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
 			TParticleSource(sourceconf, mc), MinPot(std::numeric_limits<double>::infinity()), fPhaseSpaceWeighting(false){
 		std::istringstream(sourceconf["PhaseSpaceWeighting"]) >> fPhaseSpaceWeighting;
 	}
@@ -165,7 +165,7 @@ public:
 	 * Particle density distribution can be weighted by available phase space
 	 *
 	 */
-	TParticle* CreateParticle(const TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
+	TParticle* CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
 };
 
 /**
@@ -182,10 +182,11 @@ private:
 	 * @param y Returns y coordinate
 	 * @param z Returns z coordinate
 	 */
-	virtual void RandomPointInSourceVolume(double &x, double &y, double &z, const TMCGenerator &mc) const final{
-		x = mc.UniformDist(xmin, xmax);
-		y = mc.UniformDist(ymin, ymax);
-		z = mc.UniformDist(zmin, zmax);
+	virtual void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
+		std::uniform_real_distribution<double> unidist(0, 1);
+		x = xmin + unidist(mc)*(xmax - xmin);
+		y = ymin + unidist(mc)*(ymax - ymin);
+		z = zmin + unidist(mc)*(zmax - zmin);
 	}
 public:
 	/**
@@ -204,7 +205,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCuboidVolumeSource(std::map<std::string, std::string> &sourceconf, const TMCGenerator &mc):
+	TCuboidVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
 			TVolumeSource(sourceconf, mc), xmin(0), xmax(0), ymin(0), ymax(0), zmin(0), zmax(0){
 		std::istringstream(sourceconf["parameters"]) >> xmin >> xmax >> ymin >> ymax >> zmin >> zmax;
 	}
@@ -225,12 +226,14 @@ private:
 	 * @param y Returns y coordinate
 	 * @param z Returns z coordinate
 	 */
-	void RandomPointInSourceVolume(double &x, double &y, double &z, const TMCGenerator &mc) const final{
-		double r = mc.LinearDist(rmin, rmax); // weighting because of the volume element and a r^2 probability outwards
-		double phi_r = mc.UniformDist(phimin,phimax);
+	void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
+		std::linear_distribution<double> lindist(rmin, rmax);
+		double r = lindist(mc); // weighting because of the volume element and a r^2 probability outwards
+		std::uniform_real_distribution<double> unidist(0, 1);
+		double phi_r = phimin + unidist(mc)*(phimax - phimin);
 		x = r*cos(phi_r);
 		y = r*sin(phi_r);
-		z = mc.UniformDist(zmin,zmax);
+		z = zmin + unidist(mc)*(zmax - zmin);
 	}
 public:
 	/**
@@ -249,7 +252,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCylindricalVolumeSource(std::map<std::string, std::string> &sourceconf, const TMCGenerator &mc):
+	TCylindricalVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
 			TVolumeSource(sourceconf, mc), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
 		std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax;
 		phimin *= conv;
@@ -303,7 +306,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf, const TMCGenerator &mc, const TGeometry &geometry):
+	TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc, const TGeometry &geometry):
 			TSurfaceSource(sourceconf, mc), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
 		std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax;
 		phimin *= conv;
@@ -339,12 +342,13 @@ private:
 	 * @param y Returns y coordinate
 	 * @param z Returns z coordinate
 	 */
-	void RandomPointInSourceVolume(double &x, double &y, double &z, const TMCGenerator &mc) const final{
+	void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
 		CBox bbox = sourcevol.GetBoundingBox();
+		std::uniform_real_distribution<double> unidist(0, 1);
 		do{
-			x = mc.UniformDist(bbox.xmin(), bbox.xmax()); // random point
-			y = mc.UniformDist(bbox.ymin(), bbox.ymax()); // random point
-			z = mc.UniformDist(bbox.zmin(), bbox.zmax()); // random point
+			x = bbox.xmin() + unidist(mc)*(bbox.xmax() - bbox.xmin()); // random point
+			y = bbox.ymin() + unidist(mc)*(bbox.ymax() - bbox.ymin());
+			z = bbox.zmin() + unidist(mc)*(bbox.zmax() - bbox.zmin());
 		}while (!sourcevol.InSolid(x, y, z));
 	}
 public:
@@ -359,7 +363,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSTLVolumeSource(std::map<std::string, std::string> &sourceconf, const TMCGenerator &mc):
+	TSTLVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
 			TVolumeSource(sourceconf, mc){
 		std::string STLfile;
 		std::istringstream(sourceconf["STLfile"]) >> STLfile;
@@ -400,7 +404,7 @@ public:
 	 * @param geometry TGeometry in which particles will be created
 	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf, const TMCGenerator &mc, const TGeometry &geometry):
+	TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc, const TGeometry &geometry):
 			TSurfaceSource(sourceconf, mc){
 		std::string STLfile;
 		std::istringstream(sourceconf["STLfile"]) >> STLfile;
@@ -422,7 +426,7 @@ public:
 
 
 
-TParticleSource* CreateParticleSource(TConfig &config, const TMCGenerator &mc, const TGeometry &geometry);
+TParticleSource* CreateParticleSource(TConfig &config, TMCGenerator &mc, const TGeometry &geometry);
 
 
 #endif /* SOURCE_H_ */

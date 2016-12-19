@@ -19,7 +19,7 @@ ofstream TNeutron::hitout; ///< hitlog file stream
 ofstream TNeutron::spinout; ///< spinlog file stream
 
 TNeutron::TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
-		const TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
+		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
 		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
 }
@@ -38,7 +38,7 @@ void TNeutron::Transmit(const value_type x1, const state_type &y1, value_type &x
 }
 
 void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-		const double normal[3], const solid &leaving, const solid &entering, const TMCGenerator &mc) const{
+		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	material mat = vnormal < 0 ? entering.mat : leaving.mat;
 
@@ -55,11 +55,13 @@ void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type 
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
 	double theta_t, phi_t;
-	double MRmax = 1.5 * MR::MRDistMax(true, &y1[3], normal, leaving, entering); // scale up maximum to make sure it lies above all values of scattering distribution
+	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &y1[3], normal, leaving, entering)); // scale up maximum to make sure it lies above all values of scattering distribution
 	do{
-		phi_t = mc.UniformDist(0, 2*pi);
-		theta_t = mc.SinDist(0, pi/2);
-	}while (mc.UniformDist(0, MRmax) > MR::MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
+		std::uniform_real_distribution<double> phidist(0, 2.*pi);
+		phi_t = phidist(mc);
+		std::sin_distribution<double> sindist(0, pi/2.);
+		theta_t = sindist(mc);
+	}while (MRprobdist(mc) > MR::MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
 
 	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
 	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
@@ -70,7 +72,7 @@ void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type 
 }
 
 void TNeutron::TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-		const double normal[3], const solid &leaving, const solid &entering, const TMCGenerator &mc) const{
+		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
@@ -80,8 +82,10 @@ void TNeutron::TransmitLambert(const value_type x1, const state_type &y1, value_
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
 	double theta_t, phi_t;
-	phi_t = mc.UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
-	theta_t = mc.SinCosDist(0, 0.5*pi);
+	std::uniform_real_distribution<double> unidist(0, 2.*pi);
+	phi_t = unidist(mc);
+	std::sincos_distribution<double> sincosdist(0, pi/2.);
+	theta_t = sincosdist(mc);
 
 	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
 	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
@@ -106,7 +110,7 @@ void TNeutron::Reflect(const value_type x1, const state_type &y1, value_type &x2
 }
 
 void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-		const double normal[3], const solid &leaving, const solid &entering, const TMCGenerator &mc) const{
+		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	material mat = vnormal < 0 ? entering.mat : leaving.mat;
 	if (!mat.UseMRModel || !MR::MRValid(&y1[3], normal, leaving, entering)){
@@ -115,12 +119,14 @@ void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &
 	}
 
 	double phi_r, theta_r;
-	double MRmax = 1.5 * MR::MRDistMax(false, &y1[3], normal, leaving, entering);  // scale up maximum to make sure it lies above all values of scattering distribution
+	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &y1[3], normal, leaving, entering)); // scale up maximum to make sure it lies above all values of scattering distribution
 //			cout << "max: " << MRmax << '\n';
 	do{
-		phi_r = mc.UniformDist(0, 2*pi);
-		theta_r = mc.SinDist(0, pi/2);
-	}while (mc.UniformDist(0, MRmax) > MR::MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
+		std::uniform_real_distribution<double> unidist(0, 2.*pi);
+		phi_r = unidist(mc);
+		std::sin_distribution<double> sindist(0, pi/2.);
+		theta_r = sindist(mc);
+	}while (MRprobdist(mc) > MR::MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 	x2 = x1;
@@ -134,13 +140,15 @@ void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &
 }
 
 void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-		const double normal[3], const solid &leaving, const solid &entering, const TMCGenerator &mc) const{
+		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
 
 	double phi_r, theta_r;
-	phi_r = mc.UniformDist(0, 2*pi); // generate random reflection angles (Lambert's law)
-	theta_r = mc.SinCosDist(0, 0.5*pi);
+	std::uniform_real_distribution<double> unidist(0, 2.*pi);
+	phi_r = unidist(mc);
+	std::sincos_distribution<double> sincosdist(0, pi/2.);
+	theta_r = sincosdist(mc);
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 	x2 = x1;
@@ -154,7 +162,7 @@ void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_t
 }
 
 void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-		const solid &leaving, const solid &entering, const TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
+		const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
@@ -171,7 +179,8 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 		if (0.5*m_n*(y1[0]*y1[0] + y1[1]*y1[1] + y1[2]*y1[2]) > Estep) // MicroRoughness transmission can happen if neutron energy > potential step
 			MRtransprob = MR::MRProb(true, &y1[3], normal, leaving, entering);
 	}
-	double prob = mc.UniformDist(0, 1);
+	std::uniform_real_distribution<double> unidist(0, 1);
+	double prob = unidist(mc);
 	if (UseMRModel && prob < MRreflprob){
 		ReflectMR(x1, y1, x2, y2, normal, leaving, entering, mc);
 	}
@@ -185,7 +194,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 
 		double reflprob = pow((k1 - k2)/(k1 + k2), 2); // specular reflection probability
 		if (prob < MRreflprob + MRtransprob + reflprob*(1 - MRreflprob - MRtransprob)){ // reflection, scale down reflprob so MRreflprob + MRtransprob + reflprob + transprob = 1
-			if (!UseMRModel && mc.UniformDist(0,1) < mat.DiffProb){
+			if (!UseMRModel && unidist(mc) < mat.DiffProb){
 				ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
 			}
 			else{
@@ -193,7 +202,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 			}
 		}
 		else{
-			if (!UseMRModel && mc.UniformDist(0,1) < mat.DiffProb){
+			if (!UseMRModel && unidist(mc) < mat.DiffProb){
 				TransmitLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert transmission
 			}
 			else{
@@ -218,7 +227,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 			ID = ID_ABSORBED_ON_SURFACE;
 		}
 		else{ // no absorption -> reflection
-			if (!UseMRModel && mc.UniformDist(0,1) < mat.DiffProb){
+			if (!UseMRModel && unidist(mc) < mat.DiffProb){
 				ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
 			}
 			else{
@@ -227,19 +236,20 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 		}
 	}
 
-	if (mc.UniformDist(0,1) < entering.mat.SpinflipProb){ // should spin be flipped?
+	if (unidist(mc) < entering.mat.SpinflipProb){ // should spin be flipped?
 		y2[7] *= -1;
 	}
 }
 
 
 void TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-					const solid &currentsolid, const TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
+					const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	if (currentsolid.mat.FermiImag > 0){
 		complex<double> E(0.5*(double)m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
 		complex<double> k = sqrt(2*(double)m_n*E)*(double)ele_e/(double)hbar; // wave vector
 		double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
-		double abspath = mc.ExpDist(2*imag(k)); // choose random absorption length with exponential distribution
+		std::exponential_distribution<double> expdist(2*imag(k));
+		double abspath = expdist(mc);
 		if (abspath < l){
 			x2 = x1 + abspath/l*(x2 - x1); // if absorbed, interpolate stopping time and position
 			stepper.calc_state(x2, y2);
@@ -250,17 +260,96 @@ void TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2,
 }
 
 
-void TNeutron::Decay(const TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const{
+void TNeutron::Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const{
 	double E_p, E_e, phi_p, phi_e, theta_p, theta_e;
 	double pol_p, pol_e;
-	TParticle *p;
-	mc.NeutronDecay(&GetFinalState()[3], E_p, E_e, phi_p, phi_e, theta_p, theta_e, pol_p, pol_e);
-	p = new TProton(GetParticleNumber(), GetFinalTime(), GetFinalState()[0], GetFinalState()[1], GetFinalState()[2],
-					E_p, phi_p, theta_p, pol_p, mc, geom, field);
-	secondaries.push_back(p);
-	p = new TElectron(GetParticleNumber(), GetFinalTime(), GetFinalState()[0], GetFinalState()[1], GetFinalState()[2],
-						E_e, phi_e, theta_e, pol_e, mc, geom, field);
-	secondaries.push_back(p);
+	double m_nue = 1 / pow(c_0, 2); // [eV/c^2]
+
+	uniform_real_distribution<double> phi_dist(0, 2*pi);
+	sin_distribution<double> sin_dist(0., pi/2.);
+ 	double pabs, beta1, beta2, delta1, delta2; // 3-momentums (abs+directions)
+ 	vector<double> pp(4), pe(4); // four-momenta of proton and electron
+
+//-------- Step 1 ----------------------------------------------------------------------------------------------------------
+/*
+ * p   = (E/c, p_x, p_y, p_z)
+ * E   = E_kin + m*c^2
+ * p^2 = (E/c)^2 - (m*c)^2
+ *
+ */
+	// energy of proton
+ 	double Ekin = proton_beta_distribution(mc);
+	pp[0] = Ekin/c_0 + m_p*c_0;
+	// momentum norm of proton
+	pabs = sqrt(pp[0]*pp[0] - m_p*m_p*c_0*c_0);
+
+//-------- Step 2 ----------------------------------------------------------------------------------------------------------
+	// isotropic emission characteristics (in the rest frame of the neutron)
+	beta1 = phi_dist(mc);
+	delta1 = sin_dist(mc);
+	// 3-momentum of the proton
+	pp[1] = pabs * sin(delta1) * cos(beta1);
+	pp[2] = pabs * sin(delta1) * sin(beta1);
+	pp[3] = pabs * cos(delta1);
+
+//-------- Step 3 ----------------------------------------------------------------------------------------------------------
+	// calculate intermediate virtual state via 4-momentum conservation
+	double virt[4] = {(double)m_n*(double)c_0 - pp[0], -pp[1], -pp[2], -pp[3]}; // 4-momentum of intermediate virtual state (n - p)
+	double m2_virt = virt[0]*virt[0] - virt[1]*virt[1] - virt[2]*virt[2] - virt[3]*virt[3]; // squared mass of virtual state
+
+
+//-------- Step 4 ----------------------------------------------------------------------------------------------------------
+
+	// energy of electron from two-body-decay of virtual state
+	pe[0] = (m2_virt + m_e*m_e*c_0*c_0 - m_nue*m_nue*c_0*c_0)/2/sqrt(m2_virt);
+	pabs = sqrt(pe[0]*pe[0] - m_e*m_e*c_0*c_0);
+
+//-------- Step 5 ----------------------------------------------------------------------------------------------------------
+	// isotropic emission characteristics (in the rest frame of the virtual state)
+	beta2 = phi_dist(mc);
+	delta2 = sin_dist(mc);
+	// 3-momentum of the electron
+	pe[1] = pabs * sin(delta2) * cos(beta2);
+	pe[2] = pabs * sin(delta2) * sin(beta2);
+	pe[3] = pabs * cos(delta2);
+
+//-------- Step 6 ----------------------------------------------------------------------------------------------------------
+	// boost e into moving frame of virtual state
+	BOOST(vector<double>({virt[1]/virt[0], virt[2]/virt[0], virt[3]/virt[0]}), pe);
+
+//-------- Step 7 ----------------------------------------------------------------------------------------------------------
+	// get 4-momentum of neutrino via 4-momentum conservation
+	std::vector<double> pnue({virt[0] - pe[0], virt[1] - pe[1], virt[2] - pe[2], virt[3] - pe[3]});
+
+//-------- Step 8 ----------------------------------------------------------------------------------------------------------
+	// boost p,e,nu into moving frame of neutron
+	vector<double> beta({y[3]/static_cast<double>(c_0),
+						y[4]/static_cast<double>(c_0),
+						y[5]/static_cast<double>(c_0)});
+	BOOST(beta,pe);
+	BOOST(beta,pp);
+	BOOST(beta,pnue);
+
+//-------- Step 9 ----------------------------------------------------------------------------------------------------------
+	// use neutrino mass for check
+//		long double decayerror = m_nue*c_0*c_0 - sqrt(nue[0]*nue[0] - nue[1]*nue[1] - nue[2]*nue[2] - nue[3]*nue[3])*c_0;
+//		printf("\n   +++ decay error : %LG eV +++\n", decayerror);
+
+
+//-------- Finished --------------------------------------------------------------------------------------------------------
+	double beta_p2 = (pp[1]*pp[1] + pp[2]*pp[2] + pp[3]*pp[3])/pp[0]/pp[0];
+	E_p = m_p*c_0*c_0*beta_p2*(0.5 + beta_p2*(3./8. + beta_p2*(5./16.))); // use series expansion for low energy proton calculations
+	E_e = pe[0]*c_0 - m_e*c_0*c_0; // use fully relativistic formula for high energy electron
+	phi_p = atan2(pp[2], pp[1]);
+	phi_e = atan2(pe[2], pe[1]);
+	theta_p = acos(pp[3]/sqrt(pp[1]*pp[1] + pp[2]*pp[2] + pp[3]*pp[3]));
+	theta_e = acos(pe[3]/sqrt(pe[1]*pe[1] + pe[2]*pe[2] + pe[3]*pe[3]));
+	std::uniform_real_distribution<double> uni_dist(0, 1);
+	pol_p = uni_dist(mc) < 0.5 ? 1 : -1;
+	pol_e = uni_dist(mc) < 0.5 ? 1 : -1;
+
+	secondaries.push_back(new TProton(GetParticleNumber(), t, y[0], y[1], y[2], E_p, phi_p, theta_p, pol_p, mc, geom, field));
+	secondaries.push_back(new TElectron(GetParticleNumber(), t, y[0], y[1], y[2], E_e, phi_e, theta_e, pol_e, mc, geom, field));
 }
 
 

@@ -34,7 +34,7 @@ double TParticle::GetFinalKineticEnergy() const{
 
 TParticle::TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
 		const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
-		const TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
+		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
 		  tstart(t), tend(t), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0){
 	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
@@ -57,7 +57,9 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	ystart[4] = vstart*sin(phi)*sin(theta);
 	ystart[5] = vstart*cos(theta);
 	ystart[6] = 0; // proper time
-	ystart[7] = amc.DicePolarisation(polarisation); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
+
+	std::polarization_distribution<double> pdist(polarisation);
+	ystart[7] = pdist(amc); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
 	yend = ystart;
 
 	spinstart.resize(SPIN_STATE_VARIABLES, 0);
@@ -66,7 +68,8 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	afield.BField(x, y, z, t, B);
 	double Babs = sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
 	if (Babs > 0){
-		double spinaz = amc.UniformDist(0, 2*pi); // random azimuth angle of spin
+		std::uniform_real_distribution<double> phidist(0., 2.*pi);
+		double spinaz = phidist(amc); // random azimuth angle of spin
 		spinstart[0] = sqrt(1 - polarisation*polarisation)*sin(spinaz); // set initial spin vector
 		spinstart[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
 		spinstart[2] = polarisation;
@@ -89,10 +92,11 @@ TParticle::~TParticle(){
 }
 
 
-void TParticle::Integrate(double tmax, std::map<std::string, std::string> &particleconf, const TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){
+void TParticle::Integrate(double tmax, std::map<std::string, std::string> &particleconf, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){
 	double tau = 0;
 	istringstream(particleconf["tau"]) >> tau;
-	tau = mc.ExpDist(1./tau);
+	std::exponential_distribution<double> expdist(1./tau);
+	tau = expdist(mc);
 
 	if (currentsolids.empty())
 		geom.GetSolids(tend, &yend[0], currentsolids);
@@ -248,7 +252,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 
 	if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
 		cout << "Decayed!\n";
-		Decay(mc, geom, field, secondaries);
+		Decay(tend, yend, mc, geom, field, secondaries);
 	}
 
 	cout << "x: " << yend[0];
@@ -307,7 +311,7 @@ void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const va
 
 
 double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
-								const bool interpolatefields, const double Bmax, const TMCGenerator &mc, const bool flipspin, const double spinloginterval, double &nextspinlog) const{
+								const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin, const double spinloginterval, double &nextspinlog) const{
 	value_type x1 = stepper.previous_time();
 	if (gamma == 0 || x1 == x2)
 		return 0;
@@ -328,7 +332,8 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		if (!flipspin) // if polarization should stay constant
 			polarisation = y1[7]; // take polarization from state vector
 		else{
-			if (mc.UniformDist(0,1) < 0.5) // if spin flips are allowed, choose random polarization
+			std::uniform_real_distribution<double> unidist(0, 1);
+			if (unidist(mc) < 0.5) // if spin flips are allowed, choose random polarization
 				polarisation = 1;
 			else
 				polarisation = -1;
@@ -410,7 +415,8 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 			spin[1] = 0;
 		}
 		else{
-			double spinaz = mc.UniformDist(0, 2*pi); // random azimuth
+			std::uniform_real_distribution<double> phidist(0, 2.*pi);
+			double spinaz = phidist(mc); // random azimuth
 			spin[0] = sqrt(1 - polarisation*polarisation)*sin(spinaz);
 			spin[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
 		}
@@ -423,8 +429,10 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		double flipprob = 0.5*(1 - y2[7]*polarisation);
 		if ((integrate1 || integrate2) && Babs1 < Bmax)
 			std::cout << x2 << "s flipprob " << flipprob << "\n";
-		if (flipspin)
-			y2[7] = mc.DicePolarisation(polarisation); // set new polarisation weighted by spin-projection on magnetic field
+		if (flipspin){
+			polarization_distribution<double> pdist(polarisation);
+			y2[7] = pdist(mc);
+		}
 		spin[0] = B2[0]*y2[7]/Babs2;
 		spin[1] = B2[1]*y2[7]/Babs2;
 		spin[2] = B2[2]*y2[7]/Babs2;
@@ -519,7 +527,7 @@ bool TParticle::CheckHitError(const solid &hitsolid, double distnormal) const{
 
 
 bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-		const TMCGenerator &mc, const TGeometry &geom, const bool hitlog, const int iteration){
+		TMCGenerator &mc, const TGeometry &geom, const bool hitlog, const int iteration){
 	solid currentsolid = GetCurrentsolid();
 	if (!geom.CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
 		printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);

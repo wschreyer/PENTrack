@@ -2,6 +2,7 @@
 #define GLOBALS_H_
 
 #include <string>
+#include <vector>
 #include <map>
 
 enum stopID {	ID_UNKNOWN = 0, ///< standard flag for particles
@@ -75,7 +76,7 @@ void RotateVector(double v[3], const double z[3], const double x[3] = NULL);
  * @param beta Vector v/c of moving reference frame
  * @param p Four-vector
  */
-void BOOST(double beta[3], double p[4]);
+void BOOST(const std::vector<double> &beta, std::vector<double> &p);
 
 /**
  * Energy distribution of protons from free neutron beta decay (0 < E < 750 eV)

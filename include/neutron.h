@@ -38,7 +38,7 @@ public:
 	 * @param afield Optional fields (can be NULL)
 	 */
 	TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
-			const TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
+			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
 	
 protected:
 	static std::ofstream endout; ///< endlog file stream
@@ -56,7 +56,7 @@ protected:
 	 * For parameter doc see TParticle::OnHit
 	 */
 	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-			const solid &leaving, const solid &entering, const TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
+			const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
@@ -75,7 +75,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, const TMCGenerator &mc) const;
+			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
 
 	/**
 	 * Transmit neutron through surface.
@@ -84,7 +84,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, const TMCGenerator &mc) const;
+			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
 
 	/**
 	 * Reflect neutron from surface.
@@ -102,7 +102,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, const TMCGenerator &mc) const;
+			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
 
 	/**
 	 * Reflect neutron from surface.
@@ -111,7 +111,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, const TMCGenerator &mc) const;
+			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
 
 	/**
 	 * Checks for absorption in solids using Fermi-potential formalism and does some additional calculations for neutrons
@@ -119,17 +119,42 @@ protected:
 	 * For parameter doc see TParticle::OnStep
 	 */
 	void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-			const solid &currentsolid, const TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
+			const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
-	 * Neutron decay.
+	 * Simulate neutron beta decay.
 	 *
-	 * Create decay proton and electron and add them to secondaries list
+	 * Calculates velocities of neutron decay products proton and electron.
 	 *
-	 * For parameter doc see TParticle::Decay
+	 * Reaction(s):
+	 *
+	 *     n0  ->  p+  +  R-
+	 *
+	 *     R-  ->  e-  +  nue
+	 *
+	 * Procedure:
+	 * (1) Dice the energy of the decay proton according to globals.h#ProtonBetaSpectrum in the rest frame of the neutron and
+	 *     calculate the proton momentum via the energy momentum relation.
+	 * (2) Dice isotropic orientation of the decay proton.
+	 * (3) Calculate 4-momentum of rest R- via 4-momentum conservation.
+	 * (4) Get fixed electron energy from two body decay of R-.
+	 * (5) Dice isotropic electron orientation in the rest frame of R-.
+	 * (6) Lorentz boost electron 4-momentum into moving frame of R-.
+	 * (7) Calculate neutrino 4-momentum via 4-momentum conservation.
+	 * (8) Boost all 4-momentums into moving neutron frame.
+	 *
+	 * Cross-check:
+	 * (9) Print neutrino 4-momentum invariant mass (4-momentum square, should be zero).
+	 *
+	 * @param t Decay time
+	 * @param y Particle state before decay
+	 * @param mc TMCGenerator class to generate random numbers
+	 * @param geom TGeometry class
+	 * @param field TFieldManager class
+	 * @param secondaries Electron and proton from neutron decay are added to this list
 	 */
-	void Decay(const TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const;
+	void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const;
 
 
 	/**

@@ -74,7 +74,7 @@ void RotateVector(double v[3], const double n[3], const double x[3])
 }
 
 //======== Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta ======================================================
-void BOOST(double beta[3], double p[4]){
+void BOOST(const std::vector<double> &beta, std::vector<double> &p){
    //Boost this Lorentz vector (copy&paste from ROOT)
    double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
    double gamma = 1.0 / sqrt(1.0 - b2);
