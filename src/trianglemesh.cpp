@@ -12,7 +12,8 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int sldin
 
 	char header[80];
 	f.read(header, 80); // read 80-byte header
-	std::string sldname(header, std::string(header).find_last_not_of(" ") + 1); // strip trailing whitespace from header
+	std::string sldname(std::move(header), 80);
+	sldname.erase(sldname.find_last_not_of(" ") + 1); // strip trailing whitespace from header
 
 	unsigned int filefacecount;
 	unsigned int i = triangles.size();
