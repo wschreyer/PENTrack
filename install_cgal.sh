@@ -1,6 +1,8 @@
 #!/bin/sh
 
-echo "I'm going to download and compile CGAL for you.\nThis will take about 100MB of disk space.\nPress ENTER to continue, Ctrl+C to cancel."
+echo "I'm going to download and compile CGAL for you."
+echo "This will take about 100MB of disk space."
+echo "Press ENTER to continue, Ctrl+C to cancel."
 read -p "" key
 
 mkdir cgal/
@@ -12,6 +14,5 @@ cd ..
 
 mkdir cgal/build
 cd cgal/build
-cmake ../CGAL-4.9/
-make
+cmake ../CGAL-4.9/ -DWITH_CGAL_Qt5=OFF -DWITH_CGAL_ImageIO=OFF -DCGAL_HEADER_ONLY=ON
 cd ../..
