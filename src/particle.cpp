@@ -38,14 +38,18 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
 		  tstart(t), tend(t), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0),
 		  geom(&geometry), mc(&amc), field(afield){
-	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
-	value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
-	value_type vstart;
-//			cout << "(E/m)^3.5 = " << pow(Eoverm, 3.5L) << "; err_beta = " << numeric_limits<value_tyoe>::epsilon()/(1 - beta) << '\n';
-	if (pow(Eoverm, 3.5L) < numeric_limits<value_type>::epsilon()/(1 - beta)) // if error in series O((E/m)^3.5) is smaller than rounding error in beta
-		vstart = c_0*(sqrt(2*Eoverm) - 3*pow(Eoverm, 1.5L)/2/sqrt(2) + 23*pow(Eoverm, 2.5L)/16/sqrt(2)); // use series expansion
+
+	// for small velocities Ekin/m is very small and the relativstic claculation beta^2 = 1 - 1/gamma^2 gives large round-off errors
+	// the round-off error can be estimated as 2*epsilon
+	// if a series expansion to order O(Eoverm^5) has a smaller error then the round-off error, we will use the series expansion
+	double Eoverm = E/m/c_0/c_0; // gamma - 1
+	double beta2;
+	//cout << pow(Eoverm, 6) << " " << ((((6.0*Eoverm - 5.0)*Eoverm + 4.0)*Eoverm - 3.0)*Eoverm + 2.0)*Eoverm << " " << 1.0 - 1.0/(Eoverm + 1)/(Eoverm + 1) << "\n";
+	if (pow(Eoverm, 6) < 2*numeric_limits<double>::epsilon()) // if error in series expansion smaller than round-off error
+		beta2 = ((((6.0*Eoverm - 5.0)*Eoverm + 4.0)*Eoverm - 3.0)*Eoverm + 2.0)*Eoverm; // use series expansion
 	else
-		vstart = c_0 * beta;
+		beta2 = 1.0 - 1.0/(Eoverm + 1)/(Eoverm + 1); // relativstic beta^2
+	double vstart = c_0*sqrt(beta2);
 
 	if (polarisation < -1 || polarisation > 1){
 		std::cout << "Polarisation is " << polarisation << "! Has to be between -1 and 1!\n";
@@ -837,15 +841,19 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const dens
 
 
 double TParticle::GetKineticEnergy(const value_type v[3]) const{
-	value_type v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	value_type beta2 = v2/c_0/c_0;
-	value_type gammarel = 1/sqrt(1 - beta2); // use relativistic formula for larger beta
-//			cout << "beta^8 = " << beta2*beta2*beta2*beta2 << "; err_gamma = " << numeric_limits<value_type>::epsilon()/(gammarel - 1) << '\n';
-	if (beta2*beta2*beta2*beta2 < numeric_limits<value_type>::epsilon()/(gammarel - 1)) // if error in series expansion O(beta^8) is smaller than rounding error in gamma factor
-		return 0.5*m*v2 + (3.0/8.0*m + (5.0/16.0*m + 35.0/128.0*beta2)*beta2)*beta2*v2; // use series expansion for energy calculation with small beta
-	else{
-		return c_0*c_0*m*(gammarel - 1); // else use fully relativstic formula
-	}
+	double beta2 = (v[0]*v[0] + v[1]*v[1] + v[2]*v[2])/c_0/c_0;
+	double gammaminusone;
+
+	// for small velocities the relativistic gamma factor = 1/sqrt(1 - beta^2) is very close to one, givin large round-off errors when calculatin E = m*c^2*(gamma - 1)
+	// calculating gamma - 1 has a round-off error of epsilon
+	// if a series expansion to order O(beta^8) has a smaller error than epsilon, we will use the series expansion
+
+	//cout << pow(beta2, 5) << " " << (0.5 + (3.0/8.0 + (5.0/16.0 + 35.0/128.0*beta2)*beta2)*beta2)*beta2 << " " << 1.0/sqrt(1.0 - beta2) - 1.0 << "\n";
+	if (pow(beta2, 5) < numeric_limits<value_type>::epsilon()) // if error in series expansion O(beta^10) is smaller than rounding error in gamma factor
+		gammaminusone = (0.5 + (3.0/8.0 + (5.0/16.0 + 35.0/128.0*beta2)*beta2)*beta2)*beta2; // use series expansion for energy calculation with small beta
+	else
+		gammaminusone = 1.0/sqrt(1.0 - beta2) - 1.0; // use relativistic formula for larger beta
+	return c_0*c_0*m*gammaminusone;
 }
 
 
