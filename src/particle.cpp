@@ -191,13 +191,12 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &conf)
 		while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) to reduce chord length, go through all pieces
 			double l2 = pow(y[8] - y1[8], 2); // actual length of step squared
 			double d2 = pow(y[0] - y1[0], 2) + pow(y[1] - y1[1], 2) + pow(y[2] - y1[2], 2); // length of straight line between start and end point of step squared
-			assert(l2 >= d2);
-			double deviation = 0.5*sqrt(l2 - d2); // max. possible deviation of real path from straight line
+			double dev2 = 0.25*(l2 - d2); // max. possible squared deviation of real path from straight line
 			value_type x2 = x;
 			state_type y2 = y;
-			if (deviation > MAX_TRACK_DEVIATION){ // if deviation is larger than MAX_TRACK_DEVIATION
-//				cout << "split " << x - x1 << " " << sqrt(l2) << " " << sqrt(d2) << " " << chord << "\n";
-				x2 = x1 + (x - x1)/ceil(deviation/MAX_TRACK_DEVIATION); // split step to reduce deviation
+			if (dev2 > MAX_TRACK_DEVIATION*MAX_TRACK_DEVIATION){ // if deviation is larger than MAX_TRACK_DEVIATION
+//				cout << "split " << x - x1 << " " << sqrt(l2) << " " << sqrt(d2) << " " << sqrt(dev2) << "\n";
+				x2 = x1 + (x - x1)/ceil(sqrt(dev2)/MAX_TRACK_DEVIATION); // split step to reduce deviation
 				stepper.calc_state(x2, y2);
 				assert(x2 <= x);
 			}
