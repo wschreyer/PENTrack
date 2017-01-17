@@ -36,15 +36,19 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 		const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
 		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
-		  tstart(t), tend(t), Hmax(0), lend(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0){
-	value_type Eoverm = E/m/c_0/c_0; // gamma - 1
-	value_type beta = sqrt(1-(1/((Eoverm + 1)*(Eoverm + 1)))); // beta = sqrt(1 - 1/gamma^2)
-	value_type vstart;
-//			cout << "(E/m)^3.5 = " << pow(Eoverm, 3.5L) << "; err_beta = " << numeric_limits<value_tyoe>::epsilon()/(1 - beta) << '\n';
-	if (pow(Eoverm, 3.5L) < numeric_limits<value_type>::epsilon()/(1 - beta)) // if error in series O((E/m)^3.5) is smaller than rounding error in beta
-		vstart = c_0*(sqrt(2*Eoverm) - 3*pow(Eoverm, 1.5L)/2/sqrt(2) + 23*pow(Eoverm, 2.5L)/16/sqrt(2)); // use series expansion
+		  tstart(t), tend(t), Hmax(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0){
+
+	// for small velocities Ekin/m is very small and the relativstic claculation beta^2 = 1 - 1/gamma^2 gives large round-off errors
+	// the round-off error can be estimated as 2*epsilon
+	// if a series expansion to order O(Eoverm^5) has a smaller error then the round-off error, we will use the series expansion
+	double Eoverm = E/m/c_0/c_0; // gamma - 1
+	double beta2;
+	//cout << pow(Eoverm, 6) << " " << ((((6.0*Eoverm - 5.0)*Eoverm + 4.0)*Eoverm - 3.0)*Eoverm + 2.0)*Eoverm << " " << 1.0 - 1.0/(Eoverm + 1)/(Eoverm + 1) << "\n";
+	if (pow(Eoverm, 6) < 2*numeric_limits<double>::epsilon()) // if error in series expansion smaller than round-off error
+		beta2 = ((((6.0*Eoverm - 5.0)*Eoverm + 4.0)*Eoverm - 3.0)*Eoverm + 2.0)*Eoverm; // use series expansion
 	else
-		vstart = c_0 * beta;
+		beta2 = 1.0 - 1.0/(Eoverm + 1)/(Eoverm + 1); // relativstic beta^2
+	double vstart = c_0*sqrt(beta2);
 
 	if (polarisation < -1 || polarisation > 1)
 		throw std::runtime_error("Polarisation has to be between -1 and 1");
@@ -57,9 +61,9 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	ystart[4] = vstart*sin(phi)*sin(theta);
 	ystart[5] = vstart*cos(theta);
 	ystart[6] = 0; // proper time
-
 	std::polarization_distribution<double> pdist(polarisation);
 	ystart[7] = pdist(amc); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
+	ystart[8] = 0;
 	yend = ystart;
 
 	spinstart.resize(SPIN_STATE_VARIABLES, 0);
@@ -113,7 +117,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 	value_type x = tend;
 	state_type y = yend; 
 
-	bool resetintegration = true;
+	bool resetintegration = false;
 
 	float nextsnapshot = -1;
 	bool snapshotlog = false;
@@ -160,10 +164,11 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 	state_type spin = spinend;
 
 	dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
+	stepper.initialize(y, x, 10.*MAX_TRACK_DEVIATION/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])); // initialize stepper with fixed spatial length
 
 	while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 		if (resetintegration){
-			stepper.initialize(y, x, MAX_SAMPLE_DIST/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])); // (re-)start integration with first guess of step size
+			stepper.initialize(y, x, stepper.current_time_step()); // (re-)start integration with last step size
 		}
 		value_type x1 = x; // save point before next step
 		state_type y1 = y;
@@ -187,25 +192,27 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 			stepper.calc_state(x, y);
 		}
 
-		while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) with spatial length SAMPLE_DIST, go through all pieces
-			value_type v1 = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-			value_type x2 = x1 + MAX_SAMPLE_DIST/v1; // time length = spatial length/velocity
-			state_type y2(STATE_VARIABLES);
-			if (x2 >= x){
-				x2 = x;
-				y2 = y;
-			}
-			else{
+		while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) to reduce chord length, go through all pieces
+			double l2 = pow(y[8] - y1[8], 2); // actual length of step squared
+			double d2 = pow(y[0] - y1[0], 2) + pow(y[1] - y1[1], 2) + pow(y[2] - y1[2], 2); // length of straight line between start and end point of step squared
+			double dev2 = 0.25*(l2 - d2); // max. possible squared deviation of real path from straight line
+			value_type x2 = x;
+			state_type y2 = y;
+			if (dev2 > MAX_TRACK_DEVIATION*MAX_TRACK_DEVIATION){ // if deviation is larger than MAX_TRACK_DEVIATION
+//				cout << "split " << x - x1 << " " << sqrt(l2) << " " << sqrt(d2) << " " << sqrt(dev2) << "\n";
+				x2 = x1 + (x - x1)/ceil(sqrt(dev2)/MAX_TRACK_DEVIATION); // split step to reduce deviation
 				stepper.calc_state(x2, y2);
+				assert(x2 <= x);
 			}
+//			l2 = pow(y2[8] - y1[8], 2);
+//			d2 = pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2);
+//			cout << x2 - x1 << " " << sqrt(l2) << " " << sqrt(d2) << " " << 0.5*sqrt(l2 - d2) << "\n";
 
 			resetintegration = CheckHit(x1, y1, x2, y2, stepper, mc, geom, hitlog); // check if particle hit a material boundary or was absorbed between y1 and y2
 			if (resetintegration){
 				x = x2; // if particle path was changed: reset integration end point
 				y = y2;
 			}
-
-			lend += sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2));
 
 			x1 = x2;
 			y1 = y2;
@@ -234,11 +241,11 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 			lastsave = x;
 		}
 
-		PrintPercent(max(y[6]/tau, max((x - tstart)/(tmax - tstart), lend/maxtraj)), perc);
+		PrintPercent(max(y[6]/tau, max((x - tstart)/(tmax - tstart), y[8]/maxtraj)), perc);
 		
 		if (ID == ID_UNKNOWN && y[6] >= tau) // proper time >= tau?
 			ID = ID_DECAYED;
-		else if (ID == ID_UNKNOWN && (x >= tmax || lend >= maxtraj)) // time > tmax or trajectory length > max length?
+		else if (ID == ID_UNKNOWN && (x >= tmax || y[8] >= maxtraj)) // time > tmax or trajectory length > max length?
 			ID = ID_NOT_FINISH;
 	}
 
@@ -261,7 +268,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 	cout << " E: " << GetFinalKineticEnergy();
 	cout << " Code: " << ID;
 	cout << " t: " << tend;
-	cout << " l: " << lend;
+	cout << " l: " << yend[8];
 	cout << " hits: " << Nhit;
 	cout << " spinflips: " << Nspinflip << '\n';
 	cout << "Computation took " << Nstep << " steps\n";
@@ -300,13 +307,15 @@ void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const va
 		F[1] += y[7]*mu*dBdxi[1];
 		F[2] += y[7]*mu*dBdxi[2];
 	}
-	value_type inversegamma = sqrt(1 - (y[3]*y[3] + y[4]*y[4] + y[5]*y[5])/(c_0*c_0)); // relativstic factor 1/gamma
+	double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5];
+	value_type inversegamma = sqrt(1 - v2/(c_0*c_0)); // relativstic factor 1/gamma
 	dydx[3] = inversegamma/m/ele_e*(F[0] - (y[3]*y[3]*F[0] + y[3]*y[4]*F[1] + y[3]*y[5]*F[2])/c_0/c_0); // general relativstic equation of motion
 	dydx[4] = inversegamma/m/ele_e*(F[1] - (y[4]*y[3]*F[0] + y[4]*y[4]*F[1] + y[4]*y[5]*F[2])/c_0/c_0); // dv/dt = 1/gamma/m*(F - v * v^T * F / c^2)
 	dydx[5] = inversegamma/m/ele_e*(F[2] - (y[5]*y[3]*F[0] + y[5]*y[4]*F[1] + y[5]*y[5]*F[2])/c_0/c_0);
 
 	dydx[6] = inversegamma; // derivative of proper time is 1/gamma
 	dydx[7] = 0; // polarisaton does not change
+	dydx[8] = sqrt(v2); // derivative of path length is abs(velocity)
 }
 
 
@@ -744,7 +753,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 			<< spin[0] << " " << spin[1] << " " << spin[2] << " " << H << " " << E << " "
 			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << GetCurrentsolid().ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-			<< Nhit << " " << Nstep << " " << lend << " " << Hmax << " " << wL << '\n';
+			<< Nhit << " " << Nstep << " " << y[8] << " " << Hmax << " " << wL << '\n';
 }
 
 
@@ -842,15 +851,19 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const dens
 
 
 double TParticle::GetKineticEnergy(const value_type v[3]) const{
-	value_type v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
-	value_type beta2 = v2/c_0/c_0;
-	value_type gammarel = 1/sqrt(1 - beta2); // use relativistic formula for larger beta
-//			cout << "beta^8 = " << beta2*beta2*beta2*beta2 << "; err_gamma = " << numeric_limits<value_type>::epsilon()/(gammarel - 1) << '\n';
-	if (beta2*beta2*beta2*beta2 < numeric_limits<value_type>::epsilon()/(gammarel - 1)) // if error in series expansion O(beta^8) is smaller than rounding error in gamma factor
-		return 0.5*m*v2 + (3.0/8.0*m + (5.0/16.0*m + 35.0/128.0*beta2)*beta2)*beta2*v2; // use series expansion for energy calculation with small beta
-	else{
-		return c_0*c_0*m*(gammarel - 1); // else use fully relativstic formula
-	}
+	double beta2 = (v[0]*v[0] + v[1]*v[1] + v[2]*v[2])/c_0/c_0;
+	double gammaminusone;
+
+	// for small velocities the relativistic gamma factor = 1/sqrt(1 - beta^2) is very close to one, givin large round-off errors when calculatin E = m*c^2*(gamma - 1)
+	// calculating gamma - 1 has a round-off error of epsilon
+	// if a series expansion to order O(beta^8) has a smaller error than epsilon, we will use the series expansion
+
+	//cout << pow(beta2, 5) << " " << (0.5 + (3.0/8.0 + (5.0/16.0 + 35.0/128.0*beta2)*beta2)*beta2)*beta2 << " " << 1.0/sqrt(1.0 - beta2) - 1.0 << "\n";
+	if (pow(beta2, 5) < numeric_limits<value_type>::epsilon()) // if error in series expansion O(beta^10) is smaller than rounding error in gamma factor
+		gammaminusone = (0.5 + (3.0/8.0 + (5.0/16.0 + 35.0/128.0*beta2)*beta2)*beta2)*beta2; // use series expansion for energy calculation with small beta
+	else
+		gammaminusone = 1.0/sqrt(1.0 - beta2) - 1.0; // use relativistic formula for larger beta
+	return c_0*c_0*m*gammaminusone;
 }
 
 

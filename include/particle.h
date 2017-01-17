@@ -17,8 +17,8 @@
 #include "mc.h"
 #include "fields.h"
 
-static const double MAX_SAMPLE_DIST = 0.01; ///< max spatial distance of reflection checks, spin flip calculation, etc; longer integration steps will be interpolated
-static const int STATE_VARIABLES = 8; ///< number of variables in trajectory integration (position, velocity, proper time, polarization)
+static const double MAX_TRACK_DEVIATION = 0.001; ///< max deviation of actual trajectory from straight line between start and end points of a step used for geometry-intersection test. If deviation is larger, the step will be split
+static const int STATE_VARIABLES = 9; ///< number of variables in trajectory integration (position, velocity, proper time, polarization, path length)
 static const int SPIN_STATE_VARIABLES = 5; ///< number of variables in spin integration (spin vector, time, total phase)
 
 /**
@@ -60,15 +60,14 @@ private:
 	
 	value_type tstart; ///< start time
 	value_type tend; ///< stop time
-	state_type ystart; ///< state vector before integration (position, velocity, proper time, and polarization)
-	state_type yend; ///< state vector after integration (position, velocity, proper time, and polarization)
+	state_type ystart; ///< state vector before integration (position, velocity, proper time, polarization, and path length)
+	state_type yend; ///< state vector after integration (position, velocity, proper time, polarization, and path length)
 	state_type spinstart; ///< spin vector before integration
 	state_type spinend; ///< spin vector after integration
 	solid solidstart; ///< solid in which the particle started
 	solid solidend; ///< solid in which particle stopped
 
 	double Hmax; ///< max total energy
-	double lend; ///< trajectory length
 	int Nhit; ///< number of material boundary hits
 	int Nspinflip; ///< number of spin flips
 	long double noflipprob; ///< total probability of NO spinflip calculated by spin tracking
@@ -196,7 +195,7 @@ public:
 	 *
 	 * @return Length of trajectory
 	 */
-	double GetTrajectoryLength() const { return lend; };
+	double GetTrajectoryLength() const { return yend[8]; };
 
 	/**
 	 * Return number of times particle hit any part of geometry
