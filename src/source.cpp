@@ -162,6 +162,7 @@ TParticle* TVolumeSource::CreateParticle(){
 		double E = fmc->Spectrum(fParticleName);
 		double phi_v, theta_v;
 		fmc->AngularDist(fParticleName, phi_v, theta_v);
+		//fmc->tofDist(E, phi_v, theta_v);
 		double polarisation = fmc->pconfigs[fParticleName].polarization;
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z);

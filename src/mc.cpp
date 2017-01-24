@@ -342,25 +342,28 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 //	int i =0;
 	for(;;){
 //		i++;
-		v_x = UniformDist(0, v_tot);
+		v_x = UniformDist(0, 25);
 		v_y = (1/(2.270*v_x + 0.0122*pow(v_x,2)))*exp(-pow((log(2.270/v_x +0.0122) +1.4137),2)/(2*pow(0.3420,2)));
 
 		if(UniformDist(0,0.04570423)<v_y){
 			v_yaxis = v_x;
 			xz_ang = UniformDist(0,2*pi);
+			theta = SinCosDist(0, acos(v_yaxis/25));
+			v_tot = v_yaxis/cos(theta);
 			v_xaxis = sqrt(pow(v_tot,2)-pow(v_yaxis,2))*cos(xz_ang);
 			v_zaxis = sqrt(pow(v_tot,2)-pow(v_yaxis,2))*sin(xz_ang);
 			phi = atan2(v_yaxis,v_xaxis);
 			theta = acos(v_zaxis/v_tot);
+			Ekin = 0.5*m_n*v_tot*v_tot;
 			//check x component
 			if(v_xaxis - v_tot*cos(phi)*sin(theta) > 0.01){
-				std::cout<< "There was an error in the calculation of v_x \n";
+				throw std::runtime_error("There was an error in the calculation of v_x");
 //					sleep(1);
 			}else if(v_yaxis - v_tot*sin(phi)*sin(theta) > 0.01){
-				std::cout<< "There was an error in the calculation of  v_y \n";
+				throw std::runtime_error("There was an error in the calculation of  v_y");
 //					sleep(1);
 			}else if(v_zaxis - v_tot*cos(theta) > 0.01){
-				std::cout<< "There was an error in the calculation of v_z \n";
+				throw std::runtime_error("There was an error in the calculation of v_z");
 //					sleep(1);
 			}
 			return;
