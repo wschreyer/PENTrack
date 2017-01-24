@@ -188,50 +188,48 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 		TransmitMR(x1, y1, x2, y2, normal, leaving, entering, mc);
 	}
 
-	else if (Enormal > Estep){ // specular transmission only possible if Enormal > Estep
-		double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-		double k2 = sqrt(Enormal - Estep); // wavenumber in second solid (use only real part for transmission!)
-
-		double reflprob = pow((k1 - k2)/(k1 + k2), 2); // specular reflection probability
-		if (prob < MRreflprob + MRtransprob + reflprob*(1 - MRreflprob - MRtransprob)){ // reflection, scale down reflprob so MRreflprob + MRtransprob + reflprob + transprob = 1
-			if (!UseMRModel && unidist(mc) < mat.DiffProb){
-				ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
+	else{
+		complex<double> k1 = sqrt(complex<double>(Enormal, -leaving.mat.FermiImag*1e-9)); // wavenumber in first solid
+		complex<double> k2 = sqrt(complex<double>(Enormal - Estep, -entering.mat.FermiImag*1e-9)); // wavenumber in second solid
+		double reflprob = norm((k1 - k2)/(k1 + k2)); // specular reflection probability
+		if (Enormal > Estep){ // transmission only possible if Enormal > Estep
+			if (prob < MRreflprob + MRtransprob + reflprob*(1 - MRreflprob - MRtransprob)){ // reflection, scale down reflprob so MRreflprob + MRtransprob + reflprob + transprob = 1
+				if (!UseMRModel && unidist(mc) < mat.DiffProb){
+					ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
+				}
+				else{
+					Reflect(x1, y1, x2, y2, normal, leaving, entering); // specular reflection
+				}
 			}
 			else{
-				Reflect(x1, y1, x2, y2, normal, leaving, entering); // specular reflection
+				if (!UseMRModel && unidist(mc) < mat.DiffProb){
+					TransmitLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert transmission
+				}
+				else{
+					Transmit(x1, y1, x2, y2, normal, leaving, entering); // specular transmission
+				}
 			}
 		}
-		else{
-			if (!UseMRModel && unidist(mc) < mat.DiffProb){
-				TransmitLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert transmission
-			}
-			else{
-				Transmit(x1, y1, x2, y2, normal, leaving, entering); // specular transmission
-			}
-		}
-	}
-	else{ // total reflection (Enormal < Estep)
-		double k1 = sqrt(Enormal); // wavenumber in first solid (only real part)
-		complex<double> iEstep(Estep, -entering.mat.FermiImag*1e-9); // potential step using imaginary potential V - i*W of second solid
-		complex<double> k2 = sqrt(Enormal - iEstep); // wavenumber in second solid (including imaginary part)
-		double absprob = 1 - norm((k1 - k2)/(k1 + k2)); // absorption probability
+		else{ // total reflection (Enormal < Estep)
+			double absprob = 1 - reflprob; // absorption probability
 
-		if (entering.mat.UseMRModel){
-			double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
-			double addtrans = 2*pow(entering.mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering.mat.CorrelLength + 2*kc*kc*pow(entering.mat.CorrelLength, 2));
-			absprob *= sqrt(1 + addtrans); // second order correction for reflection on MicroRoughness surfaces
-		}
-//			cout << " ReflProb = " << reflprob << '\n';
-
-		if (prob < MRreflprob + MRtransprob + absprob*(1 - MRreflprob - MRtransprob)){ // -> absorption on reflection, scale down absprob so MRreflprob + MRtransprob + absprob + reflprob = 1
-			ID = ID_ABSORBED_ON_SURFACE;
-		}
-		else{ // no absorption -> reflection
-			if (!UseMRModel && unidist(mc) < mat.DiffProb){
-				ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
+			if (entering.mat.UseMRModel){
+				double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
+				double addtrans = 2*pow(entering.mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering.mat.CorrelLength + 2*kc*kc*pow(entering.mat.CorrelLength, 2));
+				absprob *= sqrt(1 + addtrans); // second order correction for reflection on MicroRoughness surfaces
 			}
-			else{
-				Reflect(x1, y1, x2, y2, normal, leaving, entering); // specular reflection
+	//			cout << " ReflProb = " << reflprob << '\n';
+
+			if (prob < MRreflprob + MRtransprob + absprob*(1 - MRreflprob - MRtransprob)){ // -> absorption on reflection, scale down absprob so MRreflprob + MRtransprob + absprob + reflprob = 1
+				ID = ID_ABSORBED_ON_SURFACE;
+			}
+			else{ // no absorption -> reflection
+				if (!UseMRModel && unidist(mc) < mat.DiffProb){
+					ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
+				}
+				else{
+					Reflect(x1, y1, x2, y2, normal, leaving, entering); // specular reflection
+				}
 			}
 		}
 	}
