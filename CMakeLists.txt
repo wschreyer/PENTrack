@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 2.8.12)
 project (PENTrack CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -25,7 +25,8 @@ else()
 	message(SEND_ERROR "Boost 1.53.0 or newer not found!")
 endif()
 
-find_package(CGAL PATHS "cgal/build" COMPONENTS CGAL_Core)
+set(CGAL_DONT_OVERRIDE_CMAKE_FLAGS TRUE CACHE BOOL "Tell CGAL not to override compiler flags")
+find_package(CGAL PATHS "cgal/build")
 if (CGAL_CONFIG_LOADED)
 	message(STATUS "CGAL version: " ${CGAL_VERSION})
 	if (CGAL_VERSION VERSION_LESS 4.1)
