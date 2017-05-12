@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <chrono>
 #include <memory>
+#include <boost/format.hpp>
 
 using namespace std;
 

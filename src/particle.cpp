@@ -99,8 +99,12 @@ TParticle::~TParticle(){
 void TParticle::Integrate(double tmax, std::map<std::string, std::string> &particleconf, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){
 	double tau = 0;
 	istringstream(particleconf["tau"]) >> tau;
-	std::exponential_distribution<double> expdist(1./tau);
-	tau = expdist(mc);
+	if (tau > 0){
+		std::exponential_distribution<double> expdist(1./tau);
+		tau = expdist(mc);
+	}
+	else
+		istringstream(particleconf["tmax"]) >> tau;
 
 	if (currentsolids.empty())
 		geom.GetSolids(tend, &yend[0], currentsolids);
@@ -183,7 +187,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 			ID = ID_ODEINT_ERROR;
 		}
 
-		if (y[6] > tau){ // if proper time is larger than lifetime
+		if (tau > 0 && y[6] > tau){ // if proper time is larger than lifetime
 			x = x1 + (x - x1)*(tau - y1[6])/(y[6] - y1[6]); // interpolate decay time in lab frame
 			stepper.calc_state(x, y);
 		}

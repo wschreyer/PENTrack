@@ -5,6 +5,9 @@
  */
 
 #include "source.h"
+
+#include <boost/format.hpp>
+
 #include "neutron.h"
 #include "proton.h"
 #include "electron.h"
