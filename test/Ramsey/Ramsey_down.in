@@ -1,0 +1,83 @@
+[GLOBAL]
+simtype 1
+simcount 10
+simtime 54
+
+secondaries 0
+
+
+[MATERIALS]
+#name		FermiReal [neV]		FermiImag [neV]		DiffuseReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]	UseMRmodel
+default		0			0			0				0			0			0			0
+perfect		1000			0			1				0			0			0			0
+
+
+[GEOMETRY]
+#ID	STLfile				material_name		ignore_times
+1	ignored				default
+2	test/nEDMchamber_R200x100.STL	perfect
+
+
+[SOURCE]
+sourcemode cylvolume
+#			r_min	r_max	phi_min	phi_max	z_min	z_max (cylvolume/cylsurface)
+parameters 0	0.199	0	360	-0.05  	0.05
+
+particle neutron
+
+ActiveTime 0
+PhaseSpaceWeighting 1
+
+Emin 0e-9
+Emax 500e-9
+spectrum 1
+
+phi_v_min 0			# min. azimuth angle of velocity
+phi_v_max 6.2831854		# max. azimuth angle of velocity
+phi_v 1				# differential initial distribution of azimuth angle of velocity - volume source only!
+
+theta_v_min 0		# min. polar angle of velocity
+theta_v_max 3.14159265	# max. polar angle of velocity
+theta_v sin(x)		# differential initial distribution of polar angle of velocity - volume source only!
+
+polarization 0		# 1: low-field-seeker, -1: high-field-seeker, 0: random
+
+
+[FIELDS]
+#EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
+1 EDMStaticB0GradZField     0         0          0       0       0       1E-6    1e-9          0         1       -1      1       -1      1       -1      1
+#EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)        scale
+2 EDMStaticEField                      0                       0                    -1E6                  1
+
+#EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
+#3 EDMStaticB0GradZField 0 0 0 90 0 1E-8 0 0 1 -1 1 -1 1 -1 t<(2-1.7144)?0:(t<2?sin(183.019*t):(t<52?0:(t<53.7144?sin(183.019*t):0)))
+
+
+[PARTICLES]
+tau 1
+tmax 9e99
+lmax 9e99
+
+endlog 1
+tracklog 0
+hitlog 0
+snapshotlog 0
+spinlog 0
+snapshots 0
+trackloginterval 0
+spinloginterval 0
+
+spintimes 0 1000
+Bmax 0.1
+flipspin 0
+interpolatefields 0
+
+
+[neutron]			# set options for individual particle types, overwrites above settings
+tau 0
+
+[proton]
+tmax 3e-3
+
+[electron]
+tmax 1e-5

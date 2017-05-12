@@ -102,13 +102,8 @@ dPS     	171             	0.047          		0.16             		1e-5	0	0	0
 ########################################
 
 sourcemode	STLsurface
-particle	neutron		# type of particle the source should create
-ActiveTime	200			# time source is active for
 
 STLfile		in/sourcevolume.STL	# STL volume used for STLvolume/STLsurface source
-Enormal		0					# give particles an energy boost normal to surface (surface sources only!)
-PhaseSpaceWeighting	0			# weight initial particle density by available phase space (volume source only!)
-
 ### parameter ranges for sourcemode cylvolume/cylsurface/boxvolume
 #			r_min	r_max	phi_min	phi_max	z_min	z_max (cylvolume/cylsurface)
 #parameters 0.16	0.5		0		360		0.005	1.145
@@ -116,6 +111,12 @@ PhaseSpaceWeighting	0			# weight initial particle density by available phase spa
 #			x_min	x_max	y_min	y_max	z_min	z_max	(boxvolume)
 #parameters	0		1		0		1		0		1
 ###
+
+particle	neutron		# type of particle the source should create
+ActiveTime	200			# time source is active for
+
+Enormal		0					# give particles an energy boost normal to surface (surface sources only!)
+PhaseSpaceWeighting	0			# weight initial particle density by available phase space (volume source only!)
 
 ### initial energy range [eV] and spectrum of particles
 Emin 100e-9
@@ -154,7 +155,7 @@ theta_v_max 180	# max. polar angle of velocity [degree]
 theta_v sin(x)	# differential initial distribution of polar angle of velocity
 
 
-polarization 0.5	# initial polarization is randomly chosen, weighted by this variable (1: low-field-seekers only, -1: high-field-seekers only) [-1..1]
+polarization 0	# initial polarization is randomly chosen, weighted by this variable (1: low-field-seekers only, -1: high-field-seekers only) [-1..1]
 
 
 [FIELDS]
