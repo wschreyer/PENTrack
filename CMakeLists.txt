@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 2.8.12)
 project (PENTrack CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -25,11 +25,12 @@ else()
 	message(SEND_ERROR "Boost 1.53.0 or newer not found!")
 endif()
 
-find_package(CGAL PATHS "cgal/build" COMPONENTS CGAL_Core)
+set(CGAL_DONT_OVERRIDE_CMAKE_FLAGS TRUE CACHE BOOL "Tell CGAL not to override compiler flags")
+find_package(CGAL PATHS "cgal/build")
 if (CGAL_CONFIG_LOADED)
 	message(STATUS "CGAL version: " ${CGAL_VERSION})
 	if (CGAL_VERSION VERSION_LESS 4.1)
-		message(SEND_ERROR "CGAL versions older than 4.1 are not supported!")
+		message(SEND_ERROR "CGAL versions older than 4.2 are not supported!")
 	endif()
 	include_directories(${CGAL_INCLUDE_DIRS})
 	include(${CGAL_USE_FILE})
@@ -44,13 +45,8 @@ add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/ge
 						src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp 
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)		
 
-set_property(TARGET PENTrack PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET PENTrack PROPERTY CXX_STANDARD 11)
 if (CMAKE_COMPILER_IS_GNUCXX)
-	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -Wno-unused-local-typedefs)
-	if (Boost_VERSION GREATER 105500)
-		target_compile_options(PENTrack PUBLIC -Wno-deprecated-declarations)
-	endif()
+	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -std=c++11 PUBLIC -Wno-unused-local-typedefs PUBLIC -Wno-deprecated-declarations)
 endif()
 	
 				
