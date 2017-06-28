@@ -5,6 +5,8 @@
 #include <vector>
 #include <map>
 
+#include <boost/filesystem.hpp>
+
 enum stopID {	ID_UNKNOWN = 0, ///< standard flag for particles
 				ID_NOT_FINISH = -1, ///< flag for particles which reached ::StorageTime
 				ID_HIT_BOUNDARIES = -2, ///< flag for particles which left bounding box of TParticle::geom
@@ -48,8 +50,8 @@ extern const long double gamma_hg; ///< from: http://www.sciencedirect.com/scien
 extern const long double gamma_xe; ///< from: http://nmrwiki.org/wiki/index.php?title=Gyromagnetic_ratio [ 1/Ts ]
 
 extern long long int jobnumber; ///< job number, read from command line paramters, used for parallel calculations
-extern std::string inpath; ///< path to configuration files, read from command line paramters
-extern std::string outpath; ///< path where the log file should be saved to, read from command line parameters
+//extern boost::filesystem::path inpath; ///< path to configuration files, read from command line paramters
+extern boost::filesystem::path outpath; ///< path where the log file should be saved to, read from command line parameters
 
 /**
  * Print progress bar.
@@ -128,6 +130,6 @@ typedef std::map<std::string, std::map<std::string, std::string> > TConfig; ///<
  * @param inpath Path to in file.
  * @param vars Return TConfig map
  */
-TConfig ReadInFile(const std::string &inpath);
+TConfig ReadInFile(const boost::filesystem::path &inpath);
 
 #endif /*GLOBALS_H_*/

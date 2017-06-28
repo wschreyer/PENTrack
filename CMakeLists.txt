@@ -18,7 +18,7 @@ include_directories("tricubic-1.0/src/libtricubic")
 add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
 
 set(Boost_REALPATH ON)
-find_package(Boost 1.53.0 COMPONENTS system)
+find_package(Boost 1.53.0 COMPONENTS system filesystem REQUIRED)
 if (Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
 else()

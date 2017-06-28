@@ -29,8 +29,8 @@ const long double gamma_hg = 4.76901003e7L; ///< from: http://www.sciencedirect.
 const long double gamma_xe = -7.399707336e7L; ///< from: http://nmrwiki.org/wiki/index.php?title=Gyromagnetic_ratio [ 1/Ts ]
 
 long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
-std::string inpath = "."; ///< path to configuration files, read from command line paramters
-std::string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
+//boost::filesystem::path inpath = boost::filesystem::current_path() / "in/config.in"; ///< path to configuration files, read from command line paramters
+boost::filesystem::path outpath = boost::filesystem::current_path() / "out/"; ///< path where the log file should be saved to, read from command line parameters
 
 // print progress in percent
 void PrintPercent(double percentage, int &lastprint){
@@ -121,9 +121,9 @@ double MaxwellBoltzSpectrum (const double T, const double E) {
 typedef std::map<std::string, std::map<std::string, std::string> > TConfig;
 
 //read variables from *.in file into map
-TConfig ReadInFile(const std::string &inpath){
+TConfig ReadInFile(const boost::filesystem::path &inpath){
 	TConfig vars;
-	std::ifstream infile(inpath);
+	std::ifstream infile(inpath.c_str());
 	char c;
 	std::string rest,section,key;
 	while (infile && (infile >> std::ws) && (c = infile.peek())){

@@ -10,7 +10,7 @@ simtype 1
 simcount 1000
 
 # max. simulation time [s]
-simtime 500
+simtime 1000
 
 # secondaries: set to 1 to also simulate secondary particles (e.g. decay protons/electrons) [0/1]
 secondaries 1

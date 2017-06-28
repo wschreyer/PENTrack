@@ -696,15 +696,16 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	ofstream &file = GetLogStream(logType);
 	if (!file.is_open()){
 		ostringstream filename;
-		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name;
+		filename << setw(12) << setfill('0') << jobnumber << name;
 		if (logType == endLog)
 			filename << "end.out";
 		else if (logType == snapshotLog)
 			filename << "snapshot.out";
-		cout << "Creating " << filename.str() << '\n';
-		file.open(filename.str().c_str());
+		boost::filesystem::path outfile = outpath / filename.str();
+		cout << "Creating " << outfile << '\n';
+		file.open(outfile.c_str());
 		if (!file.is_open()){
-			cout << "Could not create" << filename.str() << '\n';
+			cout << "Could not create" << outfile << '\n';
 			exit(-1);
 		}
 		file <<	"jobnumber particle "
@@ -765,11 +766,12 @@ void TParticle::PrintTrack(const value_type x, const state_type &y, const state_
 	ofstream &trackfile = GetLogStream(trackLog);
 	if (!trackfile.is_open()){
 		ostringstream filename;
-		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "track.out";
-		cout << "Creating " << filename.str() << '\n';
-		trackfile.open(filename.str().c_str());
+		filename << setw(12) << setfill('0') << jobnumber << name << "track.out";
+		boost::filesystem::path outfile = outpath / filename.str();
+		cout << "Creating " << outfile << '\n';
+		trackfile.open(outfile.c_str());
 		if (!trackfile.is_open()){
-			cout << "Could not create" << filename.str() << '\n';
+			cout << "Could not create" << outfile << '\n';
 			exit(-1);
 		}
 		trackfile << 	"jobnumber particle polarisation "
@@ -805,11 +807,12 @@ void TParticle::PrintHit(const value_type x, const state_type &y1, const state_t
 	ofstream &hitfile = GetLogStream(hitLog);
 	if (!hitfile.is_open()){
 		ostringstream filename;
-		filename << outpath << '/' << setw(12) << setfill('0') << jobnumber << name << "hit.out";
-		cout << "Creating " << filename.str() << '\n';
-		hitfile.open(filename.str().c_str());
+		filename << setw(12) << setfill('0') << jobnumber << name << "hit.out";
+		boost::filesystem::path outfile = outpath / filename.str();
+		cout << "Creating " << outfile << '\n';
+		hitfile.open(outfile.c_str());
 		if (!hitfile.is_open()){
-			cout << "Could not create" << filename.str() << '\n';
+			cout << "Could not create" << outfile << '\n';
 			exit(-1);
 		}
 		hitfile << "jobnumber particle "
@@ -831,12 +834,13 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const dens
 	ofstream &spinfile = GetLogStream(spinLog);
 	if (!spinfile.is_open()){
 		std::ostringstream filename;
-		filename << outpath << "/" << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << name << "spin.out";
-		std::cout << "Creating " << filename.str() << '\n';
-		spinfile.open(filename.str().c_str());
+		filename << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << name << "spin.out";
+		boost::filesystem::path outfile = outpath / filename.str();
+		std::cout << "Creating " << outfile << '\n';
+		spinfile.open(outfile.c_str());
 		if(!spinfile.is_open())
 		{
-			std::cout << "Could not open " << filename.str() << '\n';
+			std::cout << "Could not open " << outfile << '\n';
 			exit(-1);
 		}
 
