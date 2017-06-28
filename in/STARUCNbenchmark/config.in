@@ -22,7 +22,7 @@ UCNdet		0			1			0				0			0			0			0
 sourcemode STLvolume
 particle neutron			0			0
 ActiveTime 0
-STLfile in/STARUCNbenchmark/source.STL
+STLfile source.STL
 Enormal 0
 PhaseSpaceWeighting 0
 

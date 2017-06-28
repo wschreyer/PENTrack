@@ -31,7 +31,7 @@ const long double gamma_hg = 4.76901003e7L; ///< from: http://www.sciencedirect.
 const long double gamma_xe = -7.399707336e7L; ///< from: http://nmrwiki.org/wiki/index.php?title=Gyromagnetic_ratio [ 1/Ts ]
 
 long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
-//boost::filesystem::path inpath = boost::filesystem::current_path() / "in/config.in"; ///< path to configuration files, read from command line paramters
+boost::filesystem::path configpath = boost::filesystem::current_path() / "in/config.in"; ///< path to configuration files, read from command line paramters
 boost::filesystem::path outpath = boost::filesystem::current_path() / "out/"; ///< path where the log file should be saved to, read from command line parameters
 
 // print progress in percent
@@ -126,9 +126,7 @@ typedef std::map<std::string, std::map<std::string, std::string> > TConfig;
 TConfig ReadInFile(const boost::filesystem::path &inpath){
 	TConfig vars;
 	
-	vars["GLOBAL"]["_PATH"] = inpath.c_str();
-	
-	std::ifstream infile(inpath.c_str());
+	std::ifstream infile(inpath.native());
 	if (!infile)
 		throw std::runtime_error((boost::format("Could not open %s!") % inpath.c_str()).str());
 	

@@ -54,7 +54,6 @@ std::ostream& operator<<(std::ostream &str, const solid &sld){
 
 TGeometry::TGeometry(TConfig &geometryin){
 	boost::filesystem::path matpath;
-	boost::filesystem::path configpath = geometryin["GLOBAL"]["_PATH"];
 	istringstream(geometryin["GLOBAL"]["materials_file"]) >> matpath; // check if there is a materials file linked in the config file
 	TConfig matconf;
 	if (matpath.empty()){ // if there is no materials file given load materials from config file

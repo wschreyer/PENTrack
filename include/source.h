@@ -365,9 +365,9 @@ public:
 	 */
 	TSTLVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
 			TVolumeSource(sourceconf, mc){
-		std::string STLfile;
+		boost::filesystem::path STLfile;
 		std::istringstream(sourceconf["STLfile"]) >> STLfile;
-		sourcevol.ReadFile(STLfile, 0);
+		sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
 	}
 };
 
@@ -406,9 +406,9 @@ public:
 	 */
 	TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc, const TGeometry &geometry):
 			TSurfaceSource(sourceconf, mc){
-		std::string STLfile;
+		boost::filesystem::path STLfile;
 		std::istringstream(sourceconf["STLfile"]) >> STLfile;
-		sourcevol.ReadFile(STLfile, 0);
+		sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
 
 		std::transform(	geometry.mesh.GetTrianglesBegin(),
 						geometry.mesh.GetTrianglesEnd(),

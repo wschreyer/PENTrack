@@ -28,7 +28,7 @@ DLC		269			0.0625			0.01  				0	3e-9	25e-9	0 ### NO MR! ###
 sourcemode STLvolume
 particle neutron
 
-STLfile in/GEANTbenchmark/BenchmarkGeom-production_vol-1.STL
+STLfile BenchmarkGeom-production_vol-1.STL
 
 Enormal 0
 PhaseSpaceWeighting 0

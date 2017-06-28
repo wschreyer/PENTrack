@@ -84,22 +84,22 @@ int main(int argc, char **argv){
 	
 	jobnumber = 0;
 	outpath = boost::filesystem::absolute("out/");
-	boost::filesystem::path inpath = boost::filesystem::absolute("in/config.in");
+	configpath = boost::filesystem::absolute("in/config.in");
 	uint64_t seed = 0;
 	if(argc>1) // if user supplied at least 1 arg (jobnumber)
 		istringstream(argv[1]) >> jobnumber;
-	if(argc>2){ // if user supplied 2 or more args (jobnumber, inpath)
-		inpath = boost::filesystem::absolute(argv[2]); // input path pointer set
-		if (!boost::filesystem::is_regular_file(inpath))
-			throw runtime_error((boost::format("The supplied input path %s does not point to a file!") % inpath.c_str()).str());
+	if(argc>2){ // if user supplied 2 or more args (jobnumber, configpath)
+		configpath = boost::filesystem::absolute(argv[2]); // input path pointer set
+		if (!boost::filesystem::is_regular_file(configpath))
+			throw runtime_error((boost::format("The supplied input path %s does not point to a file!") % configpath.native()).str());
 	}
-	if(argc>3) // if user supplied 3 or more args (jobnumber, inpath, outpath)
+	if(argc>3) // if user supplied 3 or more args (jobnumber, configpath, outpath)
 		outpath = boost::filesystem::absolute(argv[3]); // set the output path pointer
-	if (argc>4) // if user supplied 4 or more args (jobnumber, inpath, outpath, seed)
+	if (argc>4) // if user supplied 4 or more args (jobnumber, configpath, outpath, seed)
 		istringstream(argv[4]) >> seed;
 	
 	// read config
-	TConfig configin = ConfigInit(inpath);
+	TConfig configin = ConfigInit(configpath);
 
 	if (simtype == MR_THETA_OUT_ANGLE){
 		PrintMROutAngle(configin, outpath); // estimate ramp heating

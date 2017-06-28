@@ -50,7 +50,7 @@ extern const long double gamma_hg; ///< from: http://www.sciencedirect.com/scien
 extern const long double gamma_xe; ///< from: http://nmrwiki.org/wiki/index.php?title=Gyromagnetic_ratio [ 1/Ts ]
 
 extern long long int jobnumber; ///< job number, read from command line paramters, used for parallel calculations
-//extern boost::filesystem::path inpath; ///< path to configuration files, read from command line paramters
+extern boost::filesystem::path configpath; ///< path to configuration file, read from command line paramters
 extern boost::filesystem::path outpath; ///< path where the log file should be saved to, read from command line parameters
 
 /**

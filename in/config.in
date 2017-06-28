@@ -78,7 +78,7 @@ MRThetaIEnergy 54 2.5E-9 20E-9 0 1.570796327 0 1000
 
 sourcemode	STLsurface
 
-STLfile		in/sourcevolume.STL	# STL volume used for STLvolume/STLsurface source
+STLfile		sourcevolume.STL	# STL volume used for STLvolume/STLsurface source, path is assumed relative to this config file
 ### parameter ranges for sourcemode cylvolume/cylsurface/boxvolume
 #			r_min	r_max	phi_min	phi_max	z_min	z_max (cylvolume/cylsurface)
 #parameters 0.16	0.5		0		360		0.005	1.145
