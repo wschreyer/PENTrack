@@ -6,6 +6,8 @@
 
 #include <CGAL/Simple_cartesian.h>
 
+#include <boost/format.hpp>
+
 
 const long double pi = 3.1415926535897932384626L; ///< Pi
 const long double ele_e = 1.602176487E-19L; ///< elementary charge [C]
@@ -123,7 +125,13 @@ typedef std::map<std::string, std::map<std::string, std::string> > TConfig;
 //read variables from *.in file into map
 TConfig ReadInFile(const boost::filesystem::path &inpath){
 	TConfig vars;
+	
+	vars["GLOBAL"]["_PATH"] = inpath.c_str();
+	
 	std::ifstream infile(inpath.c_str());
+	if (!infile)
+		throw std::runtime_error((boost::format("Could not open %s!") % inpath.c_str()).str());
+	
 	char c;
 	std::string rest,section,key;
 	while (infile && (infile >> std::ws) && (c = infile.peek())){
@@ -144,6 +152,8 @@ TConfig ReadInFile(const boost::filesystem::path &inpath){
 			std::getline(infile,rest);
 			if (infile){
 				std::string::size_type l = rest.find('#');
+				if (vars.count(section) > 0 && vars[section].count(key) > 0)
+					throw std::runtime_error((boost::format("Variable %s in config file is ambiguous!") % key).str());
 				if (l == std::string::npos)
 					vars[section][key] = rest;
 				else

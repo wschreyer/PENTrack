@@ -5,7 +5,7 @@
 
 
 // read triangles from STL-file
-std::string TTriangleMesh::ReadFile(const std::string &filename, const int sldindex){
+std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
 	std::ifstream f(filename, std::fstream::binary);
 	if (!f.is_open())
 		throw std::runtime_error( (boost::format("Could not open %1%") % filename).str() );
@@ -33,7 +33,7 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int sldin
 			CTriangle tri(CPoint(v[0][0], v[0][1], v[0][2]), CPoint(v[1][0], v[1][1], v[1][2]), CPoint(v[2][0], v[2][1], v[2][2]));
 			if (tri.is_degenerate())
 				throw std::runtime_error( (boost::format("%1% contains a degenerate triangle!") % filename).str() );
-			triangles.push_back(std::make_pair(tri, sldindex));
+			triangles.push_back(std::make_pair(tri, ID));
 		}
 	}
 	f.close();
@@ -68,8 +68,8 @@ std::vector<TCollision> TTriangleMesh::Collision(const std::vector<double> &p1, 
 				colls.end(),
 				[](const TCollision &c1, const TCollision &c2){
 					if (c1.s == c2.s){
-						assert(c1.sldindex != c2.sldindex);
-						return c1.sldindex > c2.sldindex;
+						assert(c1.ID != c2.ID);
+						return c1.ID > c2.ID;
 					}
 					else
 						return c1.s < c2.s;

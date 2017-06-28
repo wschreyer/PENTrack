@@ -22,7 +22,7 @@ UCNdet		0.1			1			0				0	0	0	0
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	test/HollowUnitCube.STL		Al
+2	../HollowUnitCube.STL		Al
 
 
 [SOURCE]

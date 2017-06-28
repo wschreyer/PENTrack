@@ -244,6 +244,7 @@ TabField::TabField(const std::string &tabfile, const std::string &Bscale, const 
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, VTab, 1, Vc);
 		fVc = true;
 	}
+	cout << "Done\n";
 }
 
 TabField::~TabField(){

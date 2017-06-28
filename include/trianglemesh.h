@@ -97,7 +97,7 @@ typedef CGAL::AABB_tree<CTraits> CTree; ///< CGAL AABB tree type containing CPri
 struct TCollision{
 	double s; ///< parametric coordinate of intersection point (P = p1 + s*(p2 - p1))
 	double normal[3]; ///< normal (length = 1) of intersected surface
-	int sldindex; ///< index of solid to which the intersected surface belongs
+	unsigned ID; ///< ID of solid the intersected surface belongs to
 	double distnormal; ///< distance between start- and endpoint of colliding segment, projected onto normal direction
 
 	/**
@@ -109,7 +109,7 @@ struct TCollision{
 	 */
 	TCollision(const CSegment &segment, const CIterator &tri, const CPoint &point){
 		s = sqrt((point - segment.start()).squared_length()/segment.squared_length());
-		sldindex = tri->second;
+		ID = tri->second;
 		CVector n = tri->first.supporting_plane().orthogonal_vector();
 		n = n/sqrt(n.squared_length());
 		normal[0] = n[0];
@@ -123,7 +123,7 @@ struct TCollision{
 	 */
 	inline bool operator < (const TCollision c) const {
 		if (s == c.s)
-			return sldindex > c.sldindex;
+			return ID > c.ID;
 		else
 			return s < c.s;
 	};
@@ -144,11 +144,11 @@ public:
 	 * Read STL-file.
 	 *
 	 * @param filename Filename of STL file
-	 * @param sldindex Index of solid properties assigned to this STL file
+	 * @param ID ID of solid assigned to this STL file
 	 *
 	 * @return Returns name of mesh in file
 	 */
-	std::string ReadFile(const std::string &filename, const int sldindex);
+	std::string ReadFile(const std::string &filename, const int ID);
 
 	/**
 	 * Test line segment p1->p2 for collision with all triangles in previously read files.

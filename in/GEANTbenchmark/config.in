@@ -19,9 +19,9 @@ DLC		269			0.0625			0.01  				0	3e-9	25e-9	0 ### NO MR! ###
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	in/GEANTbenchmark/BenchmarkGeom-Absorber1-1.STL PE
-3	in/GEANTbenchmark/BenchmarkGeom-Foil-1.STL	Al
-10	in/GEANTbenchmark/BenchmarkGeom-Tube-1.STL	DLC
+2	BenchmarkGeom-Absorber1-1.STL PE
+3	BenchmarkGeom-Foil-1.STL	Al
+10	BenchmarkGeom-Tube-1.STL	DLC
 
 
 [SOURCE]

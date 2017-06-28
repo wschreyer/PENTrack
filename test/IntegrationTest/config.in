@@ -20,7 +20,7 @@ UCNdet		0.1			1			0				0	0	0	0
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	test/HollowUnitCube.STL		UCNdet
+2	../HollowUnitCube.STL		UCNdet
 
 [SOURCE]
 #			x_min	x_max	y_min	y_max	z_min	z_max	(boxvolume)

@@ -14,9 +14,9 @@ UCNdet		0			1			0				0			0			0			0
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	in/STARUCNbenchmark/U.STL STARUCN_steel
-3	in/STARUCNbenchmark/sourcecap.STL	UCNdet
-10	in/STARUCNbenchmark/detector.STL	UCNdet
+2	U.STL STARUCN_steel
+3	sourcecap.STL	UCNdet
+10	detector.STL	UCNdet
 
 [SOURCE]
 sourcemode STLvolume

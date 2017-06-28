@@ -15,7 +15,7 @@ perfect		1000			0			1				0			0			0			0
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	test/nEDMchamber_R200x100.STL	perfect
+2	../nEDMchamber_R200x100.STL	perfect
 
 
 [SOURCE]

@@ -13,6 +13,8 @@
 #include "trianglemesh.h"
 #include "globals.h"
 
+#include <boost/format.hpp>
+
 static const double REFLECT_TOLERANCE = 1e-8;  ///< max distance of reflection point to actual surface collision point
 
 /// Struct to store material properties (read from geometry.in, right now only for neutrons)
@@ -27,13 +29,19 @@ struct material{
 	bool UseMRModel; ///< Choose MicroRoughness model for reflections
 };
 
+///Read material properties, except name, from input stream
+std::istream& operator>>(std::istream &str, material &mat);
+///Write material properties into output stream
+std::ostream& operator<<(std::ostream &str, const material &mat);
+
 
 /// Struct to store solid information (read from geometry.in)
 struct solid{
+	boost::filesystem::path filename; ///< name of file containing STL mesh
 	std::string name; ///< name of solid
 	material mat; ///< material of solid
 	unsigned ID; ///< ID of solid
-	std::vector<double> ignoretimes; ///< pairs of times, between which the solid should be ignored
+	std::vector<std::pair<double, double> > ignoretimes; ///< pairs of times, between which the solid should be ignored
 
 	/**
 	 * Comparison operator used to sort solids by priority (descending)
@@ -45,6 +53,11 @@ struct solid{
 	bool operator< (const solid s) const { return ID > s.ID; };
 };
 
+///Read solid properties, except ID, from input stream
+std::istream& operator>>(std::istream &str, solid &model);
+///Write solid properties into output stream
+std::ostream& operator<<(std::ostream &str, const solid &sld);
+
 
 /**
  * Class to include experiment geometry.
@@ -52,9 +65,10 @@ struct solid{
  * Loads solids and materials from geometry.in, maintains solids list, checks for collisions.
  */
 struct TGeometry{
+	private:
+		std::vector<solid> solids; ///< solids list
 	public:
 		TTriangleMesh mesh; ///< kd-tree structure containing triangle meshes from STL-files
-		std::vector<solid> solids; ///< solids list
 		solid defaultsolid; ///< "vacuum", this solid's properties are used when the particle is not inside any other solid
 		
 		/**
@@ -126,6 +140,16 @@ struct TGeometry{
 		 * @return Returns solid with highest priority, that was not ignored at time t
 		 */
 		solid GetSolid(const double t, const double p[3], const std::map<solid, bool> &currentsolids) const;
+		
+		
+		/**
+		 * Get solid with given ID
+		 * 
+		 * @param ID ID
+		 * 
+		 * @return Returns solid with given ID
+		 */
+		 solid GetSolid(const unsigned ID) const;
 };
 
 #endif /*GEOMETRY_H_*/

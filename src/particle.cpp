@@ -568,7 +568,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 
 			map<solid, bool> newsolids = currentsolids;
 			for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){ // go through list of collisions
-				solid sld = geom.solids[it->first.sldindex];
+				solid sld = geom.GetSolid(it->first.ID);
 				if (CheckHitError(sld, it->first.distnormal)){ // check all hits for errors
 					ID = ID_GEOMETRY_ERROR; // stop trajectory integration if error found
 					return true;
@@ -583,7 +583,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 					newsolids.erase(sld); // remove solid from list of new solids
 				}
 
-				if (sld.ID > geom.solids[coll.sldindex].ID)
+				if (sld.ID > coll.ID)
 					coll = it->first; // use geometry from collision with highest priority
 			}
 //			cout << '\n';

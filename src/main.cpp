@@ -83,15 +83,15 @@ int main(int argc, char **argv){
 	signal (SIGXCPU, catch_alarm);
 	
 	jobnumber = 0;
-	outpath = boost::filesystem::current_path() / "out/";
-	boost::filesystem::path inpath = boost::filesystem::current_path() / "in/config.in";
+	outpath = boost::filesystem::absolute("out/");
+	boost::filesystem::path inpath = boost::filesystem::absolute("in/config.in");
 	uint64_t seed = 0;
 	if(argc>1) // if user supplied at least 1 arg (jobnumber)
 		istringstream(argv[1]) >> jobnumber;
 	if(argc>2){ // if user supplied 2 or more args (jobnumber, inpath)
 		inpath = boost::filesystem::absolute(argv[2]); // input path pointer set
 		if (!boost::filesystem::is_regular_file(inpath))
-			throw runtime_error("The supplied input path does not point to a file!");
+			throw runtime_error((boost::format("The supplied input path %s does not point to a file!") % inpath.c_str()).str());
 	}
 	if(argc>3) // if user supplied 3 or more args (jobnumber, inpath, outpath)
 		outpath = boost::filesystem::absolute(argv[3]); // set the output path pointer
@@ -159,7 +159,7 @@ int main(int argc, char **argv){
 	chrono::time_point<chrono::steady_clock> simstart = chrono::steady_clock::now();
 
 	map<string, map<int, int> > ID_counter; // 2D map to store number of each ID for each particle type
-		if (simtype == PARTICLE){ // if proton or neutron shall be simulated
+	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			TParticle *p = source->CreateParticle(mc, geom, field);
@@ -255,8 +255,8 @@ void PrintMROutAngle(TConfig &config, const boost::filesystem::path &outpath) {
 	material matLeav = { "vacuum material", 0, 0, 0, 0, 0, 0, true };
 	
 	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
-	solid solEnter = { "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
-	solid solLeav = { "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
+	solid solEnter = { "path", "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
+	solid solLeav = { "path", "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
 	
 	ostringstream oss;
 	oss << "MR-SldAngDRP" << "-F" << MRSolidAngleDRPParams[0] << "-En" << MRSolidAngleDRPParams[1] << "-b" << MRSolidAngleDRPParams[2] << "-w" << MRSolidAngleDRPParams[3] << "-th" << MRSolidAngleDRPParams[4] << ".out"; 
@@ -312,8 +312,8 @@ void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpath
 	material matLeav = { "reflection surface material", 0, 0, 0, 0, 0, 0, true  };
 
 	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
-	solid solEnter = { "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
-	solid solLeav = { "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
+	solid solEnter = { "path", "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
+	solid solLeav = { "path", "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
 	
 	ostringstream oss;
 	oss << "MR-Tot-DRP" << "-F" << MRThetaIEnergyParams[0] << "-b" << MRThetaIEnergyParams[1] << "-w" << MRThetaIEnergyParams[2] << ".out"; 
@@ -536,7 +536,7 @@ void PrintGeometry(const boost::filesystem::path &outfile, TGeometry &geom){
 		collcount += c.size();
 
 		for (auto i = c.begin(); i != c.end(); i++)
-			f << p1[0] + i->first.s*(p2[0]-p1[0]) << " " << p1[1] + i->first.s*(p2[1] - p1[1]) << " " << p1[2] + i->first.s*(p2[2] - p1[2]) << " " << geom.solids[i->first.sldindex].ID << '\n'; // print all intersection points into file
+			f << p1[0] + i->first.s*(p2[0]-p1[0]) << " " << p1[1] + i->first.s*(p2[1] - p1[1]) << " " << p1[2] + i->first.s*(p2[2] - p1[2]) << " " << i->first.ID << '\n'; // print all intersection points into file
     }
 	chrono::time_point<chrono::steady_clock> collend = chrono::steady_clock::now();
 	float colltimer = chrono::duration_cast<chrono::nanoseconds>(collend - collstart).count();

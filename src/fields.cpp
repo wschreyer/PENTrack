@@ -75,6 +75,7 @@ TFieldManager::TFieldManager(TConfig &conf){
 			exit(-1);
 		}
 	}
+	std::cout << "\n";
 }
 
 
