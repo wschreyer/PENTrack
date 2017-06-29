@@ -49,7 +49,7 @@ polarization 0
 
 
 [FIELDS]
-1 3Dtable	in/GEANTbenchmark/SCMfieldnewCoordCGSv2.table	1		1		0.05
+1 3Dtable	SCMfieldnewCoordCGSv2.table	1		1		0.05
 
 
 [PARTICLES]

@@ -17,7 +17,7 @@
 TFieldManager::TFieldManager(TConfig &conf){
 	for (std::map<std::string, std::string>::iterator i = conf["FIELDS"].begin(); i != conf["FIELDS"].end(); i++){
 		std::string type;
-		std::string ft;
+		boost::filesystem::path ft;
 		double Ibar, p1, p2, p3, p4, p5, p6, p7, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi;
 		std::string Bscale, Escale;
 		TField *f = NULL;
@@ -27,13 +27,13 @@ TFieldManager::TFieldManager(TConfig &conf){
 		if (type == "2Dtable"){
 			ss >> ft >> Bscale >> Escale;
 			if (ss)
-				f = new TabField(ft.c_str(), Bscale, Escale);
+				f = new TabField(boost::filesystem::absolute(ft, configpath.parent_path()).native(), Bscale, Escale);
 		}
 		else if (type == "3Dtable"){
 			double BoundaryWidth;
 			ss >> ft >> Bscale >> Escale >> BoundaryWidth;
 			if (ss)
-				f = new TabField3(ft.c_str(), Bscale, Escale, BoundaryWidth);
+				f = new TabField3(boost::filesystem::absolute(ft, configpath.parent_path()).native(), Bscale, Escale, BoundaryWidth);
 		}
 		else if (type == "Conductor"){
 			ss >> Ibar >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> Bscale;

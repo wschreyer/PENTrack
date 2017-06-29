@@ -12,7 +12,7 @@ simcount 1000
 # max. simulation time [s]
 simtime 1000
 
-# path of file containing materials
+# path of file containing materials, paths are assumed to be relative to this config file's path
 materials_file materials.in
 
 # secondaries: set to 1 to also simulate secondary particles (e.g. decay protons/electrons) [0/1]
@@ -138,6 +138,7 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 # Tabulated maps:
 # 2Dtable: a table of field values on a regular 2D grid. It is assumed that the field is rotationally symmetric around the z axis.
 # 3Dtable: a table of field values on a regular 3D grid. For 3D tables a BoundaryWidth [m] can be specified within which the field is smoothly brought to zero.
+# Paths of table files are assumed to be relative to this config file's path
 #
 # Analytically calculated fields:
 # Conductor: simulate a current flowing from one point to another along an arbitrary straight line
@@ -150,9 +151,9 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 # Note that rapidly changing fields might be missed by the trajectory integrator making too large time steps
 ##################################################
 #field 		table-file	BFieldScale	EFieldScale	BoundaryWidth
-1 2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab			t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))		-1
-#2 2Dtable 	in/42_0063_PF80-24Coils-SameCoilDist_newelectrode85cm.table	0	1
-#3 3Dtable	in/3Dtable.tab		
+1 2Dtable 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab			t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))		-1
+#2 2Dtable 	42_0063_PF80-24Coils-SameCoilDist_newelectrode85cm.table	0	1
+#3 3Dtable	3Dtable.tab		
 
 #FiniteWire		I		x1		y1		z1		x2		y2		z2		scale
 5 Conductor		12500	0		0		-1		0		0		2		1		
