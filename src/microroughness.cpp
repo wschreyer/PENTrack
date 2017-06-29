@@ -6,6 +6,8 @@
 #include "specialfunctions.h"
 #include <boost/numeric/odeint.hpp>
 
+#include "globals.h"
+
 using namespace std;
 
 namespace MR{

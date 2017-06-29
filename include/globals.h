@@ -115,21 +115,4 @@ double ElectronBetaSpectrum(const double E);
  */
 double MaxwellBoltzSpectrum (const double T, const double E);
 
-typedef std::map<std::string, std::map<std::string, std::string> > TConfig; ///< map of sections containing a map of key-value pairs
-
-/**
- * Read variables from *.in file into map.
- *
- * in file is assumed to have structure
- * [section]
- * key arbitrary string
- * key value
- * [section]
- * ...
- *
- * @param inpath Path to in file.
- * @param vars Return TConfig map
- */
-TConfig ReadInFile(const boost::filesystem::path &inpath);
-
 #endif /*GLOBALS_H_*/

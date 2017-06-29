@@ -63,7 +63,7 @@ TGeometry::TGeometry(TConfig &geometryin){
 	else{
 		matpath = boost::filesystem::absolute(matpath, configpath.parent_path()); // make path absolute, relative paths are assumed to be relative to the config file's path
 		cout << "Loading materials from " << matpath << "\n";
-		matconf = ReadInFile(matpath);
+		matconf.ReadFromFile(matpath.native());
 	}
 	
 	vector<material> materials;

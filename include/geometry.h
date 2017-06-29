@@ -11,9 +11,10 @@
 #include <map>
 
 #include "trianglemesh.h"
-#include "globals.h"
+#include "config.h"
 
 #include <boost/format.hpp>
+#include <boost/filesystem.hpp>
 
 static const double REFLECT_TOLERANCE = 1e-8;  ///< max distance of reflection point to actual surface collision point
 

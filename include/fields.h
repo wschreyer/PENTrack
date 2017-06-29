@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "field.h"
+#include "config.h"
 #include "globals.h"
 
 /**

@@ -20,14 +20,14 @@
 using namespace std;
 
 #include "particle.h"
-#include "globals.h"
+#include "config.h"
 #include "fields.h"
 #include "geometry.h"
 #include "source.h"
 #include "mc.h" 
 #include "microroughness.h"
 
-TConfig ConfigInit(const boost::filesystem::path &inpath); // read config.in
+TConfig ConfigInit(int argc, char **argv); // read config.in
 void OutputCodes(const map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
 void PrintBFieldCut(TConfig &config, const boost::filesystem::path &outfile, const TFieldManager &field); // evaluate fields on given plane and write to outfile
 void PrintBField(const boost::filesystem::path &outfile, const TFieldManager &field);
@@ -40,6 +40,7 @@ double SimTime = 1500.; ///< max. simulation time
 int simcount = 1; ///< number of particles for MC simulation (read from config)
 simType simtype = PARTICLE; ///< type of particle which shall be simulated (read from config)
 int secondaries = 1; ///< should secondary particles be simulated? (read from config)
+uint64_t seed = 0; ///< random seed used for random-number generator (generated from high-resolution clock)
 
 /**
  * Catch signals.
@@ -82,31 +83,15 @@ int main(int argc, char **argv){
 	signal (SIGUSR2, catch_alarm);
 	signal (SIGXCPU, catch_alarm);
 	
-	jobnumber = 0;
-	outpath = boost::filesystem::absolute("out/");
-	configpath = boost::filesystem::absolute("in/config.in");
-	uint64_t seed = 0;
-	if(argc>1) // if user supplied at least 1 arg (jobnumber)
-		istringstream(argv[1]) >> jobnumber;
-	if(argc>2){ // if user supplied 2 or more args (jobnumber, configpath)
-		configpath = boost::filesystem::absolute(argv[2]); // input path pointer set
-		if (!boost::filesystem::is_regular_file(configpath))
-			throw runtime_error((boost::format("The supplied input path %s does not point to a file!") % configpath.native()).str());
-	}
-	if(argc>3) // if user supplied 3 or more args (jobnumber, configpath, outpath)
-		outpath = boost::filesystem::absolute(argv[3]); // set the output path pointer
-	if (argc>4) // if user supplied 4 or more args (jobnumber, configpath, outpath, seed)
-		istringstream(argv[4]) >> seed;
-	
 	// read config
-	TConfig configin = ConfigInit(configpath);
+	TConfig configin = ConfigInit(argc, argv);
 
 	if (simtype == MR_THETA_OUT_ANGLE){
-		PrintMROutAngle(configin, outpath); // estimate ramp heating
+		PrintMROutAngle(configin, outpath);
 		return 0;
 	}
 	else if (simtype == MR_THETA_I_ENERGY){
-		PrintMRThetaIEnergy(configin, outpath); // print cut through B field
+		PrintMRThetaIEnergy(configin, outpath);
 		return 0;
 	}
 
@@ -205,25 +190,44 @@ int main(int argc, char **argv){
 /**
  * Read config file.
  *
- * @param config TConfig struct containing [global] options map
+ * @param argc Number of command line parameters
+ * @param argv Array command line parameters
+ * 
+ * @return Returns TConfig struct containing [global] options map
  */
-TConfig ConfigInit(const boost::filesystem::path &inpath){
-	cout << "Reading config from " << inpath << "\n";
-	TConfig config = ReadInFile(inpath);
+TConfig ConfigInit(int argc, char **argv){
 	/* setting default values */
+	jobnumber = 0;
+	outpath = boost::filesystem::absolute("out/");
+	configpath = boost::filesystem::absolute("in/config.in");
+	seed = 0;
 	simtype = PARTICLE;
 	simcount = 1;
 	/*end default values*/
+
+	if(argc>1) // if user supplied at least 1 arg (jobnumber)
+		istringstream(argv[1]) >> jobnumber;
+	if(argc>2){ // if user supplied 2 or more args (jobnumber, configpath)
+		configpath = boost::filesystem::absolute(argv[2]); // input path pointer set
+		if (!boost::filesystem::is_regular_file(configpath))
+			throw runtime_error((boost::format("The supplied input path %s does not point to a file!") % configpath.native()).str());
+	}
+	if(argc>3) // if user supplied 3 or more args (jobnumber, configpath, outpath)
+		outpath = boost::filesystem::absolute(argv[3]); // set the output path pointer
+	if (argc>4) // if user supplied 4 or more args (jobnumber, configpath, outpath, seed)
+		istringstream(argv[4]) >> seed;
+	
+	TConfig config(configpath.native());
 
 	/* read variables from map by casting strings in map into istringstreams and extracting value with ">>"-operator */
 	int stype;
 	istringstream(config["GLOBAL"]["simtype"])		>> stype;
 	simtype = static_cast<simType>(stype);
-	
-
 	istringstream(config["GLOBAL"]["simcount"])		>> simcount;
 	istringstream(config["GLOBAL"]["simtime"])		>> SimTime;
 	istringstream(config["GLOBAL"]["secondaries"])	>> secondaries;
+	
+	// add default parameters from PARTICLES section to each individual particle's parameters
 	for (auto i = config["PARTICLES"].begin(); i != config["PARTICLES"].end(); ++i){
 		config["neutron"].insert(*i);
 		config["proton"].insert(*i);
@@ -231,7 +235,7 @@ TConfig ConfigInit(const boost::filesystem::path &inpath){
 		config["mercury"].insert(*i);
 		config["xenon"].insert(*i);
 	}
-
+	
 	return config;
 }
 
