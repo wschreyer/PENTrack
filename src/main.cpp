@@ -193,7 +193,7 @@ int main(int argc, char **argv){
  * @param argc Number of command line parameters
  * @param argv Array command line parameters
  * 
- * @return Returns TConfig struct containing [global] options map
+ * @return Returns TConfig struct containing options map
  */
 TConfig ConfigInit(int argc, char **argv){
 	/* setting default values */
@@ -209,8 +209,8 @@ TConfig ConfigInit(int argc, char **argv){
 		istringstream(argv[1]) >> jobnumber;
 	if(argc>2){ // if user supplied 2 or more args (jobnumber, configpath)
 		configpath = boost::filesystem::absolute(argv[2]); // input path pointer set
-		if (!boost::filesystem::is_regular_file(configpath))
-			throw runtime_error((boost::format("The supplied input path %s does not point to a file!") % configpath.native()).str());
+		if (boost::filesystem::is_directory(configpath))
+			configpath /= "config.in";
 	}
 	if(argc>3) // if user supplied 3 or more args (jobnumber, configpath, outpath)
 		outpath = boost::filesystem::absolute(argv[3]); // set the output path pointer
@@ -218,6 +218,7 @@ TConfig ConfigInit(int argc, char **argv){
 		istringstream(argv[4]) >> seed;
 	
 	TConfig config(configpath.native());
+	config.convert(configpath.native());
 
 	/* read variables from map by casting strings in map into istringstreams and extracting value with ">>"-operator */
 	int stype;
