@@ -4,10 +4,7 @@
 #include <fstream>
 #include <cmath>
 
-#include <CGAL/Simple_cartesian.h>
-
-#include <boost/format.hpp>
-
+#include "cgaltypes.h"
 
 const long double pi = 3.1415926535897932384626L; ///< Pi
 const long double ele_e = 1.602176487E-19L; ///< elementary charge [C]
@@ -48,28 +45,33 @@ void PrintPercent(double percentage, int &lastprint){
 	}
 }
 
-// rotate vector into new coordinate whose z axis is parallel to n and whose x axis is defined by the projection of x onto the plane defined by n (active transformation)
-void RotateVector(double v[3], const double n[3], const double x[3])
-{
-	typedef CGAL::Simple_cartesian<double> K;
-	CGAL::Vector_3<K> vv(v[0], v[1], v[2]), xv, zv(n[0], n[1], n[2]);
-	CGAL::Plane_3<K> plane(CGAL::ORIGIN, zv);
-	if (x == NULL) // if no x is given, choose random vector on plane as x
+inline CVector RotateVector(const CVector &vector, const CVector &new_z, const CVector &new_x){
+	if (vector == CGAL::NULL_VECTOR)
+		return vector;
+	if (new_z == CGAL::NULL_VECTOR)
+		throw std::runtime_error("RotateVector received an invalid parameter");
+	CGAL::Plane_3<CKernel> plane(CGAL::ORIGIN, new_z);
+	CVector xv, zv;
+	if (new_x == CGAL::NULL_VECTOR) // if no x is given, choose random vector on plane as x
 		xv = plane.base1();
 	else{
-		CGAL::Point_3<K> xp(x[0], x[1], x[2]);
-		xp = plane.projection(xp); // project x onto plane defined by normal n
-		xv = xp - CGAL::ORIGIN;
+		xv = plane.projection(CGAL::ORIGIN + new_x) - CGAL::ORIGIN; // project x onto plane defined by normal n
 		if (xv.squared_length() < 1e-30)
 			xv = plane.base1(); // if x is parallel to n choose some random vector on plane as x axis
 	}
 	xv = xv/sqrt(xv.squared_length()); // build orthonormal basis of new coordinate system
-	zv = zv/sqrt(zv.squared_length());
-	CGAL::Vector_3<K> yv = CGAL::cross_product(zv, xv); // new y-axis corresponds to cross product of normal and velocity
-	CGAL::Aff_transformation_3<K> rotmatrix(xv.x(), yv.x(), zv.x(), xv.y(), yv.y(), zv.y(), xv.z(), yv.z(), zv.z());
+	zv = new_z/sqrt(new_z.squared_length());
+	CVector yv = CGAL::cross_product(zv, xv); // new y-axis corresponds to cross product of normal and velocity
+	CGAL::Aff_transformation_3<CVector> rotmatrix(xv.x(), yv.x(), zv.x(), xv.y(), yv.y(), zv.y(), xv.z(), yv.z(), zv.z());
 //	std::cout << "(" << xv << "," << yv << "," << zv << ") + " << vv << " = ";
-	vv = vv.transform(rotmatrix); // transform v into new coordinate system
+	return vector.transform(rotmatrix); // transform v into new coordinate system
 //	std::cout << vv << std::endl;
+}
+
+// rotate vector into new coordinate whose z axis is parallel to n and whose x axis is defined by the projection of x onto the plane defined by n (active transformation)
+inline void RotateVector(double v[3], const double n[3], const double x[3])
+{
+	CVector vv = RotateVector(CVector(v[0], v[1], v[2]), CVector(n[0], n[1], n[2]), CVector(x[0], x[1], x[2]));
 	v[0] = vv.x();
 	v[1] = vv.y();
 	v[2] = vv.z();

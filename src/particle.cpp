@@ -13,6 +13,69 @@
 
 using namespace std;
 
+inline CVector TMassiveParticle::equation_of_motion(const TParticleState &state, const TFieldManager &field) const{
+	double pB[3], dBidxj[3][3], pE[3], V;
+	if (magnetic_moment() != 0)
+		field.BField(state.position()[0], state.position()[1], state.position()[2], state.time(), pB, dBidxj);
+	else if (charge() != 0)
+		field.BField(state.position()[0], state.position()[1], state.position()[2], state.time(), pB, NULL);
+	if (charge() != 0)
+		field.EField(state.position()[0], state.position()[1], state.position()[2], state.time(), V, pE);
+	CVector B(pB[0], pB[1], pB[2]), E(pE[0], pE[1], pE[2]);
+	return equation_of_motion(state, CVector(pB[0], pB[1], pB[2]),
+			{CVector(dBidxj[0][0], dBidxj[0][1], dBidxj[0][2]), CVector(dBidxj[1][0], dBidxj[1][1], dBidxj[1][2]), CVector(dBidxj[2][0], dBidxj[2][1], dBidxj[2][2])},
+			CVector(pE[0], pE[1], pE[2]));
+}
+
+inline CVector TMassiveParticle::equation_of_motion(const TParticleState &state, const CVector &B, const std::array<CVector, 3> &gradBi, const CVector &E) const{
+	CVector F(0, 0, 0); // Force in lab frame
+	CVector v = state.velocity();
+
+	F = F + CVector(0.0, 0.0, -gravconst*mass()); // add gravitation to force
+
+	if (charge() != 0)
+		F = F + charge()*(E + CGAL::cross_product(v, B)); // add Lorentz force
+
+	if (magnetic_moment() != 0 && state.polarization() != 0 && B.squared_length() > 0){
+		CVector gradBabs = (B[0]*gradBi[0] + B[1]*gradBi[1] + B[2]*gradBi[2])/sqrt(B.squared_length()); // grad(|B|) = (Bx*grad(Bx) + By*grad(By) + Bz*grad(Bz))/|B|
+		F = F + state.polarization()*magnetic_moment()*gradBabs;
+	}
+
+	double inversegamma = sqrt(1. - state.velocity().squared_length()/c_0/c_0); // relativstic factor 1/gamma
+	return inversegamma/mass()*(F - (v*F)*v/c_0/c_0); // general relativstic equation of motion: dv/dt = 1/gamma/m*(F - (v*F)*v / c^2)
+}
+
+double TMassiveParticle::velocity(const double kinetic_energy) const{
+	double Eoverm = kinetic_energy/mass()/c_0/c_0; // gamma - 1
+
+	// for small velocities Ekin/m is very small and the relativstic calculation beta^2 = 1 - 1/gamma^2 gives large round-off errors
+	// the round-off error can be estimated as 2*epsilon
+	// if a series expansion to order O(Eoverm^5) has a smaller error than the round-off error, we will use the series expansion
+
+	double beta2;
+	if (pow(Eoverm, 6) < 2*numeric_limits<double>::epsilon()) // if error in series expansion smaller than round-off error
+		beta2 = ((((6.0*Eoverm - 5.0)*Eoverm + 4.0)*Eoverm - 3.0)*Eoverm + 2.0)*Eoverm; // use series expansion
+	else
+		beta2 = 1.0 - 1.0/(Eoverm + 1.0)/(Eoverm + 1.0); // relativistic beta^2
+	return c_0 * sqrt(beta2); // return velocity
+}
+
+double TMassiveParticle::kinetic_energy(const CVector &velocity) const{
+	double beta2 = velocity.squared_length()/c_0/c_0;
+	double gammaminusone;
+
+	// for small velocities the relativistic gamma factor (= 1/sqrt(1 - beta^2)) is very close to one, giving large round-off errors when calculating E = m*c^2*(gamma - 1)
+	// calculating gamma - 1 has a round-off error of epsilon
+	// if a series expansion to eighth order of beta has a smaller error than epsilon, we will use the series expansion
+
+	if (beta2*beta2*beta2*beta2*beta2 < numeric_limits<double>::epsilon()) // if error in series expansion O(beta^10) is smaller than epsilon
+		gammaminusone = (0.5 + (3.0/8.0 + (5.0/16.0 + 35.0/128.0*beta2)*beta2)*beta2)*beta2; // use series expansion for energy calculation with small beta
+	else
+		gammaminusone = 1./sqrt(1. - beta2) - 1.; // else use fully relativstic formula
+	return c_0*c_0*mass()*gammaminusone;
+}
+
+
 double TParticle::GetInitialTotalEnergy(const TGeometry &geom, const TFieldManager &field) const{
 	return GetKineticEnergy(&ystart[3]) + GetPotentialEnergy(tstart, ystart, field, geom.GetSolid(tstart, &ystart[0]));
 }

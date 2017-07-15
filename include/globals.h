@@ -7,6 +7,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include "cgaltypes.h"
+
 enum stopID {	ID_UNKNOWN = 0, ///< standard flag for particles
 				ID_NOT_FINISH = -1, ///< flag for particles which reached ::StorageTime
 				ID_HIT_BOUNDARIES = -2, ///< flag for particles which left bounding box of TParticle::geom
@@ -69,6 +71,7 @@ void PrintPercent(double percentage, int &lastprint);
  * Rotate vector into new coordinate with basis vectors x and z (active transformation)
  */
 void RotateVector(double v[3], const double z[3], const double x[3] = NULL);
+CVector RotateVector(const CVector &vector, const CVector &new_z, const CVector &new_x);
 
 /**
  * Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta.

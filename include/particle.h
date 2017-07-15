@@ -9,15 +9,118 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 #include <boost/numeric/odeint.hpp>
 #include "interpolation.h"
 
+#include "stepper.h"
 #include "geometry.h"
 #include "mc.h"
 #include "fields.h"
 
-static const double MAX_TRACK_DEVIATION = 0.001; ///< max deviation of actual trajectory from straight line between start and end points of a step used for geometry-intersection test. If deviation is larger, the step will be split
+class TParticleProperties{
+public:
+	virtual std::string name() const = 0;
+	virtual double charge() const = 0;
+	virtual double mass() const = 0;
+	virtual double spin() const = 0;
+	virtual double magnetic_moment() const = 0;
+
+	double velocity(const double kinetic_energy) const;
+	double kinetic_energy(const CVector &velocity) const;
+	virtual double potential_energy(const TParticleState &state, const TFieldManager &field, const solid &sld) const = 0;
+
+	virtual ~TParticleProperties() = default;
+
+	TParticleState do_hit(const TTrajectoryStep &step, const TCollision &coll) const { return on_hit(step, coll); }
+	TParticleState do_step(const TTrajectoryStep &step) const { return on_step(step); }
+	void do_decay(const TParticleState &state) const { on_decay(state); }
+
+	CVector equation_of_motion(const TParticleState &state, const TFieldManager &field) const;
+	CVector equation_of_motion(const TParticleState &state, const CVector &B, const std::array<CVector, 3> &gradBi, const CVector &E) const;
+
+	TParticleProperties* clone() const = 0;
+private:
+	virtual TParticleState on_hit(const TTrajectoryStep &step, const TCollision &coll) const = 0;
+	virtual TParticleState on_step(const TTrajectoryStep &step) const = 0;
+	virtual void on_decay(const TParticleState &state) const = 0;
+	double potential_energy_EBG(const TParticleState &state, const double V, const double Babs) const {
+		return mass()*gravconst*state.position().z() + charge()*V - state.polarization()*magnetic_moment()*Babs;
+	}
+};
+
+
+class TStepProcess{
+public:
+	virtual ~TStepProcess() = default;
+	virtual double probability(const TTrajectoryStep &step) const = 0;
+	virtual TParticleState operator()(const TTrajectoryStep &step) const = 0;
+};
+
+class THitProcess{
+	virtual ~THitProcess() = default;
+	virtual double probability(const TParticleState &state, const TCollision &collision) const = 0;
+	virtual TParticleState operator()(const TParticleState &before, const TParticleState &after, const TCollision &collision) const = 0;
+};
+
+
+class TParticleState{
+private:
+	TMassiveParticle *_particle;
+	TTrajectoryState _state;
+	TSpinState _spin;
+public:
+	~TParticleState(){ delete *_particle; }
+	TParticleState(const TParticleState &state): _particle(state._particle->clone()), _state(state._state), _spin(state._spin){ }
+	TParticleState(const TParticleState &&state){ std::swap(_particle, state._particle); _state = std::move(state._state); _spin = std::move(state._spin); }
+	TParticleState& operator=(const TParticleState &state){ _particle = state._particle->clone(); _state = state._state; _spin = state._spin; return *this; }
+	TParticleState& operator=(const TParticleState &&state){ std::swap(_particle, state._particle); _state = std::move(state._state); _spin = std::move(state._spin); return *this; }
+};
+
+
+class TTrajectory{
+private:
+	unsigned int _number;
+	TTrajectoryState _initial_state;
+	TTrajectoryState _final_state;
+	TSpinState _initial_spin;
+	TSpinState _final_spin;
+	solid _initial_solid;
+	solid _final_solid;
+	stopID _stopID;
+	unsigned int _number_of_hits;
+	double _no_spin_flip_probability;
+	unsigned int _number_of_steps;
+	std::vector<TParticleState> _secondaries;
+public:
+	TTrajectory(const unsigned int number, const TParticleState &state, const TSpinState &spin, const TGeometry &geometry):
+		_number(number), _initial_state(state), _final_state(state), _initial_spin(spin), _final_spin(spin), _initial_solid(geometry.GetSolid(state.time(), state.position())),
+		_final_solid(_initial_solid), _stopID(ID_UNKNOWN), _number_of_hits(0), _no_spin_flip_probability(1), _number_of_steps(0){ }
+	unsigned int number() const { return _number; }
+	TTrajectoryState initial_state() const { return _initial_state; }
+	TTrajectoryState final_state() const { return _final_state; }
+	TSpinState initial_spin() const { return _initial_spin; }
+	TSpinState final_spin() const { return _final_spin; }
+	solid initial_solid() const { return _initial_solid; }
+	solid final_solid() const { return _final_solid; }
+	stopID stop_ID() const { return _stopID; }
+	unsigned int number_of_hits() const { return _number_of_hits; }
+	double no_spin_flip_probability() const { return _no_spin_flip_probability; }
+	unsigned int number_of_steps() const { return _number_of_steps; }
+	std::vector<TParticleState>::const_iterator secondaries_begin() const { return _secondaries.begin(); }
+	std::vector<TParticleState>::const_iterator secondaries_end() const { return _secondaries.end(); }
+
+	void final_state(const TTrajectoryState &state, const TSpinState &spin, const solid &sld);
+	void inc_hits(){ ++_number_of_hits; }
+	void inc_steps(){ ++_number_of_steps; }
+	void accumulate_no_spin_flip_probability(const double no_spin_flip_probability){ _no_spin_flip_probability *= no_spin_flip_probability; }
+	void add_secondary(const TMassiveParticle *particle, const TParticleState &state){ _secondaries.push_back(); }
+};
+
+
+
+
 static const int STATE_VARIABLES = 9; ///< number of variables in trajectory integration (position, velocity, proper time, polarization, path length)
 static const int SPIN_STATE_VARIABLES = 5; ///< number of variables in spin integration (spin vector, time, total phase)
 
