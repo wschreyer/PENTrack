@@ -24,6 +24,7 @@ void TConfig::ReadFromFile(const std::string &inpath){
 			}
 			else{
 				std::getline(infile, section, ']');
+				_map.insert(std::make_pair(section, std::map<std::string, std::string>()));
 //				std::cout << "\nsection: " << section.c_str() << '\n';
 			}
 			std::getline(infile,rest);
