@@ -8,13 +8,16 @@
 using namespace std;
 
 std::istream& operator>>(std::istream &str, material &mat){
-	str >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb >> mat.SpinflipProb >> mat.RMSRoughness >> mat.CorrelLength >> mat.UseMRModel;
+	str >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb >> mat.SpinflipProb >> mat.RMSRoughness >> mat.CorrelLength;
 	if (!str)
 		throw std::runtime_error((boost::format("Could not read material %s!") % mat.name).str());
+	if (mat.DiffProb != 0 && (mat.RMSRoughness != 0 || mat.CorrelLength != 0))
+		throw std::runtime_error((boost::format("You have set both LambertReflectionProbability and RMSRoughness/CorrelationLength for material %s! "\
+												"Now I don't know if I should use Lambertian reflection or micro-roughness reflection.") % mat.name).str());
 	return str;
 }
 std::ostream& operator<<(std::ostream &str, const material &mat){
-	str << mat.name << " " << mat.FermiReal << " " << mat.FermiImag << " " << mat.DiffProb << " " << mat.SpinflipProb << " " << mat.RMSRoughness << " " << mat.CorrelLength << " " << mat.UseMRModel << "\n";
+	str << mat.name << " " << mat.FermiReal << " " << mat.FermiImag << " " << mat.DiffProb << " " << mat.SpinflipProb << " " << mat.RMSRoughness << " " << mat.CorrelLength << "\n";
 	if (!str)
 		throw std::runtime_error((boost::format("Could not write material %s!") % mat.name).str());
 	return str;

@@ -67,18 +67,21 @@ MRThetaIEnergy 54 2.5E-9 20E-9 0 1.570796327 0 1000
 # STLvolume: source volume is given by a STL file, particles are created in the space completely enclosed in the STL surface
 # boxvolume: particle starting values are diced in the given parameter range (x,y,z) [m,m,m]
 # cylvolume: particle starting values are diced in the given parameter range (r,phi,z) [m,degree,m]
-# For volume sources the initial particle density can be weighted by the available phase space (Set PhaseSpaceWeighting to 1).
-#  In that case, the particle's energy spectrum s interpreted as a total-energy spectrum.
+# Volume source produce velocity vectors according to the given angular distributions below.
+# If PhaseSpaceWeighting is set to 1 for volume sources the energy spectrum is interpreted as a total-energy spectrum.
+## The probability to find a particle at a certain initial position is then weighted by the available phase space,
+## i.e. proportional to the square root of the particle's kinetic energy.
 #
 # STLsurface: starting values are on surfaces in the given STL-volume
 # cylsurface: starting values are on surfaces in the cylindrical volume given by parameter range (r,phi,z) [m,degree,m]
-# For surface sources an additional Enormal [eV] can be defined.
-#  This adds an additional energy boost to the velocity component normal to the surface.
+# Surface sources produce velocity vectors cosine(theta)-distributed around the surface normal.
+# An additional Enormal [eV] can be defined. This adds an additional energy boost to the velocity component normal to the surface.
 ########################################
 
 sourcemode	STLsurface
 
 STLfile		sourcevolume.STL	# STL volume used for STLvolume/STLsurface source, path is assumed relative to this config file
+
 ### parameter ranges for sourcemode cylvolume/cylsurface/boxvolume
 #			r_min	r_max	phi_min	phi_max	z_min	z_max (cylvolume/cylsurface)
 #parameters 0.16	0.5		0		360		0.005	1.145
@@ -90,8 +93,8 @@ STLfile		sourcevolume.STL	# STL volume used for STLvolume/STLsurface source, pat
 particle	neutron		# type of particle the source should create
 ActiveTime	200			# time source is active for
 
-Enormal		0					# give particles an energy boost normal to surface (surface sources only!)
-PhaseSpaceWeighting	0			# weight initial particle density by available phase space (volume source only!)
+Enormal		0					# give particles an energy boost normal to surface (surface sources only! see above)
+PhaseSpaceWeighting	0			# weight initial particle density by available phase space (volume source only! see above)
 
 ### initial energy range [eV] and spectrum of particles
 Emin 100e-9
@@ -120,7 +123,8 @@ spectrum 1.96616e39*x^5 - 0.00204264e36*x^4 + 0.834378e27*x^3 - 167.958e18*x^2 +
 #spectrum MaxwellBoltzSpectrum(300, x)     # MaxwellBoltzSpectrum is a predefined function for gas molecules (first parameter is the temp. in Kelvin)
 
 
-### initial direction of particles (volume sources only!)
+# Initial direction of particles
+#  Volume sources only! Surface sources produce velocities cosine(theta)-distributed around the surface normal
 phi_v_min 0		# min. azimuth angle of velocity [degree]
 phi_v_max 360	# max. azimuth angle of velocity [degree]
 phi_v 1			# differential initial distribution of azimuth angle of velocity
@@ -184,7 +188,7 @@ spinloginterval 5e-7# min. time interval [s] between track points in spinlog fil
 spintimes	500 700	# do spin tracking between these points in time [s]
 Bmax 0.1			# do spin tracking when absolute magnetic field is below this value [T]
 flipspin 0			# do Monte Carlo spin flips when magnetic field surpasses Bmax [0/1]
-interpolatefields 1	# Interpolate magnetic and electric fields for spin tracking between trajectory step points [0/1]. This will speed up spin tracking in high magnetic fields, but break spin tracking in weak, quickly oscillating fields!
+interpolatefields 1	# Interpolate magnetic and electric fields for spin tracking between trajectory step points [0/1]. This will speed up spin tracking in high magnetic fields, but might break spin tracking in weak, quickly oscillating fields!
 
 
 ############# set options for individual particle types, overwrites above settings ###############

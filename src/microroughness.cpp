@@ -13,16 +13,18 @@ using namespace std;
 namespace MR{
 
 bool MRValid(const double v[3], const double normal[3], const solid &leaving, const solid &entering){
-	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
 	double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity projected onto surface normal
-	double E = 0.5*m_n*v2; // kinetic energy
-	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
-	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
 	material mat;
 	if (vnormal > 0)
 		mat = leaving.mat;
 	else
 		mat = entering.mat;
+	if (mat.RMSRoughness == 0 || mat.CorrelLength == 0)
+		return false;
+	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
+	double E = 0.5*m_n*v2; // kinetic energy
+	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
+	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
 	if (Estep >= 0){
 		double kc = sqrt(2*m_n*Estep)*ele_e/hbar; // critical wave number of potential wall
 		if (2*mat.RMSRoughness*ki < 1 && 2*mat.RMSRoughness*kc < 1)

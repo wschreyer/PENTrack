@@ -42,7 +42,7 @@ void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type 
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	material mat = vnormal < 0 ? entering.mat : leaving.mat;
 
-	if (!mat.UseMRModel || !MR::MRValid(&y1[3], normal, leaving, entering)){ // check if MicroRoughness model should be applied
+	if (!MR::MRValid(&y1[3], normal, leaving, entering)){ // check if MicroRoughness model should be applied
 		std::cout << "Tried to use micro-roughness model in invalid energy regime. That should not happen!\n";
 		exit(-1);
 	}
@@ -113,7 +113,7 @@ void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &
 		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	material mat = vnormal < 0 ? entering.mat : leaving.mat;
-	if (!mat.UseMRModel || !MR::MRValid(&y1[3], normal, leaving, entering)){
+	if (!MR::MRValid(&y1[3], normal, leaving, entering)){
 		std::cout << "Tried to use micro-roughness model in invalid energy regime. That should not happen!\n";
 		exit(-1);
 	}
@@ -172,7 +172,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 
 //		cout << "Leaving " << leaving->ID << " Entering " << entering->ID << " Enormal = " << Enormal << " Estep = " << Estep;
 
-	bool UseMRModel = mat.UseMRModel && MR::MRValid(&y1[3], normal, leaving, entering);
+	bool UseMRModel = MR::MRValid(&y1[3], normal, leaving, entering);
 	double MRreflprob = 0, MRtransprob = 0;
 	if (UseMRModel){ 	// handle MicroRoughness reflection/transmission separately
 		MRreflprob = MR::MRProb(false, &y1[3], normal, leaving, entering);
@@ -213,7 +213,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 		else{ // total reflection (Enormal < Estep)
 			double absprob = 1 - reflprob; // absorption probability
 
-			if (entering.mat.UseMRModel){
+			if (UseMRModel){
 				double kc = sqrt(2*m_n*Estep)*ele_e/hbar;
 				double addtrans = 2*pow(entering.mat.RMSRoughness, 2)*kc*kc/(1 + 0.85*kc*entering.mat.CorrelLength + 2*kc*kc*pow(entering.mat.CorrelLength, 2));
 				absprob *= sqrt(1 + addtrans); // second order correction for reflection on MicroRoughness surfaces

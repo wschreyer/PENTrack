@@ -6,10 +6,10 @@ simtime 1000
 secondaries 0
 
 [MATERIALS]
-#name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]	UseMRmodel
-default		0			0			0				0			0			0			0
-STARUCN_steel 184			0.0184			0.05				0			2.6e-9			20e-9			0
-UCNdet		0			1			0				0			0			0			0
+#name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]
+default		0			0			0				0			0			0
+STARUCN_steel 184			0.0184			0.05				0			0			0
+UCNdet		0			1			0				0			0			0
 
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times

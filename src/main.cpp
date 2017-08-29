@@ -256,8 +256,8 @@ void PrintMROutAngle(TConfig &config, const boost::filesystem::path &outpath) {
 		throw std::runtime_error("Incorrect number of parameters to print micro-roughness distribution!");
 	
 	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
-	material matEnter = { "reflection surface material" , MRSolidAngleDRPParams[0], 0, 0, 0, MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3], true }; 
-	material matLeav = { "vacuum material", 0, 0, 0, 0, 0, 0, true };
+	material matEnter = { "reflection surface material" , MRSolidAngleDRPParams[0], 0, 0, 0, MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3] };
+	material matLeav = { "vacuum material", 0, 0, 0, 0, 0, 0 };
 	
 	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
 	solid solEnter = { "path", "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
@@ -313,8 +313,8 @@ void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpath
 
 
 	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
-	material matEnter = { "reflection surface material", MRThetaIEnergyParams[0], 0, 0, 0, MRThetaIEnergyParams[1], MRThetaIEnergyParams[2], true };
-	material matLeav = { "reflection surface material", 0, 0, 0, 0, 0, 0, true  };
+	material matEnter = { "reflection surface material", MRThetaIEnergyParams[0], 0, 0, 0, MRThetaIEnergyParams[1], MRThetaIEnergyParams[2] };
+	material matLeav = { "reflection surface material", 0, 0, 0, 0, 0, 0  };
 
 	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
 	solid solEnter = { "path", "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
