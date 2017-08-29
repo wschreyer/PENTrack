@@ -18,7 +18,7 @@
 
 using namespace std;
 
-TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc): fActiveTime(0), polarization(0), ParticleCounter(0){
+TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf): fActiveTime(0), polarization(0), ParticleCounter(0){
 	istringstream(sourceconf["particle"]) >> fParticleName;
 	istringstream(sourceconf["ActiveTime"]) >> fActiveTime;
 	istringstream(sourceconf["polarization"]) >> polarization;
@@ -169,26 +169,26 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, const TGeometry &geom
 	}
 }
 
-TParticleSource* CreateParticleSource(TConfig &config, TMCGenerator &mc, const TGeometry &geometry){
+TParticleSource* CreateParticleSource(TConfig &config, const TGeometry &geometry){
 	std::map<std::string, std::string> &sc = config["SOURCE"];
 	std::string sourcemode;
 	std::istringstream(sc["sourcemode"]) >> sourcemode;
 
 	TParticleSource *source = nullptr;
 	if (sourcemode == "boxvolume"){
-		source = new TCuboidVolumeSource(sc, mc);
+		source = new TCuboidVolumeSource(sc);
 	}
 	else if (sourcemode == "cylvolume"){
-		source = new TCylindricalVolumeSource(sc, mc);
+		source = new TCylindricalVolumeSource(sc);
 	}
 	else if (sourcemode == "STLvolume"){
-		source = new TSTLVolumeSource(sc, mc);
+		source = new TSTLVolumeSource(sc);
 	}
 	else if (sourcemode == "cylsurface"){
-		source = new TCylindricalSurfaceSource(sc, mc, geometry);
+		source = new TCylindricalSurfaceSource(sc, geometry);
 	}
 	else if (sourcemode == "STLsurface"){
-		source = new TSTLSurfaceSource(sc, mc, geometry);
+		source = new TSTLSurfaceSource(sc, geometry);
 	}
 	else
 		throw std::runtime_error((boost::format("Could not load source %1%!") % sourcemode).str());

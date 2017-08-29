@@ -274,14 +274,14 @@ public:
 	 * @param polarisation polarisation of particle (-1..1)
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
-	 * @param afield Optional fields (can be NULL)
+	 * @param afield TFieldManager containing all electromagnetic fields
 	 */
 	TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
 			const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
 			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
 
-	TParticle(const TParticle &p) = delete;
-	TParticle& operator=(const TParticle &p) = delete;
+	TParticle(const TParticle &p) = delete; ///< TParticle is not copyable
+	TParticle& operator=(const TParticle &p) = delete; ///< TParticle is not copyable
 
 	/**
 	 * Destructor, deletes secondaries
@@ -298,7 +298,10 @@ public:
 	 * TParticle::StopIntegration is called if TParticle::tau or tmax are reached; or if something happens to the particle (absorption, error, ...)
 	 *
 	 * @param tmax Max. absolute time at which integration will be stopped
-	 * @param conf Option map containing particle specific options from particle.in
+	 * @param particleconf Option map containing particle specific options from particle.in
+	 * @param mc Random-number generator
+	 * @param geom Geometry of the simulation
+	 * @param field TFieldManager containing all electromagnetic fields
 	 */
 	void Integrate(double tmax, std::map<std::string, std::string> &particleconf, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
@@ -460,6 +463,7 @@ protected:
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering
+	 * @param mc Random-number generator
 	 * @param ID If particle is stopped, set this to the appropriate stopID
 	 * @param secondaries Add any secondary particles produced in this interaction
 	 */
@@ -480,6 +484,7 @@ protected:
 	 * @param y2 End point of line segment, may be altered
 	 * @param stepper Trajectory integrator, can be used to calculate intermediate state vectors
 	 * @param currentsolid Solid through which the particle is moving
+	 * @param mc Random-number generator
 	 * @param ID If particle is stopped, set this to the appropriate stopID
 	 * @param secondaries Add any secondary particles produced in this interaction
 	 */
@@ -490,6 +495,11 @@ protected:
 	/**
 	 * Virtual routine which is called when particles reaches its lifetime, has to be implemented for each derived particle.
 	 *
+	 * @param t Time when the particle decayed
+	 * @param y State (position, velocity, proper time, polarization, path length) of particle when it decayed
+	 * @param mc Random-number generator
+	 * @param geom Geometry of the simulation
+	 * @param field TFieldManager containing all electromagnetic fields
 	 * @param secondaries Add any secondary particles produced in this decay
 	 */
 	virtual void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const = 0;
@@ -515,7 +525,8 @@ protected:
 	 * @param x Current time
 	 * @param y Current state vector
 	 * @param spin Current spin vector
-	 * @param sld Solid in which the particle is currently.
+	 * @param geom Geometry of the simulation
+	 * @param field TFieldManager containing all electromagnetic fields
 	 * @param logType Select either endlog or snapshotlog
 	 */
 	virtual void Print(const value_type x, const state_type &y, const state_type &spin, const TGeometry &geom, const TFieldManager &field, const LogStream logType) const;
@@ -530,6 +541,7 @@ protected:
 	 * @param y Current state vector
 	 * @param spin Spin vector
 	 * @param sld Solid in which the particle is currently.
+	 * @param field TFieldManager containing all electromagnetic fields
 	 */
 	virtual void PrintTrack(const value_type x, const state_type &y, const state_type &spin, const solid &sld, const TFieldManager &field) const;
 
@@ -557,6 +569,7 @@ protected:
 	 * @param x time
 	 * @param spin Spin vector
 	 * @param stepper Trajectory integrator used to calculate spin-precession axis at time t
+	 * @param field TFieldManager containing all electromagnetic fields
 	 */
 	virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
 

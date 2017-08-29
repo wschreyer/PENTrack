@@ -62,7 +62,7 @@ public:
 	inversetransform_sampler(){ reset(); } ///< default constructor, calls reset()
 	inversetransform_sampler(const param_type &p){ param(p); } ///< construct using specific parameter
 	inversetransform_sampler(const result_type min, const result_type max){	param(make_pair(min, max)); } ///< construct using min and max values
-	void reset(){ param(make_pair(static_cast<result_type>(0), static_cast<result_type>(1))); }; ///< reset to default parameter (min = 0, max = 1)
+	void reset(){ param(make_pair(static_cast<result_type>(0), static_cast<result_type>(1))); } ///< reset to default parameter (min = 0, max = 1)
 	param_type param() const { return _p; } ///< return internally stored parameter
 	void param(const param_type &p){ _p = p; } ///< set internally stored parameter
 	/**
@@ -101,8 +101,11 @@ std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits> 
  */
 template<typename T>
 struct inversetransform_sin{
+	/**
+	 * Inverse of cumulative distribution = acos(-x)
+	 */
 	T operator()(const T x, const T amin, const T amax) const {
-		return std::acos(std::cos(amin) - x * (std::cos(amin) - std::cos(amax))); // inverse of cumulative distribution = acos(-x)
+		return std::acos(std::cos(amin) - x * (std::cos(amin) - std::cos(amax)));
 	}
 };
 /**
@@ -117,8 +120,11 @@ using sin_distribution = inversetransform_sampler<T, inversetransform_sin<T> >;
  */
 template<typename T>
 struct inversetransform_sincos{
+	/**
+	 * Inverse of cumulative distribution = acos(sqrt(x))
+	 */
 	T operator()(const T x, const T amin, const T amax) const {
-		return acos(sqrt(x*(cos(amax)*cos(amax) - cos(amin)*cos(amin)) + cos(amin)*cos(amin))); // inverse of cumulative distribution = acos(sqrt(x))
+		return acos(sqrt(x*(cos(amax)*cos(amax) - cos(amin)*cos(amin)) + cos(amin)*cos(amin)));
 	}
 };
 /**
@@ -133,8 +139,11 @@ using sincos_distribution = inversetransform_sampler<T, inversetransform_sincos<
  */
 template<typename T>
 struct inversetransform_parabolic{
+	/**
+	 * Inverse of cumulative distribution = x^1/3
+	 */
 	T operator()(const T x, const T amin, const T amax) const {
-		return pow(x*(pow(amax,3) - pow(amin,3)) + pow(amin,3),1.0/3.0); // inverse of cumulative distribution = x^1/3
+		return pow(x*(pow(amax,3) - pow(amin,3)) + pow(amin,3),1.0/3.0);
 	}
 };
 /**
@@ -149,8 +158,11 @@ using parabolic_distribution = inversetransform_sampler<T, inversetransform_para
  */
 template<typename T>
 struct inversetransform_linear{
+	/**
+	 * Inverse of cumulative distribution = sqrt(x)
+	 */
 	T operator()(const T &x, const T &amin, const T &amax) const {
-		return sqrt(x*(amax*amax - amin*amin) + amin*amin); // inverse of cumulative distribution = sqrt(x)
+		return sqrt(x*(amax*amax - amin*amin) + amin*amin);
 	}
 };
 /**
@@ -165,8 +177,11 @@ using linear_distribution = inversetransform_sampler<T, inversetransform_linear<
  */
 template<typename T>
 struct inversetransform_sqrt{
+	/**
+	 * Inverse of cumulative distirbution = x^2/3
+	 */
 	T operator()(const T x, const T amin, const T amax) const {
-		return pow((pow(amax, 1.5) - pow(amin, 1.5))*x + pow(amin, 1.5), 2.0/3.0); // inverse of cumulative distirbution = x^2/3
+		return pow((pow(amax, 1.5) - pow(amin, 1.5))*x + pow(amin, 1.5), 2.0/3.0);
 	}
 };
 /**

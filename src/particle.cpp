@@ -85,7 +85,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 
 	spinend = spinstart;
 
-	geometry.GetSolids(t, &ystart[0], currentsolids); // detect solids that surround the particle
+	currentsolids = geometry.GetSolids(t, &ystart[0]); // detect solids that surround the particle
 	solidend = solidstart = GetCurrentsolid(); // set to solid with highest priority
 }
 
@@ -107,7 +107,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 		istringstream(particleconf["tmax"]) >> tau;
 
 	if (currentsolids.empty())
-		geom.GetSolids(tend, &yend[0], currentsolids);
+		currentsolids = geom.GetSolids(tend, &yend[0]);
 
 	double maxtraj;
 	istringstream(particleconf["lmax"]) >> maxtraj;

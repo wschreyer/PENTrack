@@ -25,19 +25,15 @@ protected:
 	std::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
 	std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
 	std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
-	double polarization;
+	double polarization; ///< Initial polarization of created particles
 public:
 	int ParticleCounter; ///< Count number of particles created by source
 	/**
 	 * Constructor, should be called by every derived class
 	 *
-	 * @param ParticleName Name of particle type that the source should produce
-	 * @param ActiveTime Duration for which the source shall be active
-	 * @param mc TMCGenerator that will be used to produce random numbers
-	 * @param geometry TGeometry in which particles will be created
-	 * @param field TFieldManager fields in which particles will be created
+	 * @param sourceconf Map of source options
 	 */
-	TParticleSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc);
+	TParticleSource(std::map<std::string, std::string> &sourceconf);
 
 	/**
 	 * Destructor
@@ -57,6 +53,9 @@ public:
 	 * @param phi Azimuthal angle of initial velocity vector
 	 * @param theta Polar angle of initial velocity vector
 	 * @param polarisation Initial polarisation of particle (-1, 0, 1)
+	 * @param mc Random-number generator
+	 * @param geometry Geometry of the simulation
+	 * @param field TFieldManager containing all electromagnetic fields
 	 *
 	 * @return Returns newly created particle, memory has to be freed by user
 	 */
@@ -93,15 +92,10 @@ public:
 	/**
 	 * Constructor.
 	 *
-	 * @param ParticleName Name of particle type that the source should produce
-	 * @param ActiveTime Duration for which the source shall be active
-	 * @param E_normal Energy boost that should be given to particles starting from this surface source
-	 * @param mc TMCGenerator that will be used to produce random numbers
-	 * @param geometry TGeometry in which particles will be created
-	 * @param field TFieldManager fields in which particles will be created
+	 * @param sourceconf Map of source options
 	 */
-	TSurfaceSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
-		TParticleSource(sourceconf, mc), Enormal(0){
+	TSurfaceSource(std::map<std::string, std::string> &sourceconf):
+		TParticleSource(sourceconf), Enormal(0){
 		std::istringstream(sourceconf["Enormal"]) >> Enormal;
 	}
 
@@ -139,6 +133,7 @@ protected:
 	 * @param x Returns x coordinate
 	 * @param y Returns y coordinate
 	 * @param z Returns z coordinate
+	 * @param mc Random-number generator
 	 */
 	virtual void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const = 0;
 public:
@@ -147,15 +142,10 @@ public:
 	 *
 	 * Create generic volume source
 	 *
-	 * @param ParticleName Name of particle that the source should create
-	 * @param ActiveTime Duration for which the source shall be active
-	 * @param PhaseSpaceWeighting If this is set true, the source will weight the particle density by available phase space
-	 * @param mc TMCGenerator that will be used to produce random numbers
-	 * @param geometry TGeometry in which particles will be created
-	 * @param field TFieldManager fields in which particles will be created
+	 * @param sourceconf Map of source options
 	 */
-	TVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
-			TParticleSource(sourceconf, mc), MinPot(std::numeric_limits<double>::infinity()), fPhaseSpaceWeighting(false){
+	TVolumeSource(std::map<std::string, std::string> &sourceconf):
+			TParticleSource(sourceconf), MinPot(std::numeric_limits<double>::infinity()), fPhaseSpaceWeighting(false){
 		std::istringstream(sourceconf["PhaseSpaceWeighting"]) >> fPhaseSpaceWeighting;
 	}
 
@@ -192,21 +182,10 @@ public:
 	/**
 	 * Constructor.
 	 *
-	 * @param ParticleName Name of particle type that the source should produce
-	 * @param ActiveTime Duration for which the source shall be active
-	 * @param PhaseSpaceWeighting If this is set true, the source will weight the particle density by available phase space
-	 * @param x_min Minimal radial coordinate range
-	 * @param x_max Maximal radial coordinate range
-	 * @param y_min Minimal azimuthal coordinate range
-	 * @param y_max Maximal azimuthal coordinate range
-	 * @param z_min Minimal axial coordinate range
-	 * @param z_max Maximal axial coordinate range
-	 * @param mc TMCGenerator that will be used to produce random numbers
-	 * @param geometry TGeometry in which particles will be created
-	 * @param field TFieldManager fields in which particles will be created
+	 * @param sourceconf Map of source options
 	 */
-	TCuboidVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
-			TVolumeSource(sourceconf, mc), xmin(0), xmax(0), ymin(0), ymax(0), zmin(0), zmax(0){
+	TCuboidVolumeSource(std::map<std::string, std::string> &sourceconf):
+			TVolumeSource(sourceconf), xmin(0), xmax(0), ymin(0), ymax(0), zmin(0), zmax(0){
 		std::istringstream(sourceconf["parameters"]) >> xmin >> xmax >> ymin >> ymax >> zmin >> zmax;
 	}
 };
@@ -239,21 +218,10 @@ public:
 	/**
 	 * Constructor.
 	 *
-	 * @param ParticleName Name of particle type that the source should produce
-	 * @param ActiveTime Duration for which the source shall be active
-	 * @param PhaseSpaceWeighting If this is set true, the source will weight the particle density by available phase space
-	 * @param r_min Minimal radial coordinate range
-	 * @param r_max Maximal radial coordinate range
-	 * @param phi_min Minimal azimuthal coordinate range
-	 * @param phi_max Maximal azimuthal coordinate range
-	 * @param z_min Minimal axial coordinate range
-	 * @param z_max Maximal axial coordinate range
-	 * @param mc TMCGenerator that will be used to produce random numbers
-	 * @param geometry TGeometry in which particles will be created
-	 * @param field TFieldManager fields in which particles will be created
+	 * @param sourceconf Map of source options
 	 */
-	TCylindricalVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
-			TVolumeSource(sourceconf, mc), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
+	TCylindricalVolumeSource(std::map<std::string, std::string> &sourceconf):
+			TVolumeSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
 		std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax;
 		phimin *= conv;
 		phimax *= conv;
@@ -293,21 +261,11 @@ public:
 	 *
 	 * Selects all triangles from TGeometry whose vertices are inside the cylindrical coordinate range
 	 *
-	 * @param ParticleName Name of particle type that the source should produce
-	 * @param ActiveTime Duration for which the source shall be active
-	 * @param E_normal Optional energy boost for particles starting from this surface
-	 * @param r_min Minimal radial coordinate range
-	 * @param r_max Maximal radial coordinate range
-	 * @param phi_min Minimal azimuthal coordinate range
-	 * @param phi_max Maximal azimuthal coordinate range
-	 * @param z_min Minimal axial coordinate range
-	 * @param z_max Maximal axial coordinate range
-	 * @param mc TMCGenerator that will be used to produce random numbers
+	 * @param sourceconf Map of source options
 	 * @param geometry TGeometry in which particles will be created
-	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc, const TGeometry &geometry):
-			TSurfaceSource(sourceconf, mc), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
+	TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf, const TGeometry &geometry):
+			TSurfaceSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
 		std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax;
 		phimin *= conv;
 		phimax *= conv;
@@ -355,16 +313,10 @@ public:
 	/**
 	 * Constructor.
 	 *
-	 * @param ParticleName Name of particle type that the source should produce
-	 * @param ActiveTime Duration for which the source shall be active
-	 * @param PhaseSpaceWeighting If this is set true, the source will weight the particle density by available phase space
-	 * @param sourcefile File from which the STL solid shall be read
-	 * @param mc TMCGenerator that will be used to produce random numbers
-	 * @param geometry TGeometry in which particles will be created
-	 * @param field TFieldManager fields in which particles will be created
+	 * @param sourceconf Map of source options
 	 */
-	TSTLVolumeSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc):
-			TVolumeSource(sourceconf, mc){
+	TSTLVolumeSource(std::map<std::string, std::string> &sourceconf):
+			TVolumeSource(sourceconf){
 		boost::filesystem::path STLfile;
 		std::istringstream(sourceconf["STLfile"]) >> STLfile;
 		sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
@@ -396,16 +348,11 @@ public:
 	 *
 	 * Search for all triangles in geometry's mesh which are inside the STL solid given in sourcefile.
 	 *
-	 * @param ParticleName Name of particle type that the source should produce
-	 * @param ActiveTime Time for which the source is active.
-	 * @param sourcefile STL solid in which the surface should lie.
-	 * @param E_normal Give particles starting at this source a velocity boost normal to the surface.
-	 * @param mc TMCGenerator that will be used to produce random numbers
+	 * @param sourceconf Map of source options
 	 * @param geometry TGeometry in which particles will be created
-	 * @param field TFieldManager fields in which particles will be created
 	 */
-	TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf, TMCGenerator &mc, const TGeometry &geometry):
-			TSurfaceSource(sourceconf, mc){
+	TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf, const TGeometry &geometry):
+			TSurfaceSource(sourceconf){
 		boost::filesystem::path STLfile;
 		std::istringstream(sourceconf["STLfile"]) >> STLfile;
 		sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
@@ -425,8 +372,15 @@ public:
 };
 
 
-
-TParticleSource* CreateParticleSource(TConfig &config, TMCGenerator &mc, const TGeometry &geometry);
+/**
+ * Create particle source as defined in config
+ *
+ * @param config TConfig class containing SOURCE options
+ * @param geometry Geometry used in the simulation
+ *
+ * @return Returns Particle source as defined in config
+ */
+TParticleSource* CreateParticleSource(TConfig &config, const TGeometry &geometry);
 
 
 #endif /* SOURCE_H_ */

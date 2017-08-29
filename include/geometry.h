@@ -114,9 +114,10 @@ struct TGeometry{
 		 *
 		 * @param t Time
 		 * @param p Point to test
-		 * @param currentsolids Map of solids in which the point is inside paired with information if it was ignored or not
+		 *
+		 * @return Map of solids in which the point is inside paired with information if it was ignored or not
 		 */
-		void GetSolids(const double t, const double p[3], std::map<solid, bool> &currentsolids) const;
+		std::map<solid, bool> GetSolids(const double t, const double p[3]) const;
 
 
 		/**
@@ -127,7 +128,9 @@ struct TGeometry{
 		 *
 		 * @return Returns solid with highest priority, that was not ignored at time t
 		 */
-		solid GetSolid(const double t, const double p[3]) const;
+		solid GetSolid(const double t, const double p[3]) const{
+			return GetSolid(t, p, GetSolids(t, p));
+		}
 
 
 		/**

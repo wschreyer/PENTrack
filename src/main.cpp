@@ -135,7 +135,7 @@ int main(int argc, char **argv){
 	
 	cout << "Loading source...\n";
 	// load source configuration from geometry.in
-	unique_ptr<TParticleSource> source(CreateParticleSource(configin, mc, geom));
+	unique_ptr<TParticleSource> source(CreateParticleSource(configin, geom));
 
 	int ntotalsteps = 0;     // counters to determine average steps per integrator call
 	float InitTime = (1.*clock())/CLOCKS_PER_SEC; // time statistics
@@ -244,7 +244,8 @@ TConfig ConfigInit(int argc, char **argv){
  * 
  * Output a table containing the MR diffuse reflection probability for the specified range of solid angles from the config.in file
  *
- * @param outfile The file name of the file to which results will be printed
+ * @param config TConfig class containing parameters
+ * @param outpath The file name of the file to which results will be printed
  *  
  * Other params are read in from the config.in file
 */
@@ -302,9 +303,10 @@ void PrintMROutAngle(TConfig &config, const boost::filesystem::path &outpath) {
  * 
  * Output a table in root format giving the total MR DRP for a set of incident theta angles and neutron energy. 
  *
- * @param outfile The file name to which the results will be printed
+ * @param config TConfig class containing parameters
+ * @param outpath The file name to which the results will be printed
 */
-void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpathe) {
+void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpath) {
 	vector<double> MRThetaIEnergyParams; ///< params for which to output the integrated MR-DRP values [Fermi potential, b (nm), w (nm), theta_i_start, theta_i_end, neut_energy_start, neut_energy_end] (read from config.in)
 	istringstream ss(config["GLOBAL"]["MRThetaIEnergy"]);
 	copy(istream_iterator<double>(ss), istream_iterator<double>(), back_inserter(MRThetaIEnergyParams));
@@ -387,6 +389,7 @@ void OutputCodes(const map<string, map<int, int> > &ID_counter){
  *
  * The slice plane is given by three points BCutPlayPoint[0..8] on the plane
  *
+ * @param config TConfig class containing cut parameters
  * @param outfile filename of result file
  * @param field TFieldManager structure which should be evaluated
  */

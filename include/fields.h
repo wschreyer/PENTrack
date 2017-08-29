@@ -20,8 +20,8 @@ private:
 	std::vector<TField*> fields; ///< list of fields
 		
 public:
-	TFieldManager(const TFieldManager &f) = delete;
-	TFieldManager& operator=(const TFieldManager &f) = delete;
+	TFieldManager(const TFieldManager &f) = delete; ///< TFieldManager is not copyable
+	TFieldManager& operator=(const TFieldManager &f) = delete; ///< TFieldManager is not copyable
 
 	/**
 	 * Constructor.

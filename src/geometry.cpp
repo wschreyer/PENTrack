@@ -118,10 +118,10 @@ bool TGeometry::GetCollisions(const double x1, const double p1[3], const double 
 }
 
 
-void TGeometry::GetSolids(const double t, const double p[3], std::map<solid, bool> &currentsolids) const{
+std::map<solid, bool> TGeometry::GetSolids(const double t, const double p[3]) const{
 	double p2[3] = {p[0], p[1], mesh.GetBoundingBox().zmin() - REFLECT_TOLERANCE};
 	map<TCollision, bool> c;
-	currentsolids.clear();
+	std::map<solid, bool> currentsolids;
 	currentsolids[defaultsolid] = false;
 	if (GetCollisions(t,p,0,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
 		for (map<TCollision, bool>::iterator i = c.begin(); i != c.end(); i++){
@@ -132,19 +132,17 @@ void TGeometry::GetSolids(const double t, const double p[3], std::map<solid, boo
 				currentsolids[sld] = i->second; // else add solid to list
 		}
 	}
+	return currentsolids;
 }
 
-solid TGeometry::GetSolid(const double t, const double p[3]) const{
-	std::map<solid, bool> currentsolids;
-	GetSolids(t, p, currentsolids);
-	return GetSolid(t, p, currentsolids);
-}
 
 solid TGeometry::GetSolid(const double t, const double p[3], const map<solid, bool> &currentsolids) const{
-	for (std::map<solid, bool>::const_iterator i = currentsolids.begin(); i != currentsolids.end(); i++)
-		if (!i->second)
-			return i->first;
-	return defaultsolid;
+	// find first (highest-priority) solid that's not being ignored
+	auto i = std::find_if(currentsolids.begin(), currentsolids.end(), [](std::pair<solid, bool> sld){ return !sld.second; });
+	if (i != currentsolids.end())
+		return i->first;
+	else
+		return defaultsolid;
 }
 
 solid TGeometry::GetSolid(const unsigned ID) const{

@@ -43,7 +43,7 @@ It is included in the repository.
 
 ### libtricubic
 
-[Lekien and Marsden] (http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.
+[Lekien and Marsden](http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.
 
 
 Defining your experiment
