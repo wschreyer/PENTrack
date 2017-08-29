@@ -62,17 +62,17 @@ printf "                                                                   Pre R
 printf "******************************************************************************************************************************************************\n"
 
 #################################################################
-####Check all STL file referenced in geometry.in exist ##########
+####Check all STL file referenced in config.in exist ##########
 #################################################################
 
-# print geometry.in -> sed: remove everything before the [GEOMETRY] string -> sed: remove everything after [SOURCE]
+# print config.in -> sed: remove everything before the [GEOMETRY] string -> sed: remove everything after [SOURCE]
 # -> grep: remove all lines that begin with a # (comment) -> grep: remove all lines with spaces -> don't include any 
 #line that has 'ignored' in it 
-if [ -e $inDirName/geometry.in ]; then 
-	allSTL=`cat $inDirName/geometry.in | sed -e '1,/\[GEOMETRY\]/d' | sed -e '/\[SOURCE\]/,$d' | grep -v '^#' | grep -v '^ *$' | grep -v 'ignored' | awk '{print $2}'`
+if [ -e $inDirName/config.in ]; then 
+	allSTL=`cat $inDirName/config.in | sed -e '1,/\[GEOMETRY\]/d' | sed -e '/\[SOURCE\]/,$d' | grep -v '^#' | grep -v '^ *$' | grep -v 'ignored' | awk '{print $2}'`
 
 	#create a file that will hold the line number of all the files referenced
-	cat -n $inDirName/geometry.in | sed -e '1,/\[GEOMETRY\]/d' | sed -e '/\[SOURCE\]/,$d' | awk '{print $1 " " $3}' > temp.txt
+	cat -n $inDirName/config.in | sed -e '1,/\[GEOMETRY\]/d' | sed -e '/\[SOURCE\]/,$d' | awk '{print $1 " " $3}' > temp.txt
 
 	#create array to loop over files
 	allSTLArray=($allSTL) 
@@ -80,13 +80,13 @@ if [ -e $inDirName/geometry.in ]; then
 	#so that the message is only printed when necessary
 	for filePath in "${allSTLArray[@]}"; do
 		if [ ! -f $filePath ]; then #-f is for file exists
-			printf "Paths specified in geometry.in for which no file exists:\n\n"
+		printf "Paths specified in config.in for which no file exists:\n\n"
 			printf "%-150s | %-10s \n" "File Path" "Line Number"
 			break
 		fi
 	done
 
-	#loop over the file paths in the geometry.in and check that they exist
+	#loop over the file paths in the config.in and check that they exist
 	for filePath in "${allSTLArray[@]}"; do
 		#check if file is missing
 		if [ ! -f $filePath ]; then 
@@ -97,11 +97,11 @@ if [ -e $inDirName/geometry.in ]; then
 fi
 
 ##############################################################################
-####Check STL files in a *STL* folder are referenced in geometry.in ##########
+####Check STL files in a *STL* folder are referenced in config.in ##########
 ##############################################################################
 
 if [ -d $inDirName/*STL*/ ]; then 
-	printf "\nFiles in the STL folder that are not referenced in geometry.in:\n"
+	printf "\nFiles in the STL folder that are not referenced in config.in:\n"
 	stlFolderPath=`ls -d $inDirName/*STL*/`
 	allStlFromFolder=`ls $inDirName/*STL*/ | awk '{ print "'"$stlFolderPath"'" $0 }'`
 	allStlFromFolderArray=( $allStlFromFolder )

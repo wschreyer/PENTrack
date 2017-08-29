@@ -3,7 +3,7 @@ PENTrack
 
 PENTrack - a simulation tool for ultracold neutrons, protons and electrons
 
-The stable releases are quite outdated. The new release described in [arXiv:1610.06358](https://arxiv.org/abs/1610.06358) is coming up soon.
+The stable releases are quite outdated. The new release described in [this paper](https://doi.org/10.1016/j.nima.2017.03.036) is coming up soon.
 
 
 Prerequisites
@@ -51,17 +51,17 @@ Defining your experiment
 
 ### Configuration files
 
-Simulation parameters are defined in three configuration files - config.in, geometry.in, and particle.in. By default, they are located in the `in` directory.
+Simulation parameters are defined the configuration file config.in. By default, it is located in the `in` directory.
 
-General simulation parameters are defined in config.in. Geometry, electromagnetic fields, and particle sources are defined in geometry.in. Particle-specific parameters - spectra, directions, polarization, and output options - are defined in particle.in.
+General simulation parameters are defined in the GLOBAL section. Materials and geometry are defined in the MATERIALS and GEOMETRY sections. The former can optionally be moved into a different file, e.g. a central materials database. Electromagnetic fields and particle sources are defined in the FIELDS, and SOURCE sections. Particle-specific parameters - lifetime, output options, etc. - are either defined for all particle types in the PARTICLES section or in the specific particle sections.
 
-More information can be found in each configuration file.
+More information can be found in the provided default configuration file config.in.
 
 The default configuration simulates a full cycle of the neutron-lifetime experiment [PENeLOPE](http://e18.ph.tum.de/en/research/measuring-the-neutron-lifetime-penelope). It is filled with UCN from a source in the guide below the storage volume for 200s and higher-energy UCN are removed by absorbers for 200s. Then, PENeLOPE's superconducting magnets are ramped up and UCN are stored for 200s. Afterwards, the magnet is ramped down again and remaining UCN are counted in a detector below the storage volume. During magnetic storage, spins of the UCNs are simulated to estimate their probability to flip.
 
 ### Geometry
 
-Geometry can be imported using [binary STL files] (http://en.wikipedia.org/wiki/STL_%28file_format%29).
+Geometry can be imported using [binary STL files](http://en.wikipedia.org/wiki/STL_%28file_format%29).
 STL files use a list of triangles to describe 3D-surfaces. They can be created with most CAD software, e.g. Solidworks via "File - Save As..." using the STL file type. Note the "Options..." button in the Save dialog, there you can change format (only binary supported), resolution, coordinate system etc.
 
 PENTrack expects the STL files to be in unit Meters.
@@ -74,7 +74,7 @@ If you want to export several parts of a Solidworks assembly you can do the foll
 
 1. Select the part(s) to be exported and right-click.
 2. Select "Invert selection" and then use "Suppress" on all other parts.
-3. Now you can save that single part as STL (make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part or else the different parts will not fit together).
+3. Now you can save that single part as STL (make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together).
 4. You can check the positioning of the parts with e.g. [MeshLab](http://meshlab.sourceforge.net/), SolidView, Minimagics, Solidworks...
 
 ### Fields
@@ -82,18 +82,19 @@ If you want to export several parts of a Solidworks assembly you can do the foll
 Magnetic and electric fields (rotationally symmetric 2D and 3D) can be included from text-based field maps
 (right now, only "[Vectorfields OPERA](http://www.operafea.com)" maps in cgs units are supported).
 You can also define analytic fields from straight, finite conductors and homogeneous field with small gradients.
+Every field type can be scaled with a user-defined time-dependent formula to simulate oscillating fields or magnets that are ramped up and down.
 
 ### Particle sources
 
-Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the particle.in file.
+Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the configuration file.
 
 
 Run the simulation
 ------------------
 
-Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the *.in files.
+Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the configuration file.
 
-Four optional command-line parameters can be passed to the executable: a job number (default: 0) which is prepended to all log-file names, a path from where the *.in files should be read (default: in/), a path where the output files will be written (default: out/), and a fixed random seed (default: 0 - random seed is determined from high-resolution clock at program start).
+Four optional command-line parameters can be passed to the executable: a job number (default: 0) which is prepended to all log-file names, a path from where the configuration file should be read (default: in/), a path where the output files will be written (default: out/), and a fixed random seed (default: 0 - random seed is determined from high-resolution clock at program start).
 
 
 Physics
@@ -103,7 +104,7 @@ All particles use the same relativistic equation of motion, including gravity, L
 
 Interaction of UCN with matter is described with the Fermi-potential formalism and the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection, and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall.
 
-A particle's spin can be tracked by integrating the Bloch equation. To reduce computation time a magnetic-field threshold can be defined to limit spin tracking to regions where the adiabatic condition is not fulfilled.
+A particle's spin can be tracked by integrating the [Bargmann-Michel-Telegdi](https://doi.org/10.1007/s10701-011-9579-7) equation along a particle's trajectory. To reduce computation time a magnetic-field threshold can be defined to limit spin tracking to regions where the adiabatic condition is not fulfilled.
 
 
 Writing your own simulation
@@ -111,8 +112,8 @@ Writing your own simulation
 
 You can modify the simulation on four different levels:
 
-1. Modify the /in/*.in configuration files and use the implemented particles, sources, fields, etc. (more info below and in the corresponding *.in files)
-2. Modify the code in main.c and combine TParticle-, TGeometry-, TField-, TSource-classes etc. into your own simulation (you can generate a Doxygen documentation by typing `doxygen doxygen.config`)
+1. Modify the configuration file and use the implemented particles, sources, fields, etc. (more info below and in the default config.in file)
+2. Modify the code in main.c and combine TParticle, TGeometry, TField, TSource classes etc. into your own simulation (you can generate a Doxygen documentation by typing `doxygen doxygen.config`)
 3. Implement your own particles, sources or fields by inheriting from the corresponding base classes and fill the virtual routines with the corresponding physics
 4. Make low level changes to the existing classes
 
@@ -120,13 +121,13 @@ You can modify the simulation on four different levels:
 Output
 -------
 
-Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be completely disabled for each particle type individually by adding corresponding variables in 'particle.in'. All output files are tables with space separated columns; the first line contains the column name.
+Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be individually configured for each particle type by adding corresponding variables in the particle-specific sections in the configuration file. All output files are tables with space-separated columns; the first line contains the column name.
 
 Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 
 ### Endlog
 
-The endlog keeps track of the starting and end parameters of the particles simulated. In the endlog, you get the following parameters:
+The endlog keeps track of the starting and end parameters of the simulated particles. In the endlog, you get the following variables:
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
@@ -139,7 +140,7 @@ The endlog keeps track of the starting and end parameters of the particles simul
 - Estart: initial kinetic energy of the particle [eV]
 - Bstart: magnetic field at starting point [T]
 - Ustart: electric potential at starting point [V]
-- solidstart: number of geometry part the particle started in, see geometry.in
+- solidstart: number of geometry part the particle started in, see GEOMETRY section in configuration file
 - tend: time at which particle simulation is stopped [s]
 - xend, yend, zend: final coordinates [m]
 - vxend, vyend, vzend: final velocity [m/s]
@@ -149,7 +150,7 @@ The endlog keeps track of the starting and end parameters of the particles simul
 - Eend: final kinetic energy of the particle [eV]
 - Bend: magnetic field at stopping point [T]
 - Uend: electric potential at stopping point [V]
-- solidend: number of geometry part the particle stopped in, defined in geometry.in
+- solidend: number of geometry part the particle stopped in, see GEOMETRY section in configuration file
 - stopID: code which identifies why the particle was stopped (defined in globals.h)
   - 0: not categorized
   - -1: did not finish (reached max. simulation time)
@@ -171,7 +172,7 @@ The endlog keeps track of the starting and end parameters of the particles simul
 
 ### Snapshotlog
 
-Switching on snapshotlog in "particle.in" will output the particle parameters at additional 'snapshot times' (also defined in "particle.in") in the snapshotlog. It contains the same data fields as the endlog.
+Switching on snapshotlog in the PARTICLES section or the particle-specific sections will output the particle parameters at additional snapshot times in the snapshotlog. It contains the same data fields as the endlog.
 
 ### Tracklog
 
@@ -214,7 +215,7 @@ In the hitlog, you get the following parameters:
 
 ### Spinlog
 
-If bruteforce integration of particle spin precession is active, it will be logged into the spinlog. In the spinlog, you get the following parameters:
+If the spinlog parameter is enabled in the configuration file and the particle spin is tracked, it will be logged into the spinlog. In the spinlog, you get the following parameters:
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
@@ -222,19 +223,19 @@ If bruteforce integration of particle spin precession is active, it will be logg
 - Sx, Sy, Sz: components of the spin vector [dimensionless]
 - Wx, Wy, Wz: components of precession-axis vector [1/s]
 
+Helper Scripts 
+--------------
+
 ### Merging output files into ROOT trees
 
 merge_all.c: A [ROOT](http://root.cern.ch) script that writes all out-files (or those, whose filenames match some pattern) into a single ROOT file containing trees for each log- and particle-type.
-
-Helper Scripts 
---------------
 
 ### preRunCheck.sh
 
 This script performs some preliminary checks before launching a large batch PENTrack job. The checks performed are:
 
-1. Check that the STL files referenced in geometry.in exist (i.e. there is no mistake in the path specified in the [GEOMETRY] section of the file.
-2. Checks that all the files in the STL folder are referenced in the [GEOMETRY] section of geometry.in (currently the script looks for a folder name STL this could be made general later)
+1. Check that the STL files referenced in the configuration file exist (i.e. there is no mistake in the path specified in the [GEOMETRY] section of the file.
+2. Checks that all the files in the STL folder are referenced in the [GEOMETRY] section of the configuration file (currently the script looks for a folder name STL this could be made general later)
 3. Checks if the number of jobs running would exceed 2880 when the batch file being generated is submitted (2880 is the maximum number of jobs allowed to be running by a single user on [Westgrid's](https://www.westgrid.ca/) [Jasper](https://www.westgrid.ca/support/systems/Jasper/) cluster). The number 2880 could be changed directly in the code depending on a different user requirement.
 4. Check if the job numbers being specified in the batch file being generated would overwrite the jobs that already exist in the output directory. A warning is given if there are cases of overwrite and the job numbers affected by the overwrite are given. 
 
@@ -275,7 +276,7 @@ where CuBe specifies the mater(ial) and 1 specifies the PENTrack priority to be 
 
 If the file doesn't contain the keyword mater then the STL file will still be displayed in the output but the material will be given as MISSING_MATERIAL. Also, if the material is specified as NotUsed (case insensitive) then file will not be listed in the output. 
 
-The output from the script is directed to standard out is meant to be copied into the geometry.in. The file also takes in two optional arguments: 
+The output from the script is directed to standard out is meant to be copied into the configuration file. The file also takes in two optional arguments: 
 
 1. stlDirName - the relative path to the directory containing the STL files that are to be processed
 2. specialPathToSTL - specify this if you wish to append a prefix to the relative path of the STL files. This is useful if you are running the script in a location that has a different relative path to the STL directory in comparison to the location of the PENTrack executable. 
