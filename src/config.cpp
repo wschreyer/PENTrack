@@ -101,11 +101,15 @@ void TConfig::convert(const std::string &configpath){
 
 	std::vector<std::string> sourcevars = { "Emin", "Emax", "spectrum", "phi_v_min", "phi_v_max", "phi_v",
 											"theta_v_min", "theta_v_max", "theta_v", "polarization" };
+	std::vector<std::string> anglevars = { "phi_v_min", "phi_v_max", "theta_v_min", "theta_v_max" };
 	for (auto var : sourcevars){
 		if (pconf[particle].count(var) > 0)
 			_map["SOURCE"][var] = pconf[particle][var]; // copy spectrum and angular distributions from particle.in to [SOURCE]
 		else
 			_map["SOURCE"][var] = pconf["all"][var];
+
+		if (std::find(anglevars.begin(), anglevars.end(), var) != anglevars.end())
+			_map["SOURCE"][var] = std::to_string(std::stof(_map["SOURCE"][var])*180./M_PI);
 	}
 
 	for (auto section : pconf){ // copy every variable from every section of particle.in, except for those moved to [SOURCE]
