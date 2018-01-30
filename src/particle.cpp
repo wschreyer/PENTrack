@@ -736,6 +736,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << solidstart.ID << " ";
 
 	double H;
+	solid sld = geom.GetSolid(x, &y[0]);
 	if (ID == ID_ABSORBED_ON_SURFACE){
 		std::map<solid, bool>::const_iterator nextsolid = currentsolids.begin();
 		do{
@@ -744,7 +745,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 		H = E + GetPotentialEnergy(x, y, field, nextsolid->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
 	}
 	else
-		H = E + GetPotentialEnergy(x, y, field, GetCurrentsolid());
+		H = E + GetPotentialEnergy(x, y, field, sld);
 
 	field.BField(y[0], y[1], y[2], x, B);
 	field.EField(y[0], y[1], y[2], x, V, Ei);
@@ -756,7 +757,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
 			<< y[3] << " " << y[4] << " " << y[5] << " " << y[7] << " "
 			<< spin[0] << " " << spin[1] << " " << spin[2] << " " << H << " " << E << " "
-			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << GetCurrentsolid().ID << " "
+			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << sld.ID << " "
 			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
 			<< Nhit << " " << Nstep << " " << y[8] << " " << Hmax << " " << wL << '\n';
 }
