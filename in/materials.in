@@ -1,7 +1,8 @@
 [MATERIALS]
 ############### Define material properties for UCN #############
 # imaginary Fermi potential, diffuse reflectivity, spin flip probability, micro-roughness parameters, enable micro-roughness reflection
-# Diffuse reflection is either modeled with the Lambert model or the Micro Roughness model
+# Diffuse reflection is either modeled with the Lambert model or the Micro Roughness model.
+# To activate the former, set the LamberReflectionProbability. To activate the latter, set RMSroughness and CorrelationLength.
 #  see Neutron news 3.3 (1992): 26-37, Z. Physik 254, 169--188 (1972) and Eur. Phys. J. A 44, 23–29 (2010)
 #name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability [0..1]		SpinflipProbability [0..1]	RMSroughness [m]	CorrelationLength [m]
 default		0			0			0				0			0			0

@@ -6,7 +6,6 @@
 #
 #
 # @param argv1  the name of the STL files dir as an argument. If no argument given, it assumes the dir has the name STL. 
-# @param argv2 the relative path to the STL dir from the PENTrack exe (in case the input dir is not given the name "in")
 #
 # The STL files are assumed to have names with the following format:
 # 			partName_mater_CuBe_prior_1.stl 
@@ -27,8 +26,6 @@
 
 #the directory in which all the STL files are stored
 stlDirName=$1
-#in case the STL dir is not in the /in folder of PENTrack 
-specialPathToSTL=$2 
 
 # If no name is provided it will assume that the STL dir has a name with the word STL in it 
 if [ "$stlDirName" == "" ]; then
@@ -38,11 +35,7 @@ fi
 #check to make sure the stl dir exists 
 if [ -d $stlDirName ]; then 
 
-	stlDirName=`echo $stlDirName | sed 's|/$||'` #remove the last backslash if it exists in the STL dirname
-
-	if [ "$specialPathToSTL" != "" ]; then 
-		specialPathToSTL=`echo $specialPathToSTL | sed 's|/$||'` #remove the last backslash if it exists in the special path name
-	fi
+	stlDirName=`readlink -f $stlDirName` #make path absolute
 
 	#remove the spaces from the STL file names
 	for f in $stlDirName/*.STL;  do 
@@ -85,7 +78,7 @@ This script requires that all file names not contain at least one of the above c
 Please rename the STL files appropriately and try again. Exiting script.\n" 
 		exit 2
 	fi
-	
+
 	############################################
 	#PRINT THE STL FILES IN THE REQUIRED FORMAT#
 	############################################
@@ -106,29 +99,19 @@ Please rename the STL files appropriately and try again. Exiting script.\n"
 		
 		if [ "${matType,,}" != "notused" ]; then #check that user wants to use this part in the simulation	
 			i=$((i+2))
-
-			if [ "$specialPathToSTL" == "" ]; then 
-				printf "$i       in/$stlDirName/$f    $matType\n" 
-			else
-				printf "$i       $specialPathToSTL/$f    $matType\n" 
-			fi	
+			printf "$i       $stlDirName/$f    $matType\n" 
 		fi
 	done
-	
+
 	#print the source volume section
 	sourceVolume=`ls $stlDirName | grep "STL" | grep "prior_source"`
         sourceVolumeArray=($sourceVolume)
         printf "\n[SOURCE]\n"
 
         for g in "${sourceVolumeArray[@]}"; do
-                if [ "$specialPathToSTL" == "" ]; then  #by default the particle in the source volume is neutron
-                        printf "STLvolume       neutron       in/$stlDirName/$g    0    0\n"
-                else
-                        printf "STLvolume       neutron       $specialPathToSTL/$g    0    0\n"
-                fi
+                printf "STLvolume       neutron       $stlDirName/$g    0    0\n"
         done
 	
-
 else
 	printf "******************\nSTL DIR NAME ERROR\n******************\n\
 Cannot find a directory of name $stlDirName.\nSpecify the name of the dir \

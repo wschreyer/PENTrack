@@ -89,6 +89,13 @@ Every field type can be scaled with a user-defined time-dependent formula to sim
 Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the configuration file.
 
 
+Limitations
+-----------
+
+The description of geometry through triangle meshes incurs certain limitations:
+- STL files use single-precision floating-point numbers, limiting their relative precision to about 1e-7. So if your geometry has a typical size of 1m, features smaller than 1um will not be well represented.
+- Triangle meshes can only approximate curved surfaces. Curved surfaces that are supposed to be touching will in most cases not do so in the simulations and instead leave holes in your geometry. You should rather overlap such surfaces and make sure the tolerance during STL export is smaller than the overlap.
+
 Run the simulation
 ------------------
 
@@ -276,9 +283,8 @@ where CuBe specifies the mater(ial) and 1 specifies the PENTrack priority to be 
 
 If the file doesn't contain the keyword mater then the STL file will still be displayed in the output but the material will be given as MISSING_MATERIAL. Also, if the material is specified as NotUsed (case insensitive) then file will not be listed in the output. 
 
-The output from the script is directed to standard out is meant to be copied into the configuration file. The file also takes in two optional arguments: 
+The output from the script is directed to standard out is meant to be copied into the configuration file. The file also takes an optional argument: 
 
-1. stlDirName - the relative path to the directory containing the STL files that are to be processed
-2. specialPathToSTL - specify this if you wish to append a prefix to the relative path of the STL files. This is useful if you are running the script in a location that has a different relative path to the STL directory in comparison to the location of the PENTrack executable. 
+1. stlDirName - path to the directory containing the STL files that are to be processed
 
 
