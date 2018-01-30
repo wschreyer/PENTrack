@@ -1,27 +1,30 @@
+#include "microroughness.h"
+
 #include <complex>
-#include <vector>
 
 #include "optimization.h"
-#include "integration.h"
 #include "specialfunctions.h"
+#include <boost/numeric/odeint.hpp>
 
-#include "microroughness.h"
+#include "globals.h"
 
 using namespace std;
 
 namespace MR{
 
 bool MRValid(const double v[3], const double normal[3], const solid &leaving, const solid &entering){
-	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
 	double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity projected onto surface normal
-	double E = 0.5*m_n*v2; // kinetic energy
-	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
-	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
 	material mat;
 	if (vnormal > 0)
 		mat = leaving.mat;
 	else
 		mat = entering.mat;
+	if (mat.RMSRoughness == 0 || mat.CorrelLength == 0)
+		return false;
+	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
+	double E = 0.5*m_n*v2; // kinetic energy
+	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
+	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
 	if (Estep >= 0){
 		double kc = sqrt(2*m_n*Estep)*ele_e/hbar; // critical wave number of potential wall
 		if (2*mat.RMSRoughness*ki < 1 && 2*mat.RMSRoughness*kc < 1)
@@ -104,33 +107,13 @@ struct TMRParams{
 	const solid &entering; ///< Material that the particle is entering
 };
 
-/**
- * Wrapper function of MRDist, is passed to numerical-quadrature routine from alglib library
- * 
- * @param x Polar angle
- * @param xminusa Parameter required by alglib, is ignored
- * @param bminux Parameters required by alglib, is ignored
- * @param y Returns phi-integrated MRDist value at polar angle x
- * @param ptr Pointer to data, used to pass TMRParams struct
- */
-void MRDistWrapper(double x, double xminusa, double bminusx, double &y, void *ptr){
-	TMRParams *p = static_cast<TMRParams*>(ptr);
-	y = MRDist(p->transmit, p->integral, p->v, p->normal, p->leaving, p->entering, x, 0);
-}
-
 double MRProb(const bool transmit, const double v[3], const double normal[3], const solid &leaving, const solid &entering){
-	double prob;
-	alglib::autogkstate s;
-	alglib::autogksmooth(0, pi/2, s);
-	TMRParams p = {transmit, true, v, normal, leaving, entering};
-	alglib::autogkintegrate(s, MRDistWrapper, &p);
-	alglib::autogkreport r;
-	alglib::autogkresults(s, prob, r);
-//	cout << prob << " int: " << r.terminationtype << " in " << r.nintervals << '\n';
-//	if (r.terminationtype != 1)
-//		throw std::runtime_error("microroughness integration did not converge properly");
-	return prob;
-
+	vector<double> total(1, 0);
+	auto integrand = [transmit, v, normal, leaving, entering](const vector<double> &dummy, std::vector<double> &result, const double theta){ // use lambda expression to define local function that has the proper parameters for odeint
+		result[0] = MRDist(transmit, true, v, normal, leaving, entering, theta, 0);
+	};
+	boost::numeric::odeint::integrate(integrand, total, 0.0, (double)pi/2, 0.01); // integrate "differential equation" dP/dtheta = MRdist(theta) from 0 to pi/2
+	return total[0];
 }
 
 /**

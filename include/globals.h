@@ -2,7 +2,10 @@
 #define GLOBALS_H_
 
 #include <string>
+#include <vector>
 #include <map>
+
+#include <boost/filesystem.hpp>
 
 enum stopID {	ID_UNKNOWN = 0, ///< standard flag for particles
 				ID_NOT_FINISH = -1, ///< flag for particles which reached ::StorageTime
@@ -47,8 +50,8 @@ extern const long double gamma_hg; ///< from: http://www.sciencedirect.com/scien
 extern const long double gamma_xe; ///< from: http://nmrwiki.org/wiki/index.php?title=Gyromagnetic_ratio [ 1/Ts ]
 
 extern long long int jobnumber; ///< job number, read from command line paramters, used for parallel calculations
-extern std::string inpath; ///< path to configuration files, read from command line paramters
-extern std::string outpath; ///< path where the log file should be saved to, read from command line parameters
+extern boost::filesystem::path configpath; ///< path to configuration file, read from command line paramters
+extern boost::filesystem::path outpath; ///< path where the log file should be saved to, read from command line parameters
 
 /**
  * Print progress bar.
@@ -75,7 +78,7 @@ void RotateVector(double v[3], const double z[3], const double x[3] = NULL);
  * @param beta Vector v/c of moving reference frame
  * @param p Four-vector
  */
-void BOOST(double beta[3], double p[4]);
+void BOOST(const std::vector<double> &beta, std::vector<double> &p);
 
 /**
  * Energy distribution of protons from free neutron beta decay (0 < E < 750 eV)
@@ -86,7 +89,7 @@ void BOOST(double beta[3], double p[4]);
  *
  * @return Returns a probability between 0 and 1 that a proton with energy E is created.
  */
-double ProtonBetaSpectrum(double E);
+double ProtonBetaSpectrum(const double E);
 
 
 /**
@@ -98,7 +101,7 @@ double ProtonBetaSpectrum(double E);
  *
  * @return Returns probability between 0 and 1 that an electron with energy E is created.
  */
-double ElectronBetaSpectrum(double E);
+double ElectronBetaSpectrum(const double E);
 
 /**
  * Energy distribution of comagnetometer gasses from Maxwell-Boltzmann distribution. 
@@ -110,23 +113,6 @@ double ElectronBetaSpectrum(double E);
  *
  * @return Returns probability between 0 and 1 that a gas molecule with energy E being created. 
  */
-double MaxwellBoltzSpectrum (double T, double E); 
-
-typedef std::map<std::string, std::map<std::string, std::string> > TConfig; ///< map of sections containing a map of key-value pairs
-
-/**
- * Read variables from *.in file into map.
- *
- * in file is assumed to have structure
- * [section]
- * key arbitrary string
- * key value
- * [section]
- * ...
- *
- * @param inpath Path to in file.
- * @param vars Return TConfig map
- */
-void ReadInFile(const char *inpath, TConfig &vars);
+double MaxwellBoltzSpectrum (const double T, const double E);
 
 #endif /*GLOBALS_H_*/

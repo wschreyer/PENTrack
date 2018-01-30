@@ -1,7 +1,8 @@
 # ignore eclipse project files
 .cproject
 .project
-.settings/
+.csettings
+.settings
 
 # ignore cmake files
 CMakeCache.txt

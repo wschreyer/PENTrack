@@ -3,13 +3,14 @@
  * Tricubic interpolation of 3D field tables.
  */
 
+
+#include "field_3d.h"
+
 #include <fstream>
 #include <iostream>
-#include <cmath>
 
 #include "interpolation.h"
 
-#include "field_3d.h"
 #include "tricubic.h"
 #include "globals.h"
 

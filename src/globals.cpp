@@ -1,10 +1,13 @@
+#include "globals.h"
+
 #include <iostream>
 #include <fstream>
 #include <cmath>
 
 #include <CGAL/Simple_cartesian.h>
 
-#include "globals.h"
+#include <boost/format.hpp>
+
 
 const long double pi = 3.1415926535897932384626L; ///< Pi
 const long double ele_e = 1.602176487E-19L; ///< elementary charge [C]
@@ -28,8 +31,8 @@ const long double gamma_hg = 4.76901003e7L; ///< from: http://www.sciencedirect.
 const long double gamma_xe = -7.399707336e7L; ///< from: http://nmrwiki.org/wiki/index.php?title=Gyromagnetic_ratio [ 1/Ts ]
 
 long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
-std::string inpath = "."; ///< path to configuration files, read from command line paramters
-std::string outpath = "."; ///< path where the log file should be saved to, read from command line parameters
+boost::filesystem::path configpath = boost::filesystem::current_path() / "in/config.in"; ///< path to configuration files, read from command line paramters
+boost::filesystem::path outpath = boost::filesystem::current_path() / "out/"; ///< path where the log file should be saved to, read from command line parameters
 
 // print progress in percent
 void PrintPercent(double percentage, int &lastprint){
@@ -73,7 +76,7 @@ void RotateVector(double v[3], const double n[3], const double x[3])
 }
 
 //======== Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta ======================================================
-void BOOST(double beta[3], double p[4]){
+void BOOST(const std::vector<double> &beta, std::vector<double> &p){
    //Boost this Lorentz vector (copy&paste from ROOT)
    double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
    double gamma = 1.0 / sqrt(1.0 - b2);
@@ -90,7 +93,7 @@ void BOOST(double beta[3], double p[4]){
 // energy distribution of protons (0 < E < 750 eV)
 // proton recoil spectrum from "Diplomarbeit M. Simson"
 // result always < 1!
-double ProtonBetaSpectrum(double E){
+double ProtonBetaSpectrum(const double E){
 	double DeltaM = m_n - m_p;
 	double Xi = m_e / DeltaM;
 	double Sigma = 1 - 2*E*m_n / pow(DeltaM, 2) / pow(c_0, 2);
@@ -104,7 +107,7 @@ double ProtonBetaSpectrum(double E){
 // energy distribution of electrons (0 < E < 782 keV)
 // from "http://hyperphysics.phy-astr.gsu.edu/Hbase/nuclear/beta2.html"
 // result always < 1!
-double ElectronBetaSpectrum(double E){
+double ElectronBetaSpectrum(const double E){
 	double Qvalue = 0.782; //[MeV]
 	return 8.2*sqrt(E*1e-6*E*1e-6 + 2*E*1e-6*m_e*c_0*c_0*1e-6) * pow(Qvalue - E*1e-6, 2) * (E*1e-6 + m_e*c_0*c_0*1e-6);
 }
@@ -112,44 +115,8 @@ double ElectronBetaSpectrum(double E){
 // energy distribution of comagnetometer gases using Maxwell-Boltzmann distribution
 // from en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
 // result always < 1!
-double MaxwellBoltzSpectrum (double T, double E) {
+double MaxwellBoltzSpectrum (const double T, const double E) {
 	double kT = boltzconst*T;  
 	return 2*sqrt(E/pi)/sqrt(kT*kT*kT)*exp(-E/kT) / (2*sqrt(0.5/pi)/kT*exp(-0.5)); // return distribution divided by its maximum at E/kt = 0.5
 }
 
-typedef std::map<std::string, std::map<std::string, std::string> > TConfig;
-
-//read variables from *.in file into map
-void ReadInFile(const char *inpath, TConfig &vars){
-	std::ifstream infile(inpath);
-	char c;
-	std::string rest,section,key;
-	while (infile && (infile >> std::ws) && (c = infile.peek())){
-		if (c == '[' && infile.ignore()){
-			if (infile.peek() == '/'){
-				section = "";
-			}
-			else{
-				std::getline(infile, section, ']');
-//				std::cout << "\nsection: " << section.c_str() << '\n';
-			}
-			std::getline(infile,rest);
-		}
-		else if (c == '#')
-			std::getline(infile,rest);
-		else if (section != ""){
-			infile >> key;
-			std::getline(infile,rest);
-			if (infile){
-				std::string::size_type l = rest.find('#');
-				if (l == std::string::npos)
-					vars[section][key] = rest;
-				else
-					vars[section][key] = rest.substr(0,l);
-//				std::cout << key << " " << vars[section][key] << '\n';
-			}
-		}
-		else
-			std::getline(infile,rest);
-	}
-}

@@ -18,9 +18,10 @@ include_directories("tricubic-1.0/src/libtricubic")
 add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
 
 set(Boost_REALPATH ON)
-find_package(Boost 1.53.0 COMPONENTS system)
+find_package(Boost 1.53.0 COMPONENTS system filesystem REQUIRED)
 if (Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
+	link_directories(${Boost_LIBRARY_DIRS})
 else()
 	message(SEND_ERROR "Boost 1.53.0 or newer not found!")
 endif()
@@ -30,7 +31,7 @@ find_package(CGAL PATHS "cgal/build")
 if (CGAL_CONFIG_LOADED)
 	message(STATUS "CGAL version: " ${CGAL_VERSION})
 	if (CGAL_VERSION VERSION_LESS 4.1)
-		message(SEND_ERROR "CGAL versions older than 4.1 are not supported!")
+		message(SEND_ERROR "CGAL versions older than 4.2 are not supported!")
 	endif()
 	include_directories(${CGAL_INCLUDE_DIRS})
 	include(${CGAL_USE_FILE})
@@ -42,16 +43,11 @@ include_directories("exprtk")
 include_directories("include")
 add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/edmfields.cpp 
 						src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
-						src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp 
+						src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp
 						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)		
 
-set_property(TARGET PENTrack PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET PENTrack PROPERTY CXX_STANDARD 11)
 if (CMAKE_COMPILER_IS_GNUCXX)
-	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -Wno-unused-local-typedefs)
-	if (Boost_VERSION GREATER 105500)
-		target_compile_options(PENTrack PUBLIC -Wno-deprecated-declarations)
-	endif()
+	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -std=c++11 PUBLIC -Wno-unused-local-typedefs PUBLIC -Wno-deprecated-declarations)
 endif()
 	
 				

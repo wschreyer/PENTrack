@@ -5,40 +5,52 @@
  */
 
 #include "source.h"
+
+#include <boost/format.hpp>
+
 #include "neutron.h"
 #include "proton.h"
 #include "electron.h"
 #include "mercury.h"
 #include "xenon.h"
 #include "geometry.h"
-#include "mc.h"
-#include "trianglemesh.h"
 #include "globals.h"
 
 using namespace std;
 
-TParticleSource::TParticleSource(const std::string ParticleName, double ActiveTime, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-	: fActiveTime(ActiveTime), fParticleName(ParticleName), fmc(&mc), fgeom(&geometry), ffield(field), ParticleCounter(0){
+TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf): fActiveTime(0), polarization(0), ParticleCounter(0){
+	istringstream(sourceconf["particle"]) >> fParticleName;
+	istringstream(sourceconf["ActiveTime"]) >> fActiveTime;
+	istringstream(sourceconf["polarization"]) >> polarization;
 
+	double rmin, rmax;
+	istringstream(sourceconf["Emin"]) >> rmin;
+	istringstream(sourceconf["Emax"]) >> rmax;
+	spectrum = parse_distribution(sourceconf["spectrum"], rmin, rmax);
+
+	istringstream(sourceconf["phi_v_min"]) >> rmin;
+	istringstream(sourceconf["phi_v_max"]) >> rmax;
+	phi_v = parse_distribution(sourceconf["phi_v"], rmin*conv, rmax*conv);
+
+	istringstream(sourceconf["theta_v_min"]) >> rmin;
+	istringstream(sourceconf["theta_v_max"]) >> rmax;
+	theta_v = parse_distribution(sourceconf["theta_v"], rmin*conv, rmax*conv);
 }
 
-TParticleSource::~TParticleSource(){
 
-}
-
-
-TParticle* TParticleSource::CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, double polarisation){
+TParticle* TParticleSource::CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, double polarisation,
+		TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
 	TParticle *p;
 	if (fParticleName == NAME_NEUTRON)
-		p = new TNeutron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
+		p = new TNeutron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
 	else if (fParticleName == NAME_PROTON)
-		p = new TProton(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
+		p = new TProton(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
 	else if (fParticleName == NAME_ELECTRON)
-		p = new TElectron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
+		p = new TElectron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
 	else if (fParticleName == NAME_MERCURY)
-		p = new TMercury(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
+		p = new TMercury(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
 	else if (fParticleName == NAME_XENON) 
-		p = new TXenon(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, *fmc, *fgeom, ffield);
+		p = new TXenon(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
 	else{
 		cout << "Could not create particle " << fParticleName << '\n';
 		exit(-1);
@@ -47,67 +59,62 @@ TParticle* TParticleSource::CreateParticle(double t, double x, double y, double 
 }
 
 
-TSurfaceSource::TSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-		: TParticleSource(ParticleName, ActiveTime, mc, geometry, field), sourcearea(0), Enormal(E_normal){
+TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
+	CPoint p;
+	CVector nv;
+	do{
+		std::uniform_real_distribution<double> areadist(0, area_sum.back());
+		double area = areadist(mc);
+		int index = std::distance(area_sum.begin(), std::lower_bound(area_sum.begin(), area_sum.end(), area));
+		CTriangle tri = (geometry.mesh.GetTrianglesBegin() + index)->first;
+		std::uniform_real_distribution<double> unidist(0, 1);
+		double a = unidist(mc); // generate random point on triangle (see Numerical Recipes 3rd ed., p. 1114)
+		double b = unidist(mc);
+		if (a+b > 1){
+			a = 1 - a;
+			b = 1 - b;
+		}
+		nv = tri.supporting_plane().orthogonal_vector();
+		nv = nv/sqrt(nv.squared_length());
+		p = tri[0] + a*(tri[1] - tri[0]) + b*(tri[2] - tri[0]);
+	}while (!InSourceVolume(p[0], p[1], p[2]));
+	p = p + nv*REFLECT_TOLERANCE; // move point slightly away from surface
 
-}
-
-
-TParticle* TSurfaceSource::CreateParticle(){
-	double t = fmc->UniformDist(0, fActiveTime);
-	double RandA = fmc->UniformDist(0,sourcearea);
-	double SumA = 0;
-	vector<TTriangle>::iterator i;
-	for (i = sourcetris.begin(); i != sourcetris.end(); i++){
-		SumA += i->area();
-		if (RandA <= SumA) break;
-	}
-	double a = fmc->UniformDist(0,1); // generate random point on triangle (see Numerical Recipes 3rd ed., p. 1114)
-	double b = fmc->UniformDist(0,1);
-	if (a+b > 1){
-		a = 1 - a;
-		b = 1 - b;
-	}
-	CVector nv = i->normal();
-	CPoint p = i->tri[0] + a*(i->tri[1] - i->tri[0]) + b*(i->tri[2] - i->tri[0]) + nv*REFLECT_TOLERANCE;
-
-	double Ekin = fmc->Spectrum(fParticleName);
-	double phi_v = fmc->UniformDist(0, 2*pi); // generate random velocity angles in upper hemisphere
-	double theta_v = fmc->SinCosDist(0, 0.5*pi); // Lambert's law!
+	double Ekin = spectrum(mc);
+	std::uniform_real_distribution<double> unidist(0., 2.*pi);
+	double phi = unidist(mc);
+	std::sincos_distribution<double> sincosdist(0., 0.5*pi);
+	double theta = sincosdist(mc);
 	if (Enormal > 0){
-		double vnormal = sqrt(Ekin*cos(theta_v)*cos(theta_v) + Enormal); // add E_normal to component normal to surface
-		double vtangential = sqrt(Ekin)*sin(theta_v);
-		theta_v = atan2(vtangential, vnormal); // update angle
+		double vnormal = sqrt(Ekin*cos(theta)*cos(theta) + Enormal); // add E_normal to component normal to surface
+		double vtangential = sqrt(Ekin)*sin(theta);
+		theta = atan2(vtangential, vnormal); // update angle
 		Ekin = vnormal*vnormal + vtangential*vtangential; // update energy
 	}
 
-	double v[3] = {cos(phi_v)*sin(theta_v), sin(phi_v)*sin(theta_v), cos(theta_v)};
+	double v[3] = {cos(phi)*sin(theta), sin(phi)*sin(theta), cos(theta)};
 	double n[3] = {nv[0], nv[1], nv[2]};
 	RotateVector(v, n);
-	phi_v = atan2(v[1],v[0]);
-	theta_v = acos(v[2]);
-	double polarisation = fmc->pconfigs[fParticleName].polarization;
+	phi = atan2(v[1],v[0]);
+	theta = acos(v[2]);
 
-	return TParticleSource::CreateParticle(t, p[0], p[1], p[2], Ekin, phi_v, theta_v, polarisation);
+	std::uniform_real_distribution<double> timedist(0., fActiveTime);
+	return TParticleSource::CreateParticle(timedist(mc), p[0], p[1], p[2], Ekin, phi, theta, polarization, mc, geometry, field);
 }
 
 
-TVolumeSource::TVolumeSource(std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-			:TParticleSource(ParticleName, ActiveTime, mc, geometry, field), MinPot(numeric_limits<double>::infinity()), fPhaseSpaceWeighting(PhaseSpaceWeighting){
-}
-
-void TVolumeSource::FindPotentialMinimum(){
+void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
 	cout << "Sampling phase space ";
 	const int N = 100000;
 	int percent = 0;
 	for (int i = 0; i < N; i++){
 		PrintPercent((double)i/N, percent);
-		double t = fmc->UniformDist(0, fActiveTime); // dice start time
-		double polarisation = fmc->pconfigs[fParticleName].polarization; // dice polarisation
+		std::uniform_real_distribution<double> timedist(0, fActiveTime);
+		double t = timedist(mc);
 		double x, y, z;
-		RandomPointInSourceVolume(x, y, z); // dice point in source volume
-		TParticle *p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarisation); // create dummy particle with Ekin = 0
-		double V = p->GetInitialTotalEnergy(); // potential at particle position equals its total energy
+		RandomPointInSourceVolume(x, y, z, mc); // dice point in source volume
+		TParticle *p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarization, mc, geometry, field); // create dummy particle with Ekin = 0
+		double V = p->GetInitialTotalEnergy(geometry, field); // potential at particle position equals its total energy
 		if (V < MinPot)
 			MinPot = V; // remember minimal potential
 		delete p;
@@ -116,207 +123,76 @@ void TVolumeSource::FindPotentialMinimum(){
 	cout << " minimal potential = " << MinPot << "eV\n";
 }
 
-TParticle* TVolumeSource::CreateParticle(){
+TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
+	std::uniform_real_distribution<double> timedist(0, fActiveTime);
 	if (fPhaseSpaceWeighting){ // if particle density should be weighted by available phase space
-		TParticleConfig *mcconf = &fmc->pconfigs[fParticleName];
 		if (MinPot == numeric_limits<double>::infinity()){ // if minimum potential energy has not yet been determined
-			FindPotentialMinimum(); // find minimum potential energy
-			if (MinPot > mcconf->spectrum.max()){ // abort program if spectrum completely out of potential range
-				cout << "Error: your chosen spectrum is below the minimal potential energy in the source volume (" << mcconf->spectrum.max() << "eV < " << MinPot << "eV). Exiting!\n";
-				exit(-1);
-			}
+			FindPotentialMinimum(mc, geometry, field); // find minimum potential energy
+			if (MinPot > spectrum.max()) // abort program if spectrum completely out of potential range
+				throw std::runtime_error( (boost::format("Error: your chosen spectrum is below the minimal potential energy in the source volume (%1% eV < %2% eV). Exiting!\n") % spectrum.max() % MinPot).str() );
 		}
 
-		if (MinPot > mcconf->spectrum.min()){ // give warning if chosen spectrum contains energy ranges that are not possible
-			cout << "Warning: your chosen spectrum contains energies below the minimal potential energy in the source volume (" << mcconf->spectrum.min() << "eV < " << MinPot << "eV). The energy spectrum will be cut off!\n";
+		if (MinPot > spectrum.min()){ // give warning if chosen spectrum contains energy ranges that are not possible
+			cout << "Warning: your chosen spectrum contains energies below the minimal potential energy in the source volume (" << spectrum.min() << "eV < " << MinPot << "eV). The energy spectrum will be cut off!\n";
 		}
 		double H;
 		do{
-			H = fmc->Spectrum(fParticleName); // dice total(!) energy until one above minimum potential is found
+			H = spectrum(mc); // dice total(!) energy until one above minimum potential is found
 		}while (H < MinPot);
 
 		cout << "Trying to find starting point for particle with total energy " << H << "eV ...";
 		for (int i = 0; true; i++){
-			double t = fmc->UniformDist(0, fActiveTime); // dice start time
-			double polarisation = mcconf->polarization; // dice polarisation
+			double t = timedist(mc); // dice start time
 			double x, y, z;
-			RandomPointInSourceVolume(x, y, z); // dice point in source volume
-			TParticle *proposed_p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarisation); // create new particle with Ekin = 0
-			double V = proposed_p->GetInitialTotalEnergy(); // potential at particle position equals its total energy
+			RandomPointInSourceVolume(x, y, z, mc); // dice point in source volume
+			TParticle *proposed_p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarization, mc, geometry, field); // create new particle with Ekin = 0
+			double V = proposed_p->GetInitialTotalEnergy(geometry, field); // potential at particle position equals its total energy
 			delete proposed_p;
 			ParticleCounter--; // delete particle and decrement particle counter
 
 			if (H < V)
 				continue; // if total energy < potential energy then particle is not possible at this point
-			if (sqrt(H - V) > fmc->UniformDist(0, sqrt(H - MinPot))){ // accept particle with probability sqrt(H-V)/sqrt(H-Vmin) (phase space weighting according to Golub)
+			std::uniform_real_distribution<double> Hdist(0, sqrt(H - MinPot));
+			if (sqrt(H - V) > Hdist(mc)){ // accept particle with probability sqrt(H-V)/sqrt(H-Vmin) (phase space weighting according to Golub)
 				cout << " found after " << i+1 << " tries\n";
-				double phi_v, theta_v;
-				fmc->AngularDist(fParticleName, phi_v, theta_v); // dice velocity direction
-				return TParticleSource::CreateParticle(t, x, y, z, H - V, phi_v, theta_v, polarisation); // if accepted, return new particle with correct Ekin
+				return TParticleSource::CreateParticle(t, x, y, z, H - V, phi_v(mc), theta_v(mc), polarization, mc, geometry, field); // if accepted, return new particle with correct Ekin
 			}
 		}
-		return NULL; // this will never be reached
+		assert(false); // this will never be reached
 	}
 	else{ // create particles uniformly distributed in volume
-		double t = fmc->UniformDist(0, fActiveTime);
-		double E = fmc->Spectrum(fParticleName);
-		double phi_v, theta_v;
-		fmc->AngularDist(fParticleName, phi_v, theta_v);
-		//fmc->tofDist(E, phi_v, theta_v);
-		double polarisation = fmc->pconfigs[fParticleName].polarization;
+		double t = timedist(mc);
 		double x, y, z;
-		RandomPointInSourceVolume(x, y, z);
+		RandomPointInSourceVolume(x, y, z, mc);
 		cout << '\n';
-		return TParticleSource::CreateParticle(t, x, y, z, E, phi_v, theta_v, polarisation);
+		return TParticleSource::CreateParticle(t, x, y, z, spectrum(mc), phi_v(mc), theta_v(mc), polarization, mc, geometry, field);
 	}
 }
 
+TParticleSource* CreateParticleSource(TConfig &config, const TGeometry &geometry){
+	std::map<std::string, std::string> &sc = config["SOURCE"];
+	std::string sourcemode;
+	std::istringstream(sc["sourcemode"]) >> sourcemode;
 
-
-TCuboidVolumeSource::TCuboidVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-	: TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field), xmin(x_min), xmax(x_max), ymin(y_min), ymax(y_max), zmin(z_min), zmax(z_max){
-
-}
-
-
-void TCuboidVolumeSource::RandomPointInSourceVolume(double &x, double &y, double &z){
-	x = fmc->UniformDist(xmin, xmax);
-	y = fmc->UniformDist(ymin, ymax);
-	z = fmc->UniformDist(zmin, zmax);
-}
-
-
-
-TCylindricalVolumeSource::TCylindricalVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-	: TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
-
-}
-
-
-void TCylindricalVolumeSource::RandomPointInSourceVolume(double &x, double &y, double &z){
-	double r = fmc->LinearDist(rmin, rmax); // weighting because of the volume element and a r^2 probability outwards
-	double phi_r = fmc->UniformDist(phimin,phimax);
-	x = r*cos(phi_r);
-	y = r*sin(phi_r);
-	z = fmc->UniformDist(zmin,zmax);
-}
-
-
-bool TCylindricalSurfaceSource::InSourceVolume(CPoint p){
-	double r = sqrt(p[0]*p[0] + p[1]*p[1]);
-	double phi = atan2(p[1],p[0]);
-	return (r >= rmin && r <= rmax &&
-			phi >= phimin && phi <= phimax &&
-			p[2] >= zmin && p[2] <= zmax); // check if point is in custom paramter range
-}
-
-
-TCylindricalSurfaceSource::TCylindricalSurfaceSource(const std::string ParticleName, double ActiveTime, double E_normal, double r_min, double r_max, double phi_min, double phi_max, double z_min, double z_max, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-	: TSurfaceSource(ParticleName, ActiveTime, E_normal, mc, geometry, field), rmin(r_min), rmax(r_max), phimin(phi_min), phimax(phi_max), zmin(z_min), zmax(z_max){
-	for (CIterator i = geometry.mesh.triangles.begin(); i != geometry.mesh.triangles.end(); i++){
-		if (InSourceVolume(i->tri[0]) && InSourceVolume(i->tri[1]) && InSourceVolume(i->tri[2])){
-			sourcetris.push_back(*i);
-			sourcearea += i->area();
-		}
-	}
-	printf("Source Area: %g m^2\n",sourcearea);
-}
-
-
-TSTLVolumeSource::TSTLVolumeSource(const std::string ParticleName, double ActiveTime, bool PhaseSpaceWeighting, std::string sourcefile, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-	: TVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, mc, geometry, field){
-	kdtree.ReadFile(sourcefile.c_str(),0);
-	kdtree.Init();
-}
-
-
-void TSTLVolumeSource::RandomPointInSourceVolume(double &x, double &y, double &z){
-	double p[3];
-	for(;;){
-		p[0] = fmc->UniformDist(kdtree.tree.bbox().xmin(),kdtree.tree.bbox().xmax()); // random point
-		p[1] = fmc->UniformDist(kdtree.tree.bbox().ymin(),kdtree.tree.bbox().ymax()); // random point
-		p[2] = fmc->UniformDist(kdtree.tree.bbox().zmin(),kdtree.tree.bbox().zmax()); // random point
-		if (kdtree.InSolid(p)){
-			x = p[0];
-			y = p[1];
-			z = p[2];
-			break;
-		}
-	}
-}
-
-
-TSTLSurfaceSource::TSTLSurfaceSource(const std::string ParticleName, double ActiveTime, std::string sourcefile, double E_normal, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-	: TSurfaceSource(ParticleName, ActiveTime, E_normal, mc, geometry, field){
-	TTriangleMesh mesh;
-	mesh.ReadFile(sourcefile.c_str(),0);
-	mesh.Init();
-	sourcearea = 0; // add triangles, whose vertices are all in the source volume, to sourcetris list
-	for (CIterator i = fgeom->mesh.triangles.begin(); i != fgeom->mesh.triangles.end(); i++){
-		if (mesh.InSolid(i->tri[0]) && mesh.InSolid(i->tri[1]) && mesh.InSolid(i->tri[2])){
-			sourcetris.push_back(*i);
-			sourcearea += i->area();
-		}
-	}
-	printf("Source Area: %g m^2\n",sourcearea);
-}
-
-
-TSource::TSource(TConfig &geometryconf, TMCGenerator &mc, TGeometry &geometry, TFieldManager *field)
-	: source(NULL){
-	sourcemode = geometryconf["SOURCE"].begin()->first; // only first source in geometry.in is read in
-	istringstream sourceconf(geometryconf["SOURCE"].begin()->second);
-	string ParticleName;
-	sourceconf >> ParticleName;
-
-	double ActiveTime;
-	bool PhaseSpaceWeighting;
+	TParticleSource *source = nullptr;
 	if (sourcemode == "boxvolume"){
-		double x_min, x_max, y_min, y_max, z_min, z_max;
-		sourceconf >> x_min >> x_max >> y_min >> y_max >> z_min >> z_max >> ActiveTime >> PhaseSpaceWeighting;
-		if (sourceconf)
-			source = new TCuboidVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, x_min, x_max, y_min, y_max, z_min, z_max, mc, geometry, field);
+		source = new TCuboidVolumeSource(sc);
 	}
 	else if (sourcemode == "cylvolume"){
-		double r_min, r_max, phi_min, phi_max, z_min, z_max;
-		sourceconf >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime >> PhaseSpaceWeighting;
-		if (sourceconf)
-			source = new TCylindricalVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max, mc, geometry, field);
+		source = new TCylindricalVolumeSource(sc);
 	}
 	else if (sourcemode == "STLvolume"){
-		string sourcefile;
-		sourceconf >> sourcefile >> ActiveTime >> PhaseSpaceWeighting;
-		if (sourceconf)
-			source = new TSTLVolumeSource(ParticleName, ActiveTime, PhaseSpaceWeighting, sourcefile, mc, geometry, field);
+		source = new TSTLVolumeSource(sc);
 	}
 	else if (sourcemode == "cylsurface"){
-		double r_min, r_max, phi_min, phi_max, z_min, z_max, E_normal;
-		sourceconf >> r_min >> r_max >> phi_min >> phi_max >> z_min >> z_max >> ActiveTime >> E_normal;
-		if (sourceconf)
-			source = new TCylindricalSurfaceSource(ParticleName, ActiveTime, E_normal, r_min, r_max, phi_min*conv, phi_max*conv, z_min, z_max, mc, geometry, field);
+		source = new TCylindricalSurfaceSource(sc, geometry);
 	}
 	else if (sourcemode == "STLsurface"){
-		string sourcefile;
-		double E_normal;
-		sourceconf >> sourcefile >> ActiveTime >> E_normal;
-		if (sourceconf)
-			source = new TSTLSurfaceSource(ParticleName, ActiveTime, sourcefile, E_normal, mc, geometry, field);
+		source = new TSTLSurfaceSource(sc, geometry);
 	}
-
-	if (!source){
-		cout << "\nCould not load source """ << sourcemode << """! Did you enter invalid parameters?\n";
-		exit(-1);
-	}
+	else
+		throw std::runtime_error((boost::format("Could not load source %1%!") % sourcemode).str());
 	cout << '\n';
-}
 
-
-TSource::~TSource(){
-	if (source)
-		delete source;
-}
-
-
-TParticle* TSource::CreateParticle(){
-	return source->CreateParticle();
+	return source;
 }

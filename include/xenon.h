@@ -35,7 +35,8 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TXenon (int number, double t, double x, double y, double z, double E, double phi, double theta, double polarisation, TMCGenerator &amc, TGeometry &geometry, TFieldManager *afield);
+	TXenon (const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
 
 protected:
 	static std::ofstream endout; ///< endlog file stream
@@ -51,7 +52,7 @@ protected:
 	 * For parameter doc see TParticle::OnHit
 	 */
 	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-			const solid &leaving, const solid &entering, stopID &ID, std::vector<TParticle*> &secondaries) const;
+			const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 	
 	/**
@@ -61,8 +62,8 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnStep
 	 */
-	void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const dense_stepper_type &stepper, const solid &currentsolid, stopID &ID, std::vector<TParticle*> &secondaries) const;
+	void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+			const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
@@ -70,7 +71,7 @@ protected:
 	 *
 	 * For parameter doc see TParticle::Decay
 	 */
-	void Decay(std::vector<TParticle*> &secondaries) const;
+	void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const;
 
 
 	/**

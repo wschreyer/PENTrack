@@ -6,212 +6,218 @@
 #ifndef MC_H_
 #define MC_H_
 
-#include <cstdlib>
-#include <string>
-#include <map>
 #include <random>
 
-/**
- * For each section in particle.in such a struct is created containing all user options
- */
-struct TParticleConfig{
-	double tau; ///< lifetime
-	double tmax; ///< max. simulation time
-	double lmax; ///< max. trajectory length
-	double polarization; ///< initial polarization
-	std::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
-	std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
-	std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
-};
+typedef std::mt19937_64 TMCGenerator; ///< typedef to default random-number generator
+
+namespace std{
 
 /**
- * Class to generate random numbers in several distributions.
+ * Generate polarization +1 or -1 weighted by the projection of the spin-vector onto an axis.
+ *
+ * Satisfies the concept RandomNumberDistribution of STL
  */
-class TMCGenerator{
+template<typename T>
+class polarization_distribution{
 public:
-	std::mt19937_64 rangen; ///< random number generator
-	std::map<std::string, TParticleConfig> pconfigs; ///< TParticleConfig for each particle type
-	uint64_t seed; ///< initial random seed
-	std::piecewise_linear_distribution<double> ProtonBetaSpectrumDist; ///< predefined energy distribution of protons from free-neutron decay
-	std::piecewise_linear_distribution<double> ElectronBetaSpectrumDist; ///< predefined energy distribution of electron from free-neutron decay
-
-	/**
-	 * Constructor.
-	 *
-	 * Create random seed and read infile.
-	 *
-	 * @param infile Path to configuration file
-	 * @param aseed Set a custom seed (optional), if set to zero seed is determined from high-resolution clock
-	 */
-	TMCGenerator(const char *infile, const uint64_t aseed = 0);
-
-	/**
-	 * Destructor.
-	 *
-	 * Delete random number generator.
-	 */
-	~TMCGenerator();
-
-	/// return uniformly distributed random number in [min..max]
-	double UniformDist(double min, double max);
-	
-
-	/// return sine distributed random number in [min..max] (in rad!)
-	double SinDist(double min, double max);
-	
-
-	/// return sin(x)*cos(x) distributed random number in [min..max] (0 <= min/max < pi/2!)
-	double SinCosDist(double min, double max);
-	
-
-	/// return x^2 distributed random number in [min..max]
-	double SquareDist(double min, double max);
-	
-
-	/// return linearly distributed random number in [min..max]
-	double LinearDist(double min, double max);
-
-
-	/// return sqrt(x) distributed random number in [min..max]
-	double SqrtDist(double min, double max);
-	
-
-	/// return normally distributed random number
-	double NormalDist(double mean, double sigma);
-
-
-	/// return exp(-exponent*x) distributed random number
-	double ExpDist(double exponent);
-
-
-	/**
-	 * Create isotropically distributed 3D angles.
-	 *
-	 * @param phi Azimuth
-	 * @param theta Polar angle
-	 */
-	void IsotropicDist(double &phi, double &theta);
-	
-
-	/// energy distribution of UCNs
-	double NeutronSpectrum();
-
-	/**
-	 * Energy distribution for each particle type
-	 */
-	double Spectrum(const std::string &particlename);
-
-
-	/**
-	 * Angular velocity distribution for each particle type
-	 * 
-	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
-	 * @param phi_v Returns velocity azimuth
-	 * @param theta_v Returns velocity polar angle
-	 */
-	void AngularDist(const std::string &particlename, double &phi_v, double &theta_v);
-
-	/**
-	 * Lifetime of different particles
-	 *
-	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
-	 *
-	 * @return Returns lifetimes using an exponentially decaying or flat distribution, depending on user choice in particle.in
-	 */
-	double LifeTime(const std::string &particlename);
-	
-
-	/**
-	 * Max. trajectory length of different particles
-	 *
-	 * @param particlename Name of the particle (chooses corresponding section in particle.in)
-	 *
-	 * @return Returns max. trajectory length, depending on user choice in particle.in
-	 */
-	double MaxTrajLength(const std::string &particlename);
-	
-
-	/**
-	 * Initial polarisation of different particles
-	 *
-	 * @param polarisation Projection of spin vector onto magnetic field vector
-	 *
-	 * @return Returns random polarisation (-1,1), weighted by spin projection onto magnetic field vector
-	 */
-	double DicePolarisation(const double polarisation);
-
-
-	/**
-	 * Simulate neutron beta decay.
-	 *
-	 * Calculates velocities of neutron decay products proton and electron.
-	 *
-	 * Reaction(s):
-	 *
-	 *     n0  ->  p+  +  R-
-	 *
-	 *     R-  ->  e-  +  nue
-	 * 
-	 * Procedure:
-	 * (1) Dice the energy of the decay proton according to globals.h#ProtonBetaSpectrum in the rest frame of the neutron and
-	 *     calculate the proton momentum via the energy momentum relation.
-	 * (2) Dice isotropic orientation of the decay proton.
-	 * (3) Calculate 4-momentum of rest R- via 4-momentum conservation.
-	 * (4) Get fixed electron energy from two body decay of R-.
-	 * (5) Dice isotropic electron orientation in the rest frame of R-.
-	 * (6) Lorentz boost electron 4-momentum into moving frame of R-.
-	 * (7) Calculate neutrino 4-momentum via 4-momentum conservation.
-	 * (8) Boost all 4-momentums into moving neutron frame.
-	 * 
-	 * Cross-check:
-	 * (9) Print neutrino 4-momentum invariant mass (4-momentum square, should be zero).
-	 * 
-	 * @param v_n Velocity of decayed neutron
-	 * @param E_p Returns proton kinetic energy
-	 * @param E_e Returns electron kinetic energy
-	 * @param phi_p Returns azimuth of proton velocity vector
-	 * @param phi_e Returns azimuth of electron velocity vector
-	 * @param theta_p Returns polar angle of proton velocity vector
-	 * @param theta_e Returns polar angle of electron velocity vector
-	 * @param pol_p Returns polarisation of proton spin
-	 * @param pol_e Returns polarisation of electron spin
-	 */
-	void NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, double &pol_p, double &pol_e);
-
-
-	/**
-	 * Outputs velocity spectrum for TOF expt given a chosen energy spectrum
-	 * (guide is along y -axis)
-	 *
-	 * @param Ekin  - kinetic energy (does not get changed)
-	 * @param phi - azimuthal associated with velocity
-	 * @param theta - polar associated with velocity
-	 */
-	void tofDist(double &Ekin, double &phi, double &theta);
-
+	typedef T result_type; ///< type returned by operator()
+	typedef T param_type; ///< type of parameter (projection of spin onto axis)
 private:
-	/**
-	 * Create a piecewise linear distribution from a muParser function
-	 *
-	 * @param func Formula string to parse
-	 * @param range_min Lower range limit of distribution
-	 * @param range_max Upper range limit of distribution
-	 *
-	 * @return Return piecewise linear distribution
-	 */
-	std::piecewise_linear_distribution<double> ParseDist(std::string &func, double range_min, double range_max);
+	param_type _p; ///< member containing parameter
+public:
+	polarization_distribution(){ reset(); } ///< empty constructor, calls reset()
+	polarization_distribution(const param_type &p){ param(p); } ///< construct with specific projection parameter
+	void reset(){ _p = static_cast<param_type>(0); } ///< reset to default state (projection == 0, +1 and -1 equally likely)
+	param_type param() const { return _p; } ///< returns stored parameter
+	void param(const param_type &p){ _p = p; } ///< set stored parameter
 
 	/**
-	 * Create a piecewise linear distribution from a function with single parameter
-	 *
-	 * @param func Function with single parameter
-	 * @param range_min Lower range limit of distribution
-	 * @param range_max Upper range limit of distribution
-	 *
-	 * @return Return piecewise linear distribution
+	 * Return polarization +1/-1 weighted by projection parameter p
 	 */
-	std::piecewise_linear_distribution<double> ParseDist(double (*func)(double), double range_min, double range_max);
-
+	template<class Random> result_type operator()(Random &r, const param_type &p) const{
+		std::bernoulli_distribution d(static_cast<param_type>(0.5)*(p + static_cast<param_type>(1)));
+		return d(r) ? static_cast<result_type>(1) : static_cast<result_type>(-1); // return +1/-1 according to Bernoulli distribution with parameter 0.5*(p + 1)
+	}
+	template<class Random> result_type operator()(Random &r) const { return operator()(r, _p); } ///< Return polarization +1/-1 weighted by internally stored projection parameter
+	result_type min() const { return static_cast<result_type>(-1); } ///< return min random value (-1)
+	result_type max() const { return static_cast<result_type>(1); } ///< return max random value (+1)
+	bool operator==(const polarization_distribution<T> &rhs) const { return _p == rhs._p; } ///< equality operator (compares internal parameters)
+	bool operator!=(const polarization_distribution<T> &rhs) const { return !(operator==(rhs)); } ///< inequality operator (compares internal parameters)
 };
+
+/**
+ * Generate random numbers between two values using inverse transform sampling.
+ *
+ * Template parameter func expects function result_type(result_type x, result_type min, result_type max) returning the inverse of the cumulative distribution function.
+ * Satisfies the concept RandomNumberDistribution of STL.
+ */
+template<typename T, typename func>
+class inversetransform_sampler{
+public:
+	typedef T result_type; ///< type returned by operator()
+	typedef std::pair<result_type, result_type > param_type; ///< type of parameter (pair of min and max values)
+private:
+	param_type _p; ///< internally stored parameter
+public:
+	inversetransform_sampler(){ reset(); } ///< default constructor, calls reset()
+	inversetransform_sampler(const param_type &p){ param(p); } ///< construct using specific parameter
+	inversetransform_sampler(const result_type min, const result_type max){	param(make_pair(min, max)); } ///< construct using min and max values
+	void reset(){ param(make_pair(static_cast<result_type>(0), static_cast<result_type>(1))); } ///< reset to default parameter (min = 0, max = 1)
+	param_type param() const { return _p; } ///< return internally stored parameter
+	void param(const param_type &p){ _p = p; } ///< set internally stored parameter
+	/**
+	 * Return random number with between min and max values using inverse transform sampling of func
+	 */
+	template<class Random> result_type operator()(Random &r, const param_type &p) const {
+		func f;
+		std::uniform_real_distribution<result_type> unidist(static_cast<result_type>(0), static_cast<result_type>(1)); // generate random numbers between 0 and 1
+		return f(unidist(r), p.first, p.second); // call inverse of cumulative-distribution function with random number, min and max, creating correctly distributed numbers
+	}
+	template<class Random> result_type operator()(Random &r) const { return operator()(r, _p);	} ///< Return random number using internally stored min and max values
+	result_type min() const { return _p.first; } ///< return internally stored min value
+	result_type max() const { return _p.second; } ///< return internally stored max value
+	bool operator==(const inversetransform_sampler<result_type, func> &rhs) const { return _p == rhs._p; } ///< comparison operator, compares internal min and max values
+	bool operator!=(const inversetransform_sampler<result_type, func> &rhs) const { return !(operator==(rhs)); } ///< inequality operator, compares internal min and max values
+};
+
+/*
+template<class CharT, class Traits, typename T, typename func>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits> &os, const inversetransform_sampler<T, func> &d){
+	return os << "Distribution generating random numbers between " << d.min() << " and " << d.max() << " using inverse transform sampling\n";
+}
+
+template<class CharT, class Traits, typename T, typename func>
+std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits> &is, inversetransform_sampler<T, func> &d){
+	typename inversetransform_sampler<T, func>::param_type p;
+	is >> p;
+	if (is)
+		d.param(p);
+	return is;
+}
+*/
+
+/**
+ * Functor to create sine-distributed random numbers with inversetransform_sampler
+ */
+template<typename T>
+struct inversetransform_sin{
+	/**
+	 * Inverse of cumulative distribution = acos(-x)
+	 */
+	T operator()(const T x, const T amin, const T amax) const {
+		return std::acos(std::cos(amin) - x * (std::cos(amin) - std::cos(amax)));
+	}
+};
+/**
+ * Specialization of inversetransform_sampler to create sine-distributed random numbers
+ */
+template<typename T>
+using sin_distribution = inversetransform_sampler<T, inversetransform_sin<T> >;
+
+
+/**
+ * Functor to create sin*cos-distributed random numbers with inversetransform_sampler
+ */
+template<typename T>
+struct inversetransform_sincos{
+	/**
+	 * Inverse of cumulative distribution = acos(sqrt(x))
+	 */
+	T operator()(const T x, const T amin, const T amax) const {
+		return acos(sqrt(x*(cos(amax)*cos(amax) - cos(amin)*cos(amin)) + cos(amin)*cos(amin)));
+	}
+};
+/**
+ * Specialization of inversetransform_sampler to create sin*cos-distributed random numbers
+ */
+template<typename T>
+using sincos_distribution = inversetransform_sampler<T, inversetransform_sincos<T> >;
+
+
+/**
+ * Functor to create x^2-distributed random numbers with inversetransform_sampler
+ */
+template<typename T>
+struct inversetransform_parabolic{
+	/**
+	 * Inverse of cumulative distribution = x^1/3
+	 */
+	T operator()(const T x, const T amin, const T amax) const {
+		return pow(x*(pow(amax,3) - pow(amin,3)) + pow(amin,3),1.0/3.0);
+	}
+};
+/**
+ * Specialization of inversetransform_sampler to create x^2-distributed random numbers
+ */
+template<typename T>
+using parabolic_distribution = inversetransform_sampler<T, inversetransform_parabolic<T> >;
+
+
+/**
+ * Functor to create linearly distributed random numbers with inversetransform_sampler
+ */
+template<typename T>
+struct inversetransform_linear{
+	/**
+	 * Inverse of cumulative distribution = sqrt(x)
+	 */
+	T operator()(const T &x, const T &amin, const T &amax) const {
+		return sqrt(x*(amax*amax - amin*amin) + amin*amin);
+	}
+};
+/**
+ * Specialization of inversetransform_sampler to create linearly distributed random numbers
+ */
+template<typename T>
+using linear_distribution = inversetransform_sampler<T, inversetransform_linear<T> >;
+
+
+/**
+ * Functor to create sqrt-distributed random numbers with inversetransform_sampler
+ */
+template<typename T>
+struct inversetransform_sqrt{
+	/**
+	 * Inverse of cumulative distirbution = x^2/3
+	 */
+	T operator()(const T x, const T amin, const T amax) const {
+		return pow((pow(amax, 1.5) - pow(amin, 1.5))*x + pow(amin, 1.5), 2.0/3.0);
+	}
+};
+/**
+ * Specialization of inversetransform_sampler to create sqrt-distributed random numbers
+ */
+template<typename T> using sqrt_distribution = inversetransform_sampler<T, inversetransform_sqrt<T> >;
+
+} // end namespace std
+
+/**
+ * Create a piecewise linear distribution from a function with single parameter
+ *
+ * @param f Function returning a double using a single double parameter
+ * @param range_min Lower range limit of distribution
+ * @param range_max Upper range limit of distribution
+ *
+ * @return Return piecewise linear distribution
+ */
+template<typename UnaryFunction>
+std::piecewise_linear_distribution<double> parse_distribution(UnaryFunction f, const double range_min, const double range_max);
+
+
+/**
+ * Create a piecewise linear distribution from a function defined in a string.
+ * The string is interpreted by the ExprTk library.
+ *
+ * @param func Formula string to parse
+ * @param range_min Lower range limit of distribution
+ * @param range_max Upper range limit of distribution
+ *
+ * @return Return piecewise linear distribution
+ */
+std::piecewise_linear_distribution<double> parse_distribution(const std::string &func, const double range_min, const double range_max);
+
+
+extern std::piecewise_linear_distribution<double> proton_beta_distribution; ///< Creates random numbers according to the energy spectrum of protons from free-neutron decay
+extern std::piecewise_linear_distribution<double> electron_beta_distribution; ///< Creates random numbers according to the energy spectrum of electrons from free-neutron decay
 
 #endif /*MC_H_*/

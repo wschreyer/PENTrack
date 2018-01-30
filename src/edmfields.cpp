@@ -4,11 +4,9 @@
  * The EDM fields used in the Ramsey Cycle
 */
 
-#include <cmath>
 #include "edmfields.h"
-#include <iostream>
-#include <stdlib.h>
 
+#include <iostream>
 
 //TEDMStaticB0GradZField constructor
 TEDMStaticB0GradZField::TEDMStaticB0GradZField(const double xoff, const double yoff, const double zoff, const double ang1, const double ang2,

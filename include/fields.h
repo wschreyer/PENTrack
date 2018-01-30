@@ -9,10 +9,7 @@
 #include <vector>
 
 #include "field.h"
-#include "field_2d.h"
-#include "field_3d.h"
-#include "conductor.h"
-#include "edmfields.h"
+#include "config.h"
 #include "globals.h"
 
 /**
@@ -23,6 +20,9 @@ private:
 	std::vector<TField*> fields; ///< list of fields
 		
 public:
+	TFieldManager(const TFieldManager &f) = delete; ///< TFieldManager is not copyable
+	TFieldManager& operator=(const TFieldManager &f) = delete; ///< TFieldManager is not copyable
+
 	/**
 	 * Constructor.
 	 *

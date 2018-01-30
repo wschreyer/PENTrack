@@ -8,7 +8,6 @@
 #define FIELD_H_
 
 #include <cstddef>
-#include <iostream>
 
 #include "exprtk.hpp"
 

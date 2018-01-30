@@ -3,9 +3,8 @@
  * Several optimized routines to calculate magnetic fields produced by (in)finite straight wires.
  */
 
-#include <cmath>
-
 #include "conductor.h"
+
 #include "globals.h"
 
 TConductorField::TConductorField(const double SW1xx, const double SW1yy, const double SW1zz,

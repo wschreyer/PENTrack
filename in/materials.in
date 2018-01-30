@@ -1,0 +1,28 @@
+[MATERIALS]
+############### Define material properties for UCN #############
+# imaginary Fermi potential, diffuse reflectivity, spin flip probability, micro-roughness parameters, enable micro-roughness reflection
+# Diffuse reflection is either modeled with the Lambert model or the Micro Roughness model.
+# To activate the former, set the LamberReflectionProbability. To activate the latter, set RMSroughness and CorrelationLength.
+#  see Neutron news 3.3 (1992): 26-37, Z. Physik 254, 169--188 (1972) and Eur. Phys. J. A 44, 23–29 (2010)
+#name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability [0..1]		SpinflipProbability [0..1]	RMSroughness [m]	CorrelationLength [m]
+default		0			0			0				0			0			0
+PolishedSteel	183			0.0852			0				1e-4	2.6e-9	20e-9
+PE		-8.6553			0.492			0.5				0	0	0
+Ti		-51.1			0.0432			0.2				1e-5	0	0
+Cu		170.7470		0.0726			0.2				1e-5	0	0
+Al		54.1			0.00281			0.2				1e-5	0	0
+AlLT		54.1			1.40e-3			0				1e-5	0	0
+DLC		269			0.0625			0  				2e-6	3E-9	25E-9
+UCNdet		0.1			1			0				0	0	0
+DLCLT		269			5.1116e-3		0  				2e-6    3E-9	25E-9	# cold DLC, imag part should be lower
+NiPLT       	212.9579		0.0311         		0.16				0	0	0	#NiPlt is at 1K
+NiLT		245.1117		0.04068			0.15				0	0	0	#Ni is at 1K
+NiMo		226.7135		0.136			0				0	2.4E-9	12E-9
+NiMoLT		226.7135		3.7e-2			0				0	2.4E-9	12E-9
+CuBe		178.8031		0.0726			0.16				0	0	0
+LHe		18.7854			1.9e-8			0.16				0	0	0	#Liquid He is at 1K
+LHePerf		18.7854			0			0.16				0	0	0	#Perfect Liquid Helium, no absorbtion or upscattering
+BeO		256.6665		6.23e-2			0.16				0	0	0
+SS		183.0405		8.52e-2			0.16				0	0	0
+dPE    		 209              	0.06           		0.16            		1e-5	0	0
+dPS     	171             	0.047          		0.16             		1e-5	0	0

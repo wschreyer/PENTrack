@@ -6,9 +6,9 @@
 #ifndef FIELD_3D_H_
 #define FIELD_3D_H_
 
-#include <vector>
-
 #include "field.h"
+
+#include <vector>
 
 /**
  * Class for tricubic field interpolation, create one for every table file you want to use.

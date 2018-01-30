@@ -1,106 +1,14 @@
-#include <cmath>
+#include "mc.h"
+
 #include <chrono>
 #include <iostream>
-
 #include "exprtk.hpp"
 
-#include "mc.h"
 #include "globals.h"
 
 const int PIECEWISE_LINEAR_DIST_INTERVALS = 1000;
 
-TMCGenerator::TMCGenerator(const char *infile, const uint64_t aseed){
-	if (aseed == 0){
-		// get high-resolution timestamp to generate seed
-		using namespace std::chrono;
-		seed = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-	}
-	else
-		seed = aseed;
-	std::cout << "Random Seed: " << seed << "\n\n";
-	rangen.seed(seed);
-
-	ProtonBetaSpectrumDist = ParseDist(&ProtonBetaSpectrum, 0., 750.); // create piecewise linear distribution from predefined energy spectrum of protons from free-neutron decay
-	ElectronBetaSpectrumDist = ParseDist(&ElectronBetaSpectrum, 0., 782000.); // create piecewise linear distribution from predefined energy spectrum of protons from free-neutron decay
-
-	TConfig invars; ///< contains variables from *.in file
-	ReadInFile(infile, invars);
-	for (TConfig::iterator i = invars.begin(); i != invars.end(); i++){
-		if (i->first != "all")
-			i->second = invars["all"]; // default particle specific settings to "all"-settings
-	}
-	ReadInFile(infile, invars); // read particle.in again to overwrite defaults for specific particle settings
-
-	for (TConfig::iterator i = invars.begin(); i != invars.end(); i++){
-		if (i->first == "all")
-			continue;
-		TParticleConfig *pconf = &pconfigs[i->first];
-		double Emin, Emax, phi_v_min, phi_v_max, theta_v_min, theta_v_max;
-		std::istringstream(i->second["lmax"]) >> pconf->lmax;
-		std::istringstream(i->second["polarization"]) >> pconf->polarization;
-		std::istringstream(i->second["tau"]) >> pconf->tau;
-		std::istringstream(i->second["tmax"]) >> pconf->tmax;
-		std::istringstream(i->second["phi_v_min"]) >> phi_v_min;
-		std::istringstream(i->second["phi_v_max"]) >> phi_v_max;
-		std::istringstream(i->second["theta_v_min"]) >> theta_v_min;
-		std::istringstream(i->second["theta_v_max"]) >> theta_v_max;
-		std::istringstream(i->second["Emax"]) >> Emax;
-		std::istringstream(i->second["Emin"]) >> Emin;
-
-		pconf->spectrum = ParseDist(i->second["spectrum"], Emin, Emax);
-		pconf->phi_v = ParseDist(i->second["phi_v"], phi_v_min, phi_v_max);
-		pconf->theta_v = ParseDist(i->second["theta_v"], theta_v_min, theta_v_max);
-	}
-}
-
-
-
-TMCGenerator::~TMCGenerator(){
-}
-
-double TMCGenerator::UniformDist(double min, double max){
-	if (min == max)
-		return min;
-	std::uniform_real_distribution<double> unidist(min, max);
-	return unidist(rangen);
-}
-
-double TMCGenerator::SinDist(double min, double max){
-	return acos(cos(min) - UniformDist(0,1) * (cos(min) - cos(max)));
-}
-
-double TMCGenerator::SinCosDist(double min, double max){
-	return acos(sqrt(UniformDist(0,1)*(cos(max)*cos(max) - cos(min)*cos(min)) + cos(min)*cos(min)));
-}
-
-double TMCGenerator::SquareDist(double min, double max){
-	return pow(UniformDist(0,1)*(pow(max,3) - pow(min,3)) + pow(min,3),1.0L/3.0);
-}
-
-double TMCGenerator::LinearDist(double min, double max){
-	return sqrt(UniformDist(0,1)*(max*max - min*min) + min*min);
-}
-
-double TMCGenerator::SqrtDist(double min, double max){
-	return pow((pow(max, 1.5) - pow(min, 1.5))*UniformDist(0,1) + pow(min, 1.5), 2.0/3.0);
-}
-
-double TMCGenerator::NormalDist(double mean, double sigma){
-	std::normal_distribution<double> normaldist(mean, sigma);
-	return normaldist(rangen);
-}
-
-double TMCGenerator::ExpDist(double exponent){
-	std::exponential_distribution<double> expdist(exponent);
-	return expdist(rangen);
-}
-
-void TMCGenerator::IsotropicDist(double &phi, double &theta){
-	phi = UniformDist(0,2*pi);
-	theta = SinDist(0,pi);
-}
-
-double TMCGenerator::NeutronSpectrum(){
+//double TMCGenerator::NeutronSpectrum() const{
 //		return SqrtDist(0, 300e-9);
 
 /*
@@ -218,137 +126,26 @@ double TMCGenerator::NeutronSpectrum(){
 	// END AbEx@ILL
 	*/
 
-	return 0;
-}
-
-double TMCGenerator::Spectrum(const std::string &particlename){
-	TParticleConfig *pconfig = &pconfigs[particlename];
-	return pconfig->spectrum(rangen);
-}
-
-void TMCGenerator::AngularDist(const std::string &particlename, double &phi_v, double &theta_v){
-	TParticleConfig *pconfig = &pconfigs[particlename];
-	phi_v = pconfig->phi_v(rangen);
-	theta_v = pconfig->theta_v(rangen);
-}
-
-double TMCGenerator::LifeTime(const std::string &particlename){
-	double tau = pconfigs[particlename].tau;
-	if (tau != 0)
-		return -tau * log(UniformDist(0,1));
-	else
-		return pconfigs[particlename].tmax;
-}
-
-double TMCGenerator::MaxTrajLength(const std::string &particlename){
-	return pconfigs[particlename].lmax;
-}
-
-double TMCGenerator::DicePolarisation(const double polarisation){
-	if(UniformDist(0,1) < 0.5*(1. + polarisation))
-		return 1;
-	else
-		return -1;
-}
-
-void TMCGenerator::NeutronDecay(double v_n[3], double &E_p, double &E_e, double &phi_p, double &phi_e, double &theta_p, double &theta_e, double &pol_p, double &pol_e)
-{
-	double m_nue = 1 / pow(c_0, 2); // [eV/c^2]
-
- 	double pabs, beta1, beta2, delta1, delta2; // 3-momentums (abs+directions)
- 	double p[4], e[4];
-
-//-------- Step 1 ----------------------------------------------------------------------------------------------------------
+//	return 0;
+//}
 /*
- * p   = (E/c, p_x, p_y, p_z)
- * E   = E_kin + m*c^2
- * p^2 = (E/c)^2 - (m*c)^2
- *
- */
-	// energy of proton
- 	double Ekin = ProtonBetaSpectrumDist(rangen);
-	p[0] = Ekin/c_0 + m_p*c_0;
-	// momentum norm of proton
-	pabs = sqrt(p[0]*p[0] - m_p*m_p*c_0*c_0);
-
-//-------- Step 2 ----------------------------------------------------------------------------------------------------------
-	// isotropic emission characteristics (in the rest frame of the neutron)
-	IsotropicDist(beta1,delta1);
-	// 3-momentum of the proton
-	p[1] = pabs * sin(delta1) * cos(beta1);
-	p[2] = pabs * sin(delta1) * sin(beta1);
-	p[3] = pabs * cos(delta1);
-
-//-------- Step 3 ----------------------------------------------------------------------------------------------------------
-	// calculate intermediate virtual state via 4-momentum conservation
-	double virt[4] = {(double)m_n*(double)c_0 - p[0], -p[1], -p[2], -p[3]}; // 4-momentum of intermediate virtual state (n - p)
-	double m2_virt = virt[0]*virt[0] - virt[1]*virt[1] - virt[2]*virt[2] - virt[3]*virt[3]; // squared mass of virtual state
-
-
-//-------- Step 4 ----------------------------------------------------------------------------------------------------------
-
-	// energy of electron from two-body-decay of virtual state
-	e[0] = (m2_virt + m_e*m_e*c_0*c_0 - m_nue*m_nue*c_0*c_0)/2/sqrt(m2_virt);
-	pabs = sqrt(e[0]*e[0] - m_e*m_e*c_0*c_0);
-
-//-------- Step 5 ----------------------------------------------------------------------------------------------------------
-	// isotropic emission characteristics (in the rest frame of the virtual state)
-	IsotropicDist(beta2, delta2);
-	// 3-momentum of the electron
-	e[1] = pabs * sin(delta2) * cos(beta2);
-	e[2] = pabs * sin(delta2) * sin(beta2);
-	e[3] = pabs * cos(delta2);
-
-//-------- Step 6 ----------------------------------------------------------------------------------------------------------
-	// boost e into moving frame of virtual state
-	double beta[3] = {virt[1]/virt[0], virt[2]/virt[0], virt[3]/virt[0]};
-	BOOST(beta,e);
-
-//-------- Step 7 ----------------------------------------------------------------------------------------------------------
-	// get 4-momentum of neutrino via 4-momentum conservation
-	double nue[4] = {virt[0] - e[0], virt[1] - e[1], virt[2] - e[2], virt[3] - e[3]};
-
-//-------- Step 8 ----------------------------------------------------------------------------------------------------------
-	// boost p,e,nu into moving frame of neutron
-	beta[0] = v_n[0]/c_0;
-	beta[1] = v_n[1]/c_0;
-	beta[2] = v_n[2]/c_0;
-	BOOST(beta,e);
-	BOOST(beta,p);
-	BOOST(beta,nue);
-
-//-------- Step 9 ----------------------------------------------------------------------------------------------------------
-	// use neutrino mass for check
-//		long double decayerror = m_nue*c_0*c_0 - sqrt(nue[0]*nue[0] - nue[1]*nue[1] - nue[2]*nue[2] - nue[3]*nue[3])*c_0;
-//		printf("\n   +++ decay error : %LG eV +++\n", decayerror);
-
-
-//-------- Finished --------------------------------------------------------------------------------------------------------
-	double beta_p2 = (p[1]*p[1] + p[2]*p[2] + p[3]*p[3])/p[0]/p[0];
-	E_p = m_p*c_0*c_0*beta_p2*(0.5 + beta_p2*(3./8. + beta_p2*(5./16.))); // use series expansion for low energy proton calculations
-	E_e = e[0]*c_0 - m_e*c_0*c_0; // use fully relativistic formula for high energy electron
-	phi_p = atan2(p[2], p[1]);
-	phi_e = atan2(e[2], e[1]);
-	theta_p = acos(p[3]/sqrt(p[1]*p[1] + p[2]*p[2] + p[3]*p[3]));
-	theta_e = acos(e[3]/sqrt(e[1]*e[1] + e[2]*e[2] + e[3]*e[3]));
-	pol_p = UniformDist(0, 1) < 0.5 ? 1 : -1;
-	pol_e = UniformDist(0, 1) < 0.5 ? 1 : -1;
-}
-
-
-void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
+void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta) const{
 	long double v_x,v_y, v_tot, xz_ang, v_yaxis, v_xaxis, v_zaxis;
 	v_tot = sqrt(2*Ekin/m_n);
 //	int i =0;
 	for(;;){
 //		i++;
-		v_x = UniformDist(0, 25);
+		std::uniform_real_distribution<double> vdist(0, 25);
+		v_x = vdist(rangen);
 		v_y = (1/(2.270*v_x + 0.0122*pow(v_x,2)))*exp(-pow((log(2.270/v_x +0.0122) +1.4137),2)/(2*pow(0.3420,2)));
 
-		if(UniformDist(0,0.04570423)<v_y){
+		std::uniform_real_distribution<double> vydist(0., 0.04570423);
+		if(vydist(rangen)<v_y){
 			v_yaxis = v_x;
-			xz_ang = UniformDist(0,2*pi);
-			theta = SinCosDist(0, acos(v_yaxis/25));
+			std::uniform_real_distribution<double> phidist(0, 2.*pi);
+			xz_ang = phidist(rangen);
+			std::sincos_distribution<double> sincosdist(0, acos(v_yaxis/25));
+			theta = sincosdist(rangen);
 			v_tot = v_yaxis/cos(theta);
 			v_xaxis = sqrt(pow(v_tot,2)-pow(v_yaxis,2))*cos(xz_ang);
 			v_zaxis = sqrt(pow(v_tot,2)-pow(v_yaxis,2))*sin(xz_ang);
@@ -368,22 +165,35 @@ void TMCGenerator::tofDist(double &Ekin, double &phi, double &theta){
 			}
 			return;
 		}
-/*		if(i > 100){ //show that there is a problem by setting phi and theta to 100
+		if(i > 100){ //show that there is a problem by setting phi and theta to 100
 			phi = i;
 			theta = i;
 			return;
 		}
-*/
+
 
 	}
 }
 
+*/
 
-
-std::piecewise_linear_distribution<double> TMCGenerator::ParseDist(std::string &func, double range_min, double range_max){
+template<typename UnaryFunction>
+std::piecewise_linear_distribution<double> parse_distribution(UnaryFunction f, const double range_min, const double range_max){
 	if (range_min > range_max)
-		std::swap(range_min, range_max); // swap min/mix if necessary
-	std::vector<double> range, dist;
+		throw std::runtime_error("Invalid range used to parse distribution");
+	double rmin = range_min;
+	double rmax = range_max;
+	int nw = PIECEWISE_LINEAR_DIST_INTERVALS;
+	if (range_min == range_max){
+		rmax = std::nextafter(range_max, std::numeric_limits<double>::max()); // use slightly larger double value for range_max, else distribution will default to range 0..1
+		nw = 1;
+	}
+
+	return std::piecewise_linear_distribution<double>(nw, rmin, rmax, f);
+}
+
+
+std::piecewise_linear_distribution<double> parse_distribution(const std::string &func, const double range_min, const double range_max){
 	double x;
 	exprtk::symbol_table<double> symbol_table;
 	symbol_table.add_variable("x", x);
@@ -391,45 +201,23 @@ std::piecewise_linear_distribution<double> TMCGenerator::ParseDist(std::string &
 	symbol_table.add_function("ElectronBetaSpectrum", ElectronBetaSpectrum);
 	symbol_table.add_function("MaxwellBoltzSpectrum", MaxwellBoltzSpectrum);
 	symbol_table.add_constants();
-	
+
 	exprtk::expression<double> expression;
 	expression.register_symbol_table(symbol_table);
 
 	exprtk::parser<double> parser;
 	parser.compile(func, expression);
-
-	for (x = range_min; x <= range_max; x += (range_max - range_min)/PIECEWISE_LINEAR_DIST_INTERVALS){ // go through parameter range
-		range.push_back(x); // create list of parameter values
-		dist.push_back(expression.value()); // create list of function values
-		if (range_min == range_max){ // if min and max of parameter range are equal
-			x = std::nextafter(range_max, std::numeric_limits<double>::max()); // add another parameter value slightly larger than min, else piecewise linear distribution defaults to range 0..1
-			range.push_back(x);
-			dist.push_back(expression.value());
-			break; // stop list creation
-		}
-	}
-
-	std::piecewise_linear_distribution<double> randist(range.begin(), range.end(), dist.begin()); // create piecewise linear distribution from parameter- and distribution-value lists
-//	std::cout << randist << '\n';
-	return randist;
+	return parse_distribution(
+			[&x, &expression](const double px){
+				x = px;
+				return expression.value();
+			},
+			range_min,
+			range_max
+	);
 }
 
-std::piecewise_linear_distribution<double> TMCGenerator::ParseDist(double (*func)(double), double range_min, double range_max){
-	if (range_min > range_max)
-		std::swap(range_min, range_max); // swap min/mix if necessary
-	std::vector<double> range, dist;
-	for (double x = range_min; x <= range_max; x += (range_max - range_min)/PIECEWISE_LINEAR_DIST_INTERVALS){ // go through parameter range
-		range.push_back(x); // create list of parameter values
-		dist.push_back((*func)(x)); // create list of function values
-		if (range_min == range_max){ // if min and max of parameter range are equal
-			x = std::nextafter(range_max, std::numeric_limits<double>::max()); // add another parameter value slightly larger than min, else piecewise linear distribution defaults to range 0..1
-			range.push_back(x);
-			dist.push_back((*func)(x));
-			break; // stop list creation
-		}
-	}
+std::piecewise_linear_distribution<double> proton_beta_distribution = parse_distribution(ProtonBetaSpectrum, 0., 750.);
+std::piecewise_linear_distribution<double> electron_beta_distribution = parse_distribution(ElectronBetaSpectrum, 0., 782000.);
 
-	std::piecewise_linear_distribution<double> randist(range.begin(), range.end(), dist.begin()); // create piecewise linear distribution from parameter- and distribution-value lists
-//	std::cout << randist << '\n';
-	return randist;
-}
+

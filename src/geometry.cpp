@@ -1,142 +1,153 @@
+#include "geometry.h"
+
 #include <iostream>
-#include <sstream>
+#include <algorithm>
 
 #include "globals.h"
-#include "geometry.h"
 
 using namespace std;
 
-TGeometry::TGeometry(TConfig &geometryin){
-	vector<material> materials;
+std::istream& operator>>(std::istream &str, material &mat){
+	str >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb >> mat.SpinflipProb >> mat.RMSRoughness >> mat.CorrelLength;
+	if (!str)
+		throw std::runtime_error((boost::format("Could not read material %s!") % mat.name).str());
+	if (mat.DiffProb != 0 && (mat.RMSRoughness != 0 || mat.CorrelLength != 0))
+		throw std::runtime_error((boost::format("You have set both LambertReflectionProbability and RMSRoughness/CorrelationLength for material %s! "\
+												"Now I don't know if I should use Lambertian reflection or micro-roughness reflection.") % mat.name).str());
+	return str;
+}
+std::ostream& operator<<(std::ostream &str, const material &mat){
+	str << mat.name << " " << mat.FermiReal << " " << mat.FermiImag << " " << mat.DiffProb << " " << mat.SpinflipProb << " " << mat.RMSRoughness << " " << mat.CorrelLength << "\n";
+	if (!str)
+		throw std::runtime_error((boost::format("Could not write material %s!") % mat.name).str());
+	return str;
+}
 
-	for (map<string, string>::iterator i = geometryin["MATERIALS"].begin(); i != geometryin["MATERIALS"].end(); i++){
-		material mat;
-		mat.name = i->first;
-		istringstream ss(i->second);
-		ss >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb >> mat.SpinflipProb >> mat.RMSRoughness >> mat.CorrelLength >> mat.UseMRModel;
-		if (ss)
-			materials.push_back(mat);
-		else
-			cout << "Could not load material " << i->first << '\n';
-	}
+std::istream& operator>>(std::istream &str, solid &model){
+	str >> model.filename >> model.mat.name;
+	if (!str)
+		throw std::runtime_error((boost::format("Could not load solid with ID %d! Did you define invalid parameters?") % model.ID).str());
 
-	string line;
-	string STLfile;
-	string matname;
-	char name[80];
-	for (map<string, string>::iterator i = geometryin["GEOMETRY"].begin(); i != geometryin["GEOMETRY"].end(); i++){	// parse STLfile list
-		solid model;
-		istringstream(i->first) >> model.ID;
-		if (model.ID < 0){
-			cout << "You defined a solid with ID " << model.ID << " < 0! IDs have to be larger than zero!\n";
-			exit(-1);
-		}
-		for (vector<solid>::iterator j = solids.begin(); j != solids.end(); j++){
-			if (j->ID == model.ID){
-				cout << "You defined solids with identical ID " << model.ID << "! IDs have to be unique!\n";
-				exit(-1);
-			}
-		}
-
-		istringstream ss(i->second);
-		ss >> STLfile >> matname;
-		if (ss){
-			for (unsigned i = 0; i < materials.size(); i++){
-				if (matname == materials[i].name){
-					model.mat = materials[i];
-					if (model.ID > 1){
-						mesh.ReadFile(STLfile.c_str(),solids.size(),name);
-						model.name = name;
-					}
-					else
-						model.name = "default solid";
-					break;
-				}
-				else if (i+1 == materials.size()){
-					printf("Material %s used for %s but not defined in geometry.in!",matname.c_str(),name);
-					exit(-1);
-				}
-			}
+	double ignorestart, ignoreend;
+	while (str){
+		str >> ignorestart;
+		if (!str) // no more ignore times found
+			break;
+		char dash;
+		str >> dash;
+		str >> ignoreend;
+		if (str && dash == '-'){
+			model.ignoretimes.push_back(std::make_pair(ignorestart, ignoreend));
 		}
 		else{
-			cout << "Could not load solid with ID " << model.ID << "! Did you define invalid parameters?\n";
-			exit(-1);
+			throw std::runtime_error((boost::format("Invalid ignoretimes for solid %d") % model.ID).str());
 		}
-
-		double ignorestart, ignoreend;
-		while (ss){
-			ss >> ignorestart;
-			if (!ss) // no more ignore times found
-				break;
-			char dash;
-			ss >> dash;
-			ss >> ignoreend;
-			if (ss && dash == '-'){
-				model.ignoretimes.push_back(ignorestart);
-				model.ignoretimes.push_back(ignoreend);
-			}
-			else{
-				cout << "Invalid ignoretimes in geometry.in" << '\n';
-				exit(-1);
-			}
-		}
-
-		if (model.ID == 1)
-			defaultsolid = model;
-		else
-			solids.push_back(model);
 	}
-	mesh.Init();
-	cout << '\n';
+	return str;
+}
+
+std::ostream& operator<<(std::ostream &str, const solid &sld){
+	str << sld.ID << " " << sld.filename << " " << sld.mat.name;
+	for (auto i : sld.ignoretimes)
+		str << " " << i.first << "-" << i.second;
+	if (!str)
+		throw std::runtime_error((boost::format("Could not write solid %d!") % sld.ID).str());
+	return str;
+}
+
+TGeometry::TGeometry(TConfig &geometryin){
+	boost::filesystem::path matpath;
+	istringstream(geometryin["GLOBAL"]["materials_file"]) >> matpath; // check if there is a materials file linked in the config file
+	TConfig matconf;
+	if (matpath.empty()){ // if there is no materials file given load materials from config file
+		matconf = geometryin;
+		cout << "Loading materials from " << configpath << "\n";
+	}
+	else{
+		matpath = boost::filesystem::absolute(matpath, configpath.parent_path()); // make path absolute, relative paths are assumed to be relative to the config file's path
+		cout << "Loading materials from " << matpath << "\n";
+		matconf.ReadFromFile(matpath.native());
+	}
+	
+	vector<material> materials;
+	std::transform(matconf["MATERIALS"].begin(), matconf["MATERIALS"].end(), back_inserter(materials), 
+					[](const std::pair<std::string, std::string> &i){
+						material mat;
+						mat.name = i.first;
+						istringstream(i.second) >> mat;
+						return mat;
+					}
+	); // Read materials from config and add them to list
+	
+	for (auto sldparams : geometryin["GEOMETRY"]){
+		solid sld;
+		istringstream(sldparams.first) >> sld.ID;
+		istringstream(sldparams.second) >> sld;
+		
+		auto mat = std::find_if(materials.begin(), materials.end(), [&sld](const material &m){ return sld.mat.name == m.name; });
+		if (mat == materials.end())
+			throw std::runtime_error((boost::format("Material %s used but not defined!") % sld.mat.name).str());
+		sld.mat = *mat;
+		
+		if (sld.ID == 1){
+			sld.name = "default solid";
+			defaultsolid = sld;
+		}
+		else{
+			sld.name = mesh.ReadFile(boost::filesystem::absolute(sld.filename, configpath.parent_path()).native(), sld.ID);
+			solids.push_back(sld);
+		}
+	}
+	
+	if (std::unique(solids.begin(), solids.end(), [](const solid s1, const solid s2){ return s1.ID == s2.ID; }) != solids.end()) // check if IDs of each solid are unique
+		throw std::runtime_error("You defined solids with identical ID! IDs have to be unique!");
 }
 
 
-bool TGeometry::GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], map<TCollision, bool> &colls){
-	set<TCollision> c;
-	mesh.Collision(p1,p2,c);
+bool TGeometry::GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], map<TCollision, bool> &colls) const{
+	vector<TCollision> c = mesh.Collision(std::vector<double>{p1[0], p1[1], p1[2]}, std::vector<double>{p2[0], p2[1], p2[2]});
 	colls.clear();
-	for (set<TCollision>::iterator it = c.begin(); it != c.end(); it++){
-		colls[*it] = false;
-		std::vector<double> *times = &solids[it->sldindex].ignoretimes;
-		if (!times->empty()){
-			double x = x1 + (x2 - x1)*it->s;
-			for (unsigned int i = 0; i < times->size(); i += 2){
-				if (x >= (*times)[i] && x < (*times)[i+1]){
-					colls[*it] = true; // set ignored flag if collision should be ignored according to geometry.in
-					break;
-				}
-			}
-		}
+	for (vector<TCollision>::iterator it = c.begin(); it != c.end(); it++){
+		solid sld = GetSolid(it->ID);
+		double t = x1 + (x2 - x1)*it->s; 
+		colls[*it] = std::any_of(sld.ignoretimes.begin(), sld.ignoretimes.end(), 
+									[&t](const std::pair<double, double> &its){ return t >= its.first && t < its.second; }
+								); // check if collision time lies between any pair of ignore times
 	}
 	return !colls.empty();
 }
 
 
-void TGeometry::GetSolids(const double t, const double p[3], std::map<solid, bool> &currentsolids){
-	double p2[3] = {p[0], p[1], mesh.tree.bbox().zmin() - REFLECT_TOLERANCE};
+std::map<solid, bool> TGeometry::GetSolids(const double t, const double p[3]) const{
+	double p2[3] = {p[0], p[1], mesh.GetBoundingBox().zmin() - REFLECT_TOLERANCE};
 	map<TCollision, bool> c;
-	currentsolids.clear();
+	std::map<solid, bool> currentsolids;
 	currentsolids[defaultsolid] = false;
 	if (GetCollisions(t,p,0,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
 		for (map<TCollision, bool>::iterator i = c.begin(); i != c.end(); i++){
-			solid *sld = &solids[i->first.sldindex];
-			if (currentsolids.count(*sld) > 0) // if there is a collision with a solid already in the list, remove it from list
-				currentsolids.erase(*sld);
+			solid sld = GetSolid(i->first.ID);
+			if (currentsolids.count(sld) > 0) // if there is a collision with a solid already in the list, remove it from list
+				currentsolids.erase(sld);
 			else
-				currentsolids[*sld] = i->second; // else add solid to list
+				currentsolids[sld] = i->second; // else add solid to list
 		}
 	}
+	return currentsolids;
 }
 
-solid TGeometry::GetSolid(const double t, const double p[3]){
-	std::map<solid, bool> currentsolids;
-	GetSolids(t, p, currentsolids);
-	return GetSolid(t, p, currentsolids);
+
+solid TGeometry::GetSolid(const double t, const double p[3], const map<solid, bool> &currentsolids) const{
+	// find first (highest-priority) solid that's not being ignored
+	auto i = std::find_if(currentsolids.begin(), currentsolids.end(), [](std::pair<solid, bool> sld){ return !sld.second; });
+	if (i != currentsolids.end())
+		return i->first;
+	else
+		return defaultsolid;
 }
 
-solid TGeometry::GetSolid(const double t, const double p[3], const map<solid, bool> &currentsolids){
-	for (std::map<solid, bool>::const_iterator i = currentsolids.begin(); i != currentsolids.end(); i++)
-		if (!i->second)
-			return i->first;
-	return defaultsolid;
+solid TGeometry::GetSolid(const unsigned ID) const{
+	auto sld = std::find_if(solids.begin(), solids.end(), [&ID](const solid &s){ return s.ID == ID; });
+	if (sld == solids.end())
+		throw std::runtime_error((boost::format("Could not find solid with ID %s") % ID).str());
+	return *sld;
 }
