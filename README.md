@@ -20,7 +20,7 @@ GCC 4.7.2 and newer should work. GCC 4.8.2 seems to break the CGAL library on so
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
 Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package. If yours does not, you can run the bash script `install_cgal.sh`, which will download and compile CGAL for you. If you choose to manually download and compile it yourself, you will have to adjust the search path of cmake by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
 
-CGAL v4.1 - v4.9 have been tested.
+CGAL v4.1 - v4.11 have been tested.
 
 ### Boost
 
