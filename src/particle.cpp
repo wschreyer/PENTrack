@@ -629,16 +629,16 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 				currentsolids = newsolids; // if surface was traversed (even if it was  physically ignored) replace current solids with list of new solids
 			}
 
-			value_type x2temp = x2;
-			state_type y2temp = y2;
-			OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), mc, ID, secondaries); // check for absorption/scattering
-			if (x2temp != x2 || y2 != y2temp){
-				trajectoryaltered = true;
-				if (y2temp[7] != y2[7])
-					Nspinflip++;
-			}
+//			value_type x2temp = x2;
+//			state_type y2temp = y2;
+//			OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), mc, ID, secondaries); // check for absorption/scattering
+//			if (x2temp != x2 || y2 != y2temp){
+//				trajectoryaltered = true;
+//				if (y2temp[7] != y2[7])
+//					Nspinflip++;
+//			}
 
-			if (trajectoryaltered)
+			if (trajectoryaltered || ID != ID_UNKNOWN)
 				return true;
 		}
 		else{
