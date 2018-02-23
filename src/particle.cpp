@@ -511,7 +511,7 @@ void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_ty
 
 
 const solid& TParticle::GetCurrentsolid() const{
-	map<solid, bool>::const_iterator it = currentsolids.begin();
+	auto it = currentsolids.begin();
 	while (it->second) // skip over ignored solids
 		it++;
 	return it->first; // return first non-ignored solid in list
@@ -548,7 +548,10 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 		return true;
 	}
 
-	map<TCollision, bool> colls;
+	if (iteration > 99)
+		throw std::runtime_error("Failed to iterate collision point!");
+
+	multimap<TCollision, bool> colls;
 	bool collfound = false;
 	try{
 		collfound = geom.GetCollisions(x1, &y1[0], x2, &y2[0], colls);
@@ -560,14 +563,13 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 
 	if (collfound){	// if there is a collision with a wall
 		TCollision coll = colls.begin()->first;
-		if ((abs(coll.s*coll.distnormal) < REFLECT_TOLERANCE
+		if (coll.s*abs(coll.distnormal) < REFLECT_TOLERANCE
 			&& (1 - coll.s)*abs(coll.distnormal) < REFLECT_TOLERANCE) // if first collision is closer to y1 and y2 than REFLECT_TOLERANCE
-			|| iteration > 99) // or if iteration counter reached a certain maximum value
 		{
 			bool trajectoryaltered = false, traversed = true;
 
 			map<solid, bool> newsolids = currentsolids;
-			for (map<TCollision, bool>::iterator it = colls.begin(); it != colls.end(); it++){ // go through list of collisions
+			for (auto it = colls.begin(); it != colls.end(); it++){ // go through list of collisions
 				solid sld = geom.GetSolid(it->first.ID);
 				if (CheckHitError(sld, it->first.distnormal)){ // check all hits for errors
 					ID = ID_GEOMETRY_ERROR; // stop trajectory integration if error found
@@ -590,7 +592,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 
 			solid leaving = currentsolid; // particle can only leave highest-priority solid
 			solid entering = geom.defaultsolid;
-			for (map<solid, bool>::iterator it = newsolids.begin(); it != newsolids.end(); it++){ // go through list of new solids
+			for (auto it = newsolids.begin(); it != newsolids.end(); it++){ // go through list of new solids
 				if (!it->second && it->first.ID > entering.ID){ // highest-priority solid in newsolids list will be entered in collisions
 					entering = it->first;
 				}
@@ -738,10 +740,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	double H;
 	solid sld = geom.GetSolid(x, &y[0]);
 	if (ID == ID_ABSORBED_ON_SURFACE){
-		std::map<solid, bool>::const_iterator nextsolid = currentsolids.begin();
-		do{
-			nextsolid++;
-		}while (nextsolid->second);
+		auto nextsolid = std::find_if(++currentsolids.begin(), currentsolids.end(), [](const std::pair<solid, bool> &i){ return !i.second; });
 		H = E + GetPotentialEnergy(x, y, field, nextsolid->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
 	}
 	else

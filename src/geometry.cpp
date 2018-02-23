@@ -104,32 +104,35 @@ TGeometry::TGeometry(TConfig &geometryin){
 }
 
 
-bool TGeometry::GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], map<TCollision, bool> &colls) const{
+bool TGeometry::GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], multimap<TCollision, bool> &colls) const{
 	vector<TCollision> c = mesh.Collision(std::vector<double>{p1[0], p1[1], p1[2]}, std::vector<double>{p2[0], p2[1], p2[2]});
 	colls.clear();
-	for (vector<TCollision>::iterator it = c.begin(); it != c.end(); it++){
-		solid sld = GetSolid(it->ID);
-		double t = x1 + (x2 - x1)*it->s; 
-		colls[*it] = std::any_of(sld.ignoretimes.begin(), sld.ignoretimes.end(), 
-									[&t](const std::pair<double, double> &its){ return t >= its.first && t < its.second; }
-								); // check if collision time lies between any pair of ignore times
+	for (auto it: c){
+		solid sld = GetSolid(it.ID);
+		double t = x1 + (x2 - x1)*it.s;
+		bool ignored =std::any_of(sld.ignoretimes.begin(), sld.ignoretimes.end(), 
+						[&t](const std::pair<double, double> &its){ return t >= its.first && t < its.second; }
+					); // check if collision time lies between any pair of ignore times
+		colls.emplace(it, ignored);
 	}
 	return !colls.empty();
 }
 
 
 std::map<solid, bool> TGeometry::GetSolids(const double t, const double p[3]) const{
-	double p2[3] = {p[0], p[1], mesh.GetBoundingBox().zmin() - REFLECT_TOLERANCE};
-	map<TCollision, bool> c;
+	double p2[3] = {mesh.GetBoundingBox().xmin() - REFLECT_TOLERANCE,
+			mesh.GetBoundingBox().ymin() - REFLECT_TOLERANCE,
+			mesh.GetBoundingBox().zmin() - REFLECT_TOLERANCE};
+	std::multimap<TCollision, bool> c;
 	std::map<solid, bool> currentsolids;
 	currentsolids[defaultsolid] = false;
-	if (GetCollisions(t,p,0,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
-		for (map<TCollision, bool>::iterator i = c.begin(); i != c.end(); i++){
-			solid sld = GetSolid(i->first.ID);
+	if (GetCollisions(t,p,t,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
+		for (auto i: c){
+			solid sld = GetSolid(i.first.ID);
 			if (currentsolids.count(sld) > 0) // if there is a collision with a solid already in the list, remove it from list
 				currentsolids.erase(sld);
 			else
-				currentsolids[sld] = i->second; // else add solid to list
+				currentsolids[sld] = i.second; // else add solid to list
 		}
 	}
 	return currentsolids;

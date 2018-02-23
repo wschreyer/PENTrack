@@ -106,7 +106,7 @@ struct TGeometry{
 		 *
 		 * @return Returns true if line segment collides with a surface
 		 */
-		bool GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], std::map<TCollision, bool> &colls) const;
+		bool GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], std::multimap<TCollision, bool> &colls) const;
 		
 			
 		/**

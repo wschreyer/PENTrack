@@ -539,7 +539,7 @@ void PrintGeometry(const boost::filesystem::path &outfile, TGeometry &geom){
 		p2[1] = p1[1] + raylength*sin(theta)*sin(phi);
 		p2[2] = p1[2] + raylength*cos(theta);
 
-	    map<TCollision, bool> c;
+	    multimap<TCollision, bool> c;
 	    geom.GetCollisions(0,p1,0,p2,c);
 		collcount += c.size();
 
