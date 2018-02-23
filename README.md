@@ -236,6 +236,7 @@ Helper Scripts
 ### Merging output files into ROOT trees
 
 merge_all.c: A [ROOT](http://root.cern.ch) script that writes all out-files (or those, whose filenames match some pattern) into a single ROOT file containing trees for each log- and particle-type.
+merge.py: Python script merging all files given as parameters into a ROOT tree, similar to merge_all.c.
 
 ### preRunCheck.sh
 
