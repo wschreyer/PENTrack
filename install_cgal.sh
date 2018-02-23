@@ -16,5 +16,10 @@ cd ..
 
 mkdir cgal/build
 cd cgal/build
-cmake ../${CGAL_VERSION}/ -DWITH_CGAL_Qt5=OFF -DWITH_CGAL_ImageIO=OFF -DCGAL_HEADER_ONLY=ON
-cd ../..
+cmake ../${CGAL_VERSION}/ -DWITH_CGAL_Qt5=OFF -DWITH_CGAL_ImageIO=OFF -DCGAL_HEADER_ONLY=ON -DCMAKE_INSTALL_PREFIX=..
+make
+make install
+cd ..
+rm -r build
+rm -r $CGAL_VERSION
+cd ..

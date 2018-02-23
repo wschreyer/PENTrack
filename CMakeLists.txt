@@ -7,12 +7,12 @@ endif()
 
 include_directories("alglib-3.13.0/cpp/src")
 add_library(alglib OBJECT alglib-3.13.0/cpp/src/alglibinternal.cpp 
-						alglib-3.13.0/cpp/src/dataanalysis.cpp alglib-3.13.0/cpp/src/integration.cpp 
-						alglib-3.13.0/cpp/src/optimization.cpp alglib-3.13.0/cpp/src/statistics.cpp 
-						alglib-3.13.0/cpp/src/alglibmisc.cpp alglib-3.13.0/cpp/src/diffequations.cpp 
-						alglib-3.13.0/cpp/src/interpolation.cpp alglib-3.13.0/cpp/src/solvers.cpp 
-						alglib-3.13.0/cpp/src/ap.cpp alglib-3.13.0/cpp/src/fasttransforms.cpp 
-						alglib-3.13.0/cpp/src/linalg.cpp alglib-3.13.0/cpp/src/specialfunctions.cpp)						
+                          alglib-3.13.0/cpp/src/dataanalysis.cpp alglib-3.13.0/cpp/src/integration.cpp 
+                          alglib-3.13.0/cpp/src/optimization.cpp alglib-3.13.0/cpp/src/statistics.cpp 
+                          alglib-3.13.0/cpp/src/alglibmisc.cpp alglib-3.13.0/cpp/src/diffequations.cpp 
+                          alglib-3.13.0/cpp/src/interpolation.cpp alglib-3.13.0/cpp/src/solvers.cpp 
+                          alglib-3.13.0/cpp/src/ap.cpp alglib-3.13.0/cpp/src/fasttransforms.cpp 
+                          alglib-3.13.0/cpp/src/linalg.cpp alglib-3.13.0/cpp/src/specialfunctions.cpp)						
 						
 include_directories("tricubic-1.0/src/libtricubic")
 add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
@@ -27,7 +27,7 @@ else()
 endif()
 
 set(CGAL_DONT_OVERRIDE_CMAKE_FLAGS TRUE CACHE BOOL "Tell CGAL not to override compiler flags")
-find_package(CGAL PATHS "cgal/build")
+find_package(CGAL PATHS "cgal")
 if (CGAL_CONFIG_LOADED)
 	message(STATUS "CGAL version: " ${CGAL_VERSION})
 	if (CGAL_VERSION VERSION_LESS 4.1)
@@ -42,9 +42,9 @@ endif()
 include_directories("exprtk")
 include_directories("include")
 add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/edmfields.cpp 
-						src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
-						src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp
-						$<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)		
+                        src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
+                        src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp
+                        $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)		
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -std=c++11 PUBLIC -Wno-unused-local-typedefs PUBLIC -Wno-deprecated-declarations)

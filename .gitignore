@@ -16,7 +16,7 @@ install_manifest.txt
 PENTrack
 
 # ignore output files
-out/*.out
-out/*.root
+*.out
+*.root
 doc/
 cgal/build/
