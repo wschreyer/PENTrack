@@ -19,4 +19,11 @@ PENTrack
 *.out
 *.root
 doc/
-cgal/build/
+cgal/
+
+# ignore QtCreator files
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes

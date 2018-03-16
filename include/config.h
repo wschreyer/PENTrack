@@ -27,8 +27,8 @@
  */
 class TConfig{
 private:
-	typedef std::map<std::string, std::map<std::string, std::string> > map_type;
-	map_type _map; ///< internally stored map structure
+    typedef std::map<std::string, std::map<std::string, std::string> > map_type;
+    map_type _map; ///< internally stored map structure
 public:
 	/**
 	 * Create empty TConfig
@@ -58,9 +58,9 @@ public:
 	 *
 	 * @return Returns map<string, string> of variables and parameters
 	 */
-	std::map<std::string, std::string>& operator[](const std::string &section){
-		return _map[section];
-	}
+    std::map<std::string, std::string>& operator[](const std::string &section){
+        return _map.at(section);
+    }
 
 	/**
 	 * Get iterator to first section
