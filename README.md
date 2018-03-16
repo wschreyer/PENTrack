@@ -74,7 +74,7 @@ If you want to export several parts of a Solidworks assembly you can do the foll
 
 1. Select the part(s) to be exported and right-click.
 2. Select "Invert selection" and then use "Suppress" on all other parts.
-3. Now you can save that single part as STL (make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together).
+3. Now you can save the remaining parts in a single STL file (make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together).
 4. You can check the positioning of the parts with e.g. [MeshLab](http://meshlab.sourceforge.net/), SolidView, Minimagics, Solidworks...
 
 ### Fields
