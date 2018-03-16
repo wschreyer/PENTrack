@@ -68,7 +68,7 @@ std::vector<TCollision> TTriangleMesh::Collision(const std::vector<double> &p1, 
 				colls.end(),
 				[](const TCollision &c1, const TCollision &c2){
 					if (c1.s == c2.s){
-						std::cout << "Coincident collision between solids " << c1.ID << " and " << c2.ID << std::endl;
+                        //std::cout << "Coincident collision between solids " << c1.ID << " and " << c2.ID << std::endl;
 						return c1.ID > c2.ID;
 					}
 					else

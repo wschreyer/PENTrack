@@ -548,9 +548,6 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 		return true;
 	}
 
-	if (iteration > 99)
-		throw std::runtime_error("Failed to iterate collision point!");
-
 	multimap<TCollision, bool> colls;
 	bool collfound = false;
 	try{
@@ -563,10 +560,13 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 
 	if (collfound){	// if there is a collision with a wall
 		TCollision coll = colls.begin()->first;
-		if (coll.s*abs(coll.distnormal) < REFLECT_TOLERANCE
-			&& (1 - coll.s)*abs(coll.distnormal) < REFLECT_TOLERANCE) // if first collision is closer to y1 and y2 than REFLECT_TOLERANCE
+
+        if ((iteration > 9) or (x2 <= x1*(1 + std::numeric_limits<double>::epsilon()))
+                or (abs(coll.distnormal) < REFLECT_TOLERANCE))
 		{
-			bool trajectoryaltered = false, traversed = true;
+            if (abs(coll.distnormal) > REFLECT_TOLERANCE) // if step over collision is longer than REFLECT_TOLERANCE
+                std::cout << "Could not iterate collision point to required precision within " << iteration << " iterations! Step over collision is " << coll.distnormal << "m, " << x2 - x1 << "s\n";
+            bool trajectoryaltered = false, traversed = true;
 
 			map<solid, bool> newsolids = currentsolids;
 			for (auto it = colls.begin(); it != colls.end(); it++){ // go through list of collisions
@@ -651,7 +651,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 			state_type ybisect2(STATE_VARIABLES);
 			ybisect1 = ybisect2 = y1;
 
-			xnew = x1 + (x2 - x1)*(coll.s - 0.01*iteration); // cut integration right before collision point
+            xnew = x1 + (x2 - x1)*(coll.s - 0.01); // cut integration right before collision point
 			if (xnew > x1 && xnew < x2){ // check that new line segment is in correct time interval
 				xbisect1 = xbisect2 = xnew;
 				stepper.calc_state(xbisect1, ybisect1);
@@ -663,7 +663,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x
 				}
 			}
 
-			xnew = x1 + (x2 - x1)*(coll.s + 0.01*iteration); // cut integration right after collision point
+            xnew = x1 + (x2 - x1)*(coll.s + 0.01); // cut integration right after collision point
 			if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
 				xbisect2 = xnew;
 				stepper.calc_state(xbisect2, ybisect2);
