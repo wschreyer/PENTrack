@@ -31,13 +31,13 @@ void merge_all(const char *filematch = "[0-9]+[A-Za-z]+.out", const char *path =
 		if (f){ // if next file was found
 			TString filename = f->GetName(); // get filename
 			TString fn = filename;
-//			fn.Resize(filename.Length() - 4); // shorten filename by extension ".out"
-			
+			fn.Resize(filename.Length() - 4); // shorten filename by extension ".out"
+
 			ULong64_t jobnumber;
 			char logtype[64];
 			double data[1024];
 			
-			if ((re.Index(filename, &n) == 0) && (sscanf(fn.Data(), "%Ld%s.out", &jobnumber, logtype) == 2)){ // if filename matches regular expression and contains jobnumber
+			if ((re.Index(filename, &n) == 0) && (sscanf(fn.Data(), "%Ld%s", &jobnumber, logtype) == 2)){ // if filename matches regular expression and contains jobnumber
 				infile.open(filename.Data()); // open file
 				TNtupleD *tree = (TNtupleD*)outfile->Get(logtype); // get corresponding tree from file
 				

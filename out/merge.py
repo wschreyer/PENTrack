@@ -23,7 +23,7 @@ def ReadOutFile(fn):
           data.append(numpy.array(vals))
         else:
           print('Line is missing entries!')
-    os.remove(fn)
+#    os.remove(fn)
     return logtype, descriptor, data
   else:
     print 'Invalid filename ' + fn
