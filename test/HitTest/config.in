@@ -10,7 +10,7 @@ secondaries 0
 [MATERIALS]
 #name		FermiReal [neV]		FermiImag [neV]		DiffuseReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]
 default		0			0			0				0	0	0
-Al		54.1			0.00756			0.2				1e-5	3.5e-9	25e-9
+Al		54.1			0.00756			0				1e-5	3.5e-9	25e-9
 
 
 [GEOMETRY]
@@ -75,3 +75,7 @@ tmax 3e-3
 
 [electron]
 tmax 1e-5
+
+[mercury]
+
+[xenon]
