@@ -13,12 +13,15 @@
 #include "field_3d.h"
 #include "conductor.h"
 #include "edmfields.h"
+#include "expField.h"
+
 
 TFieldManager::TFieldManager(TConfig &conf){
 	for (std::map<std::string, std::string>::iterator i = conf["FIELDS"].begin(); i != conf["FIELDS"].end(); i++){
 		std::string type;
 		boost::filesystem::path ft;
-		double Ibar, p1, p2, p3, p4, p5, p6, p7, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi;
+		double Ibar, p1, p2, p3, p4, p5, p6, p7;
+		double freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi;
 		std::string Bscale, Escale;
 		TField *f = NULL;
 		std::istringstream ss(i->second);
@@ -42,23 +45,29 @@ TFieldManager::TFieldManager(TConfig &conf){
 		}
 		else if (type == "EDMStaticB0GradZField") {
 			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
-			
+
 			//conversion to radians
 			p4*=pi/180;
 			p5*=pi/180;
-			
-			
+
+
 			if (ss)
 				f = new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 0, 0, 0, 0, 0, bW, xma, xmi, yma, ymi, zma, zmi, Bscale);
 		}
+		else if (type == "ExponentialFieldX") {
+			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> xma >> xmi >> yma >> ymi >> zma >> zmi;
+
+			if (ss)
+				f = new TExponentialFieldX(p1, p2, p3, p4, p5, xma, xmi, yma, ymi, zma, zmi);
+		}
 		else if (type == "EDM_AC_B1Field") {
 			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> freq >> time1 >> time2 >> shift >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
-			
+
 			//convert to radians
 			p4*=pi/180;
 			p5*=pi/180;
-			
-			
+
+
 			if (ss)
 				f = new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 1, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi, Bscale);
 		}
@@ -147,4 +156,3 @@ void TFieldManager::EField(const double x, const double y, const double z, const
 		}
 	}
 }
-
