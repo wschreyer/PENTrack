@@ -15,7 +15,7 @@ add_library(alglib OBJECT alglib-3.13.0/cpp/src/alglibinternal.cpp
                           alglib-3.13.0/cpp/src/ap.cpp
                           alglib-3.13.0/cpp/src/linalg.cpp
                           alglib-3.13.0/cpp/src/specialfunctions.cpp)
-						
+
 include_directories("tricubic-1.0/src/libtricubic")
 add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
 
@@ -43,14 +43,14 @@ endif()
 
 include_directories("exprtk")
 include_directories("include")
-add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/edmfields.cpp 
+add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/edmfields.cpp
                         src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
-                        src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp
-                        $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)		
+                        src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp src/expField.cpp
+                        $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -std=c++11 PUBLIC -Wno-unused-local-typedefs PUBLIC -Wno-deprecated-declarations)
 endif()
-	
-				
+
+
 target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
