@@ -1,0 +1,96 @@
+[GLOBAL]
+simtype 1   # particle simulation
+simcount 1 # Number neutrons
+simtime 7   # seconds
+
+secondaries 0
+
+[MATERIALS]
+#name		FermiReal [neV]		FermiImag [neV]		DiffuseReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]	UseMRmodel
+default		0 0 0 0 0 0 0
+perfect		1000 0 0 0 0 0 0
+PE        -8.6553 0.492 0.5 0 0 0
+
+[GEOMETRY]
+#ID	STLfile				material_name		ignore_times
+1	ignored				  default
+2	tube.stl	      perfect
+3 endCapRight.stl PE        # Polyethelyne
+4 endCapLeft.stL  perfect
+
+[SOURCE]
+sourcemode STLvolume
+STLfile		source.stl
+particle	neutron
+
+ActiveTime 0
+PhaseSpaceWeighting 0
+
+Emin 0e-9
+Emax 100e-9
+spectrum 1
+
+phi_v_min 0			# min. azimuth angle of velocity [Degrees]
+phi_v_max 360		# max. azimuth angle of velocity   [Degrees]
+phi_v 1				# differential initial distribution of azimuth angle of velocity - volume source only!
+
+theta_v_min 0		# min. polar angle of velocity    [Degrees]
+theta_v_max 180	# max. polar angle of velocity      [Degrees]
+theta_v sin(x)		# differential initial distribution of polar angle of velocity - volume source only!
+
+polarization 1		# 1: low-field-seeker (spin up), -1: high-field-seeker, 0: random
+
+[FIELDS]
+# ExponentialFieldX is described by:
+# B_x = a1 * exp(- a2* x + a3) + c1
+# B_y = y * a1 * a2 / 2 * exp(- a2* x + a3) + c2
+# B_z = z * a1 * a2 / 2 * exp(- a2* x + a3) + c2
+# Parameters a1, c1, and c2 should be units [Tesla]
+# Field is turned off outside of the xyz min/max boundaries specified [meters]
+
+## ExponentialFieldX a1  a2  a3  c1  c2  xmax  xmin  ymax  ymin  zmax  zmin
+1 ExponentialFieldX 1E-5 1 -2.5 0   0   3     -3     1     -1     1     -1
+
+# LinearFieldZ is described by:
+# B_z = a1*x + a2
+# a1 = [T/m] and a2 = [T]
+# Field is turned off outside of the xyz min/max boundaries specified [meters]
+
+## LinearFieldZ a1  a2 xmax  xmin  ymax  ymin  zmax  zmin
+2 LinearFieldZ -1E-7 0   3     -3     1     -1     1     -1
+
+### EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
+#3 EDMStaticB0GradZField     0         0          0       0       0       1E-6    0          0             3       -3      1       -1      1       -1      1
+
+[PARTICLES]
+tau 1
+tmax 9e99
+lmax 9e99
+
+endlog 1
+tracklog 1
+hitlog 1
+snapshotlog 0
+spinlog 1
+snapshots 0
+trackloginterval 1e-6
+spinloginterval 5e-3
+
+spintimes 0 100
+Bmax 0.1    # do spin tracking when absolute magnetic field is below this value [T]
+flipspin 0
+interpolatefields 1
+
+
+[neutron]			# set options for individual particle types, overwrites above settings
+tau 0
+
+[proton]
+tmax 3e-3
+
+[electron]
+tmax 1e-5
+
+[mercury]
+
+[xenon]

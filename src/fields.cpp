@@ -8,12 +8,11 @@
 #include <string>
 #include <iostream>
 #include <vector>
-
 #include "field_2d.h"
 #include "field_3d.h"
 #include "conductor.h"
 #include "edmfields.h"
-#include "expField.h"
+#include "analyticFields.h"
 
 
 TFieldManager::TFieldManager(TConfig &conf){
@@ -54,12 +53,21 @@ TFieldManager::TFieldManager(TConfig &conf){
 			if (ss)
 				f = new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 0, 0, 0, 0, 0, bW, xma, xmi, yma, ymi, zma, zmi, Bscale);
 		}
+
 		else if (type == "ExponentialFieldX") {
 			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> xma >> xmi >> yma >> ymi >> zma >> zmi;
 
 			if (ss)
 				f = new TExponentialFieldX(p1, p2, p3, p4, p5, xma, xmi, yma, ymi, zma, zmi);
 		}
+
+		else if (type == "LinearFieldZ") {
+			ss >> p1 >> p2 >> xma >> xmi >> yma >> ymi >> zma >> zmi;
+
+			if (ss)
+				f = new TLinearFieldZ(p1, p2, xma, xmi, yma, ymi, zma, zmi);
+		}
+
 		else if (type == "EDM_AC_B1Field") {
 			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> freq >> time1 >> time2 >> shift >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
 
