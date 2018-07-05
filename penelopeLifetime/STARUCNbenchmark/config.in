@@ -1,0 +1,77 @@
+[GLOBAL]
+simtype 1
+neutdist 0
+simcount 10000
+simtime 1000
+secondaries 0
+
+[MATERIALS]
+#name		FermiReal [neV]		FermiImag [neV]		LambertReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]
+default		0			0			0				0			0			0
+STARUCN_steel 184			0.0184			0.05				0			0			0
+UCNdet		0			1			0				0			0			0
+
+[GEOMETRY]
+#ID	STLfile				material_name		ignore_times
+1	ignored				default
+2	U.STL STARUCN_steel
+3	sourcecap.STL	UCNdet
+10	detector.STL	UCNdet
+
+[SOURCE]
+sourcemode STLvolume
+particle neutron			0			0
+ActiveTime 0
+STLfile source.STL
+Enormal 0
+PhaseSpaceWeighting 0
+
+Emin 0e-9
+Emax 500e-9
+spectrum 1
+
+phi_v_min 0
+phi_v_max 0
+phi_v 1
+
+theta_v_min 90
+theta_v_max 90
+theta_v 1
+
+polarization 0		# 1: low-field-seeker, -1: high-field-seeker, 0: random
+
+[FIELDS]
+
+
+[PARTICLES]
+tau 0
+tmax 9e99
+lmax 9e99
+
+endlog 1
+tracklog 0
+trackloginterval 5e-3
+hitlog 0
+snapshotlog 0
+snapshots 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 # times from start of simulation to take snapshots
+
+spinlog 0
+spinloginterval 5e-7
+spintimes 0 0
+Bmax 0
+flipspin 0
+interpolatefields 0
+
+
+[neutron]			# set options for individual particle types, overwrites above settings
+tau 880.0
+
+[proton]
+tmax 3e-3
+
+[electron]
+tmax 1e-5
+
+[mercury]
+
+[xenon]

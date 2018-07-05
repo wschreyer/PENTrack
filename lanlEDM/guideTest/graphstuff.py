@@ -10,7 +10,7 @@ def main():
     import argparse
     import sys
 
-    nbins = 100        # number of histogram bins for polarization plots
+    nbins = 200        # number of histogram bins for polarization plots
     sx = []         # Spin vectors
     sy = []
     sz = []
@@ -188,7 +188,7 @@ def main():
         ax8.set_zlabel('z [m]')
         ax8.view_init(30,220)
 
-    if args.bfield:         # prints Bfield seen by the neutron
+    if args.bfield:         # prints Bfield seen by the neutron(s)
         fig9 = plt.figure(9)
         plt.plot(tBField, Bnorm)
         plt.grid(True)
@@ -203,25 +203,16 @@ def main():
         for bxS, byS, bzS, sxS, syS, szS in zip (bxStart, byStart, bzStart, sxStart, syStart, szStart):
             startProj.append( (sxS*bxS + syS*byS + szS*bzS)/norm(bxS, byS, bzS) )
         for bxE, byE, bzE, sxE, syE, szE in zip (bxEnd, byEnd, bzEnd, sxEnd, syEnd, szEnd):
-            # print("sxE: ", sxE)
-            # print("syE: ", syE)
-            # print("szE: ", szE)
-            # print("bxE: ", bxE)
-            # print("byE: ", byE)
-            # print("bzE: ", bzE)
-            # print("|B|_end: ", norm(bxE, byE, bzE))
             endProj.append( (sxE*bxE + syE*byE + szE*bzE)/norm(bxE, byE, bzE) )
 
         fig10, ax10 = plt.subplots()
         ax10.hist(startProj, bins = nbins)
-        ax10.set_xlim([-1,1])
         ax10.set_xlabel('Spin projection of S on B')
         ax10.set_ylabel('Number of neutrons')
         ax10.set_title('Polarization of neutrons at start')
 
         fig11, ax11 = plt.subplots()
         ax11.hist(endProj, bins = nbins)
-        ax11.set_xlim([-1,1])
         ax11.set_xlabel('Spin projection of S on B')
         ax11.set_ylabel('Number of neutrons')
         ax11.set_title('Polarization of neutrons at end')

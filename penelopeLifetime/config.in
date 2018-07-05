@@ -1,0 +1,207 @@
+################ config file for PENTrack ###############
+# put comments after #
+
+[GLOBAL]
+# simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry, 8 => print mr-drp for solid angle
+# 9 => print integrated mr-drp for incident theta vs energy
+simtype 1
+
+# number of primary particles to be simulated
+simcount 1000
+
+# max. simulation time [s]
+simtime 1000
+
+# path of file containing materials, paths are assumed to be relative to this config file's path
+materials_file materials.in
+
+# secondaries: set to 1 to also simulate secondary particles (e.g. decay protons/electrons) [0/1]
+secondaries 1
+
+#cut through B-field (simtype == 4) (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2)
+#define cut plane by three points and number of sample points in direction 1->2/1->3
+BCutPlane	0.161 0 0.015	0.501 0 0.015	0.161 0 0.85	340	835
+
+#parameters to be used for generating a 2d histogram for the mr diffuse reflection probability into a solid angle
+#Param order: Fermi pot. [neV], Neut energy [neV], RMS roughness [nm], correlation length [nm], theta_i [0..pi/2]
+MRSolidAngleDRP 220 200 1E-9 25E-9 0.1
+
+#parameters to be used for generating a 2d histogram of the integrated diffuse reflection probabilitites of the incident angle vs energy of a neutron
+#Parameter order: Fermi potential of the material, RMS roughness [nm], Correlation length [nm], starting angle [0..pi/2], ending angle [0..pi/2],
+#starting neutron energy [neV], ending neutron energy [neV]
+MRThetaIEnergy 54 2.5E-9 20E-9 0 1.570796327 0 1000
+
+
+
+[GEOMETRY]
+############# Solids the program will load ################
+#  Each solid has to be assigned unique ID and a material from above.
+# IDs have to be larger than 0, ID 1 will be assumed to be the default medium which is always present.
+# Particles absorbed in a solid will be flagged with the ID of the solid.
+# The ID also defines the order in which overlapping solids are handled (highest ID will be considered first).
+# If paths to StL files are relative they have to be defined relative to this config file.
+# Ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000.
+#ID	STLfile    material_name    ignore_times
+1	ignored				default
+2	storagevolume_60degfeeder_bellow.STL		PolishedSteel
+3	guide_experiment.STL		PolishedSteel
+4	guide_source.STL		PolishedSteel
+5	guide_detector.STL		PolishedSteel
+6	switch.STL			PolishedSteel
+7	valve.STL			PolishedSteel		0-200 500-1000
+8	switch_flap_source.STL	PolishedSteel		200-1000
+9	switch_flap_middle.STL	PolishedSteel		0-200 500-1000
+10	switch_flap_detector.STL	PolishedSteel		0-500
+11	foil_detector.STL		Al
+12	UCNdet.STL			UCNdet
+13	protdet.STL			Al
+14	absorber_up.STL		PE			500-560
+15	absorber_middle.STL		PE			0-500 520-540 560-1000
+16	absorber_down.STL		PE			0-520 540-1000
+17	source.STL			UCNdet			200-1000
+18	source.STL			PolishedSteel		0-200
+
+
+
+[SOURCE]
+############ sourcemodes ###############
+# STLvolume: source volume is given by a STL file, particles are created in the space completely enclosed in the STL surface
+# boxvolume: particle starting values are diced in the given parameter range (x,y,z) [m,m,m]
+# cylvolume: particle starting values are diced in the given parameter range (r,phi,z) [m,degree,m]
+# Volume source produce velocity vectors according to the given angular distributions below.
+# If PhaseSpaceWeighting is set to 1 for volume sources the energy spectrum is interpreted as a total-energy spectrum.
+## The probability to find a particle at a certain initial position is then weighted by the available phase space,
+## i.e. proportional to the square root of the particle's kinetic energy.
+#
+# STLsurface: starting values are on surfaces in the given STL-volume
+# cylsurface: starting values are on surfaces in the cylindrical volume given by parameter range (r,phi,z) [m,degree,m]
+# Surface sources produce velocity vectors cosine(theta)-distributed around the surface normal.
+# An additional Enormal [eV] can be defined. This adds an additional energy boost to the velocity component normal to the surface.
+########################################
+
+sourcemode	STLsurface
+
+STLfile		sourcevolume.STL	# STL volume used for STLvolume/STLsurface source, path is assumed relative to this config file
+
+### parameter ranges for sourcemode cylvolume/cylsurface/boxvolume
+#			r_min	r_max	phi_min	phi_max	z_min	z_max (cylvolume/cylsurface)
+#parameters 0.16	0.5		0		360		0.005	1.145
+
+#			x_min	x_max	y_min	y_max	z_min	z_max	(boxvolume)
+#parameters	0		1		0		1		0		1
+###
+
+particle	neutron		# type of particle the source should create
+ActiveTime	200			# time source is active for
+
+Enormal		0					# give particles an energy boost normal to surface (surface sources only! see above)
+PhaseSpaceWeighting	0			# weight initial particle density by available phase space (volume source only! see above)
+
+### initial energy range [eV] and spectrum of particles
+Emin 100e-9
+Emax 300e-9
+#spectrum sqrt(x)
+spectrum 1.96616e39*x^5 - 0.00204264e36*x^4 + 0.834378e27*x^3 - 167.958e18*x^2 + 16674.8e9*x - 639317 # UCN spectrum in horizontal guide from FRM2 source
+
+#Emin 5.5e-9
+#Emax 85e-9
+#spectrum 1.986*(x*1e9 - 5.562)*(1 - tanh(0.3962*(x*1e9 - 72.72))) # total energy spectrum of UCN in storage volume after cleaning
+
+#Emin 20e-9
+#Emax 115e-9
+#spectrum 0.7818*(x*1e9 - 24.842)*(1 - tanh(0.2505*(x*1e9 - 97.510))) # total energy spectrum of low-field-seekers in storage volume after ramping
+
+#Emin 0
+#Emax 751
+#spectrum ProtonBetaSpectrum(x)	# ProtonBetaSpectrum is a predefined function for proton energies from free-neutron decay
+
+#Emin 0
+#Emax 782e3
+#spectrum ElectronBetaSpectrum(x)	# ElectronBetaSpectrum is a predefined function for electron energies from free-neutron decay
+
+#Emin 0
+#Emax 1
+#spectrum MaxwellBoltzSpectrum(300, x)     # MaxwellBoltzSpectrum is a predefined function for gas molecules (first parameter is the temp. in Kelvin)
+
+
+# Initial direction of particles
+#  Volume sources only! Surface sources produce velocities cosine(theta)-distributed around the surface normal
+phi_v_min 0		# min. azimuth angle of velocity [degree]
+phi_v_max 360	# max. azimuth angle of velocity [degree]
+phi_v 1			# differential initial distribution of azimuth angle of velocity
+
+theta_v_min 0	# min. polar angle of velocity [degree]
+theta_v_max 180	# max. polar angle of velocity [degree]
+theta_v sin(x)	# differential initial distribution of polar angle of velocity
+
+
+polarization 0	# initial polarization is randomly chosen, weighted by this variable (1: low-field-seekers only, -1: high-field-seekers only) [-1..1]
+
+
+[FIELDS]
+########### electric and magnetic fields ##########
+# Tabulated maps:
+# 2Dtable: a table of field values on a regular 2D grid. It is assumed that the field is rotationally symmetric around the z axis.
+# 3Dtable: a table of field values on a regular 3D grid. For 3D tables a BoundaryWidth [m] can be specified within which the field is smoothly brought to zero.
+# Paths of table files are assumed to be relative to this config file's path
+#
+# Analytically calculated fields:
+# Conductor: simulate a current flowing from one point to another along an arbitrary straight line
+# EDMStaticEField: simulate a uniform electric field along an arbitrary direction
+# EDMStaticB0GradZField: simulate a magnetic field along the z-axis with a uniform gradient
+# All coordinates are defined in meters, currents in ampere
+#
+# Each line is preceded by a unique identifier. Entries with duplicate identifiers will overwrite each other
+# For each field a time-dependent scaling factor can be added (does not allow spaces yet!).
+# Note that rapidly changing fields might be missed by the trajectory integrator making too large time steps
+##################################################
+#field 		table-file	BFieldScale	EFieldScale	BoundaryWidth
+1 2Dtable 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab			t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))		-1
+#2 2Dtable 	42_0063_PF80-24Coils-SameCoilDist_newelectrode85cm.table	0	1
+#3 3Dtable	3Dtable.tab	1		1		0
+
+#FiniteWire		I		x1		y1		z1		x2		y2		z2		scale
+5 Conductor		12500	0		0		-1		0		0		2		1
+
+#EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
+#6 EDMStaticB0GradZField 	0	0	0	0	0	1E-6	1E-9		0.01	1	-1	1 	-1	1	-1	1
+#EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)	scale
+#7 EDMStaticEField			0			0			1E6		1
+#EDM_AC_B1Field  edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz freq time1 time2 shift BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
+#8 EDM_AC_B1Field	0	0	0	0	0	1E-6	1E-9	1	2	4	0	0.01	1	-1	1	-1	1	-1	1
+
+
+[PARTICLES]
+######### default values for particle-specific settings ############
+tau 0				# exponential decay lifetime [s], 0: no decay
+tmax 9e99			# max simulation time [s]
+lmax 9e99			# max trajectory length [m]
+
+endlog 1			# print initial and final state to file [0/1]
+tracklog 0			# print complete trajectory to file [0/1]
+trackloginterval 5e-3	# min. distance interval [m] between track points in tracklog file
+hitlog 0			# print geometry hits to file [0/1]
+snapshotlog 1		# print initial state and state at certain times to file [0/1]
+snapshots 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310 320 330 340 350 360 370 380 390 400 450 500 550 600 650 700 750 800 850 900 950 1000 # times [s] at which to take snapshots
+
+spinlog 0			# print spin trajectory to file [0/1]
+spinloginterval 5e-7# min. time interval [s] between track points in spinlog file
+spintimes	500 700	# do spin tracking between these points in time [s]
+Bmax 0.1			# do spin tracking when absolute magnetic field is below this value [T]
+flipspin 0			# do Monte Carlo spin flips when magnetic field surpasses Bmax [0/1]
+interpolatefields 1	# Interpolate magnetic and electric fields for spin tracking between trajectory step points [0/1]. This will speed up spin tracking in high magnetic fields, but might break spin tracking in weak, quickly oscillating fields!
+
+
+############# set options for individual particle types, overwrites above settings ###############
+[neutron]
+tau 880.1
+
+[proton]
+tmax 3e-3
+
+[electron]
+tmax 1e-5
+
+[mercury]
+
+[xenon]

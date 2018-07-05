@@ -81,6 +81,7 @@ void TabField3::ReadTabFile(const std::string &tabfile,
 		x *= lengthconv;
 		y *= lengthconv;
 		z *= lengthconv;
+
 		if (zi >= 0 && z < zind[zi]){
 			if (yi >= 0 && y < yind[yi]){
 				xi++;
@@ -92,6 +93,7 @@ void TabField3::ReadTabFile(const std::string &tabfile,
 		else zi++;
 
 		int i3 = INDEX_3D(xi, yi, zi, xl, yl, zl);
+
 		// status if read is displayed
 		PrintPercent((float)i3/(xl*yl*zl), perc);
 
