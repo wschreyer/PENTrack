@@ -13,6 +13,7 @@
 #include "conductor.h"
 #include "edmfields.h"
 #include "analyticFields.h"
+#include "comsolField3D.h"
 
 
 TFieldManager::TFieldManager(TConfig &conf){
@@ -36,6 +37,12 @@ TFieldManager::TFieldManager(TConfig &conf){
 			ss >> ft >> Bscale >> Escale >> BoundaryWidth;
 			if (ss)
 				f = new TabField3(boost::filesystem::absolute(ft, configpath.parent_path()).native(), Bscale, Escale, BoundaryWidth);
+		}
+		else if (type == "COMSOL"){
+			double BoundaryWidth;
+			ss >> ft >> Bscale >> BoundaryWidth;
+			if (ss)
+				f = new comsolField3(boost::filesystem::absolute(ft, configpath.parent_path()).native(), Bscale, BoundaryWidth);
 		}
 		else if (type == "Conductor"){
 			ss >> Ibar >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> Bscale;

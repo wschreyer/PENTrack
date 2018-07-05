@@ -36,7 +36,6 @@ class TabField3: public TField{
 		double lengthconv; ///< Factor to convert length units in file to PENTrack units
 		double Bconv; ///< Factor to convert magnetic field units in file to PENTrack units
 
-
 		/**
 		 * Reads an Opera table file.
 		 *

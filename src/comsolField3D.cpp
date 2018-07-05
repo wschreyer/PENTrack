@@ -1,16 +1,20 @@
 /**
  * \file
- * Tricubic interpolation of 3D field tables.
+ * Tricubic interpolation of a COMSOL arrow volume plot
+ * Also a linked list merge sort
  */
 
 
-#include "field_3d.h"
+#include "comsolField3D.h"
 
-#include <fstream>
 #include <iostream>
+#include <boost/algorithm/string.hpp>
+#include <vector>
+#include <set>
+#include <string>
+#include <fstream>
 
 #include "interpolation.h"
-
 #include "tricubic.h"
 #include "globals.h"
 
@@ -25,107 +29,102 @@
  * @param ysize size of array in y dimension
  * @param zsize size of array in z dimension
  */
-int INDEX_3D(int xi, int yi, int zi, int xsize, int ysize, int zsize){
+int COMSOL_INDEX_3D(int xi, int yi, int zi, int xsize, int ysize, int zsize){
 	return zi*xsize*ysize + yi*xsize + xi;
 }
 
 
-void TabField3::ReadTabFile(const std::string &tabfile,
-		std::vector<double> &BxTab, std::vector<double> &ByTab, std::vector<double> &BzTab, std::vector<double> &VTab){
-	std::ifstream FIN(tabfile, std::ifstream::in);
-	if (!FIN.is_open()){
+void comsolField3::ReadTabFile(const std::string &tabfile,
+		std::vector<double> &BxTab, std::vector<double> &ByTab, std::vector<double> &BzTab){
+
+	std::string line;
+  std::vector<std::string> line_parts;
+  std::vector<double> xind, yind, zind;
+  std::vector<double> x, y, z;
+  std::vector<double> bx, by, bz;
+  std::set<double> setX, setY, setZ;
+
+  std::ifstream FIN(tabfile, std::ifstream::in);
+  if (!FIN.is_open()){
 		std::cout << "\nCould not open " << tabfile << "!\n";
 		exit(-1);
 	}
-	std::cout << "\nReading " << tabfile << " ";
-	std::string line;
-	FIN >> xl >> yl >> zl;
+	std::cout << "\nReading " << tabfile << "\n";
 
-	getline(FIN,line);
-	getline(FIN,line);
-	getline(FIN,line);
-	getline(FIN,line);
-	getline(FIN,line);
+  // Read in file data
+  int lineNum = 0;
 
-	if (line.find("BX") != std::string::npos){
-		BxTab.resize(xl*yl*zl);
-		getline(FIN,line);
-	}
-	if (line.find("BY") != std::string::npos){
-		ByTab.resize(xl*yl*zl);
-		getline(FIN,line);
-	}
-	if (line.find("BZ") != std::string::npos){
-		BzTab.resize(xl*yl*zl);
-		getline(FIN,line);
-	}
+  while (getline(FIN,line)){
+    lineNum++;
+    if (line.substr(0,1) == "%" || line.substr(0,1) == "#") continue;     // Skip commented lines
+    boost::split(line_parts, line, boost::is_any_of("\t, "), boost::token_compress_on);
 
-	if (line.find("V") != std::string::npos){	// file contains potential?
-		VTab.resize(xl*yl*zl);
-		getline(FIN,line);
-	}
+    if (line_parts.size() != 6){
+      std::cout << "\nError reading line " << lineNum << " of file "<< tabfile << "\n...quitting\n";
+      std::cout << line << std::endl;
+      exit(-1);
+    }
+    x.push_back( std::stod(line_parts[0], NULL) * lengthconv);
+    y.push_back( std::stod(line_parts[1], NULL) * lengthconv);
+    z.push_back( std::stod(line_parts[2], NULL) * lengthconv);
+    bx.push_back( std::stod(line_parts[3], NULL) * Bconv);
+    by.push_back( std::stod(line_parts[4], NULL) * Bconv);
+    bz.push_back( std::stod(line_parts[5], NULL) * Bconv);
 
-	if (!FIN || line.substr(0,2) != " 0"){
-		std::cout << tabfile << " not found or corrupt! Exiting...\n";
-		exit(-1);
-	}
+    // Put x, y, z values into ordered set for later use
+    setX.insert( x.back() );
+    setY.insert( y.back() );
+    setZ.insert( z.back() );
+  }
 
-	std::vector<double> xind(xl), yind(yl), zind(zl);
-	int xi = 0, yi = 0, zi = -1, perc = 0;
-	double x, y, z, val;
-	while (FIN.good()){
-		FIN >> x;
-		FIN >> y;
-		FIN >> z;
-		if (!FIN) break;
-		x *= lengthconv;
-		y *= lengthconv;
-		z *= lengthconv;
+  FIN.close();
+  if (x.empty() || y.empty() || z.empty() || bx.empty() || by.empty()|| bz.empty() ) {
+    std::cout<< "Error: Missing data from " << tabfile << "\n...quitting\n";
+    exit(-1);
+  }
 
-		if (zi >= 0 && z < zind[zi]){
-			if (yi >= 0 && y < yind[yi]){
-				xi++;
-				yi = 0;
-			}
-			else yi++;
-			zi = 0;
-		}
-		else zi++;
+  // We also need to find xl, yl, zl. This is the size of the table in each
+  // respective direction (aka the # of x, y, z values if we ignore duplicates)
+  xl = setX.size();
+  yl = setY.size();
+  zl = setZ.size();
 
-		int i3 = INDEX_3D(xi, yi, zi, xl, yl, zl);
+  // Fill in vectors xind, yind, zind, which contain the afore mentioned values
+  // of non-duplicated x, y, z
+  // (thanks to set, these are now sorted in ascending order)
+  std::set<double>::iterator itX, itY, itZ;
+  for (itX = setX.begin(), itY = setY.begin(), itZ = setZ.begin();
+        (itX != setX.end()) && (itY != setY.end()) && (itZ != setZ.end());
+        ++itX, ++itY, ++itZ)
+  {
+    xind.push_back( *itX );
+    yind.push_back( *itY );
+    zind.push_back( *itZ );
+  }
 
-		// status if read is displayed
-		PrintPercent((float)i3/(xl*yl*zl), perc);
+  // Now fill in BxTab, ByTab, BzTab with the correct indexing for interpolation
+  BxTab.resize(xl*yl*zl);
+  ByTab.resize(xl*yl*zl);
+  BzTab.resize(xl*yl*zl);
 
-		xind[xi] = x;
-		yind[yi] = y;
-		zind[zi] = z;
-		if (BxTab.size() > 0){
-			FIN >> val;
-			BxTab[i3] = val*Bconv;
-		}
-		if (ByTab.size() > 0){
-			FIN >> val;
-			ByTab[i3] = val*Bconv;
-		}
-		if (BzTab.size() > 0){
-			FIN >> val;
-			BzTab[i3] = val*Bconv;
-		}
-		if (VTab.size() > 0){
-			FIN >> val;
-			VTab[i3] = val;
-		}
-		FIN >> std::ws;
+  // xi, yi, zi are the indices of the values in xind, yind, zind
+  // i3 is some magical index defined by COMSOL_INDEX_3D used for interpolation
+	int xi = 0, yi = 0, zi = 0;
+  int i3 = 0;
+
+  for (unsigned int j = 0; j < x.size(); j++){
+
+    xi = std::distance(setX.begin(), setX.find( x[j])) - 1;
+    yi = std::distance(setY.begin(), setY.find( y[j])) - 1;
+    zi = std::distance(setZ.begin(), setZ.find( z[j])) - 1;
+
+    i3 = COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl);
+
+    BxTab[i3] = bx[j];
+    ByTab[i3] = by[j];
+    BzTab[i3] = bz[j];
 
 	}
-
-	std::cout << "\n";
-	if (xi+1 != xl || yi + 1 != yl || zi+1 != zl){
-		std::cout << "The header says the size is " << xl << " by " << yl << " by " << zl << ", actually it is " << xi+1 << " by " << yi+1 << " by " << zi+1 << "! Exiting...\n";
-		exit(-1);
-	}
-	FIN.close();
 
 	xdist = xind[1] - xind[0];
 	ydist = yind[1] - yind[0];
@@ -137,17 +136,16 @@ void TabField3::ReadTabFile(const std::string &tabfile,
 };
 
 
-void TabField3::CheckTab(const std::vector<double> &BxTab, const std::vector<double> &ByTab,
-		const std::vector<double> &BzTab, const std::vector<double> &VTab){
+void comsolField3::CheckTab(const std::vector<double> &BxTab, const std::vector<double> &ByTab,
+		const std::vector<double> &BzTab){
 	//  calculate factors for conversion of coordinates to indexes  r = conv_rA + index * conv_rB
 	std::cout << "The arrays are " << xl << " by " << yl << " by " << zl << ".\n";
-	std::cout << "The x values go from " << x_mi << " to " << x_mi + xdist*(xl-1) << "\n";
-	std::cout << "The y values go from " << y_mi << " to " << y_mi + ydist*(yl-1) << "\n";
-	std::cout << "The z values go from " << z_mi << " to " << z_mi + zdist*(zl-1) << ".\n";
+	std::cout << "The x values go from " << x_mi << " to " << x_mi + xdist*(xl-1) << "[m]\n";
+	std::cout << "The y values go from " << y_mi << " to " << y_mi + ydist*(yl-1) << "[m]\n";
+	std::cout << "The z values go from " << z_mi << " to " << z_mi + zdist*(zl-1) << "[m]\n";
 	std::cout << "xdist = " << xdist << " ydist = " << ydist << " zdist = " << zdist << "\n";
 
 	double Babsmax = 0, Babsmin = 9e99, Babs;
-	double Vmax = 0, Vmin = 9e99;
 	for (int j=0; j < xl; j++)
 	{
 		for (int k=0; k < yl; k++)
@@ -155,7 +153,7 @@ void TabField3::CheckTab(const std::vector<double> &BxTab, const std::vector<dou
 			for (int l=0; l < zl; l++)
 			{
 				Babs = 0;
-				int i3 = INDEX_3D(j, k, l, xl, yl, zl);
+				int i3 = COMSOL_INDEX_3D(j, k, l, xl, yl, zl);
 				if (BxTab.size() > 0)
 					Babs += BxTab[i3] * BxTab[i3];
 				if (ByTab.size() > 0)
@@ -164,21 +162,16 @@ void TabField3::CheckTab(const std::vector<double> &BxTab, const std::vector<dou
 					Babs += BzTab[i3] * BzTab[i3];
 				Babsmax = std::max(sqrt(Babs),Babsmax);
 				Babsmin = std::min(sqrt(Babs),Babsmin);
-				if (VTab.size() > 0)
-				{
-					Vmax = std::max(VTab[i3],Vmax);
-					Vmin = std::min(VTab[i3],Vmin);
-				}
 
 			}
 		}
 	}
 
-	std::cout << "The input table file has values of |B| from " << Babsmin << " T to " << Babsmax << " T and values of V from " << Vmin << " V to " << Vmax << " V\n";
+	std::cout << "The input table file has values of |B| from " << Babsmin << " T to " << Babsmax << " T\n";
 };
 
 
-void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &Tab1, std::vector<double> &Tab2, std::vector<double> &Tab3,
+void comsolField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &Tab1, std::vector<double> &Tab2, std::vector<double> &Tab3,
 		std::vector<double> &Tab12, std::vector<double> &Tab13, std::vector<double> &Tab23, std::vector<double> &Tab123) const
 {
 	alglib::real_1d_array x, y, diff;
@@ -190,11 +183,11 @@ void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &
 		for (int yi = 0; yi < yl; yi++){
 			for (int xi = 0; xi < xl; xi++){
 				x[xi] = x_mi + xi*xdist;
-				y[xi] = Tab[INDEX_3D(xi, yi, zi, xl, yl, zl)]; // get derivatives dF/dx from spline interpolation
+				y[xi] = Tab[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)]; // get derivatives dF/dx from spline interpolation
 			}
 			alglib::spline1dgriddiffcubic(x, y, diff);
 			for (int xi = 0; xi < xl; xi++)
-				Tab1[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[xi];
+				Tab1[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[xi];
 		}
 	}
 
@@ -205,11 +198,11 @@ void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &
 		for (int zi = 0; zi < zl; zi++){
 			for (int yi = 0; yi < yl; yi++){
 				x[yi] = y_mi + yi*ydist;
-				y[yi] = Tab[INDEX_3D(xi, yi, zi, xl, yl, zl)]; // get derivatives dF/dy from spline interpolation
+				y[yi] = Tab[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)]; // get derivatives dF/dy from spline interpolation
 			}
 			alglib::spline1dgriddiffcubic(x, y, diff);
 			for (int yi = 0; yi < yl; yi++)
-				Tab2[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[yi];
+				Tab2[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[yi];
 		}
 	}
 
@@ -220,11 +213,11 @@ void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &
 		for (int yi = 0; yi < yl; yi++){
 			for (int zi = 0; zi < zl; zi++){
 				x[zi] = z_mi + zi*zdist;
-				y[zi] = Tab[INDEX_3D(xi, yi, zi, xl, yl, zl)];
+				y[zi] = Tab[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
 			alglib::spline1dgriddiffcubic(x, y, diff); // get derivatives dF/dz from spline interpolation
 			for (int zi = 0; zi < zl; zi++)
-				Tab3[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
+				Tab3[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
 		}
 	}
 
@@ -235,11 +228,11 @@ void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &
 		for (int zi = 0; zi < zl; zi++){
 			for (int yi = 0; yi < yl; yi++){
 				x[yi] = y_mi + yi*ydist;
-				y[yi] = Tab1[INDEX_3D(xi, yi, zi, xl, yl, zl)];
+				y[yi] = Tab1[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
 			alglib::spline1dgriddiffcubic(x, y, diff); // get cross derivatives d2F/dxdy from spline interpolation
 			for (int yi = 0; yi < yl; yi++)
-				Tab12[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[yi];
+				Tab12[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[yi];
 		}
 	}
 
@@ -250,11 +243,11 @@ void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &
 		for (int yi = 0; yi < yl; yi++){
 			for (int zi = 0; zi < zl; zi++){
 				x[zi] = z_mi + zi*zdist;
-				y[zi] = Tab1[INDEX_3D(xi, yi, zi, xl, yl, zl)];
+				y[zi] = Tab1[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
 			alglib::spline1dgriddiffcubic(x, y, diff); // get cross derivatives d2F/dxdz from spline interpolation
 			for (int zi = 0; zi < zl; zi++)
-				Tab13[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
+				Tab13[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
 		}
 	}
 
@@ -262,11 +255,11 @@ void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &
 		for (int yi = 0; yi < yl; yi++){
 			for (int zi = 0; zi < zl; zi++){
 				x[zi] = z_mi + zi*zdist;
-				y[zi] = Tab2[INDEX_3D(xi, yi, zi, xl, yl, zl)];
+				y[zi] = Tab2[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
 			alglib::spline1dgriddiffcubic(x, y, diff); // get cross derivatives d2F/dydz from spline interpolation
 			for (int zi = 0; zi < zl; zi++)
-				Tab23[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
+				Tab23[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
 		}
 	}
 
@@ -274,18 +267,18 @@ void TabField3::CalcDerivs(const std::vector<double> &Tab, std::vector<double> &
 		for (int yi = 0; yi < yl; yi++){
 			for (int zi = 0; zi < zl; zi++){
 				x[zi] = z_mi + zi*zdist;
-				y[zi] = Tab12[INDEX_3D(xi, yi, zi, xl, yl, zl)];
+				y[zi] = Tab12[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)];
 			}
 			alglib::spline1dgriddiffcubic(x, y, diff); // get cross derivatives d3F/dxdydz from spline interpolation
 			for (int zi = 0; zi < zl; zi++)
-				Tab123[INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
+				Tab123[COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl)] = diff[zi];
 		}
 	}
 
 };
 
 
-void TabField3::PreInterpol(std::vector<std::vector<double> > &coeff, const std::vector<double> &Tab) const{
+void comsolField3::PreInterpol(std::vector<std::vector<double> > &coeff, const std::vector<double> &Tab) const{
 	std::vector<double> Tab1(xl*yl*zl), Tab2(xl*yl*zl), Tab3(xl*yl*zl);
 	std::vector<double> Tab12(xl*yl*zl), Tab13(xl*yl*zl), Tab23(xl*yl*zl), Tab123(xl*yl*zl);
 	CalcDerivs(Tab,Tab1,Tab2,Tab3,Tab12,Tab13,Tab23,Tab123);
@@ -302,14 +295,14 @@ void TabField3::PreInterpol(std::vector<std::vector<double> > &coeff, const std:
 			for (indz=0; indz < zl-1; indz++){
 				// fill cube with values and derivatives
 				// order: see Lekien, Marsden: "Tricubic interpolation in three dimensions"
-				int i3[8] ={INDEX_3D(indx  , indy  , indz  , xl, yl, zl),
-							INDEX_3D(indx+1, indy  , indz  , xl, yl, zl),
-							INDEX_3D(indx  , indy+1, indz  , xl, yl, zl),
-							INDEX_3D(indx+1, indy+1, indz  , xl, yl, zl),
-							INDEX_3D(indx  , indy  , indz+1, xl, yl, zl),
-							INDEX_3D(indx+1, indy  , indz+1, xl, yl, zl),
-							INDEX_3D(indx  , indy+1, indz+1, xl, yl, zl),
-							INDEX_3D(indx+1, indy+1, indz+1, xl, yl, zl)};
+				int i3[8] ={COMSOL_INDEX_3D(indx  , indy  , indz  , xl, yl, zl),
+							COMSOL_INDEX_3D(indx+1, indy  , indz  , xl, yl, zl),
+							COMSOL_INDEX_3D(indx  , indy+1, indz  , xl, yl, zl),
+							COMSOL_INDEX_3D(indx+1, indy+1, indz  , xl, yl, zl),
+							COMSOL_INDEX_3D(indx  , indy  , indz+1, xl, yl, zl),
+							COMSOL_INDEX_3D(indx+1, indy  , indz+1, xl, yl, zl),
+							COMSOL_INDEX_3D(indx  , indy+1, indz+1, xl, yl, zl),
+							COMSOL_INDEX_3D(indx+1, indy+1, indz+1, xl, yl, zl)};
 
 				for (int i = 0; i < 8; i++){
 					yyy[i]    = Tab[i3[i]];
@@ -323,7 +316,7 @@ void TabField3::PreInterpol(std::vector<std::vector<double> > &coeff, const std:
 				}
 
 				// determine coefficients of interpolation
-				int ind3 = INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
+				int ind3 = COMSOL_INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
 				coeff[ind3].resize(64);
 				tricubic_get_coeff(&coeff[ind3][0], yyy, yyy1, yyy2, yyy3, yyy12, yyy13, yyy23, yyy123);
 			}
@@ -332,19 +325,18 @@ void TabField3::PreInterpol(std::vector<std::vector<double> > &coeff, const std:
 };
 
 
-TabField3::TabField3(const std::string &tabfile, const std::string &Bscale, const std::string &Escale,
+comsolField3::comsolField3(const std::string &tabfile, const std::string &Bscale,
 		const double aBoundaryWidth, const double alengthconv, const double aBconv)
-	: TField(Bscale, Escale){
+	: TField(Bscale, "0"){
 	BoundaryWidth = aBoundaryWidth;
 	lengthconv = alengthconv;
 	Bconv = aBconv;
 
 
 	std::vector<double> BxTab, ByTab, BzTab;	// Bx/By/Bz values
-	std::vector<double> VTab; // potential values
-	ReadTabFile(tabfile,BxTab,ByTab,BzTab,VTab); // open tabfile and read values into arrays
+	ReadTabFile(tabfile,BxTab,ByTab,BzTab); // open tabfile and read values into arrays
 
-	CheckTab(BxTab,ByTab,BzTab,VTab); // print some info
+	CheckTab(BxTab,ByTab,BzTab); // print some info
 
 	std::cout << "Starting Preinterpolation ... ";
 	float size = 0;
@@ -369,18 +361,11 @@ TabField3::TabField3(const std::string &tabfile, const std::string &Bscale, cons
 		size += float(Bzc.size()*64*sizeof(double)/1024/1024);
 		BzTab.clear();
 	}
-	if (VTab.size() > 0){
-		std::cout << "V ... ";
-		std::cout.flush();
-		PreInterpol(Vc,VTab);
-		size += float(Vc.size()*64*sizeof(double)/1024/1024);
-		VTab.clear();
-	}
 	std::cout << "Done (" << size << " MB)\n";
 }
 
 
-void TabField3::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
+void comsolField3::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double Bscale = BScaling(t);
 	// get coordinate index
 	int indx = (int)floor((x - x_mi)/xdist);
@@ -391,7 +376,7 @@ void TabField3::BField(const double x, const double y, const double z, const dou
 		double xu = (x - x_mi - indx*xdist)/xdist;
 		double yu = (y - y_mi - indy*ydist)/ydist;
 		double zu = (z - z_mi - indz*zdist)/zdist;
-		int i3 = INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
+		int i3 = COMSOL_INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
 		// tricubic interpolation
 		if (Bxc.size() > 0){
 			double *coeff = const_cast<double*>(&Bxc[i3][0]);
@@ -431,7 +416,7 @@ void TabField3::BField(const double x, const double y, const double z, const dou
 	}
 }
 
-void TabField3::FieldSmthr(const double x, const double y, const double z, double &F, double dFdxi[3]) const{
+void comsolField3::FieldSmthr(const double x, const double y, const double z, double &F, double dFdxi[3]) const{
 	if (BoundaryWidth != 0 && F != 0){ // skip, if BoundaryWidth is set to zero
 		double dxlo = (x - x_mi)/BoundaryWidth; // calculate distance to edges in units of BoundaryWidth
 		double dxhi = (x_mi + xdist*(xl - 1) - x)/BoundaryWidth;
@@ -490,49 +475,10 @@ void TabField3::FieldSmthr(const double x, const double y, const double z, doubl
 	}
 }
 
-double TabField3::SmthrStp(const double x) const{
+double comsolField3::SmthrStp(const double x) const{
 	return 6*pow(x, 5) - 15*pow(x, 4) + 10*pow(x, 3);
 }
 
-double TabField3::SmthrStpDer(const double x) const{
+double comsolField3::SmthrStpDer(const double x) const{
 	return 30*pow(x, 4) - 60*pow(x, 3) + 30*pow(x,2);
-}
-
-void TabField3::EField(const double x, const double y, const double z, const double t,
-		double &V, double Ei[3], double dEidxj[3][3]) const{
-	double Escale = EScaling(t);
-	if (Escale != 0 && Vc.size() > 0 &&
-		(x - x_mi)/xdist > 0 && (x - x_mi - xl*xdist)/xdist < 0 &&
-		(y - y_mi)/ydist > 0 && (y - y_mi - yl*ydist)/ydist < 0 &&
-		(z - z_mi)/zdist > 0 && (z - z_mi - zl*zdist)/zdist < 0){
-		// get coordinate index
-		int indx = (int)floor((x - x_mi)/xdist);
-		int indy = (int)floor((y - y_mi)/ydist);
-		int indz = (int)floor((z - z_mi)/zdist);
-		// scale coordinates to unit cube
-		double xu = (x - x_mi - indx*xdist)/xdist;
-		double yu = (y - y_mi - indy*ydist)/ydist;
-		double zu = (z - z_mi - indz*zdist)/zdist;
-		int i3 = INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
-		// tricubic interpolation
-		double *coeff = const_cast<double*>(&Vc[i3][0]);
-		V = tricubic_eval(coeff, xu, yu, zu);
-		Ei[0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
-		Ei[1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
-		Ei[2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
-		if (dEidxj != NULL){ // calculate higher derivatives
-			dEidxj[0][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 2, 0, 0)/xdist/xdist;
-			dEidxj[0][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 1, 0)/xdist/ydist;
-			dEidxj[0][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 1)/xdist/zdist;
-			dEidxj[1][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 1, 0)/ydist/xdist;
-			dEidxj[1][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 2, 0)/ydist/ydist;
-			dEidxj[1][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 1)/ydist/zdist;
-			dEidxj[2][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 1)/zdist/xdist;
-			dEidxj[2][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 1)/zdist/ydist;
-			dEidxj[2][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 2)/zdist/zdist;
-		}
-
-		for (int i = 0; i < 3; i++)
-			FieldSmthr(x, y, z, Ei[i], dEidxj[i]); // apply field smoothing to each component
-	}
 }
