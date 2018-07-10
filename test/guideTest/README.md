@@ -10,7 +10,8 @@ Neutrons are created in a spherical source (diameter = .05m) at the
 left (x = -2.45) end of the tube
 
 There is an exponentially decreasing field along x, and a linear field in the z direction,
-and a static field in the z direction
+and a static field in the z direction. No field smoothing implemented here so neutrons may
+see a sharp spike in B field.
 
 For more, see config.in
 

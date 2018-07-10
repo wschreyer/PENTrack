@@ -26,9 +26,9 @@
  */
 class comsolField3: public TField{
 	private:
-		int xl; ///< size of the table in x direction (i.e. the number of x values w/o duplicates)
-		int yl; ///< size of the table in y direction (i.e. the number of y values w/o duplicates)
-		int zl; ///< size of the table in z direction (i.e. the number of z values w/o duplicates)
+		int xl; ///< size of the table in x direction (i.e. the number of x values not counting duplicates)
+		int yl; ///< size of the table in y direction (i.e. the number of y values not counting duplicates)
+		int zl; ///< size of the table in z direction (i.e. the number of z values not counting duplicates)
 		double xdist; ///< distance between grid points in x direction
 		double ydist; ///< distance between grid points in y direction
 		double zdist; ///< distance between grid points in z direction
@@ -43,9 +43,8 @@ class comsolField3: public TField{
 		double Bconv; ///< Factor to convert magnetic field units in file to PENTrack units
 
 		/**
-		 * Reads a comsol arrow field file.
 		 *
-		 * File has to contain x,y and z coordinates, and B_x, B_y ,B_z columns.
+		 * Read a text file containing x,y, z B_x, B_y ,B_z columns, delineated by space, comma, or tab
 		 * Sets comsolField3::xl, comsolField3::yl, comsolField3::zl, comsolField3::xdist, comsolField3::ydist, comsolField3::zdist, comsolField3::x_mi, comsolField3::y_mi, comsolField3::z_mi according to the values in the table file which are used to determine the needed indeces on interpolation.
 		 *
 		 * @param tabfile Path to table file
@@ -54,7 +53,6 @@ class comsolField3: public TField{
 		 * @param BxTab Returns magnetic field x components at grid points
 		 * @param ByTab Returns magnetic field y components at grid points
 		 * @param BzTab Returns magnetic field z components at grid points
-		 * @param VTab Returns electric potential at grid points
 		 */
 		void ReadTabFile(const std::string &tabfile, std::vector<double> &BxTab,
 				std::vector<double> &ByTab, std::vector<double> &BzTab);
@@ -66,7 +64,6 @@ class comsolField3: public TField{
 		 * @param BxTab B_x column
 		 * @param ByTab B_y column
 		 * @param BzTab B_z column
-		 * @param VTab V column
 		 */
 		void CheckTab(const std::vector<double> &BxTab, const std::vector<double> &ByTab,
 				const std::vector<double> &BzTab);

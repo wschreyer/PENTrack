@@ -84,6 +84,11 @@ Magnetic and electric fields (rotationally symmetric 2D and 3D) can be included 
 You can also define analytic fields from straight, finite conductors and homogeneous field with small gradients.
 Every field type can be scaled with a user-defined time-dependent formula to simulate oscillating fields or magnets that are ramped up and down.
 
+UPDATE: As of 7/5/2018 PENTrack also supports any text file with 6 columns: x y z Bx By Bz
+(Lines beginning with % or # will be skipped. Columns may be delineated by space, comma, or tab)
+Units for these files are assumed to be in meters and Tesla, though unit conversions
+can be edited in comsolField3D.h
+
 ### Particle sources
 
 Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the configuration file.
@@ -231,7 +236,7 @@ If the spinlog parameter is enabled in the configuration file and the particle s
 - Sx, Sy, Sz: components of the spin vector [dimensionless]
 - Wx, Wy, Wz: components of precession-axis vector [1/s]
 
-Helper Scripts 
+Helper Scripts
 --------------
 
 ### Merging output files into ROOT trees
@@ -246,36 +251,36 @@ This script performs some preliminary checks before launching a large batch PENT
 1. Check that the STL files referenced in the configuration file exist (i.e. there is no mistake in the path specified in the [GEOMETRY] section of the file.
 2. Checks that all the files in the STL folder are referenced in the [GEOMETRY] section of the configuration file (currently the script looks for a folder name STL this could be made general later)
 3. Checks if the number of jobs running would exceed 2880 when the batch file being generated is submitted (2880 is the maximum number of jobs allowed to be running by a single user on [Westgrid's](https://www.westgrid.ca/) [Jasper](https://www.westgrid.ca/support/systems/Jasper/) cluster). The number 2880 could be changed directly in the code depending on a different user requirement.
-4. Check if the job numbers being specified in the batch file being generated would overwrite the jobs that already exist in the output directory. A warning is given if there are cases of overwrite and the job numbers affected by the overwrite are given. 
+4. Check if the job numbers being specified in the batch file being generated would overwrite the jobs that already exist in the output directory. A warning is given if there are cases of overwrite and the job numbers affected by the overwrite are given.
 
-The script also generates a batch.pbs that can be submitted to a TORQUE queueing system. The batch script can be customized by entering the following command line input in this order: 
+The script also generates a batch.pbs that can be submitted to a TORQUE queueing system. The batch script can be customized by entering the following command line input in this order:
 
-1. minJobNum - the lower bound of the job array id specified in the batch file (default is 1) 
+1. minJobNum - the lower bound of the job array id specified in the batch file (default is 1)
 2. maxJobNum - the upper bound of the job array id specified in the batch file (default is 10, so if minJobNum=1 and maxJobNum=10, submitting the batch file would result in 10 PENTrack jobs being run the job numbers ranging from 1-10)
 3. jobName - the name of the job that will displayed when you check the status of the jobs using the `qstat` command (default is SampleRun)
 4. inDirName - the relative path to the directory containing PENTrack's input files (the geometry.in file in this directory will be checked, default is in/)
 5. outDirName - the relative path to the directory where the job output will be written (the cases for overwriting previous jobs will be checked in this directory, default is out/)
 6. pbsfileName - the name of the batch file being generated (default name is batch.pbs)
-7. wallTime - the walltime requested from the queueing system, it must be entered in the following format: 1d4h30m which means the time requested is: 1 day + 4 hours + 30 minutes (you can only specify days or hours or minutes but they order must remain: day, hours, minutes). You can also specify 120m and the batch file will correctly set the time to 2 hours. A warning will be given 
+7. wallTime - the walltime requested from the queueing system, it must be entered in the following format: 1d4h30m which means the time requested is: 1 day + 4 hours + 30 minutes (you can only specify days or hours or minutes but they order must remain: day, hours, minutes). You can also specify 120m and the batch file will correctly set the time to 2 hours. A warning will be given
 
 ### postRunCheck.sh
 
-This script performs some basic error checks after a batch run of PENTrack has finished execution. The two required inputs are: 
+This script performs some basic error checks after a batch run of PENTrack has finished execution. The two required inputs are:
 
 1. expectedNumJobs - the number of jobs that were part of the batch run which is to be checked
-2. outDirName - the relative path to the output directory where the output from the batch run was written 
+2. outDirName - the relative path to the output directory where the output from the batch run was written
 
-The checks performed by the script are: 
+The checks performed by the script are:
 
-1. Lists the number of each type of log file present in the outDirName directory so that you can verify the correct number of log files are produced 
+1. Lists the number of each type of log file present in the outDirName directory so that you can verify the correct number of log files are produced
 2. Lists the number of empty and non-empty error files and the job numbers for the non-empty error files so you can identify jobs that encountered problems. Currently, the error files are expected to be named error.txt-jobNum where jobNum is an integer, ex: error.txt-1, error.txt-2 etc...
-3. Lists the number of output files that had an exit code so you can identify the number of jobs that ran to completion, and the number of jobs that had an exit code of 0 so you can verify the number of jobs that finished normally. A list of the job numbers that did not finish i.e. did not have an exit code and a list of the job numbers that did not have an exit code of 0 is also provided. 
-4. Creates a directory named ErrorJobs in the outDirName directory and moves all the files related to a job number with a non-empty error file, file without an exit code and files without an exit code of 0 to the ErrorJobs directory. 
-5. Generates a table listing the average, minimum and maximum values of the following simulation parameters: Simulation time, Particle Stop IDS (neutron absorbed on a surface, Neutrons absorbed in a material, Neutrons not categorized etc...). The job numbers corresponding to the jobs with the maximum and minimum values for each parameter are given. This table is useful in making sure there are not too many neutrons encountering geometry errors or hitting the outer boundaries or identifying a job number that had particularly large numbers of neutrons encounter an error etc. 
+3. Lists the number of output files that had an exit code so you can identify the number of jobs that ran to completion, and the number of jobs that had an exit code of 0 so you can verify the number of jobs that finished normally. A list of the job numbers that did not finish i.e. did not have an exit code and a list of the job numbers that did not have an exit code of 0 is also provided.
+4. Creates a directory named ErrorJobs in the outDirName directory and moves all the files related to a job number with a non-empty error file, file without an exit code and files without an exit code of 0 to the ErrorJobs directory.
+5. Generates a table listing the average, minimum and maximum values of the following simulation parameters: Simulation time, Particle Stop IDS (neutron absorbed on a surface, Neutrons absorbed in a material, Neutrons not categorized etc...). The job numbers corresponding to the jobs with the maximum and minimum values for each parameter are given. This table is useful in making sure there are not too many neutrons encountering geometry errors or hitting the outer boundaries or identifying a job number that had particularly large numbers of neutrons encounter an error etc.
 
-### genGeomList.sh 
+### genGeomList.sh
 
-This script generates a list of STL files in the format required by PENTrack, priority and material type defined. This is useful when running a simulation with a large number of STL files required. However, to function the STL files must be named according to a specific naming convention for regular files the convention is: 
+This script generates a list of STL files in the format required by PENTrack, priority and material type defined. This is useful when running a simulation with a large number of STL files required. However, to function the STL files must be named according to a specific naming convention for regular files the convention is:
 
  partName_mater_CuBe_prior_1.stl
 
@@ -283,10 +288,8 @@ where CuBe specifies the mater(ial) and 1 specifies the PENTrack priority to be 
 
  partName_prior_source.stl
 
-If the file doesn't contain the keyword mater then the STL file will still be displayed in the output but the material will be given as MISSING_MATERIAL. Also, if the material is specified as NotUsed (case insensitive) then file will not be listed in the output. 
+If the file doesn't contain the keyword mater then the STL file will still be displayed in the output but the material will be given as MISSING_MATERIAL. Also, if the material is specified as NotUsed (case insensitive) then file will not be listed in the output.
 
-The output from the script is directed to standard out is meant to be copied into the configuration file. The file also takes an optional argument: 
+The output from the script is directed to standard out is meant to be copied into the configuration file. The file also takes an optional argument:
 
 1. stlDirName - path to the directory containing the STL files that are to be processed
-
-
