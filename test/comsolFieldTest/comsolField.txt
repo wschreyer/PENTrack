@@ -1,4 +1,4 @@
-% Model:              switcher_coils_4.mph
+% Model:              helmholtz_coils.mph
 % Version:            COMSOL 5.1.0.234
 % Date:               Jun 28 2018, 18:29
 % Dimension:          3

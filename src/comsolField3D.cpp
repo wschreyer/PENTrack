@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <vector>
 #include <set>
 #include <string>
@@ -57,19 +58,28 @@ void comsolField3::ReadTabFile(const std::string &tabfile,
   while (getline(FIN,line)){
     lineNum++;
     if (line.substr(0,1) == "%" || line.substr(0,1) == "#") continue;     // Skip commented lines
-    boost::split(line_parts, line, boost::is_any_of("\t, "), boost::token_compress_on);
+    boost::split(line_parts, line, boost::is_any_of("\t, "), boost::token_compress_on); //Delineate tab, space, commas
 
     if (line_parts.size() != 6){
       std::cout << "\nError reading line " << lineNum << " of file "<< tabfile << "\n...quitting\n";
-      std::cout << line << std::endl;
       exit(-1);
     }
-    x.push_back( std::stod(line_parts[0], NULL) * lengthconv);
-    y.push_back( std::stod(line_parts[1], NULL) * lengthconv);
-    z.push_back( std::stod(line_parts[2], NULL) * lengthconv);
-    bx.push_back( std::stod(line_parts[3], NULL) * Bconv);
-    by.push_back( std::stod(line_parts[4], NULL) * Bconv);
-    bz.push_back( std::stod(line_parts[5], NULL) * Bconv);
+
+		// String to double conversion with error handling
+		try {
+	    x.push_back( boost::lexical_cast<double>(line_parts[0]) * lengthconv);
+	    y.push_back( boost::lexical_cast<double>(line_parts[1]) * lengthconv);
+	    z.push_back( boost::lexical_cast<double>(line_parts[2]) * lengthconv);
+	    bx.push_back( boost::lexical_cast<double>(line_parts[3]) * Bconv);
+	    by.push_back( boost::lexical_cast<double>(line_parts[4]) * Bconv);
+	    bz.push_back( boost::lexical_cast<double>(line_parts[5]) * Bconv);
+		}
+		catch(boost::bad_lexical_cast const& e)
+		{
+			std::cout << "\nError reading line " << lineNum << " of file "<< tabfile << std::endl;
+			std::cout << e.what() << std::endl;
+			exit(-1);
+		}
 
     // Put x, y, z values into ordered set for later use
     setX.insert( x.back() );
@@ -79,11 +89,11 @@ void comsolField3::ReadTabFile(const std::string &tabfile,
 
   FIN.close();
   if (x.empty() || y.empty() || z.empty() || bx.empty() || by.empty()|| bz.empty() ) {
-    std::cout<< "Error: Missing data from " << tabfile << "\n...quitting\n";
+    std::cout<< "Error: no data read in from " << tabfile << "\n...quitting\n";
     exit(-1);
   }
 
-  // We also need to find xl, yl, zl. This is the size of the table in each
+  // We need to find xl, yl, zl. This is the size of the table in each
   // respective direction (aka the # of x, y, z values if we ignore duplicates)
   xl = setX.size();
   yl = setY.size();
@@ -102,7 +112,7 @@ void comsolField3::ReadTabFile(const std::string &tabfile,
     zind.push_back( *itZ );
   }
 
-  // Now fill in BxTab, ByTab, BzTab with the correct indexing for interpolation
+	// Resize and initially fill in B field vectors
   BxTab.resize(xl*yl*zl);
   ByTab.resize(xl*yl*zl);
   BzTab.resize(xl*yl*zl);
@@ -112,11 +122,12 @@ void comsolField3::ReadTabFile(const std::string &tabfile,
 	int xi = 0, yi = 0, zi = 0;
   int i3 = 0;
 
+	// Now fill in BxTab, ByTab, BzTab with the correct indexing for interpolation
   for (unsigned int j = 0; j < x.size(); j++){
 
-    xi = std::distance(setX.begin(), setX.find( x[j])) - 1;
-    yi = std::distance(setY.begin(), setY.find( y[j])) - 1;
-    zi = std::distance(setZ.begin(), setZ.find( z[j])) - 1;
+    xi = std::distance( setX.begin(), setX.find(x[j]) ) ;
+    yi = std::distance( setY.begin(), setY.find(y[j]) ) ;
+    zi = std::distance ( setZ.begin(), setZ.find(z[j]) ) ;
 
     i3 = COMSOL_INDEX_3D(xi, yi, zi, xl, yl, zl);
 

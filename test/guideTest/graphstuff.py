@@ -77,8 +77,8 @@ def main():
                 z.append(float( line.split(' ')[6]) )
                 Bnorm.append( norm(Bx[num], By[num], Bz[num]))
 
-                 # For each neutron, append B field start/end values
-                 # Kinda ugly method of doing this but whatever
+            # For each neutron, append B field start/end values
+            # Kinda ugly method of doing this but whatever
                 if neutronCounter < int( line.split(' ')[1]):
                     bxStart.append(Bx[num])
                     byStart.append(By[num])
