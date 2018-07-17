@@ -1,7 +1,7 @@
 /**
  * \file
  * Tricubic interpolation of 3D field tables.
- * Also a linked list merge sort utilized to
+ * 
  */
 
 #ifndef COMSOL_3D_H_

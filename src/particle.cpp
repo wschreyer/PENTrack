@@ -119,7 +119,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 
 	// set initial values for integrator
 	value_type x = tend;
-	state_type y = yend; 
+	state_type y = yend;
 
 	bool resetintegration = false;
 
@@ -146,7 +146,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 
 	bool flipspin = false;
 	istringstream(particleconf["flipspin"]) >> flipspin;
-	
+
 	bool spininterpolatefields = false;
 	istringstream(particleconf["interpolatefields"]) >> spininterpolatefields;
 
@@ -246,7 +246,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 		}
 
 		PrintPercent(max(y[6]/tau, max((x - tstart)/(tmax - tstart), y[8]/maxtraj)), perc);
-		
+
 		if (ID == ID_UNKNOWN && y[6] >= tau) // proper time >= tau?
 			ID = ID_DECAYED;
 		else if (ID == ID_UNKNOWN && (x >= tmax || y[8] >= maxtraj)) // time > tmax or trajectory length > max length?
@@ -392,7 +392,8 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		}
 
 		if (x1 >= nextspinlog){
-			PrintSpin(x1, spin, stepper, field);
+			// PrintSpin(x1, spin, stepper, field);
+			PrintSpin(x1, y1, spin, stepper, field);
 			nextspinlog += spinloginterval;
 		}
 
@@ -412,7 +413,9 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 				spin = spinstepper.current_state();
 
 			if (t >= nextspinlog){
-				PrintSpin(t, spin, stepper, field);
+				// PrintSpin(t, spin, stepper, field);
+				stepper.calc_state(t,y1);
+				PrintSpin(t, y1, spin, stepper, field);
 				nextspinlog += spinloginterval;
 			}
 			if (t >= x2)
@@ -721,7 +724,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 					"Hend Eend Bend Uend solidend "
 					"stopID Nspinflip spinflipprob "
 					"Nhit Nstep trajlength Hmax wL\n";
-		file << std::setprecision(std::numeric_limits<double>::digits10); // need maximum precision for wL and delwL 
+		file << std::setprecision(std::numeric_limits<double>::digits10); // need maximum precision for wL and delwL
 	}
 	cout << "Printing status\n";
 
@@ -830,8 +833,11 @@ void TParticle::PrintHit(const value_type x, const state_type &y1, const state_t
 }
 
 
-void TParticle::PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const{
+// void TParticle::PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const{
+void TParticle::PrintSpin(const value_type x, const state_type &y, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const{
 	ofstream &spinfile = GetLogStream(spinLog);
+	double B[3] = {0,0,0};
+	field.BField(y[0],y[1],y[2],x,B);
 	if (!spinfile.is_open()){
 		std::ostringstream filename;
 		filename << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << name << "spin.out";
@@ -846,15 +852,21 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const dens
 
 		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
 		spinfile << std::setprecision(std::numeric_limits<double>::digits10);
-		spinfile << "jobnumber particle t Sx Sy Sz Wx Wy Wz\n";
+		// spinfile << "jobnumber particle t Sx Sy Sz Wx Wy Wz\n";
+		spinfile << "jobnumber particle t x y z Sx Sy Sz Wx Wy Wz Bx By Bz\n";
 	}
 	std::cout << "/";
 	double Omega[3];
 	SpinPrecessionAxis(x, stepper, field, Omega[0], Omega[1], Omega[2]);
 
+	// spinfile << jobnumber << " " << particlenumber << " "
+	// 		<< x << " " << spin[0] << " " << spin[1] << " " << spin[2] << " "
+	// 		<< Omega[0] << " " << Omega[1] << " " << Omega[2] << "\n";
 	spinfile << jobnumber << " " << particlenumber << " "
-			<< x << " " << spin[0] << " " << spin[1] << " " << spin[2] << " "
-			<< Omega[0] << " " << Omega[1] << " " << Omega[2] << "\n";
+			<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
+			<< spin[0] << " " << spin[1] << " " << spin[2] << " "
+			<< Omega[0] << " " << Omega[1] << " " << Omega[2] << " "
+			<< B[0] << " " << B[1] << " " << B[2] << "\n";
 }
 
 

@@ -88,6 +88,8 @@ def main():
                         byEnd.append(By[num-1])
                         bzEnd.append(Bz[num-1])
                     neutronCounter += 1
+            # END FOR
+            
             bxEnd.append(Bx[-1])
             byEnd.append(By[-1])
             bzEnd.append(Bz[-1])

@@ -233,8 +233,10 @@ If the spinlog parameter is enabled in the configuration file and the particle s
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
 - t: time [s]
+- x, y, z: location of the neutron at time t [m]
 - Sx, Sy, Sz: components of the spin vector [dimensionless]
 - Wx, Wy, Wz: components of precession-axis vector [1/s]
+- Bx, By, Bz: field experienced by the neutron at time t [Tesla]
 
 Helper Scripts
 --------------
