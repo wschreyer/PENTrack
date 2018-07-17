@@ -57,7 +57,7 @@ private:
 	const long double gamma; ///< gyromagnetic ratio [rad/(s T)] (has to be initialized in all derived classes!)
 	int particlenumber; ///< particle number
 	stopID ID; ///< particle fate (defined in globals.h)
-	
+
 	value_type tstart; ///< start time
 	value_type tend; ///< stop time
 	state_type ystart; ///< state vector before integration (position, velocity, proper time, polarization, and path length)
@@ -516,7 +516,7 @@ protected:
 	 */
 	virtual std::ofstream& GetLogStream(const LogStream str) const = 0;
 
-	
+
 	/**
 	 * Print start and current values to the endLog returned by GetLogStream.
 	 *
@@ -571,8 +571,8 @@ protected:
 	 * @param stepper Trajectory integrator used to calculate spin-precession axis at time t
 	 * @param field TFieldManager containing all electromagnetic fields
 	 */
-	virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
-
+	// virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
+	virtual void PrintSpin(const value_type x, const state_type &y, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
 
 	/**
 	 * Calculate potential energy of particle
