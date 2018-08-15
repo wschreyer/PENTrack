@@ -1,5 +1,5 @@
 [GLOBAL]
-simtype 1   # particle simulation
+simtype 4   # particle simulation = 1
 simcount 1 # Number neutrons
 simtime 7.5   # seconds
 
@@ -50,7 +50,6 @@ polarization 1		# 1: low-field-seeker (spin up), -1: high-field-seeker, 0: rando
 # COMSOLfield 	filename           BFieldScale	BoundaryWidth
 1 COMSOL        segSolBField.txt   1            0
 
-[FIELDS]
 # ExponentialFieldX is described by:
 # B_x = a1 * exp(- a2* x + a3) + c1
 # B_y = y * a1 * a2 / 2 * exp(- a2* x + a3) + c2

@@ -1,7 +1,7 @@
 /**
  * \file
  * Tricubic interpolation of a COMSOL arrow volume plot
- * 
+ *
  */
 
 
@@ -9,7 +9,6 @@
 
 #include <iostream>
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 #include <vector>
 #include <set>
 #include <string>
@@ -65,21 +64,12 @@ void comsolField3::ReadTabFile(const std::string &tabfile,
       exit(-1);
     }
 
-		// String to double conversion with error handling
-		try {
-	    x.push_back( boost::lexical_cast<double>(line_parts[0]) * lengthconv);
-	    y.push_back( boost::lexical_cast<double>(line_parts[1]) * lengthconv);
-	    z.push_back( boost::lexical_cast<double>(line_parts[2]) * lengthconv);
-	    bx.push_back( boost::lexical_cast<double>(line_parts[3]) * Bconv);
-	    by.push_back( boost::lexical_cast<double>(line_parts[4]) * Bconv);
-	    bz.push_back( boost::lexical_cast<double>(line_parts[5]) * Bconv);
-		}
-		catch(boost::bad_lexical_cast const& e)
-		{
-			std::cout << "\nError reading line " << lineNum << " of file "<< tabfile << std::endl;
-			std::cout << e.what() << std::endl;
-			exit(-1);
-		}
+		x.push_back( std::stod(line_parts[0], NULL) * lengthconv);
+		y.push_back( std::stod(line_parts[1], NULL) * lengthconv);
+		z.push_back( std::stod(line_parts[2], NULL) * lengthconv);
+		bx.push_back( std::stod(line_parts[3], NULL) * Bconv);
+		by.push_back( std::stod(line_parts[4], NULL) * Bconv);
+		bz.push_back( std::stod(line_parts[5], NULL) * Bconv);
 
     // Put x, y, z values into ordered set for later use
     setX.insert( x.back() );
@@ -102,15 +92,10 @@ void comsolField3::ReadTabFile(const std::string &tabfile,
   // Fill in vectors xind, yind, zind, which contain the afore mentioned values
   // of non-duplicated x, y, z
   // (thanks to set, these are now sorted in ascending order)
-  std::set<double>::iterator itX, itY, itZ;
-  for (itX = setX.begin(), itY = setY.begin(), itZ = setZ.begin();
-        (itX != setX.end()) && (itY != setY.end()) && (itZ != setZ.end());
-        ++itX, ++itY, ++itZ)
-  {
-    xind.push_back( *itX );
-    yind.push_back( *itY );
-    zind.push_back( *itZ );
-  }
+	std::set<double>::iterator itX, itY, itZ;
+	for (itX = setX.begin(); (itX != setX.end()); ++itX) xind.push_back( *itX );
+	for (itY = setY.begin(); (itY != setY.end()); ++itY) yind.push_back( *itY );
+	for (itZ = setZ.begin(); (itZ != setZ.end()); ++itZ) zind.push_back( *itZ );
 
 	// Resize and initially fill in B field vectors
   BxTab.resize(xl*yl*zl);
