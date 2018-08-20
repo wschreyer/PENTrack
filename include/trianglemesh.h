@@ -108,7 +108,7 @@ struct TCollision{
 	 * @param point Collision point
 	 */
 	TCollision(const CSegment &segment, const CIterator &tri, const CPoint &point){
-		s = sqrt((point - segment.start()).squared_length()/segment.squared_length());
+		s = /*std::min(1., std::max(0.,*/ (point - segment.start())*segment.to_vector()/segment.squared_length()/*))*/;
 		ID = tri->second;
 		CVector n = tri->first.supporting_plane().orthogonal_vector();
 		n = n/sqrt(n.squared_length());

@@ -8,6 +8,7 @@
 #include <iomanip>
 
 #include <boost/numeric/odeint.hpp>
+#include <boost/math/tools/roots.hpp>
 
 #include "particle.h"
 
@@ -514,186 +515,202 @@ void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_ty
 
 
 const solid& TParticle::GetCurrentsolid() const{
-	auto it = currentsolids.begin();
-	while (it->second) // skip over ignored solids
-		it++;
-	return it->first; // return first non-ignored solid in list
+	auto sld = max_element(currentsolids.begin(), currentsolids.end(), [](const pair<solid, bool> &s1, const pair<solid, bool> &s2){ return s1.second || (!s2.second && s1.first.ID < s2.first.ID); });
+	return sld->first;
 }
 
 
-bool TParticle::CheckHitError(const solid &hitsolid, double distnormal) const{
-	if (distnormal < 0){ // particle is entering solid
-		if (currentsolids.find(hitsolid) != currentsolids.end()){ // if solid already is in currentsolids list something went wrong
-			cout << "Particle entering " << hitsolid.name << " which it did enter before! Stopping it! Did you define overlapping solids with equal priorities?\n";
-			return true;
-		}
-	}
-	else if (distnormal > 0){ // particle is leaving solid
-		if (currentsolids.find(hitsolid) == currentsolids.end()){ // if solid is not in currentsolids list something went wrong
-			cout << "Particle inside '" << hitsolid.name << "' which it did not enter before! Stopping it!\n";
-			return true;
-		}
-	}
-	else{
-		cout << "Particle is crossing material boundary with parallel track! Stopping it!\n";
-		return true;
-	}
-	return false;
+bool TParticle::DoStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid,
+		TMCGenerator &mc, const TGeometry &geom){
+  value_type x2temp = x2;
+  state_type y2temp = y2;
+  OnStep(x1, y1, x2, y2, stepper, currentsolid, mc, ID, secondaries);
+  if (x2temp == x2 && y2temp == y2)
+    return false;
+  else{
+    if (y2temp[7] != y2[7])
+      Nspinflip++;
+    return true;
+  }
 }
 
+bool TParticle::DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+		TMCGenerator &mc, const TGeometry &geom, const bool hitlog){
+  bool trajectoryaltered = false, traversed = true;
 
-bool TParticle::CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-		TMCGenerator &mc, const TGeometry &geom, const bool hitlog, const int iteration){
-	solid currentsolid = GetCurrentsolid();
-	if (!geom.CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
-		printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
-		ID = ID_HIT_BOUNDARIES;
-		return true;
-	}
+  multimap<TCollision, bool> colls;
+  if (!geom.GetCollisions(x1, &y1[0], x2, &y2[0], colls))
+    throw std::runtime_error("Called DoHit for a trajectory segment that does not contain a collision!");
 
-	multimap<TCollision, bool> colls;
-	bool collfound = false;
-	try{
-		collfound = geom.GetCollisions(x1, &y1[0], x2, &y2[0], colls);
-	}
-	catch(...){
-		ID = ID_CGAL_ERROR;
-		return true;
-	}
+  vector<pair<solid, bool> > newsolids = currentsolids;
+  for (auto coll: colls){
+//    cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << coll.first.ID << endl;
+    solid sld = geom.GetSolid(coll.first.ID);
+    auto foundsld = find_if(newsolids.begin(), newsolids.end(), [&sld](const std::pair<solid, bool> s){ return s.first.ID == sld.ID; });
+    if (coll.first.distnormal < 0){ // if entering solid
+      if (foundsld != newsolids.end()){ // if solid has been entered before (self-intersecting surface)
+//	cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
+	if (coll.first.s > 0) // if collision happened right at the start of the step it is likely that the hit solid was already added to the list in the previous step and we will ignore this one
+          newsolids.push_back(make_pair(sld, foundsld->second)); // add additional entry to list, with ignore state as on first entry
+      }
+      else
+        newsolids.push_back(make_pair(sld, coll.second)); // add solid to list
+    }
+    else if (coll.first.distnormal > 0){ // if leaving solid
+      if (foundsld == newsolids.end()){ // if solid was not entered before something went wrong
+	if (coll.first.s > 0){ // if collision happened right at the start of the step it is likely that the hit solid was already removed from the list in the previous step and this is not an error
+//	  cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
+//          throw runtime_error((boost::format("Particle inside '%1%' which it did not enter before!") % sld.name).str());
+          cout << "Particle inside solid " << sld.name << " which it did not enter before. Stopping it!\n";
+	  ID = ID_GEOMETRY_ERROR;
+	  return true;
+        }
+      }
+      else
+        newsolids.erase(foundsld); // remove solid from list
+    }
+    else{
+//      throw runtime_error("Particle crossed surface with parallel track!");
+      cout << "Particle crossed surface with parallel track. Stopping it!\n";
+      ID = ID_GEOMETRY_ERROR;
+      return true;
+    }
+  }
+  
+  solid leaving = GetCurrentsolid(); // particle can only leave highest-priority solid
+  solid entering = geom.defaultsolid;
+  for (auto sld: newsolids){
+    if (!sld.second && sld.first.ID > entering.ID)
+      entering = sld.first;
+  }
+//  cout << "Leaving " << leaving.name << ", entering " << entering.name << '\n';
+  if (leaving.ID != entering.ID){ // if the particle actually traversed a material interface
+    auto coll = find_if(colls.begin(), colls.end(), [&leaving, &entering](const pair<TCollision, bool> &c){ return !c.second && (c.first.ID == leaving.ID || c.first.ID == entering.ID); });
+    if (coll == colls.end())
+      throw std::runtime_error("Did not find collision corresponding to entering/leaving solid!");
+    value_type x2temp = x2;
+    state_type y2temp = y2;
+    OnHit(x1, y1, x2, y2, coll->first.normal, leaving, entering, mc, ID, secondaries); // do particle specific things
+    if (x2temp == x2 && y2temp == y2){ // if end point of step was not modified
+      trajectoryaltered = false;
+      traversed = true;
+    }
+    else{
+      trajectoryaltered = true;
+      if (y2temp[7] != y2[7])
+        Nspinflip++;
+      if (x2 == x2temp && y2[0] == y2temp[0] && y2[1] == y2temp[1] && y2[2] == y2temp[2]){
+        traversed = true;
+      }
+      else if (x2 == x1 && y2[0] == y1[0] && y2[1] == y1[1] && y2[2] == y1[2]){
+        traversed = false;
+      }
+      else{
+        throw std::runtime_error("OnHit routine returned inconsistent position. That should not happen!");
+      }
+    }
+ 
+    if (hitlog)
+      PrintHit(x1, y1, y2, coll->first.normal, leaving, entering); // print collision to file if requested
+    Nhit++;
+  }
+ 
+  if (traversed){
+    currentsolids = newsolids; // if surface was traversed (even if it was  physically ignored) replace current solids with list of new solids
+  }
+ 
+  if (trajectoryaltered || ID != ID_UNKNOWN)
+    return true;
 
-	if (collfound){	// if there is a collision with a wall
-		TCollision coll = colls.begin()->first;
+  return false;
+}
 
-        if ((iteration > 9) or (x2 <= x1*(1 + std::numeric_limits<double>::epsilon()))
-                or (abs(coll.distnormal) < REFLECT_TOLERANCE))
-		{
-            if (abs(coll.distnormal) > REFLECT_TOLERANCE) // if step over collision is longer than REFLECT_TOLERANCE
-                std::cout << "Could not iterate collision point to required precision within " << iteration << " iterations! Step over collision is " << coll.distnormal << "m, " << x2 - x1 << "s\n";
-            bool trajectoryaltered = false, traversed = true;
+bool TParticle::iterate_collision(value_type &x1, state_type &y1, value_type &x2, state_type &y2, const TCollision &coll, const dense_stepper_type &stepper, const TGeometry &geom, unsigned int iteration){
+  if (pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2) < REFLECT_TOLERANCE*REFLECT_TOLERANCE){
+    return true; // successfully iterated collision point
+  }
+  if (x2/x1 - 1 < 4*numeric_limits<value_type>::epsilon()){
+    cout << "Collision point iteration limited by numerical precision.\n";
+    return true;
+  }
+  if (iteration >= 100){
+    cout << "Collision point iteration reached max. iterations. " << x1 << " " << x2 - x1 << " " << coll.distnormal << " " << coll.s << "\n";
+    return true;
+  }
 
-			map<solid, bool> newsolids = currentsolids;
-			for (auto it = colls.begin(); it != colls.end(); it++){ // go through list of collisions
-				solid sld = geom.GetSolid(it->first.ID);
-				if (CheckHitError(sld, it->first.distnormal)){ // check all hits for errors
-					ID = ID_GEOMETRY_ERROR; // stop trajectory integration if error found
-					return true;
-				}
+//  value_type xc = x1 + (x2 - x1)*coll.s;
+//  if (xc == x1 || xc == x2)
+  value_type xc = x1 + (x2 - x1)*0.5;
+  state_type yc(STATE_VARIABLES);
+  stepper.calc_state(xc, yc);
+  multimap<TCollision, bool> colls;
+  if (geom.GetCollisions(x1, &y1[0], xc, &yc[0], colls)){ // if collision in first segment, further iterate
+//    cout << "1 " << x1 << " " << xc1 - x1 << endl;
+    if (iterate_collision(x1, y1, xc, yc, colls.begin()->first, stepper, geom, iteration + 1)){
+      x2 = xc;
+      y2 = yc;
+      return true; // if successfully iterated
+    }
+  }
+  if (geom.GetCollisions(xc, &yc[0], x2, &y2[0], colls)){ // if collision in second segment, further iterate
+//    cout << "2 " << xc1 << " " << xc2 - xc1 << endl;
+    if (iterate_collision(xc, yc, x2, y2, colls.begin()->first, stepper, geom, iteration + 1)){
+      x1 = xc;
+      y1 = yc;
+      return true; // if successfully iterated
+    }
+  }
+  return false; // if no iteration successful, actual trajectory curves past surface
+}
 
-				if (it->first.distnormal < 0){ // if particle is entering hit surface
-//					cout << "-->" << sld.name << ' ';
-					newsolids[sld] = it->second; // add new solid to list
-				}
-				else{ // if particle is leaving hit surface
-//					cout << sld.name << "--> ";
-					newsolids.erase(sld); // remove solid from list of new solids
-				}
+bool TParticle::CheckHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+		TMCGenerator &mc, const TGeometry &geom, const bool hitlog){
+  if (!geom.CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
+    printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
+    ID = ID_HIT_BOUNDARIES;
+    return true;
+  }
+  
+  solid currentsolid = GetCurrentsolid();
 
-				if (sld.ID > coll.ID)
-					coll = it->first; // use geometry from collision with highest priority
-			}
-//			cout << '\n';
+  multimap<TCollision, bool> colls;
+  bool collfound = false;
+  try{
+    collfound = geom.GetCollisions(x1, &y1[0], x2, &y2[0], colls);
+  }
+  catch(...){
+    ID = ID_CGAL_ERROR;
+    return true;
+  }
+  
+  if (collfound){	// if there is a collision with a wall
+    value_type xc1 = x1, xc2 = x2;
+//    for (auto c: colls)
+//      cout << x1 << " " << x2 - x1 << " " << c.first.distnormal << " " << c.first.s << " " << c.first.ID << endl;
+    state_type yc1 = y1, yc2 = y2;
+    if (iterate_collision(xc1, yc1, xc2, yc2, colls.begin()->first, stepper, geom)){
+      if (DoStep(x1, y1, xc1, yc1, stepper, currentsolid, mc, geom)){
+        x2 = xc1;
+        y2 = yc1;
+        return true;
+      }
 
-			solid leaving = currentsolid; // particle can only leave highest-priority solid
-			solid entering = geom.defaultsolid;
-			for (auto it = newsolids.begin(); it != newsolids.end(); it++){ // go through list of new solids
-				if (!it->second && it->first.ID > entering.ID){ // highest-priority solid in newsolids list will be entered in collisions
-					entering = it->first;
-				}
-			}
-//			cout << "Leaving " << leaving.name << ", entering " << entering.name << ", currently " << currentsolid.name << '\n';
-			if (leaving.ID != entering.ID){ // if the particle actually traversed a material interface
-				value_type x2temp = x2;
-				state_type y2temp = y2;
-				OnHit(x1, y1, x2, y2, coll.normal, leaving, entering, mc, ID, secondaries); // do particle specific things
-				if (x2temp == x2 && y2temp == y2){ // if end point of step was not modified
-					trajectoryaltered = false;
-					traversed = true;
-				}
-				else{
-					trajectoryaltered = true;
-					if (y2temp[7] != y2[7])
-						Nspinflip++;
-					if (x2 == x2temp && y2[0] == y2temp[0] && y2[1] == y2temp[1] && y2[2] == y2temp[2]){
-						traversed = true;
-					}
-					else if (x2 == x1 && y2[0] == y1[0] && y2[1] == y1[1] && y2[2] == y1[2]){
-						traversed = false;
-					}
-					else{
-						std::cout << "\nOnHit routine returned inconsistent position. That should not happen!\n";
-						exit(-1);
-					}
-				}
+      if (DoHit(xc1, yc1, xc2, yc2, stepper, mc, geom, hitlog)){
+        x2 = xc2;
+        y2 = yc2;
+        return true;
+      }
 
-				if (hitlog)
-					PrintHit(x1, y1, y2, coll.normal, leaving, entering); // print collision to file if requested
-				Nhit++;
-			}
+      if (CheckHit(xc2, yc2, x2, y2, stepper, mc, geom, hitlog)){
+        return true;
+      }
+    }
 
-			if (traversed){
-				currentsolids = newsolids; // if surface was traversed (even if it was  physically ignored) replace current solids with list of new solids
-			}
-
-//			value_type x2temp = x2;
-//			state_type y2temp = y2;
-//			OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), mc, ID, secondaries); // check for absorption/scattering
-//			if (x2temp != x2 || y2 != y2temp){
-//				trajectoryaltered = true;
-//				if (y2temp[7] != y2[7])
-//					Nspinflip++;
-//			}
-
-			if (trajectoryaltered || ID != ID_UNKNOWN)
-				return true;
-		}
-		else{
-			// else cut integration step right before and after first collision point
-			// and call CheckHit again for each smaller step (quite similar to bisection algorithm)
-			value_type xnew, xbisect1 = x1, xbisect2 = x1;
-			state_type ybisect1(STATE_VARIABLES);
-			state_type ybisect2(STATE_VARIABLES);
-			ybisect1 = ybisect2 = y1;
-
-            xnew = x1 + (x2 - x1)*(coll.s - 0.01); // cut integration right before collision point
-			if (xnew > x1 && xnew < x2){ // check that new line segment is in correct time interval
-				xbisect1 = xbisect2 = xnew;
-				stepper.calc_state(xbisect1, ybisect1);
-				ybisect2 = ybisect1;
-				if (CheckHit(x1, y1, xbisect1, ybisect1, stepper, mc, geom, hitlog, iteration+1)){ // recursive call for step before coll. point
-					x2 = xbisect1;
-					y2 = ybisect1;
-					return true;
-				}
-			}
-
-            xnew = x1 + (x2 - x1)*(coll.s + 0.01); // cut integration right after collision point
-			if (xnew > xbisect1 && xnew < x2){ // check that new line segment does not overlap with previous one
-				xbisect2 = xnew;
-				stepper.calc_state(xbisect2, ybisect2);
-				if (CheckHit(xbisect1, ybisect1, xbisect2, ybisect2, stepper, mc, geom, hitlog, iteration+1)){ // recursive call for step over coll. point
-					x2 = xbisect2;
-					y2 = ybisect2;
-					return true;
-				}
-			}
-
-			if (CheckHit(xbisect2, ybisect2, x2, y2, stepper, mc, geom, hitlog, iteration+1)) // recursive call for step after coll. point
-				return true;
-		}
-	}
-	else{ // if there was no collision: just check for absorption in solid with highest priority
-		value_type x2temp = x2;
-		state_type y2temp = y2;
-		OnStep(x1, y1, x2, y2, stepper, GetCurrentsolid(), mc, ID, secondaries);
-		if (x2temp == x2 && y2temp == y2)
-			return false;
-		else{
-			if (y2temp[7] != y2[7])
-				Nspinflip++;
-			return true;
-		}
-	}
-	return false;
+  }
+  else{ // if there was no collision: just check for absorption in solid with highest priority
+    return DoStep(x1, y1, x2, y2, stepper, currentsolid, mc, geom);
+  }
+  return false;
 }
 
 
@@ -743,8 +760,9 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 	double H;
 	solid sld = geom.GetSolid(x, &y[0]);
 	if (ID == ID_ABSORBED_ON_SURFACE){
-		auto nextsolid = std::find_if(++currentsolids.begin(), currentsolids.end(), [](const std::pair<solid, bool> &i){ return !i.second; });
-		H = E + GetPotentialEnergy(x, y, field, nextsolid->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
+		auto solids = currentsolids;
+		std::nth_element(solids.begin(), solids.begin() + 1, solids.end(), [](const std::pair<solid, bool> &s1, const std::pair<solid,bool> &s2){ return s1.second || (!s2.second && s1.first.ID < s2.first.ID); });
+		H = E + GetPotentialEnergy(x, y, field, (solids.begin() + 1)->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
 	}
 	else
 		H = E + GetPotentialEnergy(x, y, field, sld);

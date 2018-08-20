@@ -119,33 +119,32 @@ bool TGeometry::GetCollisions(const double x1, const double p1[3], const double 
 }
 
 
-std::map<solid, bool> TGeometry::GetSolids(const double t, const double p[3]) const{
+std::vector<std::pair<solid, bool> > TGeometry::GetSolids(const double t, const double p[3]) const{
 	double p2[3] = {mesh.GetBoundingBox().xmin() - REFLECT_TOLERANCE,
 			mesh.GetBoundingBox().ymin() - REFLECT_TOLERANCE,
 			mesh.GetBoundingBox().zmin() - REFLECT_TOLERANCE};
 	std::multimap<TCollision, bool> c;
-	std::map<solid, bool> currentsolids;
-	currentsolids[defaultsolid] = false;
+	std::vector<std::pair<solid, bool> > currentsolids = { std::make_pair(defaultsolid, false) };
 	if (GetCollisions(t,p,t,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
 		for (auto i: c){
-			solid sld = GetSolid(i.first.ID);
-			if (currentsolids.count(sld) > 0) // if there is a collision with a solid already in the list, remove it from list
+			auto sld = find_if(currentsolids.begin(), currentsolids.end(), [&i](const std::pair<solid, bool> s){ return s.first.ID == i.first.ID; });
+			if (sld != currentsolids.end()) // if there is a collision with a solid already in the list, remove it from list
 				currentsolids.erase(sld);
 			else
-				currentsolids[sld] = i.second; // else add solid to list
+				currentsolids.push_back(std::make_pair(GetSolid(i.first.ID), i.second)); // else add solid to list
 		}
 	}
 	return currentsolids;
 }
 
-
-solid TGeometry::GetSolid(const double t, const double p[3], const map<solid, bool> &currentsolids) const{
+solid TGeometry::GetSolid(const double t, const double p[3]) const{
 	// find first (highest-priority) solid that's not being ignored
-	auto i = std::find_if(currentsolids.begin(), currentsolids.end(), [](std::pair<solid, bool> sld){ return !sld.second; });
-	if (i != currentsolids.end())
-		return i->first;
-	else
-		return defaultsolid;
+	auto currentsolids = GetSolids(t, p);
+//	for (auto s: currentsolids)
+//		std::cout << s.first.name << " " << s.second << std::endl;
+	auto sld = std::max_element(currentsolids.begin(), currentsolids.end(), [](const std::pair<solid, bool> s1, const std::pair<solid, bool> s2){ return s1.second || (!s2.second && s1.first.ID < s2.first.ID); });
+//	std::cout << sld->first.name << " " << sld->second << std::endl;
+	return sld->first;
 }
 
 solid TGeometry::GetSolid(const unsigned ID) const{

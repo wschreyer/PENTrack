@@ -75,7 +75,7 @@ private:
 
 	std::vector<TParticle*> secondaries; ///< list of secondary particles
 
-	std::map<solid, bool> currentsolids; ///< solids in which particle is currently inside
+	std::vector<std::pair<solid, bool> > currentsolids; ///< solids in which particle is currently inside
 
 public:
 	/**
@@ -343,24 +343,9 @@ private:
 
 
 	/**
-	 * Check if current collision is consistent with list of current solids
+	 * Check if particle hit a material boundary
 	 *
-	 * @param hitsolid Solid that was hit.
-	 * @param distnormal Distance to surface, can be positive (outgoing) or negative (incoming), depending on direction of particle velocity.
-	 *
-	 * @return Returns true, if an inconsistency was found.
-	 */
-	bool CheckHitError(const solid &hitsolid, double distnormal) const;
-
-
-	/**
-	 * Check, if particle hit a material boundary or was absorbed.
-	 *
-	 * Checks if a particle which flies from y1 to y2 in time x2-x1 hits a surface or is absorbed inside a material.
-	 * If a surface is hit the routine splits the line segment y1->y2 on both sides of the collision point and calls itself recursively
-	 * with the three new line segments as parameters. This is repeated until both split points are nearer than REFLECTION_TOLERANCE
-	 * to the collision point (much like an bisection algorithm). For each line segment "OnStep" is called to check for scattering/absorption/etc.
-	 * For each short segment crossing a collision point "OnHit" is called to check for reflection/refraction/etc.
+	 * Check if particle hit a material boundary. Iterate exact collision point and call DoStep and DoHit appropriately.
 	 *
 	 * @param x1 Start time of line segment
 	 * @param y1 Start point of line segment
@@ -371,9 +356,61 @@ private:
 	 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
 	 * @return Returns true if particle was reflected/absorbed
 	 */
-	bool CheckHit(const value_type x1, const state_type y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-			TMCGenerator &mc, const TGeometry &geom, const bool hitlog, const int iteration = 1);
+	bool CheckHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+			TMCGenerator &mc, const TGeometry &geom, const bool hitlog);
 
+	/**
+	 * Call OnStep for particle-dependent physics processes on a step.
+	 *
+	 * Check if trajectory has been altered by physics processes, return true if it was.
+	 *
+	 * @param x1 Start time of line segment
+	 * @param y1 Start point of line segment
+	 * @param x2 End time of line segment
+	 * @param y2 End point of line segment
+	 * @param stepper Trajectory integrator, used to calculate intermediate state vectors
+	 * @param currentsolid Material the particle is in during this step
+	 * @param mc Random-number generator
+	 * @param geom Geometry
+	 * @return Returns true if trajectory was altered
+	 */
+	bool DoStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid,
+			TMCGenerator &mc, const TGeometry &geom);
+
+	/**
+	 * Call OnHit to check if particle should cross material boundary.
+	 *
+	 * Update list of solids the particle is in, check for geometry-tracking errors.
+	 *
+	 * @param x1 Start time of line segment
+	 * @param y1 Start point of line segment
+	 * @param x2 End time of line segment
+	 * @param y2 End point of line segment
+	 * @param stepper Trajectory integrator, used to calculate intermediate state vectors
+	 * @param mc Random-number generator
+	 * @param geom Geometry
+	 * @param hitlog Set true if hits should be logged to hitlog.out
+	 * @return Returns true if trajectory was altered
+	 */
+	bool DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+			TMCGenerator &mc, const TGeometry &geom, const bool hitlog);
+
+	/**
+	 * Iterate collision point
+	 *
+	 * Split trajectory step right before and after collision point and call function recursively for each segment.
+	 *
+	 * @param x1 Start time of line segment
+	 * @param y1 Start point of line segment
+	 * @param x2 End time of line segment
+	 * @param y2 End point of line segment
+	 * @param coll Collision found in this segment
+	 * @param stepper Trajectory integrator, used to calculate intermediate state vectors
+	 * @param geom Geometry
+	 * @param interation Increase iteration count for each recursive call to limit number of iterations
+	 * @return Returns true if collision point was successfully iterated
+	 */
+        bool iterate_collision(value_type &x1, state_type &y1, value_type &x2, state_type &y2, const TCollision &coll, const dense_stepper_type &stepper, const TGeometry &geom, unsigned int iteration = 0);
 
 	/**
 	 * Simulate spin precession
