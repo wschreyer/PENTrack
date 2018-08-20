@@ -546,6 +546,7 @@ bool TParticle::DoHit(const value_type x1, const state_type &y1, value_type &x2,
     auto foundsld = find_if(newsolids.begin(), newsolids.end(), [&sld](const std::pair<solid, bool> s){ return s.first.ID == sld.ID; });
     if (coll.first.distnormal < 0){ // if entering solid
       if (foundsld != newsolids.end()){ // if solid has been entered before (self-intersecting surface)
+//	cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
 	if (coll.first.s > 0) // if collision happened right at the start of the step it is likely that the hit solid was already added to the list in the previous step and we will ignore this one
           newsolids.push_back(make_pair(sld, foundsld->second)); // add additional entry to list, with ignore state as on first entry
       }
@@ -555,6 +556,7 @@ bool TParticle::DoHit(const value_type x1, const state_type &y1, value_type &x2,
     else if (coll.first.distnormal > 0){ // if leaving solid
       if (foundsld == newsolids.end()){ // if solid was not entered before something went wrong
 	if (coll.first.s > 0){ // if collision happened right at the start of the step it is likely that the hit solid was already removed from the list in the previous step and this is not an error
+//	  cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
 //          throw runtime_error((boost::format("Particle inside '%1%' which it did not enter before!") % sld.name).str());
           cout << "Particle inside solid " << sld.name << " which it did not enter before. Stopping it!\n";
 	  ID = ID_GEOMETRY_ERROR;
@@ -621,43 +623,6 @@ bool TParticle::DoHit(const value_type x1, const state_type &y1, value_type &x2,
 }
 
 bool TParticle::iterate_collision(value_type &x1, state_type &y1, value_type &x2, state_type &y2, const TCollision &coll, const dense_stepper_type &stepper, const TGeometry &geom, unsigned int iteration){
-/*  value_type guess = x1 + (x2 - x1)*coll.s;
-  boost::uintmax_t maxit = 20;
-  auto xc = boost::math::tools::bracket_and_solve_root(
-    [&x1,&y1,&x2,&y2,&stepper,&geom](const value_type &x){
-      multimap<TCollision, bool> colls;
-      state_type y(STATE_VARIABLES);
-      stepper.calc_state(x, y);
-      if (geom.GetCollisions(x1, &y1[0], x, &y[0], colls)){
-        TCollision c = colls.begin()->first;
-	cout << "1 " << x << " " << c.s << endl;
-        return c.distnormal*(c.s - 1);
-      }
-      else if (geom.GetCollisions(x, &y[0], x2, &y2[0], colls)){
-        TCollision c = colls.begin()->first;
-	cout << "1 " << x << " " << c.s << endl;
-	return c.distnormal*c.s;
-      }
-      else
-        throw runtime_error("Could not iterate collision point!");
-    },
-    guess, min(x2/guess, guess/x1), coll.distnormal < 0,
-    [&stepper](const value_type &xc1, const value_type &xc2){
-      if (xc2/xc1 - 1 < 4*numeric_limits<value_type>::epsilon())
-	return true;
-      state_type yc1(STATE_VARIABLES), yc2(STATE_VARIABLES);
-      stepper.calc_state(xc1, yc1);
-      stepper.calc_state(xc2, yc2);
-      return pow(yc2[0] - yc1[0], 2) + pow(yc2[1] - yc1[1], 2) + pow(yc2[2] - yc1[2], 2) < pow(REFLECT_TOLERANCE, 2);
-    },
-    maxit);
-  x1 = xc.first;
-  x2 = xc.second;
-  stepper.calc_state(x1, y1);
-  stepper.calc_state(x2, y2);
-  cout << x1 << " " << x2 - x1 << endl;
-  return true;
-*/
   if (pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2) < REFLECT_TOLERANCE*REFLECT_TOLERANCE){
     return true; // successfully iterated collision point
   }
@@ -666,38 +631,29 @@ bool TParticle::iterate_collision(value_type &x1, state_type &y1, value_type &x2
     return true;
   }
   if (iteration >= 100){
-    cout << "Collision point iteration reached max. iterations.\n";
+    cout << "Collision point iteration reached max. iterations. " << x1 << " " << x2 - x1 << " " << coll.distnormal << " " << coll.s << "\n";
     return true;
   }
-  value_type xc1 = max(x1, x1 + (x2 - x1)*coll.s*0.9);
-  value_type xc2 = min(x2, max(x1 + (x2 - x1)*coll.s*1.1, x1*(1 + 4*numeric_limits<value_type>::epsilon())));
-  state_type yc1(STATE_VARIABLES), yc2(STATE_VARIABLES);
-  stepper.calc_state(xc1, yc1);
-  stepper.calc_state(xc2, yc2);
+
+//  value_type xc = x1 + (x2 - x1)*coll.s;
+//  if (xc == x1 || xc == x2)
+  value_type xc = x1 + (x2 - x1)*0.5;
+  state_type yc(STATE_VARIABLES);
+  stepper.calc_state(xc, yc);
   multimap<TCollision, bool> colls;
-  if ((x1 != xc1) && geom.GetCollisions(x1, &y1[0], xc1, &yc1[0], colls)){ // if collision in first segment, further iterate
+  if (geom.GetCollisions(x1, &y1[0], xc, &yc[0], colls)){ // if collision in first segment, further iterate
 //    cout << "1 " << x1 << " " << xc1 - x1 << endl;
-    if (iterate_collision(x1, y1, xc1, yc1, colls.begin()->first, stepper, geom, iteration + 1)){
-      x2 = xc1;
-      y2 = yc1;
+    if (iterate_collision(x1, y1, xc, yc, colls.begin()->first, stepper, geom, iteration + 1)){
+      x2 = xc;
+      y2 = yc;
       return true; // if successfully iterated
     }
   }
-  if ((xc1 != xc2) && geom.GetCollisions(xc1, &yc1[0], xc2, &yc2[0], colls)){ // if collision in second segment, further iterate
+  if (geom.GetCollisions(xc, &yc[0], x2, &y2[0], colls)){ // if collision in second segment, further iterate
 //    cout << "2 " << xc1 << " " << xc2 - xc1 << endl;
-    if (iterate_collision(xc1, yc1, xc2, yc2, colls.begin()->first, stepper, geom, iteration + 1)){
-      x1 = xc1;
-      y1 = yc1;
-      x2 = xc2;
-      y2 = yc2;
-      return true; // if successfully iterated
-    }
-  }
-  if ((xc2 != x2) && geom.GetCollisions(xc2, &yc2[0], x2, &y2[0], colls)){ // if collision in third segment, further iterate
-//    cout << "3 " << xc2 << " " << x2 - xc2 << endl;
-    if (iterate_collision(xc2, yc2, x2, y2, colls.begin()->first, stepper, geom, iteration + 1)){
-      x1 = xc2;
-      y1 = yc2;
+    if (iterate_collision(xc, yc, x2, y2, colls.begin()->first, stepper, geom, iteration + 1)){
+      x1 = xc;
+      y1 = yc;
       return true; // if successfully iterated
     }
   }
