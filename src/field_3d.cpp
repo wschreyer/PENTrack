@@ -6,6 +6,7 @@
 
 #include "field_3d.h"
 
+#include <cmath>
 #include <fstream>
 #include <iostream>
 
@@ -13,6 +14,42 @@
 
 #include "tricubic.h"
 #include "globals.h"
+
+// A faster implementation of the tricubic_eval function from libtricubic.
+double tricubic_eval_fast(double a[64], double x, double y, double z) {
+	double result = 0.0;
+	for (int i = 0; i < 4; ++i) {
+		for (int j = 0; j < 4; ++j) {
+			for (int k = 0; k < 4; ++k) {
+				result += a[i + 4 * j + 16 * k] * std::pow(x, i) * std::pow(y, j) * std::pow(z, k);
+			}
+		}
+	}
+	return result;
+}
+
+double tricubic_eval_fast(double a[64], double x, double y, double z, int derx, int dery, int derz) {
+	// fact[i][n] is the coefficient in front of the nth derivative of x^i.
+	// For instance, d2/dx2 x^3 = 6 x, so fact[3][2] = 6.
+	static double fact[4][4] {
+		{ 1.0, 0.0, 0.0, 0.0 },
+		{ 1.0, 1.0, 0.0, 0.0 },
+		{ 1.0, 2.0, 2.0, 0.0 },
+		{ 1.0, 3.0, 6.0, 6.0 },
+	};
+	
+	double result = 0.0;
+	for (int i = derx; i <= 3; ++i) {
+		for (int j = dery; j <= 3; ++j) {
+			for (int k = derz; k <= 3; ++k) {
+				double deriv_factor = fact[i][derx] * fact[j][dery] * fact[k][derz];
+				double pow_factor = std::pow(x, i - derx) * std::pow(y, j - dery) * std::pow(z, k - derz);
+				result += a[i + 4 * j + 16 * k] * pow_factor * deriv_factor;
+			}
+		}
+	}
+	return result;
+}
 
 
 /**
@@ -393,29 +430,29 @@ void TabField3::BField(const double x, const double y, const double z, const dou
 		// tricubic interpolation
 		if (Bxc.size() > 0){
 			double *coeff = const_cast<double*>(&Bxc[i3][0]);
-			B[0] = Bscale*tricubic_eval(coeff, xu, yu, zu);
+			B[0] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu);
 			if (dBidxj != NULL){
-				dBidxj[0][0] = Bscale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
-				dBidxj[0][1] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
-				dBidxj[0][2] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
+				dBidxj[0][0] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 1, 0, 0)/xdist;
+				dBidxj[0][1] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 1, 0)/ydist;
+				dBidxj[0][2] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 0, 1)/zdist;
 			}
 		}
 		if (Byc.size() > 0){
 			double *coeff = const_cast<double*>(&Byc[i3][0]);
-			B[1] = Bscale*tricubic_eval(coeff, xu, yu, zu);
+			B[1] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu);
 			if (dBidxj != NULL){
-				dBidxj[1][0] = Bscale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
-				dBidxj[1][1] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
-				dBidxj[1][2] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
+				dBidxj[1][0] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 1, 0, 0)/xdist;
+				dBidxj[1][1] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 1, 0)/ydist;
+				dBidxj[1][2] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 0, 1)/zdist;
 			}
 		}
 		if (Bzc.size() > 0){
 			double *coeff = const_cast<double*>(&Bzc[i3][0]);
-			B[2] = Bscale*tricubic_eval(coeff, xu, yu, zu);
+			B[2] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu);
 			if (dBidxj != NULL){
-				dBidxj[2][0] = Bscale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
-				dBidxj[2][1] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
-				dBidxj[2][2] = Bscale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
+				dBidxj[2][0] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 1, 0, 0)/xdist;
+				dBidxj[2][1] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 1, 0)/ydist;
+				dBidxj[2][2] = Bscale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 0, 1)/zdist;
 			}
 		}
 
@@ -514,20 +551,20 @@ void TabField3::EField(const double x, const double y, const double z, const dou
 		int i3 = INDEX_3D(indx, indy, indz, xl-1, yl-1, zl-1);
 		// tricubic interpolation
 		double *coeff = const_cast<double*>(&Vc[i3][0]);
-		V = tricubic_eval(coeff, xu, yu, zu);
-		Ei[0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 0)/xdist;
-		Ei[1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 0)/ydist;
-		Ei[2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 1)/zdist;
+		V = tricubic_eval_fast(coeff, xu, yu, zu);
+		Ei[0] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 1, 0, 0)/xdist;
+		Ei[1] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 1, 0)/ydist;
+		Ei[2] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 0, 1)/zdist;
 		if (dEidxj != NULL){ // calculate higher derivatives
-			dEidxj[0][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 2, 0, 0)/xdist/xdist;
-			dEidxj[0][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 1, 0)/xdist/ydist;
-			dEidxj[0][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 1)/xdist/zdist;
-			dEidxj[1][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 1, 0)/ydist/xdist;
-			dEidxj[1][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 2, 0)/ydist/ydist;
-			dEidxj[1][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 1)/ydist/zdist;
-			dEidxj[2][0] = -Escale*tricubic_eval(coeff, xu, yu, zu, 1, 0, 1)/zdist/xdist;
-			dEidxj[2][1] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 1, 1)/zdist/ydist;
-			dEidxj[2][2] = -Escale*tricubic_eval(coeff, xu, yu, zu, 0, 0, 2)/zdist/zdist;
+			dEidxj[0][0] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 2, 0, 0)/xdist/xdist;
+			dEidxj[0][1] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 1, 1, 0)/xdist/ydist;
+			dEidxj[0][2] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 1, 0, 1)/xdist/zdist;
+			dEidxj[1][0] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 1, 1, 0)/ydist/xdist;
+			dEidxj[1][1] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 2, 0)/ydist/ydist;
+			dEidxj[1][2] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 1, 1)/ydist/zdist;
+			dEidxj[2][0] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 1, 0, 1)/zdist/xdist;
+			dEidxj[2][1] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 1, 1)/zdist/ydist;
+			dEidxj[2][2] = -Escale*tricubic_eval_fast(coeff, xu, yu, zu, 0, 0, 2)/zdist/zdist;
 		}
 
 		for (int i = 0; i < 3; i++)
