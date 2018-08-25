@@ -17,7 +17,7 @@
  */
 struct TFieldManager{
 private:
-	std::vector<TField*> fields; ///< list of fields
+    std::vector<std::unique_ptr<TField> > fields; ///< list of fields
 		
 public:
 	TFieldManager(const TFieldManager &f) = delete; ///< TFieldManager is not copyable
@@ -31,12 +31,6 @@ public:
 	 * @param conf TConfig map containing field options
 	 */
 	TFieldManager(TConfig &conf);
-
-
-	/**
-	 * Destructor, delete all fields.
-	 */
-	~TFieldManager();
 
 
 	/**

@@ -13,7 +13,6 @@
 #include "conductor.h"
 #include "edmfields.h"
 #include "analyticFields.h"
-#include "comsolField3D.h"
 
 
 TFieldManager::TFieldManager(TConfig &conf){
@@ -23,89 +22,48 @@ TFieldManager::TFieldManager(TConfig &conf){
 		double Ibar, p1, p2, p3, p4, p5, p6, p7;
 		double freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi;
 		std::string Bscale, Escale;
-		TField *f = NULL;
+        std::unique_ptr<TField> f;
 		std::istringstream ss(i->second);
 		ss >> type;
 
-		if (type == "2Dtable"){
-			ss >> ft >> Bscale >> Escale;
-			if (ss)
-				f = new TabField(boost::filesystem::absolute(ft, configpath.parent_path()).native(), Bscale, Escale);
+        if (type == "2Dtable" && (ss >> ft >> Bscale >> Escale)){
+                fields.push_back(std::unique_ptr<TField>(new TabField(boost::filesystem::absolute(ft, configpath.parent_path()).native(), Bscale, Escale)));
 		}
-		else if (type == "3Dtable"){
-			double BoundaryWidth;
-			ss >> ft >> Bscale >> Escale >> BoundaryWidth;
-			if (ss)
-				f = new TabField3(boost::filesystem::absolute(ft, configpath.parent_path()).native(), Bscale, Escale, BoundaryWidth);
+        else if (type == "3Dtable"){
+            fields.push_back(ReadOperaField3(i->second));
 		}
 		else if (type == "COMSOL"){
-			double BoundaryWidth;
-			ss >> ft >> Bscale >> BoundaryWidth;
-			if (ss)
-				f = new comsolField3(boost::filesystem::absolute(ft, configpath.parent_path()).native(), Bscale, BoundaryWidth);
+            fields.push_back(ReadComsolField(i->second));
 		}
-		else if (type == "Conductor"){
-			ss >> Ibar >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> Bscale;
-			if (ss)
-				f = new TConductorField(p1, p2, p3, p4, p5, p6, Ibar, Bscale);
+        else if ((type == "Conductor") && (ss >> Ibar >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> Bscale)){
+            fields.push_back(std::unique_ptr<TField>(new TConductorField(p1, p2, p3, p4, p5, p6, Ibar, Bscale)));
 		}
-		else if (type == "EDMStaticB0GradZField") {
-			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
-
+        else if ((type == "EDMStaticB0GradZField") && (ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale)){
 			//conversion to radians
 			p4*=pi/180;
 			p5*=pi/180;
-
-
-			if (ss)
-				f = new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 0, 0, 0, 0, 0, bW, xma, xmi, yma, ymi, zma, zmi, Bscale);
+            fields.push_back(std::unique_ptr<TField>(new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 0, 0, 0, 0, 0, bW, xma, xmi, yma, ymi, zma, zmi, Bscale)));
 		}
-
-		else if (type == "ExponentialFieldX") {
-			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> xma >> xmi >> yma >> ymi >> zma >> zmi;
-
-			if (ss)
-				f = new TExponentialFieldX(p1, p2, p3, p4, p5, xma, xmi, yma, ymi, zma, zmi);
+        else if ((type == "ExponentialFieldX") && (ss >> p1 >> p2 >> p3 >> p4 >> p5 >> xma >> xmi >> yma >> ymi >> zma >> zmi)){
+            fields.push_back(std::unique_ptr<TField>(new TExponentialFieldX(p1, p2, p3, p4, p5, xma, xmi, yma, ymi, zma, zmi)));
 		}
-
-		else if (type == "LinearFieldZ") {
-			ss >> p1 >> p2 >> xma >> xmi >> yma >> ymi >> zma >> zmi;
-
-			if (ss)
-				f = new TLinearFieldZ(p1, p2, xma, xmi, yma, ymi, zma, zmi);
+        else if ((type == "LinearFieldZ") && (ss >> p1 >> p2 >> xma >> xmi >> yma >> ymi >> zma >> zmi)){
+            fields.push_back(std::unique_ptr<TField>(new TLinearFieldZ(p1, p2, xma, xmi, yma, ymi, zma, zmi)));
 		}
-
-		else if (type == "EDM_AC_B1Field") {
-			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> freq >> time1 >> time2 >> shift >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
-
+        else if ((type == "EDM_AC_B1Field") && (ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> freq >> time1 >> time2 >> shift >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale)){
 			//convert to radians
 			p4*=pi/180;
 			p5*=pi/180;
-
-
-			if (ss)
-				f = new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 1, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi, Bscale);
+            fields.push_back(std::unique_ptr<TField>(new TEDMStaticB0GradZField(p1, p2, p3, p4, p5, p6, p7, 1, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi, Bscale)));
 		}
-		else if (type == "EDMStaticEField") {
-			ss >> p1 >> p2 >> p3 >> Bscale;
-			if (ss)
-				f = new TEDMStaticEField (p1, p2, p3, Bscale);
+        else if ((type == "EDMStaticEField") && (ss >> p1 >> p2 >> p3 >> Bscale)){
+            fields.push_back(std::unique_ptr<TField>(new TEDMStaticEField (p1, p2, p3, Bscale)));
 		}
-
-		if (f)
-			fields.push_back(f);
 		else{
-			std::cout << "\nCould not load field """ << type << """! Did you enter invalid parameters?\n";
-			exit(-1);
+            throw std::runtime_error("\nCould not load field """ + type + """! Did you enter invalid parameters?\n");
 		}
 	}
 	std::cout << "\n";
-}
-
-
-TFieldManager::~TFieldManager(){
-	for (std::vector<TField*>::iterator i = fields.begin(); i != fields.end(); i++)
-		delete (*i);
 }
 
 
@@ -118,13 +76,13 @@ void TFieldManager::BField(const double x, const double y, const double z, const
 		}
 	}
 
-	for (std::vector<TField*>::const_iterator it = fields.begin(); it != fields.end(); ++it){
+    for (auto it = fields.begin(); it != fields.end(); ++it){
 		double Btmp[3] = {0,0,0};
 		double dBtmp[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 		if (dBidxj != NULL)
-			(*it)->BField(x, y, z, t, Btmp, dBtmp);
+            (*it)->BField(x, y, z, t, Btmp, dBtmp);
 		else
-			(*it)->BField(x, y, z, t, Btmp);
+            (*it)->BField(x, y, z, t, Btmp);
 
 		for (int i = 0; i < 3; i++){
 			B[i] += Btmp[i];
@@ -147,13 +105,13 @@ void TFieldManager::EField(const double x, const double y, const double z, const
 				dEidxj[i][j] = 0;
 		}
 	}
-	for (std::vector<TField*>::const_iterator it = fields.begin(); it != fields.end(); ++it){
+    for (auto it = fields.begin(); it != fields.end(); ++it){
 		double Vtmp = 0, Etmp[3] = {0,0,0};
 
 		if (dEidxj != NULL){
 			double dEtmp[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 
-			(*it)->EField(x, y, z, t, Vtmp, Etmp, dEtmp);
+            (*it)->EField(x, y, z, t, Vtmp, Etmp, dEtmp);
 
 			V += Vtmp;
 			for (int i = 0; i < 3; i++){
@@ -163,7 +121,7 @@ void TFieldManager::EField(const double x, const double y, const double z, const
 			}
 		}
 		else{
-			(*it)->EField(x, y, z, t, Vtmp, Etmp);
+            (*it)->EField(x, y, z, t, Vtmp, Etmp);
 
 			V += Vtmp;
 			for (int i = 0; i < 3; i++)

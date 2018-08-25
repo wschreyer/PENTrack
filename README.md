@@ -79,15 +79,13 @@ If you want to export several parts of a Solidworks assembly you can do the foll
 
 ### Fields
 
-Magnetic and electric fields (rotationally symmetric 2D and 3D) can be included from text-based field maps
-(right now, only "[Vectorfields OPERA](http://www.operafea.com)" maps in cgs units are supported).
+Magnetic and electric fields (2D and 3D) can be included from text-based field maps.
+2D maps are assumed to be rotationally symmetric around the z axis. They can contain columns for r, z, Bx, By, Bz, Ex, Ey, Ez, and V exported from "[Vectorfields OPERA](http://www.operafea.com)" on a regular grid (each field column is optional).
+3D maps can contain generic columns for x, y, z, Bx, By, Bz on a rectilinear grid. Lines beginning with % or # will be skipped, columns may be delineated by space, comma, or tab.
+3D maps can also be exported from OPERA with columns x, y, z, Bx, By, Bz, V on a rectilinear grid (each field column is optional).
+Units for field maps are assumed to be in meters, Tesla, and Volts, but each can be scaled individually.
 You can also define analytic fields from straight, finite conductors and homogeneous field with small gradients.
 Every field type can be scaled with a user-defined time-dependent formula to simulate oscillating fields or magnets that are ramped up and down.
-
-UPDATE: As of 7/5/2018 PENTrack also supports any text file with 6 columns: x y z Bx By Bz
-(Lines beginning with % or # will be skipped. Columns may be delineated by space, comma, or tab)
-Units for these files are assumed to be in meters and Tesla, though unit conversions
-can be edited in comsolField3D.h
 
 ### Particle sources
 
