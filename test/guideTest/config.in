@@ -16,7 +16,7 @@ PE        -8.6553 0.492 0.5 0 0 0
 1	ignored				  default
 2	tube.stl	      perfect
 3 endCapRight.stl PE        # Polyethelyne
-4 endCapLeft.stL  perfect
+4 endCapLeft.stl  perfect
 
 [SOURCE]
 sourcemode STLvolume

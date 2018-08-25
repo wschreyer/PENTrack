@@ -11,8 +11,9 @@ BCutPlane 0 0 0  0 0 1  0.707107 0.707107 0  100 100
 [SOURCE]
 
 [FIELDS]
-#field 		table-file			BFieldScale	EFieldScale	BoundaryWidth
+#field 		table-file			BFieldScale	EFieldScale	BoundaryWidth	CoordinateScale
 1 2Dtable 	../CosineGradientField.tab	1		1		0
-#2 3Dtable 	../VerticalLinearGradientField3D.tab	1		1	0
+2 2Dtable 	../VerticalLinearGradientField2D.tab	1		1	0
+3 3Dtable	../VerticalLinearGradientField3D.tab	-0.0001		-1	0	0.01
 
 [PARTICLES]

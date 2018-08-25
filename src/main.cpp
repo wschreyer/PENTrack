@@ -144,7 +144,7 @@ int main(int argc, char **argv){
 	chrono::time_point<chrono::steady_clock> simstart = chrono::steady_clock::now();
 
 	map<string, map<int, int> > ID_counter; // 2D map to store number of each ID for each particle type
-	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
+	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			TParticle *p = source->CreateParticle(mc, geom, field);
@@ -424,7 +424,7 @@ void PrintBFieldCut(TConfig &config, const boost::filesystem::path &outfile, con
 			for (int k = 0; k < 3; k++)
 				Pp[k] = BCutPlanePoint[k] + i*u[k]/BCutPlaneSampleCount1 + j*v[k]/BCutPlaneSampleCount2;
 			// print B-/E-Field to file
-			cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << "\n";
+            cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << " ";
 			
 			field.BField(Pp[0], Pp[1], Pp[2], 0, B, dBidxj);
 			for (int k = 0; k < 3; k++){

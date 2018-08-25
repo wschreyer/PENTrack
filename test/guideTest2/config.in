@@ -47,8 +47,8 @@ theta_v sin(x)		# differential initial distribution of polar angle of velocity -
 polarization 1		# 1: low-field-seeker (spin up), -1: high-field-seeker, 0: random
 
 [FIELDS]
-# COMSOLfield 	filename           BFieldScale	BoundaryWidth
-1 COMSOL        segSolBField.txt   1            0
+# COMSOLfield 	filename           BFieldScale	BoundaryWidth	CoordinateScale
+1 COMSOL        segSolBField.txt   1            0		1
 
 # ExponentialFieldX is described by:
 # B_x = a1 * exp(- a2* x + a3) + c1

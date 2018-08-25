@@ -39,8 +39,8 @@ polarization 1
 
 
 [FIELDS]
-1 2Dtable ../VerticalLinearGradientField2D.tab	0.5	0.5	0
-2 3Dtable ../VerticalLinearGradientField3D.tab	0.5	0.5	0
+1 2Dtable ../VerticalLinearGradientField2D.tab	0.5	0	0
+2 3Dtable ../VerticalLinearGradientField3D.tab	0.00005	0	0	0.01
 
 
 [PARTICLES]

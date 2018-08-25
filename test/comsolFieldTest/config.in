@@ -32,19 +32,19 @@ Emin 0e-9
 Emax 500e-9
 spectrum 1
 
-phi_v_min 0			# min. azimuth angle of velocity
-phi_v_max 6.2831854		# max. azimuth angle of velocity
-phi_v 1				# differential initial distribution of azimuth angle of velocity - volume source only!
+phi_v_min 0		# min. azimuth angle of velocity
+phi_v_max 360		# max. azimuth angle of velocity
+phi_v 1			# differential initial distribution of azimuth angle of velocity - volume source only!
 
 theta_v_min 0		# min. polar angle of velocity
-theta_v_max 3.14159265	# max. polar angle of velocity
+theta_v_max 180		# max. polar angle of velocity
 theta_v sin(x)		# differential initial distribution of polar angle of velocity - volume source only!
 
 polarization 0		# 1: low-field-seeker, -1: high-field-seeker, 0: random
 
 [FIELDS]
-# COMSOLfield 	filename           BFieldScale	BoundaryWidth
-1 COMSOL        comsolField.txt   1            0
+# COMSOLfield 	filename           BFieldScale	BoundaryWidth	CoordinateScale
+1 COMSOL        comsolField.txt   1            0		1
 
 # Files aren't just restricted to a vector arrow field from COMSOL
 # Can be any text file with 6 columns, x y z Bx By Bz
