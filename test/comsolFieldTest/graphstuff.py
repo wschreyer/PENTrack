@@ -26,14 +26,12 @@ def main():
             lines = f1.readlines()[1:]
             for num, line in enumerate(lines):
                 text = line.split(' ')
-                if (len(text) == 3):
-                    x.append(float( text[0]) )
-                    y.append(float( text[1]) )
-                    z.append(float( text[2]) )
-                else:
-                    bx.append(float( text[0]) )
-                    by.append(float( text[4]) )
-                    bz.append(float( text[8]) )
+                x.append(float( text[0]) )
+                y.append(float( text[1]) )
+                z.append(float( text[2]) )
+                bx.append(float( text[3]) )
+                by.append(float( text[7]) )
+                bz.append(float( text[11]) )
     except IOError:
         print("Error reading BFCut.out")
         return

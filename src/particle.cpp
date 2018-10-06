@@ -158,13 +158,13 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 	do{
 		double t;
 		SpinTimess >> t;
-		if (SpinTimess.good())
+        if (SpinTimess)
 			SpinTimes.push_back(t);
-	}while(SpinTimess.good());
+    }while(SpinTimess.good());
 	std::istringstream(particleconf["spinlog"]) >> spinlog;
 	std::istringstream(particleconf["spinloginterval"]) >> spinloginterval;
 	if (spinlog)
-		nextspinlog = 0;
+        nextspinlog = 0.;
 	state_type spin = spinend;
 
 	dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
@@ -414,8 +414,9 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 
 			if (t >= nextspinlog){
 				// PrintSpin(t, spin, stepper, field);
-				stepper.calc_state(t,y1);
-				PrintSpin(t, y1, spin, stepper, field);
+                state_type y(STATE_VARIABLES);
+                stepper.calc_state(t,y);
+                PrintSpin(t, y, spin, stepper, field);
 				nextspinlog += spinloginterval;
 			}
 			if (t >= x2)
