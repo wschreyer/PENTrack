@@ -56,9 +56,9 @@ def main():
             lines = f1.readlines()[1:]
             for num, line in enumerate(lines):
                 tSpin.append(float( line.split(' ')[2]) )
-                sx.append(float( line.split(' ')[3]) )
-                sy.append(float( line.split(' ')[4]) )
-                sz.append(float( line.split(' ')[5]) )
+                sx.append(float( line.split(' ')[6]) )
+                sy.append(float( line.split(' ')[7]) )
+                sz.append(float( line.split(' ')[8]) )
     except IOError:
         print("Error reading neutron spin file")
         return

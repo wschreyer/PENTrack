@@ -14,3 +14,6 @@ It has walls 1cm thick. For simtype = 1 we put a neutron in this field and watch
 
 
 Run the test with ./RunTest.sh
+
+
+graphstuff.py will plot the magnetic field in the y-z plane from the simtype=4 output, the magnetic field in the y-z plane from the original file comsolField.txt, and the spin trajectory from the simtype=1 output. The latter should be a circle in the z-x plane. 
