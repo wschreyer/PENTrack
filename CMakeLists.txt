@@ -5,32 +5,23 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-include_directories("alglib-3.13.0/cpp/src")
-add_library(alglib OBJECT alglib-3.13.0/cpp/src/alglibinternal.cpp
-                          alglib-3.13.0/cpp/src/integration.cpp
-                          alglib-3.13.0/cpp/src/optimization.cpp
-                          alglib-3.13.0/cpp/src/alglibmisc.cpp
-                          alglib-3.13.0/cpp/src/interpolation.cpp
-                          alglib-3.13.0/cpp/src/solvers.cpp
-                          alglib-3.13.0/cpp/src/ap.cpp
-                          alglib-3.13.0/cpp/src/linalg.cpp
-                          alglib-3.13.0/cpp/src/specialfunctions.cpp)
+include_directories("alglib-3.14.0/cpp/src")
+add_library(alglib OBJECT alglib-3.14.0/cpp/src/alglibinternal.cpp
+                          alglib-3.14.0/cpp/src/integration.cpp
+                          alglib-3.14.0/cpp/src/optimization.cpp
+                          alglib-3.14.0/cpp/src/alglibmisc.cpp
+                          alglib-3.14.0/cpp/src/interpolation.cpp
+                          alglib-3.14.0/cpp/src/solvers.cpp
+                          alglib-3.14.0/cpp/src/ap.cpp
+                          alglib-3.14.0/cpp/src/linalg.cpp
+                          alglib-3.14.0/cpp/src/specialfunctions.cpp)
 						
 include_directories("tricubic-1.0/src/libtricubic")
 add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
 
-set(Boost_REALPATH ON)
-find_package(Boost 1.53.0 COMPONENTS system filesystem REQUIRED)
-if (Boost_FOUND)
-	include_directories(${Boost_INCLUDE_DIRS})
-	link_directories(${Boost_LIBRARY_DIRS})
-else()
-	message(SEND_ERROR "Boost 1.53.0 or newer not found!")
-endif()
-
 set(CGAL_DONT_OVERRIDE_CMAKE_FLAGS TRUE CACHE BOOL "Tell CGAL not to override compiler flags")
 find_package(CGAL PATHS "cgal")
-if (CGAL_CONFIG_LOADED)
+if (CGAL_FOUND)
 	message(STATUS "CGAL version: " ${CGAL_VERSION})
 	if (CGAL_VERSION VERSION_LESS 4.1)
 		message(SEND_ERROR "CGAL versions older than 4.2 are not supported!")
@@ -39,6 +30,15 @@ if (CGAL_CONFIG_LOADED)
 	include(${CGAL_USE_FILE})
 else()
 	message(SEND_ERROR "CGAL library not found! For installation instructions see README.md.")
+endif()
+
+set(Boost_REALPATH ON)
+find_package(Boost 1.53.0 COMPONENTS system filesystem REQUIRED)
+if (Boost_FOUND)
+	include_directories(${Boost_INCLUDE_DIRS})
+	link_directories(${Boost_LIBRARY_DIRS})
+else()
+	message(SEND_ERROR "Boost 1.53.0 or newer not found!")
 endif()
 
 include_directories("exprtk")
