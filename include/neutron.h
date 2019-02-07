@@ -46,6 +46,19 @@ protected:
 	static std::ofstream trackout; ///< tracklog file stream
 	static std::ofstream hitout; ///< hitlog file stream
 	static std::ofstream spinout; ///< spinlog file stream
+
+    /**
+     * Calculate energy step from one material to another, including spin-dependent energy due to magnetization
+     *
+     * @param leaving Material that particle is leaving
+     * @param entering Material that particle is entering
+     * @param y Particle state containing spin polarization
+     *
+     * @return Returns step in Fermi potential [eV]
+     */
+    double CalcPotentialStep(const material &leaving, const material &entering, const state_type &y) const{
+        return entering.FermiReal*1e-9 - entering.InternalBField*GetMagneticMoment()*y[7] - leaving.FermiReal*1e-9 + leaving.InternalBField*GetMagneticMoment()*y[7];
+    }
 	
 	/**
 	 * Check for reflection/transmission/absorption on surfaces.
