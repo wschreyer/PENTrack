@@ -5,6 +5,11 @@
 # To activate the former, set the Lambert-reflection probability. To activate the latter, set RMSroughness and CorrelationLength.
 # See https://doi.org/10.1080/10448639208218770 and https://www.ncnr.nist.gov/resources/n-lengths/
 # For more information on diffuse reflection see https://doi.org/10.1007/BF01380066 and https://doi.org/10.1140/epja/i2010-10926-x
+#
+# When a neutron hits a surface, the code randomly chooses to flip its spin based on the given spin flip probability.
+# Then it calculates the potential difference between the previous and the new material, taking into account the spin polarization and internal magnetic fields.
+# Based on the potential difference and the diffuse-reflection parameters it chooses if the neutron should be transmitted or reflected specularly or diffusely.
+#
 #name		FermiReal [neV]		FermiImag [neV]		LambertProbability [0..1]	SpinflipProbability [0..1]	RMSroughness [m]	CorrelationLength [m]   InternalMagneticField [T]
 default		0			0			0				0			0			0
 PolishedSteel	183			0.0852			0				1e-4	2.6e-9	20e-9
