@@ -755,14 +755,8 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << solidstart.ID << " ";
 
 	double H;
-	solid sld = geom.GetSolid(x, &y[0]);
-	if (ID == ID_ABSORBED_ON_SURFACE){
-		auto solids = currentsolids;
-		std::nth_element(solids.begin(), solids.begin() + 1, solids.end(), [](const std::pair<solid, bool> &s1, const std::pair<solid,bool> &s2){ return s1.second || (!s2.second && s1.first.ID < s2.first.ID); });
-		H = E + GetPotentialEnergy(x, y, field, (solids.begin() + 1)->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
-	}
-	else
-		H = E + GetPotentialEnergy(x, y, field, sld);
+	solid sld = GetCurrentsolid();
+	H = E + GetPotentialEnergy(x, y, field, sld);
 
 	field.BField(y[0], y[1], y[2], x, B);
 	field.EField(y[0], y[1], y[2], x, V, Ei);
