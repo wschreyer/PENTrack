@@ -120,6 +120,8 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 
 	// set initial values for integrator
 	value_type x = tend;
+	if (x > tmax)
+		throw std::runtime_error("Tried to start trajectory simulation past the maximum simulation time. Check time settings.");
 	state_type y = yend; 
 
 	bool resetintegration = false;
