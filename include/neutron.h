@@ -57,7 +57,7 @@ protected:
      * @return Returns step in Fermi potential [eV]
      */
     double CalcPotentialStep(const material &leaving, const material &entering, const state_type &y) const{
-        return entering.FermiReal*1e-9 - entering.InternalBField*GetMagneticMoment()*y[7] - leaving.FermiReal*1e-9 + leaving.InternalBField*GetMagneticMoment()*y[7];
+        return entering.FermiReal*1e-9 - entering.InternalBField*GetMagneticMoment()*y[7]/ele_e - leaving.FermiReal*1e-9 + leaving.InternalBField*GetMagneticMoment()*y[7]/ele_e;
     }
 	
 	/**
