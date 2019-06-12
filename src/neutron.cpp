@@ -350,5 +350,5 @@ void TNeutron::Decay(const double t, const state_type &y, TMCGenerator &mc, cons
 
 
 double TNeutron::GetPotentialEnergy(const value_type t, const state_type &y, const TFieldManager &field, const solid &sld) const{
-    return TParticle::GetPotentialEnergy(t, y, field, sld) + sld.mat.FermiReal*1e-9 - sld.mat.InternalBField*GetMagneticMoment()*y[7];
+    return TParticle::GetPotentialEnergy(t, y, field, sld) + sld.mat.FermiReal*1e-9 - sld.mat.InternalBField*GetMagneticMoment()*y[7]/ele_e;
 }
