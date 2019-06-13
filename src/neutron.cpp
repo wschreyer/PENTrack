@@ -48,7 +48,7 @@ void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type 
 	
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-    double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
+	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
 	for (int i = 0; i < 3; i++)
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
@@ -74,7 +74,7 @@ void TNeutron::TransmitLambert(const value_type x1, const state_type &y1, value_
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-    double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
+	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
 	for (int i = 0; i < 3; i++)
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
@@ -100,10 +100,14 @@ void TNeutron::Reflect(const value_type x1, const state_type &y1, value_type &x2
 	//************** specular reflection **************
 //				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
 	x2 = x1;
-	y2 = y1;
+	y2[0] = y1[0];
+	y2[1] = y1[1];
+	y2[2] = y1[2];
 	y2[3] -= 2*vnormal*normal[0]; // reflect velocity
 	y2[4] -= 2*vnormal*normal[1];
 	y2[5] -= 2*vnormal*normal[2];
+	y2[6] = y1[6];
+	y2[8] = y1[8];
 }
 
 void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
@@ -127,13 +131,17 @@ void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 	x2 = x1;
-	y2 = y1;
+	y2[0] = y1[0];
+	y2[1] = y1[1];
+	y2[2] = y1[2];
 	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
 	y2[4] = vabs*sin(phi_r)*sin(theta_r);
 	y2[5] = vabs*cos(theta_r);
 	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
 //				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
+	y2[6] = y1[6];
+	y2[8] = y1[8];
 }
 
 void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
@@ -149,13 +157,17 @@ void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_t
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 	x2 = x1;
-	y2 = y1;
+	y2[0] = y1[0];
+	y2[1] = y1[1];
+	y2[2] = y1[2];
 	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
 	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
 	y2[4] = vabs*sin(phi_r)*sin(theta_r);
 	y2[5] = vabs*cos(theta_r);
 	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
 //				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
+	y2[6] = y1[6];
+	y2[8] = y1[8];
 }
 
 void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
@@ -350,5 +362,5 @@ void TNeutron::Decay(const double t, const state_type &y, TMCGenerator &mc, cons
 
 
 double TNeutron::GetPotentialEnergy(const value_type t, const state_type &y, const TFieldManager &field, const solid &sld) const{
-    return TParticle::GetPotentialEnergy(t, y, field, sld) + sld.mat.FermiReal*1e-9 - sld.mat.InternalBField*GetMagneticMoment()*y[7]/ele_e;
+    return TParticle::GetPotentialEnergy(t, y, field, sld) + MaterialPotential(sld.mat, y);
 }
