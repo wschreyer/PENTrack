@@ -183,9 +183,31 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 	// dB[8]=Bd[5][2];
 	}
 
-void HarmonicExpandedBField::BField(const double x, const double y, 
-const double z, const double t, double B[3], double dBidxj[3][3]) const{
+void HarmonicExpandedBField::BField(const double _x, const double _y, 
+const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 
+	/* Rough work comment
+	PENTrack only calls this function when it needs to calculate the magnetic 
+	field at some specific point, for the purpose of differential equation 
+	solving. To offset the entire field, one could just calculate the field at 	
+	the offset point, i.e. offset x, y, and z here, and then be just fine. 
+	Since the derivatives will also be hardcoded here, we'd do the same for 
+	them. Of course this might all blow up when rotations are performed (i.e.
+	what if rotations require abandoning this hardcoding in order to be 
+	performed efficiently?). As an initial proof of concept, we can apply the 
+	simple offsets here.
+
+	This looks to have worked fine. Let's think about rotating the field vector
+	using quartenions.
+	*/
+
+	// Updating the x, y, z values with the given offset values
+	double x = _x - xoff;
+	double y = _y - yoff;
+	double z = _z - zoff;
+
+	// The magnetic field values at the given coordinate (x, y , z) are 
+	// calculated for the three cartesian components.
 	B[0] = 	  G[2] 	\
 			+ G[3]  * (y) \
 			+ G[5]  * (-x / 2) \
@@ -247,130 +269,129 @@ const double z, const double t, double B[3], double dBidxj[3][3]) const{
 			+ G[21] * (3 * (pow(x,2) * z - pow(y,2) * z)) \
 			+ G[22] * (pow(x,3) - 3 * x * pow(y,2));
 
-		// !!! What are we doing? This loop doesn't sum the
-		// polynomials!
+	/* About rotations with quartenions
+	from the double-specific constructor documentation of BOOST
+	boost.org/doc/libs/1_70_0/libs/math/doc/html/math_toolkit/quat_mem_fun.html
 
-		// !!! Print statements used during testing.
-		// std::cout << "B[0]: " << B[0] << "\n\n";
-		// std::cout << "B[1]: " << B[1] << "\n\n";
-		// std::cout << "B[2]: " << B[2] << "\n\n";
+	explicit quaternion(double const & requested_a = 0.0, 
+						double const & requested_b = 0.0, 
+						double const & requested_c = 0.0, 
+						double const & requested_d = 0.0);
 
-		// for(int i=0;i<3;i++){
-		// 	if(std::isnan(B[i])){
-				
-		// 		printf("Nan found!\n");
-		// 		std::cout << "x: " << x << "\n";
-		// 		std::cout << "y: " << y << "\n";
-		// 		std::cout << "z: " << z << "\n";
-		// 		std::cout << "Bx: " << B[0] << "\n";
-		// 		std::cout << "By: " << B[1] << "\n";
-		// 		std::cout << "Bz: " << B[2] << "\n\n";
+	This constructs a quartention. From the useful wikipedia page on rotations
+	and quartenions... wikipedia.org/wiki/Quaternions_and_spatial_rotation
 
-		// 	}
+	"In a programmatic implementation, this is achieved by constructing a 
+	quaternion whose vector part is p and real part equals zero and then
+	performing the quaternion multiplication. The vector part of the resulting 
+	quaternion is the desired vector p′."
 
-		// 	else{
-		// 		// // printf("Not a nan!\n\n");
-		// 		// std::cout << "Bx: " << B[0] << "\n";
-		// 		// std::cout << "By: " << B[1] << "\n";
-		// 		// std::cout << "Bz: " << B[2] << "\n\n";
-		// 	}
+	here they refer to the original vector, which we want to rotate, as p. The 
+	resulting, rotated, vector is called p'. Refer to the referenced wikipedia
+	page for details on how to construct the desired quartenion q. On that 
+	wikipedia page, an example rotation in 3D space is provided. I've included 
+	a simple test with some print statements in a comment block within this 
+	file, titled "Wikipedia quartenion example test".
+	*/
+
+	/* Wikipedia quartenion example test
+	
+	*/
+
+	// !!! Beyond here is inherited from edmfields.cpp, potentially useful
+	// somehow?
+
+	// double Bscale = BScaling(t);
+	// if((ac && (t<on1 || t>off1)) || Bscale == 0){
+	// 	return;
+	// }
+	// else{
+	
+	// 
+	// 	//point to be rotated into Bfield reference frame
+	// 	double t1[3]={x-edmB0xoff,y-edmB0yoff,z-edmB0zoff};
+	// 	double t2[3]={0};
+
+	// 	//rotate specified point to BField coordinate system
+	// 	for(int i=0;i<3;i++){
+	// 		for(int j=0;j<3;j++){
+	// 			t2[i]+=Rot1[i][j]*t1[j];
+	// 		}
+	// 	}
+
+	// 	//compute Bfield compoenents
+	// 	double BF1[3];
+	// 	double BF2[3]={0};
+
+	// This just calculates the B field values based on a 
+	// simple, 0th order gradient in the z-direction.
+	// This would be sufficient for analyzing the magneto-gravitational
+	// dephasing effect.
+	// 	BF1[0] = -t2[0]/2*edmdB0z0dz;		// Bx
+	// 	BF1[1] = -t2[1]/2*edmdB0z0dz;		// By
+	// 	BF1[2] = edmB0z0 + edmdB0z0dz*t2[2];	// Bz
+
+	
+	// 	//rotate Bfield components back to global coordinates
+	// 	for(int i=0;i<3;i++){
+	// 		for(int j=0;j<3;j++){
+	// 			BF2[i]+=Rot2[i][j]*BF1[j];
+	// 		}
+	// 	}
+
+		// double dBScaled[9];
+	// !!! It's unclear what the point of folding is?
+	// 	//Initialize a local instance of dB to be folded
+	// 	for(int i = 0; i < 9; i++)
+	// 		dBScaled[i] = dB[i];
+
+	// 	//apply AC scaling if necessary
+	// 	if(ac){
+	// 		double scalar;
+	// 		scalar=sin((f*t+phase)*2*M_PI);
+	// 		for (int i = 0; i < 3; i++)
+	// 			BF2[i] *= scalar;
+	// 		if (dBidxj != NULL){
+	// 			for (int i = 0; i < 9; i++)
+	// 				dBScaled[i]*=scalar;
+	// 		}
+	// 	}
 		
+		// //Fold the field near its boundaries
+		// for (int i = 0; i < 3; i++){
+		// 	FieldSmthr(x, y, z, BF2, dBScaled, i);
 		// }
 
-		// // !!! What is the utility of all this other stuff? How would one even 
-		// // go about testing it?
-
-		// double Bscale = BScaling(t);
-		// if((ac && (t<on1 || t>off1)) || Bscale == 0){
-		// 	return;
+		// !!! Copied from the above, BF2 -> B
+		//Fold the field near its boundaries
+		// for (int i = 0; i < 3; i++){
+		// 	FieldSmthr(x, y, z, B, dBScaled, i);
 		// }
-		// else{
-		
-		// 
-		// 	//point to be rotated into Bfield reference frame
-		// 	double t1[3]={x-edmB0xoff,y-edmB0yoff,z-edmB0zoff};
-		// 	double t2[3]={0};
 
-		// 	//rotate specified point to BField coordinate system
-		// 	for(int i=0;i<3;i++){
-		// 		for(int j=0;j<3;j++){
-		// 			t2[i]+=Rot1[i][j]*t1[j];
-		// 		}
-		// 	}
+		// //set BField to EDM component
+		// B[0] = BF2[0]*Bscale;
+		// B[1] = BF2[1]*Bscale;
+		// B[2] = BF2[2]*Bscale;
 
-		// 	//compute Bfield compoenents
-		// 	double BF1[3];
-		// 	double BF2[3]={0};
+		// !!! Here I've repeated the above lines but I don't have the BF2
+		// variable in use.
+		// B[0] = B[0]*Bscale;
+		// B[1] = B[1]*Bscale;
+		// B[2] = B[2]*Bscale;
 
-		// This just calculates the B field values based on a 
-		// simple, 0th order gradient in the z-direction.
-		// This would be sufficient for analyzing the magneto-gravitational
-		// dephasing effect.
-		// 	BF1[0] = -t2[0]/2*edmdB0z0dz;		// Bx
-		// 	BF1[1] = -t2[1]/2*edmdB0z0dz;		// By
-		// 	BF1[2] = edmB0z0 + edmdB0z0dz*t2[2];	// Bz
-
-		
-		// 	//rotate Bfield components back to global coordinates
-		// 	for(int i=0;i<3;i++){
-		// 		for(int j=0;j<3;j++){
-		// 			BF2[i]+=Rot2[i][j]*BF1[j];
-		// 		}
-		// 	}
-
-			// double dBScaled[9];
-		// !!! It's unclear what the point of folding is?
-		// 	//Initialize a local instance of dB to be folded
-		// 	for(int i = 0; i < 9; i++)
-		// 		dBScaled[i] = dB[i];
-
-		// 	//apply AC scaling if necessary
-		// 	if(ac){
-		// 		double scalar;
-		// 		scalar=sin((f*t+phase)*2*M_PI);
-		// 		for (int i = 0; i < 3; i++)
-		// 			BF2[i] *= scalar;
-		// 		if (dBidxj != NULL){
-		// 			for (int i = 0; i < 9; i++)
-		// 				dBScaled[i]*=scalar;
-		// 		}
-		// 	}
-			
-			// //Fold the field near its boundaries
-			// for (int i = 0; i < 3; i++){
-			// 	FieldSmthr(x, y, z, BF2, dBScaled, i);
-			// }
-
-			// !!! Copied from the above, BF2 -> B
-			//Fold the field near its boundaries
-			// for (int i = 0; i < 3; i++){
-			// 	FieldSmthr(x, y, z, B, dBScaled, i);
-			// }
-
-			// //set BField to EDM component
-			// B[0] = BF2[0]*Bscale;
-			// B[1] = BF2[1]*Bscale;
-			// B[2] = BF2[2]*Bscale;
-
-			// !!! Here I've repeated the above lines but I don't have the BF2
-			// variable in use.
-			// B[0] = B[0]*Bscale;
-			// B[1] = B[1]*Bscale;
-			// B[2] = B[2]*Bscale;
-
-			// if (dBidxj != NULL){
-			// 	//set BField gradient to EDM component
-			// 	dBidxj[0][0] = dBScaled[0]*Bscale;
-			// 	dBidxj[1][0] = dBScaled[1]*Bscale;
-			// 	dBidxj[2][0] = dBScaled[2]*Bscale;
-			// 	dBidxj[0][1] = dBScaled[3]*Bscale;
-			// 	dBidxj[1][1] = dBScaled[4]*Bscale;
-			// 	dBidxj[2][1] = dBScaled[5]*Bscale;
-			// 	dBidxj[0][2] = dBScaled[6]*Bscale;
-			// 	dBidxj[1][2] = dBScaled[7]*Bscale;
-			// 	dBidxj[2][2] = dBScaled[8]*Bscale;
-			// }
+		// if (dBidxj != NULL){
+		// 	//set BField gradient to EDM component
+		// 	dBidxj[0][0] = dBScaled[0]*Bscale;
+		// 	dBidxj[1][0] = dBScaled[1]*Bscale;
+		// 	dBidxj[2][0] = dBScaled[2]*Bscale;
+		// 	dBidxj[0][1] = dBScaled[3]*Bscale;
+		// 	dBidxj[1][1] = dBScaled[4]*Bscale;
+		// 	dBidxj[2][1] = dBScaled[5]*Bscale;
+		// 	dBidxj[0][2] = dBScaled[6]*Bscale;
+		// 	dBidxj[1][2] = dBScaled[7]*Bscale;
+		// 	dBidxj[2][2] = dBScaled[8]*Bscale;
 		// }
+	// }
 }
 
 
