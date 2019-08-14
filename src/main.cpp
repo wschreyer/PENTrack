@@ -144,7 +144,8 @@ int main(int argc, char **argv){
 	chrono::time_point<chrono::steady_clock> simstart = chrono::steady_clock::now();
 
 	map<string, map<int, int> > ID_counter; // 2D map to store number of each ID for each particle type
-	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
+
+	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			TParticle *p = source->CreateParticle(mc, geom, field);

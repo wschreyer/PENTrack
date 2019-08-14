@@ -19,7 +19,7 @@ TFieldManager::TFieldManager(TConfig &conf){
 	for (std::map<std::string, std::string>::iterator i = conf["FIELDS"].begin(); i != conf["FIELDS"].end(); i++){
 		std::string type;
 		boost::filesystem::path ft;
-		double Ibar, p1, p2, p3, p4, p5, p6, p7, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi, G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20, G21, G22, G23;
+		double Ibar, p1, p2, p3, p4, p5, p6, p7, freq, time1, time2, shift, bW, xma, xmi, yma, ymi, zma, zmi, axis_x, axis_y, axis_z, angle, G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20, G21, G22, G23;
 		std::string Bscale, Escale;
 		TField *f = NULL;
 		std::istringstream ss(i->second);
@@ -54,14 +54,14 @@ TFieldManager::TFieldManager(TConfig &conf){
 		}
 
 		else if (type == "HarmonicExpandedBField") {
-			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale >> G0 >> G1 >> G2 >> G3 >> G4 >> G5 >> G6 >> G7 >> G8 >> G9 >> G10 >> G11 >> G12 >> G13 >> G14 >> G15 >> G16 >> G17 >> G18 >> G19 >> G20 >> G21 >> G22 >> G23;
+			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> p6 >> p7 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale >> axis_x >> axis_y >> axis_z >> angle >> G0 >> G1 >> G2 >> G3 >> G4 >> G5 >> G6 >> G7 >> G8 >> G9 >> G10 >> G11 >> G12 >> G13 >> G14 >> G15 >> G16 >> G17 >> G18 >> G19 >> G20 >> G21 >> G22 >> G23;
 			
 			//conversion to radians
 			p4*=pi/180;
 			p5*=pi/180;
 			
 			if (ss)
-				f = new HarmonicExpandedBField(p1, p2, p3, p4, p5, p6, p7, 0, 0, 0, 0, 0, bW, xma, xmi, yma, ymi, zma, zmi, Bscale, G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20, G21, G22, G23);
+				f = new HarmonicExpandedBField(p1, p2, p3, p4, p5, p6, p7, 0, 0, 0, 0, 0, bW, xma, xmi, yma, ymi, zma, zmi, Bscale, axis_x, axis_y, axis_z, angle, G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20, G21, G22, G23);
 		}
 		
 		else if (type == "EDM_AC_B1Field") {

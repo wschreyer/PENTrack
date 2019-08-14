@@ -17,13 +17,15 @@
 #include <boost/math/tools/roots.hpp>
 #include <iostream>
 #include <cmath>
-
-using namespace std;
+#include <boost/math/quaternion.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/math/constants/constants.hpp>
 
 // HarmonicExpandedBField constructor
 HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff, const double ang1, const double ang2,
 		const double abz, const double adB0zdz, const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
 		const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale, 
+		const double _axis_x, const double _axis_y, const double _axis_z, const double _angle, 
 		const double G0, const double G1, const double G2, const double G3, const double G4, const double G5, const double G6, const double G7, const double G8, 
 		const double G9, const double G10, const double G11, const double G12, const double G13, const double G14, const double G15, const double G16, const double G17, 
 		const double G18, const double G19, const double G20, const double G21, const double G22, const double G23)
@@ -48,6 +50,11 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 	ymin = _ymin;
 	zmax = _zmax;
 	zmin = _zmin;
+
+	axis_x = _axis_x;
+	axis_y = _axis_y;
+	axis_z = _axis_z;
+	angle  = _angle;
 
     G[0]  = G0;
 	G[1]  = G1;
@@ -289,14 +296,109 @@ const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 	here they refer to the original vector, which we want to rotate, as p. The 
 	resulting, rotated, vector is called p'. Refer to the referenced wikipedia
 	page for details on how to construct the desired quartenion q. On that 
-	wikipedia page, an example rotation in 3D space is provided. I've included 
-	a simple test with some print statements in a comment block within this 
-	file, titled "Wikipedia quartenion example test".
+	wikipedia page, an example rotation in 3D space is provided. 
+
+	(!!!) due to the limitation of boost version within the UCN cluster, 
+	we are not able to use the QVM library (earliest v1.62 of boost) which 
+	contains more updated functionality specific to the rotations 
+	implemented here. See http://boostorg.github.io/qvm/#quat_rotate
+	and https://github.com/boostorg/qvm
 	*/
 
-	/* Wikipedia quartenion example test
+	// ########################################################################
+	// ########################################################################
+	// ROTATION OF B
+
+	// construct the quarternion, p, which represents the vector to be rotated
+	// here the 0th component is equal to zero, and the remaining three 
+	// components are those of the earlier computed magnetic field
+	std::cout << std::endl;
+	std::cout << std::endl;
+	std::cout << "Rotation of B - Testing" << std::endl;
+	boost::math::quaternion<double> p(0, B[0], B[1], B[2]);
+	std::cout << "qua. p, of vector B to be rotated: " << p << std::endl;
+
+	// the components of the axis of rotation (member variables of this class)
+	// are used to construct a normalized vector.
+	std::cout << "rot. axis - x:" << axis_x << std::endl;
+	std::cout << "rot. axis - y:" << axis_y << std::endl;
+	std::cout << "rot. axis - z:" << axis_z << std::endl;
+	boost::numeric::ublas::vector<double> axis(3, 0);
+	axis(0) = axis_x;
+	axis(1) = axis_y;
+	axis(2) = axis_z;
+	std::cout << "rot. axis (boost vector) - x:" << axis(0) << std::endl;
+	std::cout << "rot. axis (boost vector) - y:" << axis(1) << std::endl;
+	std::cout << "rot. axis (boost vector) - z:" << axis(2) << std::endl;
+
+	// the rotational axis vector is normalized
+	axis = (axis / boost::numeric::ublas::norm_2(axis));
+	std::cout << "rot. axis (norm. boost vector) - x:" << axis(0) << std::endl;
+	std::cout << "rot. axis (norm. boost vector) - y:" << axis(1) << std::endl;
+	std::cout << "rot. axis (norm. boost vector) - z:" << axis(2) << std::endl;
+
+	// angle through which to rotate
+	std::cout << "angle through which to rotate" << angle << std::endl;
+
+	// // calculate quarternion, q, whih represents the rotation
+	boost::math::quaternion<double> q(cos(angle / 2), 
+									  sin(angle / 2) * axis(0), 
+									  sin(angle / 2) * axis(1), 
+									  sin(angle / 2) * axis(2));
+
+    std::cout << "quarternion, q, of the rotation: " << q << std::endl;
+
+	// // get the conjugate of the quaternion, q'
+	boost::math::quaternion<double> q_prime = conj(q);
+	std::cout << "conj qua., q', of the rotation: " << q_prime << std::endl;
+
+	// // perform multiplication to rotate
+	boost::math::quaternion<double> p_prime = q * p * q_prime;
+	std::cout << "quarternion, p', after rotation: " << p_prime << std::endl;
 	
+	// // extract the resulting vector components, post-rotation
+	double x_comp = p_prime.R_component_2();
+	std::cout << "x-comp of p' = " << x_comp << std::endl;
+	double y_comp = p_prime.R_component_3();
+	std::cout << "y-comp of p' = " << y_comp << std::endl;
+	double z_comp = p_prime.R_component_4();
+	std::cout << "z-comp of p' = " << z_comp << std::endl;
+
+	// update the values of B
+	B[0] = x_comp;
+	B[1] = y_comp;
+	B[2] = z_comp;
+	std::cout << "B_x after rotation:" << B[0] << std::endl;
+	std::cout << "B_y after rotation:" << B[1] << std::endl;
+	std::cout << "B_z after rotation:" << B[2] << std::endl;
+
+	// ########################################################################
+	// ########################################################################
+	// ROTATION OF dBidj
+
+	/*
+	We are really rotating the entire vector field in 3-D space, so the 
+	absolute-relations (I can't find the right term here, maybe just the 
+	preservation of inner products?) between the B-vector at our given point, 
+	and its spatial derivatives, should remain unchanged. 
+
+	Can the spatial derivatives, of this 3x3 matrix, be thought of somehow as
+	R3 vectors? If so then we could simply rotate them with the same 
+	quaternionic arithmetic. 
+
+	What about the gradient of each B component? The gradient of B_x would be 
+	(dBx/dx, dBx/dy, dBx/dz), which we could then rotate? Need to check this 
+	with WS. 
+
+	!!! Could the quarternion operation be applied systematically to the 
+	form we have for harmonic expansion? Maybe there's a way, with BOOST, to 
+	have matrices filled with symbolic expansions? Or maybe returning to the 
+	harmonic tools within BOOST? 
 	*/
+
+	// ########################################################################
+	// ########################################################################
+	// EXTRA STUFF FROM EDMFIELDS
 
 	// !!! Beyond here is inherited from edmfields.cpp, potentially useful
 	// somehow?
