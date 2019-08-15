@@ -3,12 +3,7 @@
  * \file
  * Implementation of a magnetic field determined by 
  * coefficients, provided as inputs by the user, of an expansion in
- * terms of harmonic polynomials. This implementation is based on the
- * work described in "Computation_summary.pdf" (!!! unfinished pls
- * update!)
- * 
- * !!! Note that this implementation does not include a calculation of the
- * B field gradients/derivatives for arbitrary fields. 
+ * terms of harmonic polynomials.
 */
 
 #include "harmonicfields.h"
@@ -81,8 +76,10 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 	G[22] = G22;
 	G[23] = G23;
 
-	// !!! Does this rotation of the field itself actually work generally?
-	// It is untested.
+	// !!! @WS, in my view, all of this stuff can now be removed. Subsequently
+	// I would begin removing unnecessary member variables from the class, 
+	// as there are several things I'm not using that were inherited from the
+	// edmfields template. 
 
 	// //Rotation Matrix for Bfield
 	// Rot1[0][0] = cos(ang1) * cos(ang2);
@@ -193,19 +190,21 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 void HarmonicExpandedBField::BField(const double _x, const double _y, 
 const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 
-	/* Rough work comment
-	PENTrack only calls this function when it needs to calculate the magnetic 
-	field at some specific point, for the purpose of differential equation 
-	solving. To offset the entire field, one could just calculate the field at 	
-	the offset point, i.e. offset x, y, and z here, and then be just fine. 
-	Since the derivatives will also be hardcoded here, we'd do the same for 
-	them. Of course this might all blow up when rotations are performed (i.e.
-	what if rotations require abandoning this hardcoding in order to be 
-	performed efficiently?). As an initial proof of concept, we can apply the 
-	simple offsets here.
+	/* The rough order of operations within this function
+	
+	- An offset is applied to the position vector, i.e. the point at which to
+	calculate the magnetic field
 
-	This looks to have worked fine. Let's think about rotating the field vector
-	using quartenions.
+	- The magnetic field's three components are calculated using the harmonic
+	polynomial expansion
+
+	- The 9, dBidxj, spatial derivatives are calculated
+
+	- Quaternion based rotations are applied to the B vector, and the 
+	gradient vector of each of its three components, effectively rotating both
+	the magnetic field and its gradient appropriately
+
+	- Field smoothing and scaling operations are carried out
 	*/
 
 	// Updating the x, y, z values with the given offset values
@@ -276,7 +275,65 @@ const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 			+ G[21] * (3 * (pow(x,2) * z - pow(y,2) * z)) \
 			+ G[22] * (pow(x,3) - 3 * x * pow(y,2));
 
-	/* About rotations with quartenions
+	// ########################################################################
+	// ########################################################################
+	// COMPUTING dBidxj
+
+	dBidxj[0][0] = -G[5]/2 + G[7] + 2*G[8]*y - G[10]*y/2 - G[11]*z - \
+					3*G[12]*x/2 + 2*G[13]*z + 2*G[14]*x + 6*G[15]*x*y + \
+					6*G[16]*y*z - 3*G[17]*x*y - 1.5*G[18]*y*z + \
+					G[19]*(1.125*pow(x,2) + 0.375*pow(y,2) - 1.5*pow(z,2)) - \
+					4.5*G[20]*x*z + G[21]*(-3*pow(x,2) + 3*pow(z,2)) + \
+					6*G[22]*x*z + G[23]*(3*pow(x,2) - 3*pow(y,2));
+
+	dBidxj[0][1] = G[3] + 2*G[8]*x + 2*G[9]*z - G[10]*x/2 - G[12]*y/2 - \
+					2*G[14]*y + G[15]*(3*pow(x,2) - 3*pow(y,2)) + 6*G[16]*x*z+\
+					G[17]*(-3*pow(x,2)/2 - 3*pow(y,2)/2 + 3*pow(z,2)) - \
+					1.5*G[18]*x*z + 0.75*G[19]*x*y - 1.5*G[20]*y*z - \
+					6*G[22]*y*z - 6*G[23]*x*y;
+
+	dBidxj[0][2] = G[6] + 2*G[9]*y - G[11]*x + 2*G[12]*z + 2*G[13]*x + \
+					6*G[16]*x*y + 6*G[17]*y*z - 1.5*G[18]*x*y - 3.0*G[19]*x*z+\
+					G[20]*(-2.25*pow(x,2) - 0.75*pow(y,2) + 3.0*pow(z,2)) + \
+					6*G[21]*x*z + G[22]*(3*pow(x,2) - 3*pow(y,2));
+
+	dBidxj[1][0] = G[3] + 2*G[8]*x + 2*G[9]*z + G[10]*x/2 - G[12]*y/2 - \
+					2*G[14]*y + G[15]*(3*pow(x,2) - 3*pow(y,2)) + 6*G[16]*x*z+\
+					G[17]*(-3*pow(x,2)/2 - 3*pow(y,2)/2 + 3*pow(z,2)) - \
+					1.5*G[18]*x*z + 0.75*G[19]*x*y - 1.5*G[20]*y*z - \
+					6*G[22]*y*z - 6*G[23]*x*y;
+
+	dBidxj[1][1] = -G[5]/2 - G[7] - 2*G[8]*y + 3*G[10]*y/2 - G[11]*z - \
+					G[12]*x/2 - 2*G[13]*z - 2*G[14]*x - 6*G[15]*x*y - \
+					6*G[16]*y*z - 3*G[17]*x*y - 4.5*G[18]*y*z + \
+					G[19]*(0.375*pow(x,2) + 1.125*pow(y,2) - 1.5*pow(z,2)) - \
+					1.5*G[20]*x*z + G[21]*(3*pow(y,2) - 3*pow(z,2)) - \
+					6*G[22]*x*z + G[23]*(-3*pow(x,2) + 3*pow(y,2));
+
+	dBidxj[1][2] = G[4] + 2*G[9]*x - 2*G[10]*z - G[11]*y - 2*G[13]*y + \
+					G[16]*(3*pow(x,2) - 3*pow(y,2)) + 6*G[17]*x*z + \
+					G[18]*(-0.75*pow(x,2) - 2.25*pow(y,2) + 3.0*pow(z,2)) - \
+					3.0*G[19]*y*z - 1.5*G[20]*x*y - 6*G[21]*y*z - 6*G[22]*x*y;
+
+	dBidxj[2][0] = G[6] + 2*G[9]*y - 1.0*G[11]*x + 2*G[12]*z + 2*G[13]*x + \
+					6*G[16]*x*y + 6*G[17]*y*z - 1.5*G[18]*x*y - 3.0*G[19]*x*z+\
+					G[20]*(-2.25*pow(x,2) - 0.75*pow(y,2) + 3*pow(z,2)) + \
+					6*G[21]*x*z + G[22]*(3*pow(x,2) - 3*pow(y,2));
+
+	dBidxj[2][1] = G[4] + 2*G[9]*x + 2*G[10]*z - 1.0*G[11]*y - 2*G[13]*y + \
+					G[16]*(3*pow(x,2) - 3*pow(y,2)) + 6*G[17]*x*z + \
+					G[18]*(-0.75*pow(x,2) - 2.25*pow(y,2) + 3*pow(z,2)) - \
+					3.0*G[19]*y*z - 1.5*G[20]*x*y - 6*G[21]*y*z - 6*G[22]*x*y;
+
+	dBidxj[2][2] = G[5] + 2*G[10]*y + 2*G[11]*z + 2*G[12]*x + 6*G[17]*x*y + \
+					6*G[18]*y*z + G[19]*(-1.5*pow(x,2) - 1.5*pow(y,2) + \
+					3*pow(z,2)) + 6*G[20]*x*z + G[21]*(3*pow(x,2) -3*pow(y,2));
+
+	// ########################################################################
+	// ########################################################################
+	// ABOUT ROTATIONS WITH QUATERNIONS
+
+	/* 
 	from the double-specific constructor documentation of BOOST
 	boost.org/doc/libs/1_70_0/libs/math/doc/html/math_toolkit/quat_mem_fun.html
 
@@ -312,96 +369,143 @@ const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 	// construct the quarternion, p, which represents the vector to be rotated
 	// here the 0th component is equal to zero, and the remaining three 
 	// components are those of the earlier computed magnetic field
-	std::cout << std::endl;
-	std::cout << std::endl;
-	std::cout << "Rotation of B - Testing" << std::endl;
+
+	// std::cout << std::endl;
+	// std::cout << std::endl;
+	// std::cout << "Rotation of B - Testing" << std::endl;
+
 	boost::math::quaternion<double> p(0, B[0], B[1], B[2]);
-	std::cout << "qua. p, of vector B to be rotated: " << p << std::endl;
+
+	// std::cout << "qua. p, of vector B to be rotated: " << p << std::endl;
 
 	// the components of the axis of rotation (member variables of this class)
 	// are used to construct a normalized vector.
-	std::cout << "rot. axis - x:" << axis_x << std::endl;
-	std::cout << "rot. axis - y:" << axis_y << std::endl;
-	std::cout << "rot. axis - z:" << axis_z << std::endl;
+
+	// std::cout << "rot. axis - x:" << axis_x << std::endl;
+	// std::cout << "rot. axis - y:" << axis_y << std::endl;
+	// std::cout << "rot. axis - z:" << axis_z << std::endl;
+
 	boost::numeric::ublas::vector<double> axis(3, 0);
 	axis(0) = axis_x;
 	axis(1) = axis_y;
 	axis(2) = axis_z;
-	std::cout << "rot. axis (boost vector) - x:" << axis(0) << std::endl;
-	std::cout << "rot. axis (boost vector) - y:" << axis(1) << std::endl;
-	std::cout << "rot. axis (boost vector) - z:" << axis(2) << std::endl;
+
+	// std::cout << "rot. axis (boost vector) - x:" << axis(0) << std::endl;
+	// std::cout << "rot. axis (boost vector) - y:" << axis(1) << std::endl;
+	// std::cout << "rot. axis (boost vector) - z:" << axis(2) << std::endl;
 
 	// the rotational axis vector is normalized
 	axis = (axis / boost::numeric::ublas::norm_2(axis));
-	std::cout << "rot. axis (norm. boost vector) - x:" << axis(0) << std::endl;
-	std::cout << "rot. axis (norm. boost vector) - y:" << axis(1) << std::endl;
-	std::cout << "rot. axis (norm. boost vector) - z:" << axis(2) << std::endl;
+
+	// std::cout << "rot. axis (norm. boost vector) - x:" << axis(0) << std::endl;
+	// std::cout << "rot. axis (norm. boost vector) - y:" << axis(1) << std::endl;
+	// std::cout << "rot. axis (norm. boost vector) - z:" << axis(2) << std::endl;
 
 	// angle through which to rotate
-	std::cout << "angle through which to rotate" << angle << std::endl;
+	// std::cout << "angle through which to rotate" << angle << std::endl;
 
-	// // calculate quarternion, q, whih represents the rotation
+	// calculate quarternion, q, whih represents the rotation
 	boost::math::quaternion<double> q(cos(angle / 2), 
 									  sin(angle / 2) * axis(0), 
 									  sin(angle / 2) * axis(1), 
 									  sin(angle / 2) * axis(2));
 
-    std::cout << "quarternion, q, of the rotation: " << q << std::endl;
+    // std::cout << "quarternion, q, of the rotation: " << q << std::endl;
 
-	// // get the conjugate of the quaternion, q'
+	// get the conjugate of the quaternion, q'
 	boost::math::quaternion<double> q_prime = conj(q);
-	std::cout << "conj qua., q', of the rotation: " << q_prime << std::endl;
 
-	// // perform multiplication to rotate
+	// std::cout << "conj qua., q', of the rotation: " << q_prime << std::endl;
+
+	// perform multiplication to rotate
 	boost::math::quaternion<double> p_prime = q * p * q_prime;
-	std::cout << "quarternion, p', after rotation: " << p_prime << std::endl;
+
+	// std::cout << "quarternion, p', after rotation: " << p_prime << std::endl;
 	
-	// // extract the resulting vector components, post-rotation
-	double x_comp = p_prime.R_component_2();
-	std::cout << "x-comp of p' = " << x_comp << std::endl;
-	double y_comp = p_prime.R_component_3();
-	std::cout << "y-comp of p' = " << y_comp << std::endl;
-	double z_comp = p_prime.R_component_4();
-	std::cout << "z-comp of p' = " << z_comp << std::endl;
+	// extract the resulting vector components, post-rotation
+	B[0] = p_prime.R_component_2();
+	B[1] = p_prime.R_component_3();
+	B[2] = p_prime.R_component_4();
 
-	// update the values of B
-	B[0] = x_comp;
-	B[1] = y_comp;
-	B[2] = z_comp;
-	std::cout << "B_x after rotation:" << B[0] << std::endl;
-	std::cout << "B_y after rotation:" << B[1] << std::endl;
-	std::cout << "B_z after rotation:" << B[2] << std::endl;
+	// std::cout << "x-comp of p' = B_x = " << B[0] << std::endl;
+	// std::cout << "y-comp of p' = B_y = " << B[1] << std::endl;
+	// std::cout << "z-comp of p' = B_z = " << B[2] << std::endl;
 
 	// ########################################################################
 	// ########################################################################
-	// ROTATION OF dBidj
+	// ROTATION OF dBidxj
 
-	/*
-	We are really rotating the entire vector field in 3-D space, so the 
-	absolute-relations (I can't find the right term here, maybe just the 
-	preservation of inner products?) between the B-vector at our given point, 
-	and its spatial derivatives, should remain unchanged. 
+	// The gradient of each component of B can be rotated using the same 
+	// quaternion as used above. This will result in the full rotation of 
+	// the magnetic field and the required spatial derivatives.
 
-	Can the spatial derivatives, of this 3x3 matrix, be thought of somehow as
-	R3 vectors? If so then we could simply rotate them with the same 
-	quaternionic arithmetic. 
+	// We create three quaternions, one for the gradient of each of the 
+	// components of B
 
-	What about the gradient of each B component? The gradient of B_x would be 
-	(dBx/dx, dBx/dy, dBx/dz), which we could then rotate? Need to check this 
-	with WS. 
+	// std::cout << std::endl;
+	// std::cout << std::endl;
+	// std::cout << "Rotation of dBidxj - Testing" << std::endl;
 
-	!!! Could the quarternion operation be applied systematically to the 
-	form we have for harmonic expansion? Maybe there's a way, with BOOST, to 
-	have matrices filled with symbolic expansions? Or maybe returning to the 
-	harmonic tools within BOOST? 
-	*/
+	boost::math::quaternion<double> p_x(0, 
+										dBidxj[0][0],
+										dBidxj[0][1],
+										dBidxj[0][2]);
+
+	boost::math::quaternion<double> p_y(0, 
+										dBidxj[1][0], 
+										dBidxj[1][1], 
+										dBidxj[1][2]);
+
+	boost::math::quaternion<double> p_z(0, 
+										dBidxj[2][0], 
+										dBidxj[2][1], 
+										dBidxj[2][2]);
+
+	// std::cout << "qua. p_x, of grad Bx to be rotated: " << p_x << std::endl;
+	// std::cout << "qua. p_y, of grad By to be rotated: " << p_y << std::endl;
+	// std::cout << "qua. p_z, of grad Bz to be rotated: " << p_z << std::endl;
+
+	// we use the same quaternion, q, and conjugate q' for these rotations
+	boost::math::quaternion<double> p_x_prime = q * p_x * q_prime;
+	boost::math::quaternion<double> p_y_prime = q * p_y * q_prime;
+	boost::math::quaternion<double> p_z_prime = q * p_z * q_prime;
+
+	// std::cout << "quaternion, p_x', after rot.: " << p_x_prime << std::endl;
+	// std::cout << "quaternion, p_y', after rot.: " << p_y_prime << std::endl;
+	// std::cout << "quaternion, p_z', after rot.: " << p_z_prime << std::endl;
+
+	// extract the resulting vector components, post-rotation
+	// assign the components to the dBidxj matrix
+	dBidxj[0][0] = p_x_prime.R_component_2();
+	dBidxj[0][1] = p_x_prime.R_component_3();
+	dBidxj[0][2] = p_x_prime.R_component_4();
+
+	// std::cout << "x-comp of p_x' = dBxdx = " << dBidxj[0][0] << std::endl;
+	// std::cout << "y-comp of p_x' = dBxdy = " << dBidxj[0][1] << std::endl;
+	// std::cout << "z-comp of p_x' = dBxdz = " << dBidxj[0][2] << std::endl;
+
+	dBidxj[1][0] = p_y_prime.R_component_2();
+	dBidxj[1][1] = p_y_prime.R_component_3();
+	dBidxj[1][2] = p_y_prime.R_component_4();
+	
+	// std::cout << "x-comp of p_y' = dBydx = " << dBidxj[1][0] << std::endl;
+	// std::cout << "y-comp of p_y' = dBydy = " << dBidxj[1][1] << std::endl;
+	// std::cout << "z-comp of p_y' = dBydz = " << dBidxj[1][2] << std::endl;
+
+	dBidxj[2][0] = p_z_prime.R_component_2();
+	dBidxj[2][1] = p_z_prime.R_component_3();
+	dBidxj[2][2] = p_z_prime.R_component_4();
+
+	// std::cout << "x-comp of p_z' = dBzdx = " << dBidxj[2][0] << std::endl;
+	// std::cout << "y-comp of p_z' = dBzdy = " << dBidxj[2][1] << std::endl;
+	// std::cout << "z-comp of p_z' = dBzdz = " << dBidxj[2][2] << std::endl;
 
 	// ########################################################################
 	// ########################################################################
-	// EXTRA STUFF FROM EDMFIELDS
+	// SCALING AND SMOOTHING
 
-	// !!! Beyond here is inherited from edmfields.cpp, potentially useful
-	// somehow?
+	// !!! Confirm with WS what this is doing, and then attempt to graft onto 
+	// my above work.
 
 	// double Bscale = BScaling(t);
 	// if((ac && (t<on1 || t>off1)) || Bscale == 0){
@@ -476,27 +580,30 @@ const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 		// B[2] = BF2[2]*Bscale;
 
 		// !!! Here I've repeated the above lines but I don't have the BF2
-		// variable in use.
-		// B[0] = B[0]*Bscale;
-		// B[1] = B[1]*Bscale;
-		// B[2] = B[2]*Bscale;
+		// variable in use. I believe that the B and dBidxj values can all
+		// just be simply scaled by the scalar scaling factor
+	double Bscale = BScaling(t);
+	B[0] = B[0]*Bscale;
+	B[1] = B[1]*Bscale;
+	B[2] = B[2]*Bscale;
 
-		// if (dBidxj != NULL){
-		// 	//set BField gradient to EDM component
-		// 	dBidxj[0][0] = dBScaled[0]*Bscale;
-		// 	dBidxj[1][0] = dBScaled[1]*Bscale;
-		// 	dBidxj[2][0] = dBScaled[2]*Bscale;
-		// 	dBidxj[0][1] = dBScaled[3]*Bscale;
-		// 	dBidxj[1][1] = dBScaled[4]*Bscale;
-		// 	dBidxj[2][1] = dBScaled[5]*Bscale;
-		// 	dBidxj[0][2] = dBScaled[6]*Bscale;
-		// 	dBidxj[1][2] = dBScaled[7]*Bscale;
-		// 	dBidxj[2][2] = dBScaled[8]*Bscale;
-		// }
+	if (dBidxj != NULL){
+		//set BField gradient to EDM component
+		dBidxj[0][0] = dBidxj[0][0] * Bscale;
+		dBidxj[1][0] = dBidxj[1][0] * Bscale;
+		dBidxj[2][0] = dBidxj[2][0] * Bscale;
+		dBidxj[0][1] = dBidxj[0][1] * Bscale;
+		dBidxj[1][1] = dBidxj[1][1] * Bscale;
+		dBidxj[2][1] = dBidxj[2][1] * Bscale;
+		dBidxj[0][2] = dBidxj[0][2] * Bscale;
+		dBidxj[1][2] = dBidxj[1][2] * Bscale;
+		dBidxj[2][2] = dBidxj[2][2] * Bscale;
+	}
 	// }
 }
 
-
+// All the below function implementations are inherited, and unchanged from 
+// the edmfields class.
 
 void HarmonicExpandedBField::FieldSmthr(const double x, const double y, const double z, double Bxi[3], double dBScaled[9], const int xi) const{
 	
