@@ -17,8 +17,17 @@
 #include <boost/math/constants/constants.hpp>
 
 // HarmonicExpandedBField constructor
-HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff, const double ang1, const double ang2,
-		const double abz, const double adB0zdz, const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
+// HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff, const double ang1, const double ang2,
+// 		const double abz, const double adB0zdz, const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
+// 		const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale, 
+// 		const double _axis_x, const double _axis_y, const double _axis_z, const double _angle, 
+// 		const double G0, const double G1, const double G2, const double G3, const double G4, const double G5, const double G6, const double G7, const double G8, 
+// 		const double G9, const double G10, const double G11, const double G12, const double G13, const double G14, const double G15, const double G16, const double G17, 
+// 		const double G18, const double G19, const double G20, const double G21, const double G22, const double G23)
+// 			: TField(Bscale, "0") {
+
+HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff,
+		const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
 		const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale, 
 		const double _axis_x, const double _axis_y, const double _axis_z, const double _angle, 
 		const double G0, const double G1, const double G2, const double G3, const double G4, const double G5, const double G6, const double G7, const double G8, 
@@ -26,19 +35,20 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 		const double G18, const double G19, const double G20, const double G21, const double G22, const double G23)
 			: TField(Bscale, "0") {
 
+	// the offset values
 	xoff = _xoff;
 	yoff = _yoff;
 	zoff = _zoff;
-	pol_ang1 = ang1;
-	azm_ang2 = ang2;
-	edmB0z0 = abz;
-	edmdB0z0dz = adB0zdz;
+
+	// I'm not sure if these are useful? @WS !!!
 	ac = AC;
 	f = frq;
 	on1 = tstart1;
 	off1 = tend1;
 	phase = pshift;
 	BoundaryWidth = bW;
+
+	// ranges for the field
 	xmax = _xmax;
 	xmin = _xmin;
 	ymax = _ymax;
@@ -46,11 +56,13 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 	zmax = _zmax;
 	zmin = _zmin;
 
+	// parameters defining the axis-angle quaternion rotation
 	axis_x = _axis_x;
 	axis_y = _axis_y;
 	axis_z = _axis_z;
 	angle  = _angle;
 
+	// G parameters
     G[0]  = G0;
 	G[1]  = G1;
 	G[2]  = G2;
@@ -127,7 +139,6 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 	// 	}
 	// }
 
-	// // !!! The dB implementation has been commented everywhere.	
 	// // change in B field in this coordinate system to be transformed into 
 	// // original coordinate system. 
 	// //Bd[0]= Bdx/d(x,y,z) 
@@ -174,7 +185,6 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 	// 	}
 	// }
 
-	// // !!! The dB implementation has been commented everywhere.
 	// // Update dB to rotated values
 	// dB[0]=Bd[3][0];
 	// dB[1]=Bd[3][1];
@@ -190,30 +200,15 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 void HarmonicExpandedBField::BField(const double _x, const double _y, 
 const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 
-	/* The rough order of operations within this function
-	
-	- An offset is applied to the position vector, i.e. the point at which to
-	calculate the magnetic field
-
-	- The magnetic field's three components are calculated using the harmonic
-	polynomial expansion
-
-	- The 9, dBidxj, spatial derivatives are calculated
-
-	- Quaternion based rotations are applied to the B vector, and the 
-	gradient vector of each of its three components, effectively rotating both
-	the magnetic field and its gradient appropriately
-
-	- Field smoothing and scaling operations are carried out
-	*/
-
 	// Updating the x, y, z values with the given offset values
 	double x = _x - xoff;
 	double y = _y - yoff;
 	double z = _z - zoff;
 
-	// The magnetic field values at the given coordinate (x, y , z) are 
-	// calculated for the three cartesian components.
+	// ########################################################################
+	// ########################################################################
+	// COMPUTING B
+
 	B[0] = 	  G[2] 	\
 			+ G[3]  * (y) \
 			+ G[5]  * (-x / 2) \
@@ -502,10 +497,11 @@ const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 
 	// ########################################################################
 	// ########################################################################
-	// SCALING AND SMOOTHING
+	// SMOOTHING
 
-	// !!! Confirm with WS what this is doing, and then attempt to graft onto 
-	// my above work.
+	// The commented lines below were inherited from edmfields.cpp, but 
+	// smoothing of the field is only relevant for fields calculated, 
+	// and interpolated, from a given table
 
 	// double Bscale = BScaling(t);
 	// if((ac && (t<on1 || t>off1)) || Bscale == 0){
@@ -579,9 +575,12 @@ const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 		// B[1] = BF2[1]*Bscale;
 		// B[2] = BF2[2]*Bscale;
 
-		// !!! Here I've repeated the above lines but I don't have the BF2
-		// variable in use. I believe that the B and dBidxj values can all
-		// just be simply scaled by the scalar scaling factor
+	// ########################################################################
+	// ########################################################################
+	// SCALING
+
+	// the field can be scaled by the given linear scaling factor.
+
 	double Bscale = BScaling(t);
 	B[0] = B[0]*Bscale;
 	B[1] = B[1]*Bscale;
