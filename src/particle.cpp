@@ -120,6 +120,8 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 
 	// set initial values for integrator
 	value_type x = tend;
+	if (x > tmax)
+		throw std::runtime_error("Tried to start trajectory simulation past the maximum simulation time. Check time settings.");
 	state_type y = yend; 
 
 	bool resetintegration = false;
@@ -626,7 +628,7 @@ bool TParticle::iterate_collision(value_type &x1, state_type &y1, value_type &x2
   if (pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2) < REFLECT_TOLERANCE*REFLECT_TOLERANCE){
     return true; // successfully iterated collision point
   }
-  if (x2/x1 - 1 < 4*numeric_limits<value_type>::epsilon()){
+  if (x2 - x1 < 4*(x1 + x2)*numeric_limits<value_type>::epsilon()){
     cout << "Collision point iteration limited by numerical precision.\n";
     return true;
   }
@@ -667,6 +669,8 @@ bool TParticle::CheckHit(const value_type x1, const state_type &y1, value_type &
     ID = ID_HIT_BOUNDARIES;
     return true;
   }
+  if (x2 == x1)
+    return false;
   
   solid currentsolid = GetCurrentsolid();
 
@@ -686,7 +690,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type &y1, value_type &
 //      cout << x1 << " " << x2 - x1 << " " << c.first.distnormal << " " << c.first.s << " " << c.first.ID << endl;
     state_type yc1 = y1, yc2 = y2;
     if (iterate_collision(xc1, yc1, xc2, yc2, colls.begin()->first, stepper, geom)){
-      if (DoStep(x1, y1, xc1, yc1, stepper, currentsolid, mc, geom)){
+      if (xc1 > x1 && DoStep(x1, y1, xc1, yc1, stepper, currentsolid, mc, geom)){
         x2 = xc1;
         y2 = yc1;
         return true;
@@ -755,14 +759,8 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << solidstart.ID << " ";
 
 	double H;
-	solid sld = geom.GetSolid(x, &y[0]);
-	if (ID == ID_ABSORBED_ON_SURFACE){
-		auto solids = currentsolids;
-		std::nth_element(solids.begin(), solids.begin() + 1, solids.end(), [](const std::pair<solid, bool> &s1, const std::pair<solid,bool> &s2){ return s1.second || (!s2.second && s1.first.ID < s2.first.ID); });
-		H = E + GetPotentialEnergy(x, y, field, (solids.begin() + 1)->first); // if particle was absorbed on surface, use previous solid to calculate potential energy
-	}
-	else
-		H = E + GetPotentialEnergy(x, y, field, sld);
+	solid sld = GetCurrentsolid();
+	H = E + GetPotentialEnergy(x, y, field, sld);
 
 	field.BField(y[0], y[1], y[2], x, B);
 	field.EField(y[0], y[1], y[2], x, V, Ei);

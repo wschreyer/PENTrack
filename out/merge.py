@@ -13,7 +13,7 @@ def ReadOutFile(fn):
     logtype = match.group(2)
     descriptor = ''
     data = []
-    print 'Reading ' + fn
+    print('Reading ' + fn)
     for line in fileinput.input(fn):
       if fileinput.isfirstline():
         descriptor = line.replace(' ', ':')
@@ -26,7 +26,7 @@ def ReadOutFile(fn):
 #    os.remove(fn)
     return logtype, descriptor, data
   else:
-    print 'Invalid filename ' + fn
+    print('Invalid filename ' + fn)
 
 out = ROOT.TFile('out.root', 'RECREATE')
 trees = {}
@@ -38,10 +38,10 @@ for data in results:
   if logtype not in trees:
     descriptor = data[1]
     trees[logtype] = ROOT.TNtupleD(logtype, logtype, descriptor)
-    print '{0} has {1} columns'.format(logtype, len(descriptor.split(':')))
+    print('{0} has {1} columns'.format(logtype, len(descriptor.split(':'))))
   for d in data[2]:
     trees[logtype].Fill(d)
 
 for t in trees:
-  print '{0} has {1} entries'.format(t, trees[t].GetEntries())
+  print('{0} has {1} entries'.format(t, trees[t].GetEntries()))
 out.Write()

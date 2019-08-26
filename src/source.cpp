@@ -60,6 +60,8 @@ TParticle* TParticleSource::CreateParticle(double t, double x, double y, double 
 
 
 TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
+	if (area_sum.back() == 0)
+		throw std::runtime_error("Surface source did not find surface to start particles from!");
 	CPoint p;
 	CVector nv;
 	do{
