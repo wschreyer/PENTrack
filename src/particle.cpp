@@ -628,7 +628,7 @@ bool TParticle::iterate_collision(value_type &x1, state_type &y1, value_type &x2
   if (pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2) < REFLECT_TOLERANCE*REFLECT_TOLERANCE){
     return true; // successfully iterated collision point
   }
-  if (x2/x1 - 1 < 4*numeric_limits<value_type>::epsilon()){
+  if (x2 - x1 < 4*(x1 + x2)*numeric_limits<value_type>::epsilon()){
     cout << "Collision point iteration limited by numerical precision.\n";
     return true;
   }
@@ -669,6 +669,8 @@ bool TParticle::CheckHit(const value_type x1, const state_type &y1, value_type &
     ID = ID_HIT_BOUNDARIES;
     return true;
   }
+  if (x2 == x1)
+    return false;
   
   solid currentsolid = GetCurrentsolid();
 
@@ -688,7 +690,7 @@ bool TParticle::CheckHit(const value_type x1, const state_type &y1, value_type &
 //      cout << x1 << " " << x2 - x1 << " " << c.first.distnormal << " " << c.first.s << " " << c.first.ID << endl;
     state_type yc1 = y1, yc2 = y2;
     if (iterate_collision(xc1, yc1, xc2, yc2, colls.begin()->first, stepper, geom)){
-      if (DoStep(x1, y1, xc1, yc1, stepper, currentsolid, mc, geom)){
+      if (xc1 > x1 && DoStep(x1, y1, xc1, yc1, stepper, currentsolid, mc, geom)){
         x2 = xc1;
         y2 = yc1;
         return true;
