@@ -38,13 +38,13 @@ ipython = get_ipython()
 # files every time you run a code cell in the notebook. saves time.
 ipython.magic("load_ext autoreload")
 ipython.magic("autoreload 2")
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+# logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 # for plotting
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-ipython.magic("matplotlib inline")
+# ipython.magic("matplotlib inline")
 plt.rcParams['figure.dpi'] = 200
 # ipython.magic("matplotlib inline")
 # plt.rcParams['figure.dpi'] = 200

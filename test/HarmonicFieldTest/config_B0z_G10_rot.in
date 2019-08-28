@@ -1,0 +1,19 @@
+[GLOBAL]
+# simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry
+simtype 4
+
+BCutPlane 0 0 0  1 0 0  0 1 1  100 100
+
+[MATERIALS]
+
+[GEOMETRY]
+
+[SOURCE]
+
+[FIELDS]
+#field 		table-file			BFieldScale	EFieldScale	BoundaryWidth
+#
+#HarmonicExpandedBField     xoff   yoff   zoff  BoundaryWidth   xmax 	xmin 	ymax 	ymin 	zmax 	zmin    scale   axis_x  axis_y  axis_z  angle   G(0,-1) G(0,0)  G(0,1)  G(1,-2) G(1,-1) G(1,0)  G(1,1)  G(1,2)  G(2,-3) G(2,-2) G(2,-1) G(2,0)  G(2,1)  G(2,2)  G(2,3)  G(3,-4) G(3,-3) G(3,-2) G(3,-1) G(3,0)  G(3,1)  G(3,2)  G(3,3)  G(3,4)
+9 HarmonicExpandedBField    0	   0	  0  	0	            1	    0       1        0	    1	    0	    1 	    0	   1	    0	    1.57       0       1       0       0       0       1       0       0       0       0      0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0                    
+
+[PARTICLES]

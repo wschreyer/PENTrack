@@ -201,9 +201,9 @@ void HarmonicExpandedBField::BField(const double _x, const double _y,
 const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 
 	// Updating the x, y, z values with the given offset values
-	double x = _x - xoff;
-	double y = _y - yoff;
-	double z = _z - zoff;
+	double x = _x + xoff;
+	double y = _y + yoff;
+	double z = _z + zoff;
 
 	// ########################################################################
 	// ########################################################################
@@ -360,140 +360,145 @@ const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 	// ########################################################################
 	// ########################################################################
 	// ROTATION OF B
-
-	// construct the quarternion, p, which represents the vector to be rotated
-	// here the 0th component is equal to zero, and the remaining three 
-	// components are those of the earlier computed magnetic field
-
-	// std::cout << std::endl;
-	// std::cout << std::endl;
-	// std::cout << "Rotation of B - Testing" << std::endl;
-
-	boost::math::quaternion<double> p(0, B[0], B[1], B[2]);
-
-	// std::cout << "qua. p, of vector B to be rotated: " << p << std::endl;
-
-	// the components of the axis of rotation (member variables of this class)
-	// are used to construct a normalized vector.
-
-	// std::cout << "rot. axis - x:" << axis_x << std::endl;
-	// std::cout << "rot. axis - y:" << axis_y << std::endl;
-	// std::cout << "rot. axis - z:" << axis_z << std::endl;
-
-	boost::numeric::ublas::vector<double> axis(3, 0);
-	axis(0) = axis_x;
-	axis(1) = axis_y;
-	axis(2) = axis_z;
-
-	// std::cout << "rot. axis (boost vector) - x:" << axis(0) << std::endl;
-	// std::cout << "rot. axis (boost vector) - y:" << axis(1) << std::endl;
-	// std::cout << "rot. axis (boost vector) - z:" << axis(2) << std::endl;
-
-	// the rotational axis vector is normalized
-	axis = (axis / boost::numeric::ublas::norm_2(axis));
-
-	// std::cout << "rot. axis (norm. boost vector) - x:" << axis(0) << std::endl;
-	// std::cout << "rot. axis (norm. boost vector) - y:" << axis(1) << std::endl;
-	// std::cout << "rot. axis (norm. boost vector) - z:" << axis(2) << std::endl;
-
-	// angle through which to rotate
-	// std::cout << "angle through which to rotate" << angle << std::endl;
-
-	// calculate quarternion, q, whih represents the rotation
-	boost::math::quaternion<double> q(cos(angle / 2), 
-									  sin(angle / 2) * axis(0), 
-									  sin(angle / 2) * axis(1), 
-									  sin(angle / 2) * axis(2));
-
-    // std::cout << "quarternion, q, of the rotation: " << q << std::endl;
-
-	// get the conjugate of the quaternion, q'
-	boost::math::quaternion<double> q_prime = conj(q);
-
-	// std::cout << "conj qua., q', of the rotation: " << q_prime << std::endl;
-
-	// perform multiplication to rotate
-	boost::math::quaternion<double> p_prime = q * p * q_prime;
-
-	// std::cout << "quarternion, p', after rotation: " << p_prime << std::endl;
 	
-	// extract the resulting vector components, post-rotation
-	B[0] = p_prime.R_component_2();
-	B[1] = p_prime.R_component_3();
-	B[2] = p_prime.R_component_4();
+	// if the user provides values of 0 for every input to the axis of rotation
+	// then no rotation is performed.
+	if (axis_x != 0 || axis_y != 0 || axis_z != 0){
 
-	// std::cout << "x-comp of p' = B_x = " << B[0] << std::endl;
-	// std::cout << "y-comp of p' = B_y = " << B[1] << std::endl;
-	// std::cout << "z-comp of p' = B_z = " << B[2] << std::endl;
+        // construct the quarternion, p, which represents the vector to be rotated
+        // here the 0th component is equal to zero, and the remaining three 
+        // components are those of the earlier computed magnetic field
 
-	// ########################################################################
-	// ########################################################################
-	// ROTATION OF dBidxj
+        // std::cout << std::endl;
+        // std::cout << std::endl;
+        // std::cout << "Rotation of B - Testing" << std::endl;
 
-	// The gradient of each component of B can be rotated using the same 
-	// quaternion as used above. This will result in the full rotation of 
-	// the magnetic field and the required spatial derivatives.
+        boost::math::quaternion<double> p(0, B[0], B[1], B[2]);
 
-	// We create three quaternions, one for the gradient of each of the 
-	// components of B
+        // std::cout << "qua. p, of vector B to be rotated: " << p << std::endl;
 
-	// std::cout << std::endl;
-	// std::cout << std::endl;
-	// std::cout << "Rotation of dBidxj - Testing" << std::endl;
+        // the components of the axis of rotation (member variables of this class)
+        // are used to construct a normalized vector.
 
-	boost::math::quaternion<double> p_x(0, 
-										dBidxj[0][0],
-										dBidxj[0][1],
-										dBidxj[0][2]);
+        // std::cout << "rot. axis - x:" << axis_x << std::endl;
+        // std::cout << "rot. axis - y:" << axis_y << std::endl;
+        // std::cout << "rot. axis - z:" << axis_z << std::endl;
 
-	boost::math::quaternion<double> p_y(0, 
-										dBidxj[1][0], 
-										dBidxj[1][1], 
-										dBidxj[1][2]);
+        boost::numeric::ublas::vector<double> axis(3, 0);
+        axis(0) = axis_x;
+        axis(1) = axis_y;
+        axis(2) = axis_z;
 
-	boost::math::quaternion<double> p_z(0, 
-										dBidxj[2][0], 
-										dBidxj[2][1], 
-										dBidxj[2][2]);
+        // std::cout << "rot. axis (boost vector) - x:" << axis(0) << std::endl;
+        // std::cout << "rot. axis (boost vector) - y:" << axis(1) << std::endl;
+        // std::cout << "rot. axis (boost vector) - z:" << axis(2) << std::endl;
 
-	// std::cout << "qua. p_x, of grad Bx to be rotated: " << p_x << std::endl;
-	// std::cout << "qua. p_y, of grad By to be rotated: " << p_y << std::endl;
-	// std::cout << "qua. p_z, of grad Bz to be rotated: " << p_z << std::endl;
+        // the rotational axis vector is normalized
+        axis = (axis / boost::numeric::ublas::norm_2(axis));
 
-	// we use the same quaternion, q, and conjugate q' for these rotations
-	boost::math::quaternion<double> p_x_prime = q * p_x * q_prime;
-	boost::math::quaternion<double> p_y_prime = q * p_y * q_prime;
-	boost::math::quaternion<double> p_z_prime = q * p_z * q_prime;
+        // std::cout << "rot. axis (norm. boost vector) - x:" << axis(0) << std::endl;
+        // std::cout << "rot. axis (norm. boost vector) - y:" << axis(1) << std::endl;
+        // std::cout << "rot. axis (norm. boost vector) - z:" << axis(2) << std::endl;
 
-	// std::cout << "quaternion, p_x', after rot.: " << p_x_prime << std::endl;
-	// std::cout << "quaternion, p_y', after rot.: " << p_y_prime << std::endl;
-	// std::cout << "quaternion, p_z', after rot.: " << p_z_prime << std::endl;
+        // angle through which to rotate
+        // std::cout << "angle through which to rotate" << angle << std::endl;
 
-	// extract the resulting vector components, post-rotation
-	// assign the components to the dBidxj matrix
-	dBidxj[0][0] = p_x_prime.R_component_2();
-	dBidxj[0][1] = p_x_prime.R_component_3();
-	dBidxj[0][2] = p_x_prime.R_component_4();
+        // calculate quarternion, q, whih represents the rotation
+        boost::math::quaternion<double> q(cos(angle / 2), 
+                                          sin(angle / 2) * axis(0), 
+                                          sin(angle / 2) * axis(1), 
+                                          sin(angle / 2) * axis(2));
 
-	// std::cout << "x-comp of p_x' = dBxdx = " << dBidxj[0][0] << std::endl;
-	// std::cout << "y-comp of p_x' = dBxdy = " << dBidxj[0][1] << std::endl;
-	// std::cout << "z-comp of p_x' = dBxdz = " << dBidxj[0][2] << std::endl;
+        // std::cout << "quarternion, q, of the rotation: " << q << std::endl;
 
-	dBidxj[1][0] = p_y_prime.R_component_2();
-	dBidxj[1][1] = p_y_prime.R_component_3();
-	dBidxj[1][2] = p_y_prime.R_component_4();
-	
-	// std::cout << "x-comp of p_y' = dBydx = " << dBidxj[1][0] << std::endl;
-	// std::cout << "y-comp of p_y' = dBydy = " << dBidxj[1][1] << std::endl;
-	// std::cout << "z-comp of p_y' = dBydz = " << dBidxj[1][2] << std::endl;
+        // get the conjugate of the quaternion, q'
+        boost::math::quaternion<double> q_prime = conj(q);
 
-	dBidxj[2][0] = p_z_prime.R_component_2();
-	dBidxj[2][1] = p_z_prime.R_component_3();
-	dBidxj[2][2] = p_z_prime.R_component_4();
+        // std::cout << "conj qua., q', of the rotation: " << q_prime << std::endl;
 
-	// std::cout << "x-comp of p_z' = dBzdx = " << dBidxj[2][0] << std::endl;
-	// std::cout << "y-comp of p_z' = dBzdy = " << dBidxj[2][1] << std::endl;
-	// std::cout << "z-comp of p_z' = dBzdz = " << dBidxj[2][2] << std::endl;
+        // perform multiplication to rotate
+        boost::math::quaternion<double> p_prime = q * p * q_prime;
+
+        // std::cout << "quarternion, p', after rotation: " << p_prime << std::endl;
+
+        // extract the resulting vector components, post-rotation
+        B[0] = p_prime.R_component_2();
+        B[1] = p_prime.R_component_3();
+        B[2] = p_prime.R_component_4();
+
+        // std::cout << "x-comp of p' = B_x = " << B[0] << std::endl;
+        // std::cout << "y-comp of p' = B_y = " << B[1] << std::endl;
+        // std::cout << "z-comp of p' = B_z = " << B[2] << std::endl;
+
+        // ########################################################################
+        // ########################################################################
+        // ROTATION OF dBidxj
+
+        // The gradient of each component of B can be rotated using the same 
+        // quaternion as used above. This will result in the full rotation of 
+        // the magnetic field and the required spatial derivatives.
+
+        // We create three quaternions, one for the gradient of each of the 
+        // components of B
+
+        // std::cout << std::endl;
+        // std::cout << std::endl;
+        // std::cout << "Rotation of dBidxj - Testing" << std::endl;
+
+        boost::math::quaternion<double> p_x(0, 
+                                            dBidxj[0][0],
+                                            dBidxj[0][1],
+                                            dBidxj[0][2]);
+
+        boost::math::quaternion<double> p_y(0, 
+                                            dBidxj[1][0], 
+                                            dBidxj[1][1], 
+                                            dBidxj[1][2]);
+
+        boost::math::quaternion<double> p_z(0, 
+                                            dBidxj[2][0], 
+                                            dBidxj[2][1], 
+                                            dBidxj[2][2]);
+
+        // std::cout << "qua. p_x, of grad Bx to be rotated: " << p_x << std::endl;
+        // std::cout << "qua. p_y, of grad By to be rotated: " << p_y << std::endl;
+        // std::cout << "qua. p_z, of grad Bz to be rotated: " << p_z << std::endl;
+
+        // we use the same quaternion, q, and conjugate q' for these rotations
+        boost::math::quaternion<double> p_x_prime = q * p_x * q_prime;
+        boost::math::quaternion<double> p_y_prime = q * p_y * q_prime;
+        boost::math::quaternion<double> p_z_prime = q * p_z * q_prime;
+
+        // std::cout << "quaternion, p_x', after rot.: " << p_x_prime << std::endl;
+        // std::cout << "quaternion, p_y', after rot.: " << p_y_prime << std::endl;
+        // std::cout << "quaternion, p_z', after rot.: " << p_z_prime << std::endl;
+
+        // extract the resulting vector components, post-rotation
+        // assign the components to the dBidxj matrix
+        dBidxj[0][0] = p_x_prime.R_component_2();
+        dBidxj[0][1] = p_x_prime.R_component_3();
+        dBidxj[0][2] = p_x_prime.R_component_4();
+
+        // std::cout << "x-comp of p_x' = dBxdx = " << dBidxj[0][0] << std::endl;
+        // std::cout << "y-comp of p_x' = dBxdy = " << dBidxj[0][1] << std::endl;
+        // std::cout << "z-comp of p_x' = dBxdz = " << dBidxj[0][2] << std::endl;
+
+        dBidxj[1][0] = p_y_prime.R_component_2();
+        dBidxj[1][1] = p_y_prime.R_component_3();
+        dBidxj[1][2] = p_y_prime.R_component_4();
+
+        // std::cout << "x-comp of p_y' = dBydx = " << dBidxj[1][0] << std::endl;
+        // std::cout << "y-comp of p_y' = dBydy = " << dBidxj[1][1] << std::endl;
+        // std::cout << "z-comp of p_y' = dBydz = " << dBidxj[1][2] << std::endl;
+
+        dBidxj[2][0] = p_z_prime.R_component_2();
+        dBidxj[2][1] = p_z_prime.R_component_3();
+        dBidxj[2][2] = p_z_prime.R_component_4();
+
+        // std::cout << "x-comp of p_z' = dBzdx = " << dBidxj[2][0] << std::endl;
+        // std::cout << "y-comp of p_z' = dBzdy = " << dBidxj[2][1] << std::endl;
+        // std::cout << "z-comp of p_z' = dBzdz = " << dBidxj[2][2] << std::endl;
+    }
 
 	// ########################################################################
 	// ########################################################################
