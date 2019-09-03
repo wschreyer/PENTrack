@@ -26,10 +26,6 @@ private:
 	double xoff; ///< the x-coordinate offset from the origin
 	double yoff; ///< the y-coordinate offset from the origin
 	double zoff; ///< the z-coordinate offset from the origin
-	double pol_ang1; ///< the polar angle theta
-	double azm_ang2; ///< the azimuthal angle phi
-	double edmB0z0; ///< the z component of the B0 field at the origin in Tesla
-	double edmdB0z0dz; ///< the z derivative of z component of the B0 field: dB0zdz at the origin in Tesla
 	bool   ac; ///< A boolean to toggle between AC or DC field
 	double f; ///< the frequency of the AC field
 	double on1; ///< the start time of AC
@@ -65,16 +61,16 @@ public:
 	 * @param xoff the x-coordinate offset from the origin
 	 * @param yoff the y-coordinate offset from the origin
 	 * @param zoff the z-coordinate offset from the origin
-	 * @param ang1 the polar angle theta
-	 * @param ang2 the azimuthal angle phi
-	 * @param abz the z component of the B0 field at the origin in Tesla
-	 * @param adB0zdz the z derivative of z component of the B0 field: dB0zdz at the origin in Tesla
 	 * @param AC A boolean to toggle between AC or DC field
 	 * @param frq the frequency of the AC field
 	 * @param tstart1 the start time of AC
 	 * @param tend1 the end time of AC
 	 * @param pshift the phase shift for the AC field
 	 * @param bW Distance from the edges where folding begins
+	 * @param axis_x the x-component of rotational axis
+	 * @param axis_y the y-component of rotational axis
+	 * @param axis_z the z-component of rotational axis
+	 * double angle the angle through which to rotate
 	 * @param _xmax maximum x value for the field to permiate
 	 * @param _xmin minimum x value for the field to permiate
 	 * @param _ymax maximum y value for the field to permiate
