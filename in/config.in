@@ -169,6 +169,8 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #7 EDMStaticEField			0			0			1E6		1
 #EDM_AC_B1Field  edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz freq time1 time2 shift BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
 #8 EDM_AC_B1Field	0	0	0	0	0	1E-6	1E-9	1	2	4	0	0.01	1	-1	1	-1	1	-1	1
+#HarmonicExpandedBField     edmB0xoff   edmB0yoff   edmB0zoff   BoundaryWidth   xmax 	xmin 	ymax 	ymin 	zmax 	zmin    scale   axis_x  axis_y  axis_z  angle   G(0,-1) G(0,0)  G(0,1)  G(1,-2) G(1,-1) G(1,0)  G(1,1)  G(1,2)  G(2,-3) G(2,-2) G(2,-1) G(2,0)  G(2,1)  G(2,2)  G(2,3)  G(3,-4) G(3,-3) G(3,-2) G(3,-1) G(3,0)  G(3,1)  G(3,2)  G(3,3)  G(3,4)
+#9 HarmonicExpandedBField 	0	        0        0	        0.01        1    -1  	  1 	    -1	    1	    -1	    1       1       1       1       1.9     0       0       0       0       0       30      0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0                    
 
 
 [PARTICLES]
