@@ -1,13 +1,18 @@
 [MATERIALS]
 ############### Define material properties for UCN #############
-# imaginary Fermi potential, diffuse reflectivity, spin flip probability, micro-roughness parameters, enable micro-roughness reflection
+# imaginary Fermi potential, diffuse reflectivity, spin flip probability, micro-roughness parameters, enable micro-roughness reflection, internal magnetic field
 # Diffuse reflection is either modeled with the Lambert model or the Micro Roughness model.
 # To activate the former, set the Lambert-reflection probability. To activate the latter, set RMSroughness and CorrelationLength.
 # See https://doi.org/10.1080/10448639208218770 and https://www.ncnr.nist.gov/resources/n-lengths/
 # For more information on diffuse reflection see https://doi.org/10.1007/BF01380066 and https://doi.org/10.1140/epja/i2010-10926-x
-#name		FermiReal [neV]		FermiImag [neV]		LambertProbability [0..1]	SpinflipProbability [0..1]	RMSroughness [m]	CorrelationLength [m]
+#
+# When a neutron hits a surface, the code randomly chooses to flip its spin based on the given spin flip probability.
+# Then it calculates the potential difference between the previous and the new material, taking into account the spin polarization and internal magnetic fields.
+# Based on the potential difference and the diffuse-reflection parameters it chooses if the neutron should be transmitted or reflected specularly or diffusely.
+#
+#name		FermiReal [neV]		FermiImag [neV]		LambertProbability [0..1]	SpinflipProbability [0..1]	RMSroughness [m]	CorrelationLength [m]   InternalMagneticField [T]
 default		0			0			0				0			0			0
-PolishedSteel	183			0.0852			0				1e-4	2.6e-9	20e-9
+PolishedSteel	183			0.0852			0				1e-5	2.6e-9	20e-9
 PE		-8.6553			0.492			0.5				0	0	0
 Ti		-51.1			0.0432			0.2				1e-5	0	0
 Cu		170.7470		0.0726			0.2				1e-5	0	0
@@ -30,3 +35,5 @@ dPE    		 209              	0.06           		0.16            		1e-5	0	0
 dPS     	171             	0.047          		0.16             		1e-5	0	0
 GS20		103.4			1.237			0.16				0	0	0	# Li6-enriched glass scintillator https://doi.org/10.1140/epja/i2016-16326-4
 GS30		83.1			1.23e-4			0.16				0	0	0	# Li6-depleted glass scintillator
+SpinFlipper	0			0			0				0.99	0	0	# Whenever UCN cross surface with this material their spin is flipped with 99% probability
+FePolarizerOnAl	209			0.00281			0.16				0.05	0	0	2	# This mimicks a magnetized iron film coated onto an Al foil. Since iron film is too thin to be represented in StL files, we use a single material with iron's real potential (to correctly model energy-dependece of polarization) and Al's imagnary potential (to correctly model absorption in foil, assuming absorption in iron is negligible)

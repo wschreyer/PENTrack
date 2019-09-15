@@ -46,6 +46,31 @@ protected:
 	static std::ofstream trackout; ///< tracklog file stream
 	static std::ofstream hitout; ///< hitlog file stream
 	static std::ofstream spinout; ///< spinlog file stream
+
+	/**
+	 * Calculate neutron-specific potential in material
+	 *
+	 * @param mat Material to calculate potential of
+	 * @param y Particle state used to calculate potential
+	 *
+	 * @return Return material potential [eV]
+	 */
+	double MaterialPotential(const material &mat, const state_type &y) const{
+		return mat.FermiReal*1e-9 - mat.InternalBField*GetMagneticMoment()*y[7]/ele_e;
+	}
+
+	/**
+	 * Calculate energy step from one material to another, including spin-dependent energy due to magnetization
+	 *
+	 * @param leaving Material that particle is leaving
+	 * @param entering Material that particle is entering
+	 * @param y Particle state containing spin polarization
+	 *
+	 * @return Returns step in Fermi potential [eV]
+	 */
+	double CalcPotentialStep(const material &leaving, const material &entering, const state_type &y) const{
+		return MaterialPotential(entering, y) - MaterialPotential(leaving, y);
+	}
 	
 	/**
 	 * Check for reflection/transmission/absorption on surfaces.

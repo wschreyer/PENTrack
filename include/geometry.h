@@ -27,6 +27,7 @@ struct material{
 	double SpinflipProb; ///< Probability for spin flip on reflection
 	double RMSRoughness; ///< RMS roughness of surface, for MicroRoughness model reflections
 	double CorrelLength; ///< Correlation length of surface roughness, for MicroRoughness model reflections
+    double InternalBField; ///< Internal magnetic field, for magnetized materials
 };
 
 ///Read material properties, except name, from input stream
