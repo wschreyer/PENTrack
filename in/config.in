@@ -43,23 +43,25 @@ MRThetaIEnergy 54 2.5E-9 20E-9 0 1.570796327 0 1000
 # Ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000.
 #ID	STLfile    material_name    ignore_times
 1	ignored				default
-2	storagevolume_60degfeeder_bellow.STL		PolishedSteel
-3	guide_experiment.STL		PolishedSteel
-4	guide_source.STL		PolishedSteel
-5	guide_detector.STL		PolishedSteel
-6	switch.STL			PolishedSteel
-7	valve.STL			PolishedSteel		0-200 500-1000
-8	switch_flap_source.STL	PolishedSteel		200-1000
-9	switch_flap_middle.STL	PolishedSteel		0-200 500-1000
-10	switch_flap_detector.STL	PolishedSteel		0-500
-11	foil_detector.STL		Al
-12	UCNdet.STL			UCNdet
-13	protdet.STL			Al
-14	absorber_up.STL		PE			500-560
-15	absorber_middle.STL		PE			0-500 520-540 560-1000
-16	absorber_down.STL		PE			0-520 540-1000
-17	source.STL			UCNdet			200-1000
-18	source.STL			PolishedSteel		0-200
+2	spinflip_volume.STL		SpinFlipper
+3	polarizer.STL			FePolarizerOnAl
+4	storagevolume_60degfeeder_bellow.STL		PolishedSteel
+5	guide_experiment.STL		PolishedSteel
+6	guide_source.STL		PolishedSteel
+7	guide_detector.STL		PolishedSteel
+8	switch.STL			PolishedSteel
+9	valve.STL			PolishedSteel		0-200 500-1000
+10	switch_flap_source.STL	PolishedSteel		200-1000
+11	switch_flap_middle.STL	PolishedSteel		0-200 500-1000
+12	switch_flap_detector.STL	PolishedSteel		0-500
+13	foil_detector.STL		Al
+14	UCNdet.STL			UCNdet
+15	protdet.STL			Al
+16	absorber_up.STL		PE			500-560
+17	absorber_middle.STL		PE			0-500 520-540 560-1000
+18	absorber_down.STL		PE			0-520 540-1000
+19	source.STL			UCNdet			200-1000
+20	source.STL			PolishedSteel		0-200
 
 
 
@@ -182,7 +184,7 @@ tracklog 0			# print complete trajectory to file [0/1]
 trackloginterval 5e-3	# min. distance interval [m] between track points in tracklog file
 hitlog 0			# print geometry hits to file [0/1]
 snapshotlog 1		# print initial state and state at certain times to file [0/1]
-snapshots 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310 320 330 340 350 360 370 380 390 400 450 500 550 600 650 700 750 800 850 900 950 1000 # times [s] at which to take snapshots
+snapshots 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310 320 330 340 350 360 370 380 390 400 410 420 430 440 450 460 470 480 490 500 510 520 530 540 550 560 570 580 590 600 610 620 630 640 650 660 670 680 690 700 710 720 730 740 750 760 770 780 790 800 810 820 830 840 850 860 870 880 890 900 910 920 930 940 950 960 970 980 990 1000 # times [s] at which to take snapshots
 
 spinlog 0			# print spin trajectory to file [0/1]
 spinloginterval 5e-7# min. time interval [s] between track points in spinlog file
