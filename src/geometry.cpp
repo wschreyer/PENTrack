@@ -108,37 +108,24 @@ TGeometry::TGeometry(TConfig &geometryin){
 		throw std::runtime_error("You defined solids with identical ID! IDs have to be unique!");
 }
 
-
 bool TGeometry::GetCollisions(const double x1, const double p1[3], const double x2, const double p2[3], multimap<TCollision, bool> &colls) const{
 	vector<TCollision> c = mesh.Collision(std::vector<double>{p1[0], p1[1], p1[2]}, std::vector<double>{p2[0], p2[1], p2[2]});
 	colls.clear();
 	for (auto it: c){
 		solid sld = GetSolid(it.ID);
 		double t = x1 + (x2 - x1)*it.s;
-		bool ignored =std::any_of(sld.ignoretimes.begin(), sld.ignoretimes.end(), 
-						[&t](const std::pair<double, double> &its){ return t >= its.first && t < its.second; }
-					); // check if collision time lies between any pair of ignore times
-		colls.emplace(it, ignored);
+		colls.emplace(it, sld.is_ignored(t));
 	}
 	return !colls.empty();
 }
 
 
 std::vector<std::pair<solid, bool> > TGeometry::GetSolids(const double t, const double p[3]) const{
-	double p2[3] = {mesh.GetBoundingBox().xmin() - REFLECT_TOLERANCE,
-			mesh.GetBoundingBox().ymin() - REFLECT_TOLERANCE,
-			mesh.GetBoundingBox().zmin() - REFLECT_TOLERANCE};
-	std::multimap<TCollision, bool> c;
 	std::vector<std::pair<solid, bool> > currentsolids = { std::make_pair(defaultsolid, false) };
-	if (GetCollisions(t,p,t,p2,c)){	// check for collisions of a vertical segment from p to lower border of bounding box
-		for (auto i: c){
-			auto sld = find_if(currentsolids.begin(), currentsolids.end(), [&i](const std::pair<solid, bool> s){ return s.first.ID == i.first.ID; });
-			if (sld != currentsolids.end()) // if there is a collision with a solid already in the list, remove it from list
-				currentsolids.erase(sld);
-			else
-				currentsolids.push_back(std::make_pair(GetSolid(i.first.ID), i.second)); // else add solid to list
-		}
-	}
+	for (unsigned ID: mesh.GetSolids(std::array<double, 3>({p[0], p[1], p[2]}))) {
+	    solid sld = GetSolid(ID);
+        currentsolids.push_back(std::make_pair(sld, sld.is_ignored(t)));
+    }
 	return currentsolids;
 }
 

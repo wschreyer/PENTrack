@@ -68,7 +68,7 @@ public:
 	 *
 	 * @return Returns newly created particle, memory has to be freed by user
 	 */
-	virtual TParticle* CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field) = 0;
+	virtual TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) = 0;
 };
 
 
@@ -80,7 +80,8 @@ public:
 class TSurfaceSource: public TParticleSource{
 protected:
 	double Enormal; ///< Boost given to particles starting from this surface
-	std::vector<double> area_sum; ///< list of areas of corresponding triangles in TGeometry class, each entry accumulates areas of all preceding triangles that are contained in the source volume
+
+	virtual CCuboid GetSourceVolumeBoundingBox() const = 0;
 
 	/**
 	 * Check if point is inside the source volume.
@@ -104,7 +105,7 @@ public:
 	 *
 	 * @return Returns newly created particle, memory has to be freed by user
 	 */
-	TParticle* CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
+	TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) final;
 };
 
 
@@ -155,7 +156,7 @@ public:
 	 * Particle density distribution can be weighted by available phase space
 	 *
 	 */
-	TParticle* CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
+	TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) final;
 };
 
 /**
@@ -220,7 +221,7 @@ public:
 	 *
 	 * @param sourceconf Map of source options
 	 */
-	TCylindricalVolumeSource(std::map<std::string, std::string> &sourceconf):
+	explicit TCylindricalVolumeSource(std::map<std::string, std::string> &sourceconf):
 			TVolumeSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
 		std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax;
 		phimin *= conv;
@@ -235,6 +236,10 @@ class TCylindricalSurfaceSource: public TSurfaceSource{
 private:
 	double rmin, rmax, phimin, phimax, zmin, zmax;
 
+	CCuboid GetSourceVolumeBoundingBox() const final{
+	    return CCuboid(CPoint(-rmax, -rmax, zmin), CPoint(rmax, rmax, zmax));
+	}
+
 	/**
 	 * Check if a point is inside the cylindrical coordinate range
 	 */
@@ -242,17 +247,6 @@ private:
 		double r = sqrt(x*x + y*y);
 		double phi = atan2(y, x);
 		return r > rmin && r < rmax && phi > phimin && phi < phimax && z > zmin && z < zmax;
-	}
-
-	/**
-	 * Check if a triangle is inside the cylidrical coordinate range
-	 */
-	bool InSourceVolume(const CTriangle &tri) const{
-		for (int i = 0; i < 3; i++){
-			if (!InSourceVolume(tri[i][0], tri[i][1], tri[i][2]))
-				return false;
-		}
-		return true;
 	}
 
 public:
@@ -264,24 +258,8 @@ public:
 	 * @param sourceconf Map of source options
 	 * @param geometry TGeometry in which particles will be created
 	 */
-	TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf, const TGeometry &geometry):
-			TSurfaceSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
-		std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax;
-		phimin *= conv;
-		phimax *= conv;
-
-		std::transform(	geometry.mesh.GetTrianglesBegin(),
-						geometry.mesh.GetTrianglesEnd(),
-						std::back_inserter(area_sum),
-						[this](std::pair<CTriangle, double> tri){
-							if (InSourceVolume(tri.first))
-								return sqrt(tri.first.squared_area());
-							return 0.;
-						}
-		);
-		std::partial_sum(area_sum.begin(), area_sum.end(), area_sum.begin());
-		std::cout << "Source area " << area_sum.back() << "m^2\n";
-	}
+	explicit TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf):
+			TSurfaceSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){}
 };
 
 /**
@@ -301,13 +279,10 @@ private:
 	 * @param z Returns z coordinate
 	 */
 	void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
-		CBox bbox = sourcevol.GetBoundingBox();
-		std::uniform_real_distribution<double> unidist(0, 1);
-		do{
-			x = bbox.xmin() + unidist(mc)*(bbox.xmax() - bbox.xmin()); // random point
-			y = bbox.ymin() + unidist(mc)*(bbox.ymax() - bbox.ymin());
-			z = bbox.zmin() + unidist(mc)*(bbox.zmax() - bbox.zmin());
-		}while (!sourcevol.InSolid(x, y, z));
+		std::array<double, 3> p = sourcevol.RandomPointInVolume(mc);
+		x = p[0];
+		y = p[1];
+		z = p[2];
 	}
 public:
 	/**
@@ -332,16 +307,16 @@ public:
 class TSTLSurfaceSource: public TSurfaceSource{
 private:
 	TTriangleMesh sourcevol;
-	bool InSourceVolume(const double x, const double y, const double z) const{
+	bool InSourceVolume(const double x, const double y, const double z) const final{
 		return sourcevol.InSolid(x, y, z);
 	}
-	bool InSourceVolume(const CTriangle &tri) const{
-		for (int i = 0; i < 3; i++){
-			if (!sourcevol.InSolid(tri[i]))
-				return false;
-		}
-		return true;
+	bool InSourceVolume(const std::array<double, 3> &p) const{
+	    return sourcevol.InSolid(p[0], p[1], p[2]);
 	}
+
+    CCuboid GetSourceVolumeBoundingBox() const final{
+        return sourcevol.GetBoundingBox();
+    }
 public:
 	/**
 	 * Constructor.
@@ -351,23 +326,10 @@ public:
 	 * @param sourceconf Map of source options
 	 * @param geometry TGeometry in which particles will be created
 	 */
-	TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf, const TGeometry &geometry):
-			TSurfaceSource(sourceconf){
-		boost::filesystem::path STLfile;
-		std::istringstream(sourceconf["STLfile"]) >> STLfile;
-		sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
-
-		std::transform(	geometry.mesh.GetTrianglesBegin(),
-						geometry.mesh.GetTrianglesEnd(),
-						std::back_inserter(area_sum),
-						[this](std::pair<CTriangle, double> tri){
-							if (InSourceVolume(tri.first))
-								return sqrt(tri.first.squared_area());
-							return 0.;
-						}
-		);
-		std::partial_sum(area_sum.begin(), area_sum.end(), area_sum.begin());
-		std::cout << "Source area " << area_sum.back() << "m^2\n";
+	explicit TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf): TSurfaceSource(sourceconf){
+	    boost::filesystem::path STLfile;
+	    std::istringstream(sourceconf["STLfile"]) >> STLfile;
+	    sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
 	}
 };
 

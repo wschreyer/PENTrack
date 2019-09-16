@@ -16,8 +16,6 @@
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
 
-static const double REFLECT_TOLERANCE = 1e-8;  ///< max distance of reflection point to actual surface collision point
-
 /// Struct to store material properties (read from geometry.in, right now only for neutrons)
 struct material{
 	std::string name; ///< Material name
@@ -52,6 +50,12 @@ struct solid{
 	 * @return Returns true if this solid's ID is larger than the other one's
 	 */
 	bool operator< (const solid s) const { return ID > s.ID; };
+
+	bool is_ignored(const double t) const{
+	    return std::any_of(ignoretimes.begin(), ignoretimes.end(),
+	            [&t](const std::pair<double, double> &its){ return t >= its.first && t < its.second; }
+	            ); // check if collision time lies between any pair of ignore times};
+	}
 };
 
 ///Read solid properties, except ID, from input stream
@@ -89,7 +93,7 @@ struct TGeometry{
 		 * @return Returns true if segment is intersecting bounding box
 		 */
 		bool CheckSegment(const double y1[3], const double y2[3]) const{
-			return CGAL::do_intersect(mesh.GetBoundingBox(), CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
+			return mesh.InBoundingBox(CSegment(CPoint(y1[0], y1[1], y1[2]), CPoint(y2[0], y2[1], y2[2])));
 		};
 		
 

@@ -15,18 +15,21 @@ A C++11-compatible compiler is required.
 
 GCC 4.7.2 and newer should work. GCC 4.8.2 seems to break the CGAL library on some machines and can cause particles flying through walls.
 
-### CGAL
-
-The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
-Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package. If yours does not, you can run the bash script `install_cgal.sh`, which will download and compile CGAL for you. If you choose to manually download and compile it yourself, you will have to adjust the search path of cmake by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
-
-CGAL v4.1 - v4.13 have been tested.
-
 ### Boost
 
 The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses the [odeint integrator](http://headmyshoulder.github.io/odeint-v2/) included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the search path of cmake by calling cmake with `-DBOOST_ROOT=/path/to/boost`.
 
 Boost 1.53.0 - 1.69.0 have been tested. Boost 1.64.0 is unusable as it contains [a bug](https://svn.boost.org/trac10/ticket/12516) that prevents compiling PENTrack.
+
+
+Included libraries
+------------------
+
+### CGAL
+
+The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
+
+CGAL 4.14 is included in the repository.
 
 ### ExprTk
 
@@ -73,7 +76,7 @@ Do not choose a too high resolution. Usually, setting the deviation tolerance to
 If you want to export several parts of a Solidworks assembly you can do the following:
 
 1. Select the part(s) to be exported and right-click.
-2. Select "Invert selection" and then use "Suppress" on all other parts.
+2. Select "Invert selection" and hide all other parts.
 3. Now you can save the remaining parts in a single STL file (make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together).
 4. You can check the positioning of the parts with e.g. [MeshLab](http://meshlab.sourceforge.net/), SolidView, Minimagics, Solidworks...
 

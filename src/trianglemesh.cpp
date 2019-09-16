@@ -1,8 +1,14 @@
 #include "trianglemesh.h"
 
 #include <fstream>
-#include "boost/format.hpp"
-
+#include <random>
+#include <boost/format.hpp>
+#include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
+#include <CGAL/Polygon_mesh_processing/repair_polygon_soup.h>
+#include <CGAL/Polygon_mesh_processing/self_intersections.h>
+#include <CGAL/Polygon_mesh_processing/corefinement.h>
+#include <CGAL/Polygon_mesh_processing/measure.h>
+#include <CGAL/Polygon_mesh_processing/stitch_borders.h>
 
 // read triangles from STL-file
 std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
@@ -16,34 +22,68 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
 	sldname.erase(sldname.find_last_not_of(" ") + 1); // strip trailing whitespace from header
 
 	unsigned int filefacecount;
-	unsigned int i = triangles.size();
 	f.read((char*)&filefacecount,4);
 	if (filefacecount == 0)
 		throw std::runtime_error( (boost::format("%1% contains no triangles") % filename).str() );
 	std::cout << "Reading '" << sldname << "' from '" << filename << "' containing " << filefacecount << " triangles ... ";    // print header
 
-	float v[3][3];
+	std::vector<CPoint> vertices;
+	std::vector<std::vector<size_t> > faces;
 	while (f){
 		f.seekg(3*4,std::fstream::cur);  // skip normal in STL-file (will be calculated from vertices)
+        std::vector<size_t> vidx;
 		for (short j = 0; j < 3; j++){
-			 f.read((char*)v[j],12);
+		    float v[3];
+		    f.read((char*)v,12);
+			if (f) {
+                CPoint p(v[0], v[1], v[2]);
+                auto vertex = std::find_if(vertices.begin(), vertices.end(), [&p](const CPoint &p2) { return CSegment(p, p2).squared_length() < REFLECT_TOLERANCE * REFLECT_TOLERANCE; });
+                vidx.push_back(std::distance(vertices.begin(), vertex));
+                if (vertex == vertices.end())
+                    vertices.push_back(p);
+            }
 		}
-		f.seekg(2,std::fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
-		if (f){
-			CTriangle tri(CPoint(v[0][0], v[0][1], v[0][2]), CPoint(v[1][0], v[1][1], v[1][2]), CPoint(v[2][0], v[2][1], v[2][2]));
-			if (tri.is_degenerate())
-				throw std::runtime_error( (boost::format("%1% contains a degenerate triangle!") % filename).str() );
-			triangles.push_back(std::make_pair(tri, ID));
-		}
+		if (f) {
+            faces.push_back(vidx);
+            f.seekg(2, std::fstream::cur);    // 2 attribute bytes, not used in the STL standard (http://www.ennex.com/~fabbers/StL.asp)
+        }
 	}
 	f.close();
 
-	i = triangles.size() - i;
-	if (i != filefacecount)
-		throw std::runtime_error( (boost::format("%1% should contain %2% triangles but read %3%") % filename % filefacecount % i).str() );
-	std::cout << "Read " << i << " triangles\n";
+	if (faces.size() != filefacecount)
+		throw std::runtime_error( (boost::format("%1% should contain %2% triangles but read %3%") % filename % filefacecount % faces.size()).str() );
 
-	tree.rebuild(triangles.begin(), triangles.end()); // rebuild AABB tree
+    CGAL::Polygon_mesh_processing::repair_polygon_soup(vertices, faces);
+    if (not CGAL::Polygon_mesh_processing::is_polygon_soup_a_polygon_mesh(faces))
+        throw(std::runtime_error("Triangles do not form a mesh"));
+    std::unique_ptr<CMesh> mesh(new CMesh());
+    CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(vertices, faces, *mesh);
+    double A = CGAL::Polygon_mesh_processing::area(*mesh)*1e4;
+    double V = CGAL::Polygon_mesh_processing::volume(*mesh)*1e6;
+    std::cout << "Built mesh with " << faces.size() << " triangles (" << A << "cm2, " << V << "cm3)\n";
+    if (not CGAL::is_closed(*mesh))
+        throw std::runtime_error("Mesh is not closed");
+        //std::cout << "Mesh is not closed!\n";
+    if (not CGAL::Polygon_mesh_processing::does_bound_a_volume(*mesh))
+        throw std::runtime_error("Mesh does not bound a volume");
+        //std::cout << "Mesh does not bound a volume!\n";
+    if (CGAL::Polygon_mesh_processing::does_self_intersect(*mesh))
+        throw std::runtime_error("Mesh is self-intersecting");
+        //std::cout << "Mesh is self-intersecting\n";
+
+    std::vector<double> areas;
+    std::transform(mesh->faces_begin(), mesh->faces_end(), std::back_inserter(areas), [&mesh](const CMesh::Face_index &fi){ return CGAL::Polygon_mesh_processing::face_area(fi, *mesh); });
+    std::discrete_distribution<size_t> triangle_sampler(areas.begin(), areas.end());
+
+    std::unique_ptr<CTree> tree(new CTree(mesh->faces_begin(), mesh->faces_end(), *mesh));
+    tree->accelerate_distance_queries();
+
+    std::vector<double> total_areas;
+    std::transform(meshes.begin(), meshes.end(), std::back_inserter(total_areas), [](const CTriangleMesh &m){ return CGAL::Polygon_mesh_processing::area(*m.mesh); });
+    mesh_sampler = std::discrete_distribution<size_t>(total_areas.begin(), total_areas.end());
+
+    meshes.push_back({std::move(mesh), std::move(tree), ID, triangle_sampler});
+
 	return sldname;
 }
 
@@ -51,18 +91,20 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
 // test segment p1->p2 for collision with triangles and return a list of all found collisions
 std::vector<TCollision> TTriangleMesh::Collision(const std::vector<double> &p1, const std::vector<double> &p2) const{
 	CSegment segment(CPoint(p1[0], p1[1], p1[2]), CPoint(p2[0], p2[1], p2[2]));
-	std::vector<CIntersection> out;
 	std::vector<TCollision> colls;
-	tree.all_intersections(segment, std::back_inserter(out)); // search intersections of segment with mesh
-	for (std::vector<CIntersection>::iterator i = out.begin(); i != out.end(); i++){
-		#if CGAL_VERSION_NR<1040301000
-			const CPoint *collp = CGAL::object_cast<CPoint>(&(*i)->first);
-		#else
-			const CPoint *collp = boost::get<CPoint>(&((*i)->first));
-		#endif
-		if (collp) // if intersection is a point
-			colls.push_back(TCollision(segment, (*i)->second, *collp)); // add collision to list
-	}
+	for (auto &it: meshes) {
+        std::vector<CIntersection> out;
+        it.tree->all_intersections(segment, std::back_inserter(out)); // search intersections of segment with mesh
+        for (auto &i: out){
+            const CPoint *collp = boost::get<CPoint>(&(i->first));
+            if (collp) { // if intersection is a point
+                CVector n = CGAL::Polygon_mesh_processing::compute_face_normal(i->second, *it.mesh);
+                colls.push_back(TCollision(segment, n, *collp, it.ID)); // add collision to list
+            }
+            else
+                throw std::runtime_error("Segment-triangle intersection happened to not be a point");
+        }
+    }
 
 	std::sort(	colls.begin(),
 				colls.end(),
@@ -76,5 +118,12 @@ std::vector<TCollision> TTriangleMesh::Collision(const std::vector<double> &p1, 
 				}
 	);
 	return colls;
+
 }
 
+
+bool TTriangleMesh::InSolid(const double x, const double y, const double z) const{
+    return std::any_of(meshes.begin(), meshes.end(), [x,y,z](const CTriangleMesh &mesh){
+        return mesh.tree->number_of_intersected_primitives(CKernel::Ray_3(CPoint(x,y,z), CVector(0.,0.,1.))) % 2 != 0;
+    });
+}
