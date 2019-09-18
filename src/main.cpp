@@ -17,8 +17,6 @@
 #include <memory>
 #include <boost/format.hpp>
 
-using namespace std;
-
 #include "particle.h"
 #include "config.h"
 #include "fields.h"
@@ -26,6 +24,8 @@ using namespace std;
 #include "source.h"
 #include "mc.h" 
 #include "microroughness.h"
+
+using namespace std;
 
 TConfig ConfigInit(int argc, char **argv); // read config.in
 void OutputCodes(const map<string, map<int, int> > &ID_counter); // print simulation summary at program exit

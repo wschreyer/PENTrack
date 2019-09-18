@@ -8,7 +8,10 @@
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/Polygon_mesh_processing/measure.h>
-#include <CGAL/Polygon_mesh_processing/stitch_borders.h>
+#include <CGAL/Polygon_mesh_processing/connected_components.h>
+#include <CGAL/boost/graph/Face_filtered_graph.h>
+#include <CGAL/Polygon_mesh_processing/repair.h>
+
 
 // read triangles from STL-file
 std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
@@ -25,7 +28,7 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
 	f.read((char*)&filefacecount,4);
 	if (filefacecount == 0)
 		throw std::runtime_error( (boost::format("%1% contains no triangles") % filename).str() );
-	std::cout << "Reading '" << sldname << "' from '" << filename << "' containing " << filefacecount << " triangles ... ";    // print header
+	std::cout << "Reading '" << filename << "' containing " << filefacecount << " triangles ... ";    // print header
 
 	std::vector<CPoint> vertices;
 	std::vector<std::vector<size_t> > faces;
@@ -36,8 +39,8 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
 		    float v[3];
 		    f.read((char*)v,12);
 			if (f) {
-                CPoint p(v[0], v[1], v[2]);
-                auto vertex = std::find_if(vertices.begin(), vertices.end(), [&p](const CPoint &p2) { return CSegment(p, p2).squared_length() < REFLECT_TOLERANCE * REFLECT_TOLERANCE; });
+                CPoint p(std::abs(v[0]) < REFLECT_TOLERANCE ? 0. : v[0], std::abs(v[1]) < REFLECT_TOLERANCE ? 0. : v[1], std::abs(v[2]) < REFLECT_TOLERANCE ? 0. : v[2]);
+                auto vertex = vertices.end(); //std::find_if(vertices.begin(), vertices.end(), [&p](const CPoint &p2) { return CGAL::squared_distance(p, p2) < std::pow(REFLECT_TOLERANCE, 2); });
                 vidx.push_back(std::distance(vertices.begin(), vertex));
                 if (vertex == vertices.end())
                     vertices.push_back(p);
@@ -53,23 +56,61 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
 	if (faces.size() != filefacecount)
 		throw std::runtime_error( (boost::format("%1% should contain %2% triangles but read %3%") % filename % filefacecount % faces.size()).str() );
 
-    CGAL::Polygon_mesh_processing::repair_polygon_soup(vertices, faces);
-    if (not CGAL::Polygon_mesh_processing::is_polygon_soup_a_polygon_mesh(faces))
-        throw(std::runtime_error("Triangles do not form a mesh"));
+    namespace PMP = CGAL::Polygon_mesh_processing;
+    typedef boost::graph_traits<CMesh>::face_descriptor fd;
+    auto cerr_precision = std::cerr.precision(3);
+    auto cout_precision = std::cout.precision(3);
+    PMP::repair_polygon_soup(vertices, faces/*, CGAL::parameters::require_same_orientation(true)*/);
+    PMP::orient_polygon_soup(vertices, faces);
     std::unique_ptr<CMesh> mesh(new CMesh());
-    CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(vertices, faces, *mesh);
-    double A = CGAL::Polygon_mesh_processing::area(*mesh)*1e4;
-    double V = CGAL::Polygon_mesh_processing::volume(*mesh)*1e6;
-    std::cout << "Built mesh with " << faces.size() << " triangles (" << A << "cm2, " << V << "cm3)\n";
-    if (not CGAL::is_closed(*mesh))
-        throw std::runtime_error("Mesh is not closed");
-        //std::cout << "Mesh is not closed!\n";
-    if (not CGAL::Polygon_mesh_processing::does_bound_a_volume(*mesh))
-        throw std::runtime_error("Mesh does not bound a volume");
-        //std::cout << "Mesh does not bound a volume!\n";
-    if (CGAL::Polygon_mesh_processing::does_self_intersect(*mesh))
-        throw std::runtime_error("Mesh is self-intersecting");
-        //std::cout << "Mesh is self-intersecting\n";
+
+    if (not PMP::is_polygon_soup_a_polygon_mesh(faces))
+        //throw(std::runtime_error("Triangles do not form a mesh"));
+        std::cerr << "Triangles do not form a mesh\n";
+    PMP::polygon_soup_to_polygon_mesh(vertices, faces, *mesh);
+//    CGAL::Polygon_mesh_processing::duplicate_non_manifold_vertices(*mesh);
+    double A = PMP::area(*mesh)*1e4;
+    double V = PMP::volume(*mesh)*1e6;
+
+    auto fccmap = mesh->add_property_map<fd, boost::graph_traits<CMesh>::faces_size_type>("f:CC").first;
+    auto num = PMP::connected_components(*mesh, fccmap);
+    std::cout << "built mesh with " << mesh->number_of_faces() << " triangles and " << num << " components (" << A << "cm2, " << V << "cm3)\n";
+    int affected_components = 0;
+    double border_length = 0.;
+    double self_intersecting_area = 0.;
+    for (size_t i = 0; i < num; ++i) {
+        CGAL::Face_filtered_graph<CMesh> ffg(*mesh, i, fccmap);
+        bool not_closed = not CGAL::is_closed(ffg);
+        bool not_bounding = not PMP::does_bound_a_volume(ffg);
+        bool self_intersecting = PMP::does_self_intersect(ffg);
+        if (not_closed){
+            std::vector<boost::graph_traits<CMesh>::halfedge_descriptor> border_edges;
+            PMP::border_halfedges(ffg, std::back_inserter(border_edges));
+            for (auto edge: border_edges)
+                border_length += PMP::edge_length(edge, *mesh);
+        }
+        if (self_intersecting){
+            std::vector<std::pair<fd, fd> > self_intersecting_face_pairs;
+            PMP::self_intersections(ffg, std::back_inserter(self_intersecting_face_pairs));
+            std::set<fd> self_intersecting_faces;
+            for (auto face_pair: self_intersecting_face_pairs) {
+                self_intersecting_faces.insert(face_pair.first);
+                self_intersecting_faces.insert(face_pair.second);
+            }
+            for (auto face: self_intersecting_faces)
+                self_intersecting_area += PMP::face_area(face, *mesh);
+        }
+        if (not_closed or not_bounding or self_intersecting) {
+            ++affected_components;
+        }
+    }
+    if (affected_components > 0) {
+        std::cerr << "\nWarning: " << affected_components << " of " << num << " components have holes with total circumference "
+                  << border_length * 1e2 << "cm and " << self_intersecting_area * 1e4
+                  << "cm2 of their area is self-intersecting!\n\n";
+    }
+    std::cerr.precision(cout_precision);
+    std::cerr.precision(cerr_precision);
 
     std::vector<double> areas;
     std::transform(mesh->faces_begin(), mesh->faces_end(), std::back_inserter(areas), [&mesh](const CMesh::Face_index &fi){ return CGAL::Polygon_mesh_processing::face_area(fi, *mesh); });
