@@ -108,8 +108,9 @@ void TabField3::ReadTabFile(const std::string &tabfile,
 	}
 
 	std::vector<double> xind(xl), yind(yl), zind(zl);
-	int xi = 0, yi = 0, zi = -1, perc = 0;
+	int xi = 0, yi = 0, zi = -1;
 	double x, y, z, val;
+	progress_display progress(xl*yl*zl, std::cout);
 	while (FIN.good()){
 		FIN >> x;
 		FIN >> y;
@@ -130,7 +131,7 @@ void TabField3::ReadTabFile(const std::string &tabfile,
 
 		int i3 = INDEX_3D(xi, yi, zi, xl, yl, zl);
 		// status if read is displayed
-		PrintPercent((float)i3/(xl*yl*zl), perc);
+		++progress;
 
 		xind[xi] = x;
 		yind[yi] = y;

@@ -262,7 +262,7 @@ void TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2,
 			x2 = x1 + abspath/l*(x2 - x1); // if absorbed, interpolate stopping time and position
 			stepper.calc_state(x2, y2);
 			ID = ID_ABSORBED_IN_MATERIAL;
-			printf("Absorption!\n");
+//			printf("Absorption!\n");
 		}
 	}
 }

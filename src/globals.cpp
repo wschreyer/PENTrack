@@ -34,19 +34,6 @@ long long int jobnumber = 0; ///< job number, read from command line paramters, 
 boost::filesystem::path configpath = boost::filesystem::current_path() / "in/config.in"; ///< path to configuration files, read from command line paramters
 boost::filesystem::path outpath = boost::filesystem::current_path() / "out/"; ///< path where the log file should be saved to, read from command line parameters
 
-// print progress in percent
-void PrintPercent(double percentage, int &lastprint){
-	// write status to console
-	// one point per 2 percent of endtime
-	while (lastprint < percentage*100){
-		lastprint += 2;
-		if (lastprint % 10 == 0)
-			std::cout << lastprint << "%";
-		else
-			std::cout << ".";
-//		std::cout.flush();
-	}
-}
 
 // rotate vector into new coordinate whose z axis is parallel to n and whose x axis is defined by the projection of x onto the plane defined by n (active transformation)
 void RotateVector(double v[3], const double n[3], const double x[3])

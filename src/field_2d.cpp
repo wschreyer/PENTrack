@@ -87,8 +87,9 @@ void TabField::ReadTabFile(const std::string &tabfile, alglib::real_1d_array &ri
 		exit(-1);
 	}
 
-	int ri = 0,zi = -1, perc = 0;
+	int ri = 0,zi = -1;
 	double r, z, val;
+	progress_display progress(n*m, std::cout);
 	while (FIN.good()){
 		FIN >> r;
 		if (!skipy) FIN >> val;
@@ -103,7 +104,7 @@ void TabField::ReadTabFile(const std::string &tabfile, alglib::real_1d_array &ri
 		else zi++;
 
 		// status if read is displayed
-		PrintPercent((float)zi*ri/(n*m), perc);
+		++progress;
 
 
 		rind[ri] = r;

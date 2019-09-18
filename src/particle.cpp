@@ -113,10 +113,9 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 	double maxtraj;
 	istringstream(particleconf["lmax"]) >> maxtraj;
 
-	int perc = 0;
-	cout << "Particle no.: " << particlenumber << " particle type: " << name << '\n';
-	cout << "x: " << yend[0] << "m y: " << yend[1] << "m z: " << yend[2]
-		 << "m E: " << GetFinalKineticEnergy() << "eV t: " << tend << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
+//	cout << "Particle no.: " << particlenumber << " particle type: " << name << '\n';
+//	cout << "x: " << yend[0] << "m y: " << yend[1] << "m z: " << yend[2]
+//		 << "m E: " << GetFinalKineticEnergy() << "eV t: " << tend << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
 
 	// set initial values for integrator
 	value_type x = tend;
@@ -172,6 +171,8 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 
 	dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
 	stepper.initialize(y, x, 10.*MAX_TRACK_DEVIATION/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])); // initialize stepper with fixed spatial length
+
+	progress_display progress(100, std::cout, std::to_string(particlenumber) + ": ");
 
 	while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 		if (resetintegration){
@@ -230,7 +231,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 			if (stepper.previous_time() <= nextsnapshot && x > nextsnapshot){
 				state_type ysnap(STATE_VARIABLES);
 				stepper.calc_state(nextsnapshot, ysnap);
-				cout << "\n Snapshot at " << nextsnapshot << " s \n";
+//				cout << "\n Snapshot at " << nextsnapshot << " s \n";
 
 				Print(nextsnapshot, ysnap, spin, geom, field, snapshotLog);
 				snapshots >> nextsnapshot;
@@ -248,7 +249,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 			lastsave = x;
 		}
 
-		PrintPercent(max(y[6]/tau, max((x - tstart)/(tmax - tstart), y[8]/maxtraj)), perc);
+		progress += 100*max(y[6]/tau, max((x - tstart)/(tmax - tstart), y[8]/maxtraj)) - progress.count();
 		
 		if (ID == ID_UNKNOWN && y[6] >= tau) // proper time >= tau?
 			ID = ID_DECAYED;
@@ -256,7 +257,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 			ID = ID_NOT_FINISH;
 	}
 
-	cout << "Done" << endl;
+//	cout << "Done" << endl;
 
 	tend = x;
 	yend = y;
@@ -265,21 +266,21 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 	Print(tend, yend, spinend, geom, field, endLog);
 
 	if (ID == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
-		cout << "Decayed!\n";
+//		cout << "Decayed!\n";
 		Decay(tend, yend, mc, geom, field, secondaries);
 	}
 
-	cout << "x: " << yend[0];
-	cout << " y: " << yend[1];
-	cout << " z: " << yend[2];
-	cout << " E: " << GetFinalKineticEnergy();
-	cout << " Code: " << ID;
-	cout << " t: " << tend;
-	cout << " l: " << yend[8];
-	cout << " hits: " << Nhit;
-	cout << " spinflips: " << Nspinflip << '\n';
-	cout << "Computation took " << Nstep << " steps\n";
-	cout << "Done!!\n\n";
+//	cout << "x: " << yend[0];
+//	cout << " y: " << yend[1];
+//	cout << " z: " << yend[2];
+//	cout << " E: " << GetFinalKineticEnergy();
+//	cout << " Code: " << ID;
+//	cout << " t: " << tend;
+//	cout << " l: " << yend[8];
+//	cout << " hits: " << Nhit;
+//	cout << " spinflips: " << Nspinflip << '\n';
+//	cout << "Computation took " << Nstep << " steps\n";
+//	cout << "Done!!\n\n";
 //			cout.flush();
 }
 
@@ -344,7 +345,7 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 		return 0;
 	}
 	else if (Babs1 == 0 && Babs2 > 0){ // if particle enters magnetic field
-		std::cout << "Entering magnetic field\n";
+//		std::cout << "Entering magnetic field\n";
 		if (!flipspin) // if polarization should stay constant
 			polarisation = y1[7]; // take polarization from state vector
 		else{
@@ -371,8 +372,8 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 	}
 
 	if ((integrate1 || integrate2) && (Babs1 < Bmax || Babs2 < Bmax)){ // do spin integration only, if time is in specified range and field is smaller than Bmax
-		if ((!integrate1 && integrate2) || (Babs1 > Bmax && Babs2 < Bmax))
-			std::cout << x1 << "s " << y1[7] - polarisation << " ";
+//		if ((!integrate1 && integrate2) || (Babs1 > Bmax && Babs2 < Bmax))
+//			std::cout << x1 << "s " << y1[7] - polarisation << " ";
 
 		vector<alglib::spline1dinterpolant> omega_int;
 		if (interpolatefields){
@@ -443,8 +444,8 @@ double TParticle::IntegrateSpin(state_type &spin, const dense_stepper_type &step
 
 	if (Babs2 > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
 		double flipprob = 0.5*(1 - y2[7]*polarisation);
-		if ((integrate1 || integrate2) && Babs1 < Bmax)
-			std::cout << x2 << "s flipprob " << flipprob << "\n";
+//		if ((integrate1 || integrate2) && Babs1 < Bmax)
+//			std::cout << x2 << "s flipprob " << flipprob << "\n";
 		if (flipspin){
 			polarization_distribution<double> pdist(polarisation);
 			y2[7] = pdist(mc);
@@ -665,7 +666,7 @@ bool TParticle::iterate_collision(value_type &x1, state_type &y1, value_type &x2
 bool TParticle::CheckHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
 		TMCGenerator &mc, const TGeometry &geom, const bool hitlog){
   if (!geom.CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
-    printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
+//    printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
     ID = ID_HIT_BOUNDARIES;
     return true;
   }
@@ -725,11 +726,10 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 		else if (logType == snapshotLog)
 			filename << "snapshot.out";
 		boost::filesystem::path outfile = outpath / filename.str();
-		cout << "Creating " << outfile << '\n';
+//		cout << "Creating " << outfile << '\n';
 		file.open(outfile.c_str());
 		if (!file.is_open()){
-			cout << "Could not create" << outfile << '\n';
-			exit(-1);
+			throw std::runtime_error("Could not create" + outfile.native());
 		}
 		file <<	"jobnumber particle "
 					"tstart xstart ystart zstart "
@@ -744,7 +744,7 @@ void TParticle::Print(const value_type x, const state_type &y, const state_type 
 					"Nhit Nstep trajlength Hmax wL\n";
 		file << std::setprecision(std::numeric_limits<double>::digits10); // need maximum precision for wL and delwL 
 	}
-	cout << "Printing status\n";
+//	cout << "Printing status\n";
 
 	value_type E = GetKineticEnergy(&y[3]);
 	double B[3], Ei[3], V;
@@ -784,11 +784,10 @@ void TParticle::PrintTrack(const value_type x, const state_type &y, const state_
 		ostringstream filename;
 		filename << setw(12) << setfill('0') << jobnumber << name << "track.out";
 		boost::filesystem::path outfile = outpath / filename.str();
-		cout << "Creating " << outfile << '\n';
+//		cout << "Creating " << outfile << '\n';
 		trackfile.open(outfile.c_str());
 		if (!trackfile.is_open()){
-			cout << "Could not create" << outfile << '\n';
-			exit(-1);
+			throw std::runtime_error("Could not create" + outfile.native());
 		}
 		trackfile << 	"jobnumber particle polarisation "
 						"t x y z vx vy vz "
@@ -797,7 +796,7 @@ void TParticle::PrintTrack(const value_type x, const state_type &y, const state_
 		trackfile.precision(10);
 	}
 
-	cout << "-";
+//	cout << "-";
 	double B[3] = {0,0,0};
 	double dBidxj[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
 	double E[3] = {0,0,0};
@@ -825,11 +824,10 @@ void TParticle::PrintHit(const value_type x, const state_type &y1, const state_t
 		ostringstream filename;
 		filename << setw(12) << setfill('0') << jobnumber << name << "hit.out";
 		boost::filesystem::path outfile = outpath / filename.str();
-		cout << "Creating " << outfile << '\n';
+//		cout << "Creating " << outfile << '\n';
 		hitfile.open(outfile.c_str());
 		if (!hitfile.is_open()){
-			cout << "Could not create" << outfile << '\n';
-			exit(-1);
+			throw std::runtime_error("Could not create" + outfile.native());
 		}
 		hitfile << "jobnumber particle "
 					"t x y z v1x v1y v1z pol1 "
@@ -838,7 +836,7 @@ void TParticle::PrintHit(const value_type x, const state_type &y1, const state_t
 		hitfile.precision(10);
 	}
 
-	cout << ":";
+//	cout << ":";
 	hitfile << jobnumber << " " << particlenumber << " "
 			<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << y1[7] << " "
 			<< y2[3] << " " << y2[4] << " " << y2[5] << " " << y2[7] << " "
@@ -852,19 +850,18 @@ void TParticle::PrintSpin(const value_type x, const state_type &spin, const dens
 		std::ostringstream filename;
 		filename << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << name << "spin.out";
 		boost::filesystem::path outfile = outpath / filename.str();
-		std::cout << "Creating " << outfile << '\n';
+//		std::cout << "Creating " << outfile << '\n';
 		spinfile.open(outfile.c_str());
 		if(!spinfile.is_open())
 		{
-			std::cout << "Could not open " << outfile << '\n';
-			exit(-1);
+			throw std::runtime_error("Could not open " + outfile.native());
 		}
 
 		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
 		spinfile << std::setprecision(std::numeric_limits<double>::digits10);
 		spinfile << "jobnumber particle t Sx Sy Sz Wx Wy Wz\n";
 	}
-	std::cout << "/";
+//	std::cout << "/";
 	double Omega[3];
 	SpinPrecessionAxis(x, stepper, field, Omega[0], Omega[1], Omega[2]);
 

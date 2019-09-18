@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <string>
+#include <iostream>
 
 #include <boost/filesystem.hpp>
 
@@ -53,15 +55,79 @@ extern long long int jobnumber; ///< job number, read from command line paramter
 extern boost::filesystem::path configpath; ///< path to configuration file, read from command line paramters
 extern boost::filesystem::path outpath; ///< path where the log file should be saved to, read from command line parameters
 
-/**
- * Print progress bar.
- *
- * Prints a point every 2% and a number every 10%
- *
- * @param percentage Progress of current action (0..1)
- * @param lastprint Put in and return last printed percentage
- */
-void PrintPercent(double percentage, int &lastprint);
+class progress_display{
+private:
+    unsigned long _count;
+    unsigned long _expected_count;
+    std::ostream& _os;
+    std::string _s1;
+
+    void print_progress(){
+        _os << '\r' << _s1;
+        for (unsigned long i = 0; i <= 100; ++i) {
+            if (i == 0)
+                _os << '[';
+            else if (i == 100)
+                _os << ']';
+            else if (i % 10 == 0)
+                _os << '|';
+            else if (i > 100 * _count / _expected_count)
+                _os << ' ';
+            else
+                _os << '-';
+        }
+        _os.flush();
+    }
+public:
+    progress_display( unsigned long expected_count ): _os(std::cout){
+        restart(expected_count);
+    }
+    // Effects: restart(expected_count)
+
+    progress_display( unsigned long expected_count,
+                      std::ostream& os,
+                      const std::string & s1 = ""): _os(std::cout){
+        _s1 = s1;
+        restart(expected_count);
+    }
+    // Effects: save copy of leading strings, restart(expected_count)
+
+    void restart( unsigned long expected_count ){
+        _expected_count = expected_count;
+        _count = 0;
+        print_progress();
+    }
+    //  Effects: display appropriate scale on three lines,
+    //  prefaced by stored copy of s1, s2, s3, respectively, from constructor
+    //  Postconditions: count()==0, expected_count()==expected_count
+
+    unsigned long operator+=( unsigned long increment ){
+        unsigned long acount = _count;
+        _count += increment;
+        if (100*_count/_expected_count > 100*acount/_expected_count)
+            print_progress();
+        return _count;
+    }
+    //  Effects: Display appropriate progress tic if needed.
+    //  Postconditions: count()== original count() + increment
+    //  Returns: count().
+
+    unsigned long operator++(){
+        return operator+=(1);
+    }
+    //  Returns: operator+=( 1 ).
+
+    unsigned long count() const{
+        return _count;
+    }
+    //  Returns: The internal count.
+
+    unsigned long expected_count() const{
+        return _expected_count;
+    }
+    //  Returns: The expected_count from the constructor.
+
+}; // progress_display
 
 /**
  * Rotate a vector.
