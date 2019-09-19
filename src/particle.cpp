@@ -172,7 +172,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 	dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
 	stepper.initialize(y, x, 10.*MAX_TRACK_DEVIATION/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])); // initialize stepper with fixed spatial length
 
-	progress_display progress(100, std::cout, std::to_string(particlenumber) + ": ");
+//	progress_display progress(100, std::cout, ' ' + std::to_string(particlenumber) + ' ');
 
 	while (ID == ID_UNKNOWN){ // integrate as long as nothing happened to particle
 		if (resetintegration){
@@ -249,7 +249,7 @@ void TParticle::Integrate(double tmax, std::map<std::string, std::string> &parti
 			lastsave = x;
 		}
 
-		progress += 100*max(y[6]/tau, max((x - tstart)/(tmax - tstart), y[8]/maxtraj)) - progress.count();
+//		progress += 100*max(y[6]/tau, max((x - tstart)/(tmax - tstart), y[8]/maxtraj)) - progress.count();
 		
 		if (ID == ID_UNKNOWN && y[6] >= tau) // proper time >= tau?
 			ID = ID_DECAYED;

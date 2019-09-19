@@ -62,22 +62,6 @@ private:
     std::ostream& _os;
     std::string _s1;
 
-    void print_progress(){
-        _os << '\r' << _s1;
-        for (unsigned long i = 0; i <= 100; ++i) {
-            if (i == 0)
-                _os << '[';
-            else if (i == 100)
-                _os << ']';
-            else if (i % 10 == 0)
-                _os << '|';
-            else if (i > 100 * _count / _expected_count)
-                _os << ' ';
-            else
-                _os << '-';
-        }
-        _os.flush();
-    }
 public:
     progress_display( unsigned long expected_count ): _os(std::cout){
         restart(expected_count);
@@ -86,7 +70,7 @@ public:
 
     progress_display( unsigned long expected_count,
                       std::ostream& os,
-                      const std::string & s1 = ""): _os(std::cout){
+                      const std::string & s1 = "\n"): _os(std::cout){
         _s1 = s1;
         restart(expected_count);
     }
@@ -95,7 +79,7 @@ public:
     void restart( unsigned long expected_count ){
         _expected_count = expected_count;
         _count = 0;
-        print_progress();
+        _os << _s1 << "0%";
     }
     //  Effects: display appropriate scale on three lines,
     //  prefaced by stored copy of s1, s2, s3, respectively, from constructor
@@ -104,8 +88,16 @@ public:
     unsigned long operator+=( unsigned long increment ){
         unsigned long acount = _count;
         _count += increment;
-        if (100*_count/_expected_count > 100*acount/_expected_count)
-            print_progress();
+        unsigned long percent = 100*_count/_expected_count;
+        if (percent > 100*acount/_expected_count) {
+            if (percent == 100)
+                _os << "100%";
+            else if (percent % 10 == 0)
+                _os << percent << "%";
+            else
+                _os << ".";
+            _os.flush();
+        }
         return _count;
     }
     //  Effects: Display appropriate progress tic if needed.

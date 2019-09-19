@@ -166,7 +166,6 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, const TGeometry &geom
 		double t = timedist(mc);
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z, mc);
-		cout << '\n';
 		return TParticleSource::CreateParticle(t, x, y, z, spectrum(mc), phi_v(mc), theta_v(mc), polarization, mc, geometry, field);
 	}
 }

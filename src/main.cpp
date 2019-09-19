@@ -147,6 +147,8 @@ int main(int argc, char **argv){
 	map<string, map<int, int> > ID_counter; // 2D map to store number of each ID for each particle type
 
 	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
+	    cout << "Simulating " << simcount << " " << source->GetParticleName() << "s...\n";
+        progress_display progress(simcount);
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			TParticle *p = source->CreateParticle(mc, geom, field);
@@ -164,6 +166,7 @@ int main(int argc, char **argv){
 			}
 
 			delete p;
+            ++progress;
 		}
 	}
 	else{
