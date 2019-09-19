@@ -34,7 +34,7 @@ void TProton::OnStep(const value_type x1, const state_type &y1, value_type &x2, 
 		x2 = x1;
 		y2 = y1;
 		ID = ID_ABSORBED_IN_MATERIAL;
-		printf("Absorption!\n");
+//		printf("Absorption!\n");
 	}
 }
 

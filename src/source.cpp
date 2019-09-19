@@ -94,9 +94,9 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
 void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
 	cout << "Sampling phase space ";
 	const int N = 100000;
-	int percent = 0;
+	progress_display progress(N);
 	for (int i = 0; i < N; i++){
-		PrintPercent((double)i/N, percent);
+	    ++progress;
 		std::uniform_real_distribution<double> timedist(0, fActiveTime);
 		double t = timedist(mc);
 		double x, y, z;
@@ -128,7 +128,7 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 			H = spectrum(mc); // dice total(!) energy until one above minimum potential is found
 		}while (H < MinPot);
 
-		cout << "Trying to find starting point for particle with total energy " << H << "eV ...";
+//		cout << "Trying to find starting point for particle with total energy " << H << "eV ...";
 		for (int i = 0; true; i++){
 			double t = timedist(mc); // dice start time
 			double x, y, z;
@@ -142,7 +142,7 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 				continue; // if total energy < potential energy then particle is not possible at this point
 			std::uniform_real_distribution<double> Hdist(0, sqrt(H - MinPot));
 			if (sqrt(H - V) > Hdist(mc)){ // accept particle with probability sqrt(H-V)/sqrt(H-Vmin) (phase space weighting according to Golub)
-				cout << " found after " << i+1 << " tries\n";
+//				cout << " found after " << i+1 << " tries\n";
 				return TParticleSource::CreateParticle(t, x, y, z, H - V, phi_v(mc), theta_v(mc), polarization, mc, geometry, field); // if accepted, return new particle with correct Ekin
 			}
 		}
@@ -152,7 +152,6 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 		double t = timedist(mc);
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z, mc);
-		cout << '\n';
 		return TParticleSource::CreateParticle(t, x, y, z, spectrum(mc), phi_v(mc), theta_v(mc), polarization, mc, geometry, field);
 	}
 }
@@ -180,7 +179,7 @@ TParticleSource* CreateParticleSource(TConfig &config, const TGeometry &geometry
 	}
 	else
 		throw std::runtime_error((boost::format("Could not load source %1%!") % sourcemode).str());
-	cout << '\n';
+//	cout << '\n';
 
 	return source;
 }

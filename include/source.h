@@ -43,6 +43,13 @@ public:
 	}
 
 	/**
+	 * Return name of particle to be created
+	 */
+	 std::string GetParticleName() const{
+	     return fParticleName;
+	 }
+
+	/**
 	 * Basic creation of a new particle. Maps particle name to the corresponding class
 	 *
 	 * @param t Starting time

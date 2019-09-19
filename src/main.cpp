@@ -143,9 +143,12 @@ int main(int argc, char **argv){
 	// simulation time counter
 	chrono::time_point<chrono::steady_clock> simstart = chrono::steady_clock::now();
 
+	cout << "\n";
 	map<string, map<int, int> > ID_counter; // 2D map to store number of each ID for each particle type
 
 	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
+	    cout << "Simulating " << simcount << " " << source->GetParticleName() << "s...\n";
+        progress_display progress(simcount);
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			TParticle *p = source->CreateParticle(mc, geom, field);
@@ -163,12 +166,14 @@ int main(int argc, char **argv){
 			}
 
 			delete p;
+            ++progress;
 		}
 	}
 	else{
 		printf("\nDon't know simtype %i! Exiting...\n",simtype);
 		exit(-1);
 	}
+	cout << '\n';
 
 	OutputCodes(ID_counter); // print particle IDs
 	
@@ -340,12 +345,12 @@ void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpath
 	double theta_end = MRThetaIEnergyParams[4];
 	double neute_start = MRThetaIEnergyParams[5];
 	double neute_end = MRThetaIEnergyParams[6];
-	int prevProg=0;
 	double norm[] = { 0, 0, 1 };
  	//write the integrated mrprob values to the output file 
+ 	progress_display progress(100);
 	for (double theta = theta_start; theta<theta_end; theta += (theta_end-theta_start)/100) {
 		//since this part can be slow it is helpful to monitor the progress
-		PrintPercent((theta - theta_start)/(theta_end - theta_start), prevProg);
+        progress += 100*(theta - theta_start)/(theta_end - theta_start) - progress.count();
 
 		for (double energy = neute_start; energy<neute_end; energy += (neute_end-neute_start)/100) {
 			//determine neutron velocity corresponding to the energy and create a state_type vector from it
