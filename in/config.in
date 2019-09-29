@@ -162,7 +162,7 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 # Note that rapidly changing fields might be missed by the trajectory integrator making too large time steps
 ##################################################
 #field 		table-file	BFieldScale	EFieldScale	BoundaryWidth	CoordinateScale
-1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab			t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))*0.0001	-100  0   0.01  ### this table file has CGS units
+1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab			t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))*0.0001	1  0   0.01  ### this table file has CGS units
 #3 OPERA3D	3Dtable.tab	1		1		0		1
 #4 COMSOL	comsol.txt	1		1		0		1
 
