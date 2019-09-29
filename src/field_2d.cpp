@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "boost/format.hpp"
+
 #include "globals.h"
 
 using namespace std;
@@ -29,7 +31,21 @@ void CylToCart(const double v_r, const double v_phi, const double phi, double &v
 }
 
 
-void TabField::ReadTabFile(const std::string &tabfile, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+std::unique_ptr<TabField> ReadOperaField2(const std::string &params){
+    std::istringstream ss(params);
+    boost::filesystem::path ft;
+    std::string fieldtype, Bscale, Escale;
+    double BoundaryWidth, lengthconv;
+    ss >> fieldtype >> ft >> Bscale >> Escale >> BoundaryWidth >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
+    if (!ss){
+        throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
+    }
+
+    return std::unique_ptr<TabField>(new TabField(boost::filesystem::absolute(ft, configpath.parent_path()).string(), Bscale, Escale, lengthconv));
+}
+
+
+void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
 		alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab){
 	ifstream FIN(tabfile, ifstream::in);
 	if (!FIN.is_open()){
@@ -111,27 +127,27 @@ void TabField::ReadTabFile(const std::string &tabfile, alglib::real_1d_array &ri
 		int i2 = zi * m + ri;
 		if (BTabs[0].length() > 0){
 			FIN >> val;
-			BTabs[0][i2] = val*Bconv;
+			BTabs[0][i2] = val;
 		}
 		if (BTabs[1].length() > 0){
 			FIN >> val;
-			BTabs[1][i2] = val*Bconv;
+			BTabs[1][i2] = val;
 		}
 		if (BTabs[2].length() > 0){
 			FIN >> val;
-			BTabs[2][i2] = val*Bconv;
+			BTabs[2][i2] = val;
 		}
 		if (ETabs[0].length() > 0){
 			FIN >> val;
-			ETabs[0][i2] = val*Econv;
+			ETabs[0][i2] = val;
 		}
 		if (ETabs[1].length() > 0){
 			FIN >> val;
-			ETabs[1][i2] = val*Econv;
+			ETabs[1][i2] = val;
 		}
 		if (ETabs[2].length() > 0){
 			FIN >> val;
-			ETabs[2][i2] = val*Econv;
+			ETabs[2][i2] = val;
 		}
 		if (VTab.length() > 0){
 			FIN >> val;
@@ -183,17 +199,13 @@ void TabField::CheckTab(const alglib::real_1d_array &rind, const alglib::real_1d
 		}
 	}
 
-	std::cout << "The input table file has values of |B| from " << Babsmin << " T to " << Babsmax << " T and values of V from " << Vmin << " V to " << Vmax << " V\n";
+	std::cout << "The input table file has values of |B| from " << Babsmin << " to " << Babsmax << " and values of V from " << Vmin << " V to " << Vmax << " V\n";
 }
 
-TabField::TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale,
-		const double alengthconv, const double aBconv, const double aEconv): TField(Bscale, Escale){
-	lengthconv = alengthconv;
-	Bconv = aBconv;
-	Econv = aEconv;
+TabField::TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale, const double alengthconv): TField(Bscale, Escale){
 	alglib::real_1d_array rind, zind, BTabs[3], ETabs[3], VTab;
 
-	ReadTabFile(tabfile, rind, zind, BTabs, ETabs, VTab); // open tabfile and read values into arrays
+	ReadTabFile(tabfile, alengthconv, rind, zind, BTabs, ETabs, VTab); // open tabfile and read values into arrays
 
 	CheckTab(rind, zind, BTabs, ETabs, VTab); // print some info
 

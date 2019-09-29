@@ -6,6 +6,8 @@
 #ifndef FIELD_2D_H_
 #define FIELD_2D_H_
 
+#include <memory>
+
 #include "field.h"
 
 #include "interpolation.h"
@@ -28,9 +30,6 @@ class TabField: public TField{
 		double z_mi; ///< lower axial coordinate of rectangular grid
 		bool fBrc, fBphic, fBzc, fErc, fEphic, fEzc, fVc; ///< remember which field components were loaded from table file
 		alglib::spline2dinterpolant Brc, Bphic, Bzc, Erc, Ephic, Ezc, Vc; ///< spline interpolant for each field component
-		double lengthconv; ///< Factor to convert length units in file to PENTrack units
-		double Bconv; ///< Factor to convert magnetic field units in file to PENTrack units
-		double Econv; ///< Factor to convert electric field units in file to PENTrack units
 
 
 		/**
@@ -48,7 +47,7 @@ class TabField: public TField{
 		 * @param ETabs Three vectors containing electric field components at each grid point
 		 * @param VTab Vector containing electric potential at each grid point
 		 */
-		void ReadTabFile(const std::string &tabfile, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+		void ReadTabFile(const std::string &tabfile, const double lengthconv, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
 						alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab);
 
 
@@ -75,13 +74,8 @@ class TabField: public TField{
 		 * @param Bscale Time-dependent scaling formula for magnetic field
 		 * @param Escale Time-dependent scaling formula for electric field
 		 * @param alengthconv Factor to convert length units in file to PENTrack units (default: expect cm (cgs), convert to m)
-		 * @param aBconv Factor to convert magnetic field units in file to PENTrack units (default: expect Gauss (cgs), convert to Tesla)
-		 * @param aEconv Factor to convert electric field units in file to PENTrack units (default: expect V/cm (cgs), convert to V/m)
 		 */
-		TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale,
-				const double alengthconv = 0.01, const double aBconv = 1e-4, const double aEconv = 100.);
-
-		~TabField();
+		TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale, const double alengthconv);
 
 		/**
 		 * Get magnetic field at a specific point.
@@ -116,5 +110,6 @@ class TabField: public TField{
 				double &V, double Ei[3]) const override;
 };
 
+std::unique_ptr<TabField> ReadOperaField2(const std::string &params);
 
 #endif // FIELD_2D_H_

@@ -84,7 +84,7 @@ Magnetic and electric fields (2D and 3D) can be included from text-based field m
 3D maps can contain generic columns for x, y, z, Bx, By, Bz on a rectilinear grid. Lines beginning with % or # will be skipped, columns may be delineated by space, comma, or tab.
 3D maps can also be exported from OPERA with columns x, y, z, Bx, By, Bz, V on a rectilinear grid (each field column is optional).
 Units for field maps are assumed to be in meters, Tesla, and Volts, but each can be scaled individually.
-You can also define analytic fields from straight, finite conductors and homogeneous field with small gradients.
+You can also define a variety of analytically calculated fields. See default config file for more information.
 Every field type can be scaled with a user-defined time-dependent formula to simulate oscillating fields or magnets that are ramped up and down.
 
 ### Particle sources
