@@ -28,7 +28,7 @@ void TExponentialFieldX::BField(const double x, const double y, const double z, 
 		B[0] = a1 * exp(- a2* x + a3) + c1; //Bx contribution
 		B[1] = y * a1 * a2 / 2 * exp(- a2* x + a3) + c2; //By contribution
 		B[2] = z* a1 * a2 / 2 * exp(- a2* x + a3) + c2; //Bz contribution
-		if (dBidxj != NULL){
+		if (dBidxj != nullptr){
 			dBidxj[0][0] = -a2 * a1 * exp(- a2* x + a3); // dBxdx
 			dBidxj[0][1] = 0; //dBxdy
 			dBidxj[0][2] = 0; //dBxdz
@@ -43,7 +43,7 @@ void TExponentialFieldX::BField(const double x, const double y, const double z, 
 		//Field is 0 outside of bounds
 		for (int i = 0; i < 3; i++){
 			B[i] = 0;
-			if (dBidxj != NULL){
+			if (dBidxj != nullptr){
 				for (int j = 0; j < 3; j++)
 					dBidxj[i][j] = 0;
 			}
@@ -74,7 +74,7 @@ void TLinearFieldZ::BField(const double x, const double y, const double z, const
 		B[0] = 0; //Bx contribution
 		B[1] = 0; //By contribution
 		B[2] = a1*x + a2; //Bz contribution
-		if (dBidxj != NULL){
+		if (dBidxj != nullptr){
 			dBidxj[0][0] = 0; // dBxdx
 			dBidxj[0][1] = 0; //dBxdy
 			dBidxj[0][2] = 0; //dBxdz
@@ -89,7 +89,7 @@ void TLinearFieldZ::BField(const double x, const double y, const double z, const
 		//Field is 0 outside of bounds
 		for (int i = 0; i < 3; i++){
 			B[i] = 0;
-			if (dBidxj != NULL){
+			if (dBidxj != nullptr){
 				for (int j = 0; j < 3; j++)
 					dBidxj[i][j] = 0;
 			}

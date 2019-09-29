@@ -247,10 +247,6 @@ TabField::TabField(const std::string &tabfile, const std::string &Bscale, const 
 	cout << "Done\n";
 }
 
-TabField::~TabField(){
-}
-
-
 void TabField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double r = sqrt(x*x+y*y);
 	double Bscale = BScaling(t);
@@ -301,13 +297,23 @@ void TabField::BField(const double x, const double y, const double z, const doub
 
 
 void TabField::EField(const double x, const double y, const double z, const double t,
-		double &V, double Ei[3], double dEidxj[3][3]) const{
+		double &V, double Ei[3]) const{
 	double r = sqrt(x*x+y*y);
 	double Escale = EScaling(t);
 	if (Escale != 0 && r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
-		if (fErc || fEphic || fEzc){ // prefer E-field interpolation over potential interpolation
+        if (fVc){ // prefer potential interpolation over E-field interpolation
+            double Vloc, dVdrj[3], dummy;
+            // bicubic interpolation
+            alglib::spline2ddiff(Vc, r, z, Vloc, dVdrj[0], dVdrj[2], dummy);
+            double phi = atan2(y,x);
+            V = Vloc*Escale;
+            Ei[0] = -dVdrj[0]*cos(phi)*Escale;
+            Ei[1] = -dVdrj[0]*sin(phi)*Escale;
+            Ei[2] = -dVdrj[2]*Escale;
+        }
+		else if (fErc || fEphic || fEzc){
 			double phi = atan2(y,x);
-			if (dEidxj == NULL){
+//			if (dEidxj == nullptr){
 				alglib::real_1d_array Er("[0]"), Ephi("[0]"), Ez("[0]");
 				double Ex, Ey;
 				if (fErc)
@@ -320,7 +326,7 @@ void TabField::EField(const double x, const double y, const double z, const doub
 				Ei[0] = Ex*Escale; // set electric field
 				Ei[1] = Ey*Escale;
 				Ei[2] = Ez[0]*Escale;
-			}
+/*			}
 			else{
 				double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0, dummy;
 				double dErdr, dErdz, dEphidr, dEphidz, dEzdr, dEzdz, dExdz, dEydz;
@@ -347,18 +353,7 @@ void TabField::EField(const double x, const double y, const double z, const doub
 				dEidxj[2][0] = dEzdr*cos(phi)*Escale;
 				dEidxj[2][1] = dEzdr*sin(phi)*Escale;
 				dEidxj[2][2] = dEzdz*Escale;
-			}
-		}
-		else if (fVc){
-			double Vloc, dVdrj[3], dummy;
-			// bicubic interpolation
-			alglib::spline2ddiff(Vc, r, z, Vloc, dVdrj[0], dVdrj[2], dummy);
-			double phi = atan2(y,x);
-			V = Vloc*Escale;
-			Ei[0] = -dVdrj[0]*cos(phi)*Escale;
-			Ei[1] = -dVdrj[0]*sin(phi)*Escale;
-			Ei[2] = -dVdrj[2]*Escale;
-			// !!!!!!!!!!! calculation of electric field derivatives not yet implemented for potential interpolation !!!!!!!!!!!!!!!!
+			}*/
 		}
 
 	}

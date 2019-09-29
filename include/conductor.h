@@ -35,7 +35,7 @@ public:
 	 * For parameter doc see TField::BField.
 	 */
 	void BField(const double x, const double y, const double z, const double t,
-			double B[3], double dBidxj[3][3] = NULL) const;
+			double B[3], double dBidxj[3][3]) const override;
 
 	/**
 	 * Conductors produce no electric field.
@@ -43,7 +43,7 @@ public:
 	 * For parameter doc see TField::EField.
 	 */
 	void EField(const double x, const double y, const double z, const double t,
-			double &V, double Ei[3], double dEidxj[3][3] = NULL) const{};
+			double &V, double Ei[3]) const override {};
 };
 
 

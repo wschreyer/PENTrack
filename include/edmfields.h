@@ -22,11 +22,6 @@ private:
 	double azm_ang2; ///< the azimuthal angle phi
 	double edmB0z0; ///< the z component of the B0 field at the origin in Tesla
 	double edmdB0z0dz; ///< the z derivative of z component of the B0 field: dB0zdz at the origin in Tesla
-	bool ac; ///< A boolean to toggle between AC or DC field
-	double f; ///< the frequency of the AC field
-	double on1; ///< the start time of AC
-	double off1; ///< the end time of AC
-	double phase; ///< the phase shift for the AC field
 	double BoundaryWidth; ///< Distance from the edges where folding begins
 	double xmax; ///< maximum x value for the field to permiate
 	double xmin; ///< minimum x value for the field to permiate
@@ -53,11 +48,6 @@ public:
 	 * @param ang2 the azimuthal angle phi
 	 * @param abz the z component of the B0 field at the origin in Tesla
 	 * @param adB0zdz the z derivative of z component of the B0 field: dB0zdz at the origin in Tesla
-	 * @param AC A boolean to toggle between AC or DC field
-	 * @param frq the frequency of the AC field
-	 * @param tstart1 the start time of AC
-	 * @param tend1 the end time of AC
-	 * @param pshift the phase shift for the AC field
 	 * @param bW Distance from the edges where folding begins
 	 * @param _xmax maximum x value for the field to permiate
 	 * @param _xmin minimum x value for the field to permiate
@@ -67,8 +57,7 @@ public:
 	 * @param _zmin minimum z value for the field to permiate
 	 * @param Bscale Formula to scale magnetic field
 	 */
-	TEDMStaticB0GradZField(const double xoff, const double yoff, const double zoff, const double ang1, const double ang2,
-			const double abz, const double adB0zdz, const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
+	TEDMStaticB0GradZField(const double xoff, const double yoff, const double zoff, const double ang1, const double ang2, const double abz, const double adB0zdz, const double bW,
 			const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale);
 	
 	/**
@@ -82,7 +71,7 @@ public:
 	 * @param B Returns magnetic-field components
 	 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 	**/
-	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const override;
 	
 	/**
 	 * Adds no electric field. 
@@ -94,9 +83,8 @@ public:
 	 * @param t Time
 	 * @param V Electric potential
 	 * @param Ei Electric field components
-	 * @param dEidxj Spatial derivatives of electric field components
 	 **/
-	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3], double dEidxj[3][3] = NULL) const  {};
+	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3]) const override {};
 	
 private:
 	/**
@@ -172,7 +160,7 @@ public:
 	 * @param B Returns magnetic-field components
 	 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 	**/
-	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const{};
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = nullptr) const{};
 	
 	/**
 	 * The static E field should be parallel to the B0 field in Ramsey cycle.
@@ -183,10 +171,9 @@ public:
 	 * @param t Time
 	 * @param V Electric potential
 	 * @param Ei Electric field components
-	 * @param dEidxj Spatial derivatives of electric field components
 	 */
 	void EField(const double x, const double y, const double z, const double t,
-			double &V, double Ei[3], double dEidxj[3][3] = NULL) const;
+			double &V, double Ei[3]) const;
 
 };
 

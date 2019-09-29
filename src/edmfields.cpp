@@ -10,7 +10,7 @@
 
 //TEDMStaticB0GradZField constructor
 TEDMStaticB0GradZField::TEDMStaticB0GradZField(const double xoff, const double yoff, const double zoff, const double ang1, const double ang2,
-		const double abz, const double adB0zdz, const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
+		const double abz, const double adB0zdz, const double bW,
 		const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale)
 			: TField(Bscale, "0") {
 	edmB0xoff = xoff;
@@ -20,11 +20,6 @@ TEDMStaticB0GradZField::TEDMStaticB0GradZField(const double xoff, const double y
 	azm_ang2 = ang2;
 	edmB0z0 = abz;
 	edmdB0z0dz = adB0zdz;
-	ac = AC;
-	f = frq;
-	on1 = tstart1;
-	off1 = tend1;
-	phase = pshift;
 	BoundaryWidth = bW;
 	xmax = _xmax;
 	xmin = _xmin;
@@ -140,7 +135,7 @@ TEDMStaticB0GradZField::TEDMStaticB0GradZField(const double xoff, const double y
 void TEDMStaticB0GradZField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 
 	double Bscale = BScaling(t);
-	if((ac && (t<on1 || t>off1)) || Bscale == 0){
+	if(Bscale == 0){
 		return;
 	}
 	else{
@@ -177,18 +172,6 @@ void TEDMStaticB0GradZField::BField(const double x, const double y, const double
 		for(int i = 0; i < 9; i++)
 			dBScaled[i] = dB[i];
 
-		//apply AC scaling if necessary
-		if(ac){
-			double scalar;
-			scalar=sin((f*t+phase)*2*M_PI);
-			for (int i = 0; i < 3; i++)
-				BF2[i] *= scalar;
-			if (dBidxj != NULL){
-				for (int i = 0; i < 9; i++)
-					dBScaled[i]*=scalar;
-			}
-		}
-		
 		//Fold the field near its boundaries
 		for (int i = 0; i < 3; i++){
 			FieldSmthr(x, y, z, BF2, dBScaled, i);
@@ -199,7 +182,7 @@ void TEDMStaticB0GradZField::BField(const double x, const double y, const double
 		B[1] = BF2[1]*Bscale;
 		B[2] = BF2[2]*Bscale;
 
-		if (dBidxj != NULL){
+		if (dBidxj != nullptr){
 			//set BField gradient to EDM component
 			dBidxj[0][0] = dBScaled[0]*Bscale;
 			dBidxj[1][0] = dBScaled[1]*Bscale;
@@ -324,7 +307,7 @@ TEDMStaticEField::TEDMStaticEField(const double aexMag, const double aeyMag, con
 	ezMag = aezMag;
 }
 
-void TEDMStaticEField::EField (const double x, const double y, const double z, const double t, double &V, double Ei[3], double dEidxj[3][3]) const{
+void TEDMStaticEField::EField (const double x, const double y, const double z, const double t, double &V, double Ei[3]) const{
 	double Escale = EScaling(t);
 	Ei[0] = exMag*Escale;
 	Ei[1] = eyMag*Escale;

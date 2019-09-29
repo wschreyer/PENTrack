@@ -171,8 +171,6 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #6 EDMStaticB0GradZField 	0	0	0	0	0	1E-6	1E-9		0.01	1	-1	1 	-1	1	-1	1
 #EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)	scale
 #7 EDMStaticEField			0			0			1E6		1
-#EDM_AC_B1Field  edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz freq time1 time2 shift BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
-#8 EDM_AC_B1Field	0	0	0	0	0	1E-6	1E-9	1	2	4	0	0.01	1	-1	1	-1	1	-1	1
 
 
 [PARTICLES]

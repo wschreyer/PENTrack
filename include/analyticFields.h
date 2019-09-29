@@ -56,7 +56,7 @@ public:
 	 * @param B Returns magnetic-field components
 	 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 	**/
-	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const override;
 
 	/**
 	 * Adds no electric field.
@@ -68,9 +68,8 @@ public:
 	 * @param t Time
 	 * @param V Electric potential
 	 * @param Ei Electric field components
-	 * @param dEidxj Spatial derivatives of electric field components
 	 **/
-	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3], double dEidxj[3][3] = NULL) const  {};
+	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3]) const override {};
 
 private:
 	int withinBounds(const double x, const double y, const double z) const;
@@ -117,7 +116,7 @@ public:
 	 * @param B Returns magnetic-field components
 	 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 	**/
-	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const override;
 
 	/**
 	 * Adds no electric field.
@@ -129,9 +128,8 @@ public:
 	 * @param t Time
 	 * @param V Electric potential
 	 * @param Ei Electric field components
-	 * @param dEidxj Spatial derivatives of electric field components
 	 **/
-	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3], double dEidxj[3][3] = NULL) const  {};
+	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3]) const override {};
 
 private:
 	int withinBounds(const double x, const double y, const double z) const;

@@ -122,7 +122,7 @@ private:
 		 * @param B Returns magnetic-field components
 		 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 		 */
-		void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
+		void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const override;
 
 
 		/**
@@ -137,10 +137,9 @@ private:
 		 * @param t Time
 		 * @param V Returns electric potential
 		 * @param Ei Returns electric field (negative spatial derivatives of V)
-		 * @param dEidxj Adds spatial derivatives of electric field components (optional)
 		 */
 		void EField(const double x, const double y, const double z, const double t,
-				double &V, double Ei[3], double dEidxj[3][3] = NULL) const;
+				double &V, double Ei[3]) const override;
 };
 
 /**

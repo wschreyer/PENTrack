@@ -13,7 +13,6 @@
 #include "boost/format.hpp"
 #include <boost/iterator/zip_iterator.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include "tricubic.h"
 #include "globals.h"
@@ -24,9 +23,10 @@ std::unique_ptr<TabField3> ReadComsolField(const std::string &params){
   boost::filesystem::path ft;
   std::string fieldtype, Bscale;
   double BoundaryWidth, lengthconv;
-  ss >> fieldtype >> ft >> Bscale >> BoundaryWidth >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
-  if (!ss)
-      throw std::runtime_error("Could not read all required parameters for field COMSOL!");
+  ss >> fieldtype >> ft >> Bscale >> BoundaryWidth >> lengthconv;; // read fieldtype, tablefilename, and rest of parameters
+  if (!ss){
+      throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
+  }
 
   std::string line;
   std::vector<std::string> line_parts;
@@ -73,7 +73,10 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
     boost::filesystem::path ft;
     std::string fieldtype, Bscale, Escale;
     double BoundaryWidth, lengthconv;
-    ss >> fieldtype >> ft >> Bscale >> Escale >> BoundaryWidth >> lengthconv;
+    ss >> fieldtype >> ft >> Bscale >> Escale >> BoundaryWidth >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
+    if (!ss){
+        throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
+    }
 
     std::ifstream FIN(boost::filesystem::absolute(ft, configpath.parent_path()).string(), std::ifstream::in);
     if (!FIN.is_open())
@@ -91,9 +94,9 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
 
     std::array<std::vector<double>, 3> xyzTab, BTab;
     std::vector<double> VTab;
-    for (auto &xi: xyzTab)
-        xi.resize(xl*yl*zl);
-
+    for (auto &xi: xyzTab){
+        xi.resize(xl * yl * zl);
+    }
 	if (line.find("BX") != std::string::npos){
         BTab[0].resize(xl*yl*zl);
 		getline(FIN,line);
@@ -134,19 +137,19 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
         xyzTab[0][i] = x;
         xyzTab[1][i] = y;
         xyzTab[2][i] = z;
-        if (BTab[0].size() > 0){
+        if (not BTab[0].empty()){
 			FIN >> val;
             BTab[0][i] = val;
 		}
-        if (BTab[1].size() > 0){
+        if (not BTab[1].empty()){
 			FIN >> val;
             BTab[1][i] = val;
 		}
-        if (BTab[2].size() > 0){
+        if (not BTab[2].empty()){
 			FIN >> val;
             BTab[2][i] = val;
 		}
-		if (VTab.size() > 0){
+		if (not VTab.empty()){
 			FIN >> val;
             VTab[i] = val;
 		}
@@ -155,9 +158,10 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
     }
 
 	std::cout << "\n";
-    if (i != xl*yl*zl)
+    if (i != xl*yl*zl){
         throw std::runtime_error((boost::format("The header says the size is %1%, actually it is %2%! Exiting...\n") % (xl*yl*zl) % i).str());
-	FIN.close();
+    }
+    FIN.close();
 
     return std::unique_ptr<TabField3>(new TabField3(xyzTab, BTab, VTab, Bscale, Escale, BoundaryWidth));
 }
@@ -178,12 +182,12 @@ void TabField3::CheckTab(const std::array<std::vector<double>, 3> &B, const std:
     std::copy(V.begin(), V.end(), std::ostream_iterator<double>(std::cout, " "));
     std::cout.flush();
     std::cout << "The input table file has values of |B| from " << *std::min_element(Babs.begin(), Babs.end()) << " to " << *std::max_element(Babs.begin(), Babs.end());
-    if (V.size() > 0)
+    if (not V.empty())
         std::cout << " and values of V from " << *std::min_element(V.begin(), V.end()) << " V to " << *std::max_element(V.begin(), V.end()) << " V";
     std::cout << std::endl;
 
     unsigned long l = xyz[0].size() * xyz[1].size() * xyz[2].size();
-    if ((B[0].size() > 0 && B[0].size() != l) || (B[1].size() > 0 && B[1].size() != l) || (B[2].size() > 0 && B[2].size() != l) || (V.size() > 0 && V.size() != l))
+    if ((not B[0].empty() && B[0].size() != l) || (not B[1].empty() && B[1].size() != l) || (not B[2].empty() && B[2].size() != l) || (not V.empty() && V.size() != l))
         std::cout << "Warning: Number of field samples does not match number of grid points! Missing points will default to zero field\n";
 }
 
@@ -286,17 +290,17 @@ TabField3::TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std
     std::array<array3D, 3> B;
     array3D V;
     for (unsigned i = 0; i < 3; ++i){
-        if (BTab[i].size() > 0){
+        if (not BTab[i].empty()){
             B[i].resize(boost::extents[xyz[0].size()][xyz[1].size()][xyz[2].size()]);
             std::fill_n(B[i].data(), B[i].num_elements(), 0.);
         }
     }
-    if (VTab.size() > 0){
+    if (not VTab.empty()){
         V.resize(boost::extents[xyz[0].size()][xyz[1].size()][xyz[2].size()]);
         std::fill_n(V.data(), V.num_elements(), 0.);
     }
 
-    for (unsigned int i = 0; i < xyzTab[0].size(); ++i){
+    for (unsigned long i = 0; i < xyzTab[0].size(); ++i){
         std::array<long, 3> index;
         for (unsigned j = 0; j < 3; ++j){
             auto found = std::lower_bound(xyz[j].begin(), xyz[j].end(), xyzTab[j][i]);
@@ -304,35 +308,35 @@ TabField3::TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std
             index[j] = std::distance(xyz[j].begin(), found);
         }
         for (unsigned j = 0; j < 3; ++j){
-            if (BTab[j].size() > 0){
+            if (not BTab[j].empty()){
                 B[j](index) = BTab[j][i];
             }
         }
-        if (VTab.size() > 0)
+        if (not VTab.empty())
             V(index) = VTab[i];
     }
 
 	std::cout << "Starting Preinterpolation ... ";
 	float size = 0;
-    if (BTab[0].size() > 0){
+    if (not BTab[0].empty()){
 		std::cout << "Bx ... ";
 		std::cout.flush();
         PreInterpol(B[0], Bc[0]); // precalculate interpolation coefficients for B field
         size += float(Bc[0].num_elements()*64*sizeof(double)/1024/1024);
     }
-    if (BTab[1].size() > 0){
+    if (not BTab[1].empty()){
 		std::cout << "By ... ";
 		std::cout.flush();
         PreInterpol(B[1], Bc[1]);
         size += float(Bc[1].num_elements()*64*sizeof(double)/1024/1024);
 	}
-    if (BTab[2].size() > 0){
+    if (not BTab[2].empty()){
 		std::cout << "Bz ... ";
 		std::cout.flush();
         PreInterpol(B[2], Bc[2]);
         size += float(Bc[2].num_elements()*64*sizeof(double)/1024/1024);
 	}
-	if (VTab.size() > 0){
+	if (not VTab.empty()){
 		std::cout << "V ... ";
 		std::cout.flush();
         PreInterpol(V, Vc);
@@ -363,7 +367,7 @@ void TabField3::BField(const double x, const double y, const double z, const dou
 
     // tricubic interpolation
     for (unsigned i = 0; i < 3; ++i){
-        if (Bc[i].size() > 0){
+        if (not Bc[i].empty()){
             double *coeff = const_cast<double*>(&Bc[i](index)[0]);
             B[i] = Bscale*tricubic_eval(coeff, r[0], r[1], r[2]);
             if (dBidxj != nullptr){
@@ -449,9 +453,9 @@ double TabField3::SmthrStpDer(const double x) const{
 }
 
 void TabField3::EField(const double x, const double y, const double z, const double t,
-		double &V, double Ei[3], double dEidxj[3][3]) const{
+		double &V, double Ei[3]) const{
     double Escale = EScaling(t);
-    if (Escale != 0 && Vc.size() > 0){
+    if (Escale != 0 && not Vc.empty()){
         std::array<double, 3> r = {x, y, z}, dist;
         // get coordinate index
         std::array<int, 3> index;
@@ -470,7 +474,7 @@ void TabField3::EField(const double x, const double y, const double z, const dou
         Ei[0] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 0, 0)/dist[0];
         Ei[1] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 1, 0)/dist[1];
         Ei[2] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 0, 1)/dist[2];
-        if (dEidxj != nullptr){ // calculate higher derivatives
+/*        if (dEidxj != nullptr){ // calculate higher derivatives
             dEidxj[0][0] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 2, 0, 0)/dist[0]/dist[0];
             dEidxj[0][1] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 1, 0)/dist[0]/dist[1];
             dEidxj[0][2] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 0, 1)/dist[0]/dist[2];
@@ -480,12 +484,12 @@ void TabField3::EField(const double x, const double y, const double z, const dou
             dEidxj[2][0] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 0, 1)/dist[2]/dist[0];
             dEidxj[2][1] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 1, 1)/dist[2]/dist[1];
             dEidxj[2][2] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 0, 2)/dist[2]/dist[2];
-		}
+		}*/
 
         for (int i = 0; i < 3; i++){
-            if (dEidxj != nullptr)
+/*            if (dEidxj != nullptr)
                 FieldSmthr(x, y, z, Ei[i], dEidxj[i]); // apply field smoothing to each component
-            else
+            else*/
                 FieldSmthr(x, y, z, Ei[i], nullptr);
         }
 	}

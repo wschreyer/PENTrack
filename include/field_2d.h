@@ -96,7 +96,7 @@ class TabField: public TField{
 		 * @param B Return magnetic-field components
 		 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 		 */
-		void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
+		void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const override;
 
 
 		/**
@@ -111,10 +111,9 @@ class TabField: public TField{
 		 * @param t Time
 		 * @param V Returns electric potential
 		 * @param Ei Return electric field (negative spatial derivatives of V)
-		 * @param dEidxj Return spatial derivatives of electric field components (optional) !!!NOT YET IMPLEMENTED!!!
 		 */
 		void EField(const double x, const double y, const double z, const double t,
-				double &V, double Ei[3], double dEidxj[3][3] = NULL) const;
+				double &V, double Ei[3]) const override;
 };
 
 
