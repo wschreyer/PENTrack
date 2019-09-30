@@ -193,9 +193,9 @@ void TabField3::CheckTab(const std::array<std::vector<double>, 3> &B, const std:
                     [](const boost::tuple<double,double,double> &Bs){ return std::sqrt(std::pow(Bs.get<0>(), 2) + std::pow(Bs.get<1>(), 2) + std::pow(Bs.get<2>(), 2)); });
     std::copy(V.begin(), V.end(), std::ostream_iterator<double>(std::cout, " "));
     std::cout.flush();
-    std::cout << "The input table file has values of |B| from " << *std::min_element(Babs.begin(), Babs.end()) << " to " << *std::max_element(Babs.begin(), Babs.end());
+    std::cout << "The input table file has values of magnetic field |B| from " << *std::min_element(Babs.begin(), Babs.end()) << " to " << *std::max_element(Babs.begin(), Babs.end());
     if (not V.empty())
-        std::cout << " and values of V from " << *std::min_element(V.begin(), V.end()) << " V to " << *std::max_element(V.begin(), V.end()) << " V";
+        std::cout << " and values of electric potential from " << *std::min_element(V.begin(), V.end()) << " to " << *std::max_element(V.begin(), V.end());
     std::cout << std::endl;
 
     unsigned long l = xyz[0].size() * xyz[1].size() * xyz[2].size();

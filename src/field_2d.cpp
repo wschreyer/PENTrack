@@ -211,7 +211,7 @@ void TabField::CheckTab(const alglib::real_1d_array &rind, const alglib::real_1d
 		}
 	}
 
-	std::cout << "The input table file has values of |B| from " << Babsmin << " to " << Babsmax << " and values of V from " << Vmin << " V to " << Vmax << " V\n";
+	std::cout << "The input table file has values of magnetic field |B| from " << Babsmin << " to " << Babsmax << " and values of electric potential from " << Vmin << " to " << Vmax << "\n";
 }
 
 TabField::TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale, const double alengthconv): TField(Bscale, Escale){
