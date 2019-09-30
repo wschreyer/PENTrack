@@ -73,7 +73,19 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
     boost::filesystem::path ft;
     std::string fieldtype, Bscale, Escale;
     double BoundaryWidth, lengthconv;
-    ss >> fieldtype >> ft >> Bscale >> Escale >> BoundaryWidth >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
+    ss >> fieldtype;
+    if (fieldtype == "3Dtable"){
+        ss >> ft >> Bscale >> Escale >> BoundaryWidth; // read fieldtype, tablefilename, and rest of parameters
+        std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA3D format. I'm assuming that file " << ft << " is using centimeters, Gauss, and Volts as units.\n";
+        Bscale = "(" + Bscale + ")*0.0001"; // scale magnetic field to Tesla
+        lengthconv = 0.01;
+    }
+    else if (fieldtype == "OPERA3D"){
+        ss >> ft >> Bscale >> Escale >> BoundaryWidth >> lengthconv;
+    }
+    else{
+        throw std::runtime_error("Tried to load 3D table file for unknown field type " + fieldtype + "!\n");
+    }
     if (!ss){
         throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
     }

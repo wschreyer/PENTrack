@@ -26,10 +26,10 @@ TFieldManager::TFieldManager(TConfig &conf){
 		std::istringstream ss(i.second);
 		ss >> type;
 
-        if (type == "OPERA2D"){
+        if (type == "OPERA2D" or type == "2Dtable"){
             fields.push_back(ReadOperaField2(i.second));
 		}
-        else if (type == "OPERA3D"){
+        else if (type == "OPERA3D" or type == "3Dtable"){
             fields.push_back(ReadOperaField3(i.second));
 		}
         else if (type == "COMSOL"){
@@ -54,7 +54,7 @@ TFieldManager::TFieldManager(TConfig &conf){
             fields.push_back(std::unique_ptr<TField>(new TEDMStaticEField (p1, p2, p3, Bscale)));
 		}
         else{
-            throw std::runtime_error("Could not load field """ + type + """! Check config file for invalid field type or parameters.\nIf you are still using 2D/3Dtable fields consult default config for new OPERA field types and parameters!");
+            throw std::runtime_error("Could not load field """ + type + """! Check config file for invalid field type or parameters.");
         }
 	}
 	std::cout << "\n";

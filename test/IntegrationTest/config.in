@@ -39,7 +39,7 @@ polarization 1
 
 
 [FIELDS]
-1 OPERA2D ../VerticalLinearGradientField2D.tab	0.00005	0	0	0.01
+1 OPERA2D ../VerticalLinearGradientField2D.tab	0.00005	0	0.01
 2 OPERA3D ../VerticalLinearGradientField3D.tab	0.00005	0	0	0.01
 
 
