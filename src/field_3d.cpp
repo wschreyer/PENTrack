@@ -19,7 +19,7 @@
 #include "globals.h"
 
 // A faster implementation of the tricubic_eval function from libtricubic.
-double tricubic_eval_fast(double a[64], double x, double y, double z) {
+inline double tricubic_eval_fast(double a[64], double x, double y, double z) {
 	double result = 0.0;
 	for (int i = 0; i < 4; ++i) {
 		for (int j = 0; j < 4; ++j) {
@@ -31,7 +31,7 @@ double tricubic_eval_fast(double a[64], double x, double y, double z) {
 	return result;
 }
 
-double tricubic_eval_fast(double a[64], double x, double y, double z, int derx, int dery, int derz) {
+inline double tricubic_eval_fast(double a[64], double x, double y, double z, int derx, int dery, int derz) {
 	// fact[i][n] is the coefficient in front of the nth derivative of x^i.
 	// For instance, d2/dx2 x^3 = 6 x, so fact[3][2] = 6.
 	static double fact[4][4] {
