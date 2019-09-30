@@ -26,11 +26,6 @@ private:
 	double xoff; ///< the x-coordinate offset from the origin
 	double yoff; ///< the y-coordinate offset from the origin
 	double zoff; ///< the z-coordinate offset from the origin
-	bool   ac; ///< A boolean to toggle between AC or DC field
-	double f; ///< the frequency of the AC field
-	double on1; ///< the start time of AC
-	double off1; ///< the end time of AC
-	double phase; ///< the phase shift for the AC field
 	double BoundaryWidth; ///< Distance from the edges where folding begins
 	double xmax; ///< maximum x value for the field to permiate
 	double xmin; ///< minimum x value for the field to permiate
@@ -81,8 +76,7 @@ public:
 	 * @param G parameters; coefficients of the harmonic expansion
 	 */
 
-	HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff,
-			const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
+	HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff, const double bW,
 			const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale,
 			const double _axis_x, const double _axis_y, const double _axis_z, const double _angle, 
 			const double G0, const double G1, const double G2, const double G3, const double G4, const double G5, const double G6, const double G7, const double G8, 
@@ -100,7 +94,7 @@ public:
 	 * @param B Returns magnetic-field components
 	 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 	**/
-	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const override;
 	
 	/**
 	 * Adds no electric field. 
@@ -114,7 +108,7 @@ public:
 	 * @param Ei Electric field components
 	 * @param dEidxj Spatial derivatives of electric field components
 	 **/
-	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3], double dEidxj[3][3] = NULL) const  {};
+	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3]) const override {};
 
 private:
 	/**

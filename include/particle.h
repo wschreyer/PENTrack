@@ -608,8 +608,8 @@ protected:
 	 * @param stepper Trajectory integrator used to calculate spin-precession axis at time t
 	 * @param field TFieldManager containing all electromagnetic fields
 	 */
-	virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
-
+	// virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
+	virtual void PrintSpin(const value_type x, const state_type &y, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
 
 	/**
 	 * Calculate potential energy of particle

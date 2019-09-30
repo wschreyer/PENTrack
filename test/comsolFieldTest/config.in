@@ -1,0 +1,85 @@
+[GLOBAL]
+# simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry
+simtype 4    # Choose either 1 or 4 for this test
+simcount 1
+simtime 1
+
+secondaries 0
+
+#cut through B-field (simtype == 4) (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2)
+#define cut plane by three points and number of sample points in direction 1->2 and 1->3
+
+BCutPlane 0 1.0 -1.75  0 1.0 1.75  0 -1.5 -1.75  100 100
+
+[MATERIALS]
+#name		FermiReal [neV]		FermiImag [neV]		DiffuseReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]	UseMRmodel
+default		0			0			0				0			0			0			0
+perfect		1000			0			1				0			0			0			0
+
+[GEOMETRY]
+#ID	STLfile				material_name		ignore_times
+1	ignored				  default
+2	container.stl	perfect
+
+[SOURCE]
+sourcemode cylvolume
+#			r_min	r_max	phi_min	phi_max	z_min	z_max (cylvolume/cylsurface)
+parameters 0	0.1	0	360	-0.05  	0.05
+
+particle neutron
+
+Emin 0e-9
+Emax 500e-9
+spectrum 1
+
+phi_v_min 0		# min. azimuth angle of velocity
+phi_v_max 360		# max. azimuth angle of velocity
+phi_v 1			# differential initial distribution of azimuth angle of velocity - volume source only!
+
+theta_v_min 0		# min. polar angle of velocity
+theta_v_max 180		# max. polar angle of velocity
+theta_v sin(x)		# differential initial distribution of polar angle of velocity - volume source only!
+
+polarization 0		# 1: low-field-seeker, -1: high-field-seeker, 0: random
+
+[FIELDS]
+# COMSOLfield 	filename           BFieldScale	BoundaryWidth	CoordinateScale
+1 COMSOL        comsolField.txt   1            0		1
+
+# Files aren't just restricted to a vector arrow field from COMSOL
+# Can be any text file with 6 columns, x y z Bx By Bz
+# (Lines beginning with % or # will be skipped. Columns may be delineated by space, comma, or tab)
+# Units are assumed to be in meters and Tesla, though units can be edited in comsolField3D.h
+
+[PARTICLES]
+tau 1
+tmax 9e99
+lmax 9e99
+
+endlog 0
+tracklog 0
+hitlog 0
+snapshotlog 0
+spinlog 1
+snapshots 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
+trackloginterval 5e-3
+spinloginterval 5e-5
+
+spintimes 0 1000
+Bmax 0.1
+flipspin 0
+interpolatefields 1
+
+
+[neutron]			# set options for individual particle types, overwrites above settings
+tau 0
+
+[proton]
+tmax 3e-3
+
+[electron]
+tmax 1e-5
+
+[mercury]
+
+[xenon]

@@ -31,7 +31,7 @@ protected:
 	double BScaling(const double t) const{
 		tvar = t;
 		return Bscaler.value();
-	};
+    }
 
 	/**
 	 * Calculate electric field scaling from parsed formula
@@ -43,7 +43,7 @@ protected:
 	double EScaling(const double t) const{
 		tvar = t;
 		return Escaler.value();
-	};
+    }
 
 public:
 	/**
@@ -59,7 +59,7 @@ public:
 	 * @param dBidxj Return spatial derivatives of magnetic field components (optional)
 	 */
 	virtual void BField (const double x, const double y, const double z, const double t,
-			double B[3], double dBidxj[3][3] = NULL) const = 0;
+            double B[3], double dBidxj[3][3]) const = 0;
 
 	/**
 	 * Add electric field and potential at a given position.
@@ -72,10 +72,9 @@ public:
 	 * @param t Time
 	 * @param V Return electric potential (!=0 only if a map with potential was loaded)
 	 * @param Ei Returns electric field vector
-	 * @param dEidxj Returns spatial derivatives of electric field components (optional)
 	 */
 	virtual void EField (const double x, const double y, const double z, const double t,
-			double &V, double Ei[3], double dEidxj[3][3] = NULL) const = 0;
+            double &V, double Ei[3]) const = 0;
 
 	/**
 	 * Generic constructor, should be called by every derived class.
@@ -84,6 +83,7 @@ public:
 	 * @param Escale String containing formula describing time-dependence of electric field
 	 */
 	TField(const std::string &Bscale, const std::string &Escale){
+	    tvar = 0;
 		exprtk::symbol_table<double> symbol_table;
 		symbol_table.add_variable("t",tvar);
 		symbol_table.add_constants();
@@ -94,11 +94,6 @@ public:
 		Escaler.register_symbol_table(symbol_table);
 		parser.compile(Escale, Escaler);
 	}
-
-	/**
-	 * Virtual destructor
-	 */
-	virtual ~TField(){ };
 };
 
 

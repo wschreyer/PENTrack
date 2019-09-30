@@ -11,8 +11,11 @@ BCutPlane 0 0 0  0 0 1  0.707107 0.707107 0  100 100
 [SOURCE]
 
 [FIELDS]
-#field 		table-file			BFieldScale	EFieldScale	BoundaryWidth
-1 2Dtable 	../CosineGradientField.tab	1		1		0
-#2 3Dtable 	../VerticalLinearGradientField3D.tab	1		1	0
+### all these table files use cm/Gauss/V as units
+#field 		table-file			BFieldScale	EFieldScale	CoordinateScale
+1 OPERA2D 	../CosineGradientField.tab              0.0001		1		0.01
+2 OPERA2D 	../VerticalLinearGradientField2D.tab    0.0001		1		0.01
+#field 		table-file			BFieldScale	EFieldScale	BoundaryWidth	CoordinateScale
+3 OPERA3D	../VerticalLinearGradientField3D.tab	-0.0001		-1	    0		0.01
 
 [PARTICLES]

@@ -16,8 +16,7 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/math/constants/constants.hpp>
 
-HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff,
-		const bool AC, const double frq, const double tstart1, const double tend1, const double pshift, const double bW,
+HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff, const double bW,
 		const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale, 
 		const double _axis_x, const double _axis_y, const double _axis_z, const double _angle, 
 		const double G0, const double G1, const double G2, const double G3, const double G4, const double G5, const double G6, const double G7, const double G8, 
@@ -25,11 +24,6 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 		const double G18, const double G19, const double G20, const double G21, const double G22, const double G23)
 			: TField(Bscale, "0") {
 
-	ac = AC;
-	f = frq;
-	on1 = tstart1;
-	off1 = tend1;
-	phase = pshift;
 	BoundaryWidth = bW;
 
 	// the offset values
@@ -79,8 +73,7 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 
 	}
 
-void HarmonicExpandedBField::BField(const double _x, const double _y, 
-const double _z, const double t, double B[3], double dBidxj[3][3]) const{
+void HarmonicExpandedBField::BField(const double _x, const double _y, const double _z, const double t, double B[3], double dBidxj[3][3]) const{
 
 	// Updating the x, y, z values with the given offset values
 	double x = _x + xoff;

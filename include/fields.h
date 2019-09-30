@@ -17,7 +17,7 @@
  */
 struct TFieldManager{
 private:
-	std::vector<TField*> fields; ///< list of fields
+    std::vector<std::unique_ptr<TField> > fields; ///< list of fields
 		
 public:
 	TFieldManager(const TFieldManager &f) = delete; ///< TFieldManager is not copyable
@@ -30,13 +30,7 @@ public:
 	 *
 	 * @param conf TConfig map containing field options
 	 */
-	TFieldManager(TConfig &conf);
-
-
-	/**
-	 * Destructor, delete all fields.
-	 */
-	~TFieldManager();
+	explicit TFieldManager(TConfig &conf);
 
 
 	/**
@@ -49,7 +43,7 @@ public:
 	 * @param B Returns magnetic x, y, and z components of magnetic field
 	 * @param dBidxj Returns spatial derivatives of each magnetic-field component (optional)
 	 */
-	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
+	void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = nullptr) const;
 
 
 	/**
@@ -66,7 +60,7 @@ public:
 	 * @param dEidxj Returns spatial derivatives of electric field components (optional)
 	 */
 	void EField(const double x, const double y, const double z, const double t,
-			double &V, double Ei[3], double dEidxj[3][3] = NULL) const;
+			double &V, double Ei[3]) const;
 };
 
 #endif // FIELDS_H_

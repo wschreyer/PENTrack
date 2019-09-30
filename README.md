@@ -79,9 +79,12 @@ If you want to export several parts of a Solidworks assembly you can do the foll
 
 ### Fields
 
-Magnetic and electric fields (rotationally symmetric 2D and 3D) can be included from text-based field maps
-(right now, only "[Vectorfields OPERA](http://www.operafea.com)" maps in cgs units are supported).
-You can also define analytic fields from straight, finite conductors and homogeneous field with small gradients.
+Magnetic and electric fields (2D and 3D) can be included from text-based field maps.
+2D maps are assumed to be rotationally symmetric around the z axis. They can contain columns for r, z, Bx, By, Bz, Ex, Ey, Ez, and V exported from "[Vectorfields OPERA](http://www.operafea.com)" on a regular grid (each field column is optional).
+3D maps can contain generic columns for x, y, z, Bx, By, Bz on a rectilinear grid. Lines beginning with % or # will be skipped, columns may be delineated by space, comma, or tab.
+3D maps can also be exported from OPERA with columns x, y, z, Bx, By, Bz, V on a rectilinear grid (each field column is optional).
+Units for field maps are assumed to be in meters, Tesla, and Volts, but each can be scaled individually.
+You can also define a variety of analytically calculated fields. See default config file for more information.
 Every field type can be scaled with a user-defined time-dependent formula to simulate oscillating fields or magnets that are ramped up and down.
 
 ### Particle sources
@@ -228,8 +231,10 @@ If the spinlog parameter is enabled in the configuration file and the particle s
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
 - t: time [s]
+- x, y, z: location of the neutron at time t [m]
 - Sx, Sy, Sz: components of the spin vector [dimensionless]
 - Wx, Wy, Wz: components of precession-axis vector [1/s]
+- Bx, By, Bz: field experienced by the neutron at time t [Tesla]
 
 Helper Scripts 
 --------------
@@ -289,5 +294,3 @@ If the file doesn't contain the keyword mater then the STL file will still be di
 The output from the script is directed to standard out is meant to be copied into the configuration file. The file also takes an optional argument: 
 
 1. stlDirName - path to the directory containing the STL files that are to be processed
-
-

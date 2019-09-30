@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "boost/format.hpp"
+
 #include "globals.h"
 
 using namespace std;
@@ -29,7 +31,33 @@ void CylToCart(const double v_r, const double v_phi, const double phi, double &v
 }
 
 
-void TabField::ReadTabFile(const std::string &tabfile, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
+std::unique_ptr<TabField> ReadOperaField2(const std::string &params){
+    std::istringstream ss(params);
+    boost::filesystem::path ft;
+    std::string fieldtype, Bscale, Escale;
+    double lengthconv;
+    ss >> fieldtype;
+    if (fieldtype == "2Dtable"){
+        ss >> ft >> Bscale >> Escale;
+        std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA2D format. I'm assuming that file " << ft << " is using centimeters, Gauss, and Volts as units.\n";
+        Bscale = "(" + Bscale + ")*0.0001"; // scale magnetic field to Tesla
+        lengthconv = 0.01;
+    }
+    else if (fieldtype == "OPERA2D") {
+        ss >> ft >> Bscale >> Escale >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
+    }
+    else{
+        throw std::runtime_error("Tried to load 2D table file for unknown field type " + fieldtype + "!\n");
+    }
+    if (!ss){
+        throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
+    }
+
+    return std::unique_ptr<TabField>(new TabField(boost::filesystem::absolute(ft, configpath.parent_path()).string(), Bscale, Escale, lengthconv));
+}
+
+
+void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
 		alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab){
 	ifstream FIN(tabfile, ifstream::in);
 	if (!FIN.is_open()){
@@ -112,27 +140,27 @@ void TabField::ReadTabFile(const std::string &tabfile, alglib::real_1d_array &ri
 		int i2 = zi * m + ri;
 		if (BTabs[0].length() > 0){
 			FIN >> val;
-			BTabs[0][i2] = val*Bconv;
+			BTabs[0][i2] = val;
 		}
 		if (BTabs[1].length() > 0){
 			FIN >> val;
-			BTabs[1][i2] = val*Bconv;
+			BTabs[1][i2] = val;
 		}
 		if (BTabs[2].length() > 0){
 			FIN >> val;
-			BTabs[2][i2] = val*Bconv;
+			BTabs[2][i2] = val;
 		}
 		if (ETabs[0].length() > 0){
 			FIN >> val;
-			ETabs[0][i2] = val*Econv;
+			ETabs[0][i2] = val;
 		}
 		if (ETabs[1].length() > 0){
 			FIN >> val;
-			ETabs[1][i2] = val*Econv;
+			ETabs[1][i2] = val;
 		}
 		if (ETabs[2].length() > 0){
 			FIN >> val;
-			ETabs[2][i2] = val*Econv;
+			ETabs[2][i2] = val;
 		}
 		if (VTab.length() > 0){
 			FIN >> val;
@@ -184,17 +212,13 @@ void TabField::CheckTab(const alglib::real_1d_array &rind, const alglib::real_1d
 		}
 	}
 
-	std::cout << "The input table file has values of |B| from " << Babsmin << " T to " << Babsmax << " T and values of V from " << Vmin << " V to " << Vmax << " V\n";
+	std::cout << "The input table file has values of magnetic field |B| from " << Babsmin << " to " << Babsmax << " and values of electric potential from " << Vmin << " to " << Vmax << "\n";
 }
 
-TabField::TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale,
-		const double alengthconv, const double aBconv, const double aEconv): TField(Bscale, Escale){
-	lengthconv = alengthconv;
-	Bconv = aBconv;
-	Econv = aEconv;
+TabField::TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale, const double alengthconv): TField(Bscale, Escale){
 	alglib::real_1d_array rind, zind, BTabs[3], ETabs[3], VTab;
 
-	ReadTabFile(tabfile, rind, zind, BTabs, ETabs, VTab); // open tabfile and read values into arrays
+	ReadTabFile(tabfile, alengthconv, rind, zind, BTabs, ETabs, VTab); // open tabfile and read values into arrays
 
 	CheckTab(rind, zind, BTabs, ETabs, VTab); // print some info
 
@@ -248,10 +272,6 @@ TabField::TabField(const std::string &tabfile, const std::string &Bscale, const 
 	cout << "Done\n";
 }
 
-TabField::~TabField(){
-}
-
-
 void TabField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double r = sqrt(x*x+y*y);
 	double Bscale = BScaling(t);
@@ -302,13 +322,23 @@ void TabField::BField(const double x, const double y, const double z, const doub
 
 
 void TabField::EField(const double x, const double y, const double z, const double t,
-		double &V, double Ei[3], double dEidxj[3][3]) const{
+		double &V, double Ei[3]) const{
 	double r = sqrt(x*x+y*y);
 	double Escale = EScaling(t);
 	if (Escale != 0 && r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
-		if (fErc || fEphic || fEzc){ // prefer E-field interpolation over potential interpolation
+        if (fVc){ // prefer potential interpolation over E-field interpolation
+            double Vloc, dVdrj[3], dummy;
+            // bicubic interpolation
+            alglib::spline2ddiff(Vc, r, z, Vloc, dVdrj[0], dVdrj[2], dummy);
 			double phi = atan2(y,x);
-			if (dEidxj == NULL){
+            V = Vloc*Escale;
+            Ei[0] = -dVdrj[0]*cos(phi)*Escale;
+            Ei[1] = -dVdrj[0]*sin(phi)*Escale;
+            Ei[2] = -dVdrj[2]*Escale;
+        }
+		else if (fErc || fEphic || fEzc){
+			double phi = atan2(y,x);
+//			if (dEidxj == nullptr){
 				alglib::real_1d_array Er("[0]"), Ephi("[0]"), Ez("[0]");
 				double Ex, Ey;
 				if (fErc)
@@ -321,7 +351,7 @@ void TabField::EField(const double x, const double y, const double z, const doub
 				Ei[0] = Ex*Escale; // set electric field
 				Ei[1] = Ey*Escale;
 				Ei[2] = Ez[0]*Escale;
-			}
+/*			}
 			else{
 				double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0, dummy;
 				double dErdr, dErdz, dEphidr, dEphidz, dEzdr, dEzdz, dExdz, dEydz;
@@ -348,18 +378,7 @@ void TabField::EField(const double x, const double y, const double z, const doub
 				dEidxj[2][0] = dEzdr*cos(phi)*Escale;
 				dEidxj[2][1] = dEzdr*sin(phi)*Escale;
 				dEidxj[2][2] = dEzdz*Escale;
-			}
-		}
-		else if (fVc){
-			double Vloc, dVdrj[3], dummy;
-			// bicubic interpolation
-			alglib::spline2ddiff(Vc, r, z, Vloc, dVdrj[0], dVdrj[2], dummy);
-			double phi = atan2(y,x);
-			V = Vloc*Escale;
-			Ei[0] = -dVdrj[0]*cos(phi)*Escale;
-			Ei[1] = -dVdrj[0]*sin(phi)*Escale;
-			Ei[2] = -dVdrj[2]*Escale;
-			// !!!!!!!!!!! calculation of electric field derivatives not yet implemented for potential interpolation !!!!!!!!!!!!!!!!
+			}*/
 		}
 
 	}

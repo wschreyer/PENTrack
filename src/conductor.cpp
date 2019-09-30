@@ -100,7 +100,7 @@ void TConductorField::BField(const double x, const double y, const double z, con
 	B[1] = -t361 * t359;
 	B[2] = t398 * t144 * t81;
 
-	if (dBidxj != NULL){
+	if (dBidxj != nullptr){
 		double t151 = 0.1e1 / t79 / t78;
 		double t153 = t114 * t151 * vorfaktor;
 		double t154 = t147 * t143;

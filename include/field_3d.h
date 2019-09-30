@@ -10,77 +10,43 @@
 
 #include <vector>
 
+#include "boost/multi_array.hpp"
+
 /**
  * Class for tricubic field interpolation, create one for every table file you want to use.
  *
- * This class loads a special file format from "Vectorfields Opera" containing a regular, cuboid table of magnetic and electric fields and
+ * This class loads a tabulated magnetic and electric field on a rectilinear, three-dimensional grid and
  * calculates tricubic interpolation coefficients (4x4x4 = 64 for each grid point) to allow fast evaluation of the fields at arbitrary points.
  *
  */
 class TabField3: public TField{
-	private:
-		int xl; ///< size of the table in x direction
-		int yl; ///< size of the table in y direction
-		int zl; ///< size of the table in z direction
-		double xdist; ///< distance between grid points in x direction
-		double ydist; ///< distance between grid points in y direction
-		double zdist; ///< distance between grid points in z direction
-		double x_mi; ///< lower x coordinate of cuboid grid
-		double y_mi; ///< lower y coordinate of cuboid grid
-		double z_mi; ///< lower z coordinate of cuboid grid
-		std::vector<std::vector<double> > Bxc; ///< interpolation coefficients for magnetic x component
-		std::vector<std::vector<double> > Byc; ///< interpolation coefficients for magnetic y component
-		std::vector<std::vector<double> > Bzc; ///< interpolation coefficients for magnetic z component
-		std::vector<std::vector<double> > Vc; ///< interpolation coefficients for electric potential
+private:
+        std::array<std::vector<double>, 3> xyz; ///< coordinates of points on interpolation grid
+        typedef boost::multi_array<double, 3> array3D;
+        typedef std::array<double, 64> tricubic_coeff; ///< interpolation coefficients for one grid cell
+        typedef boost::multi_array<tricubic_coeff, 3> field_type; ///< interpolation coefficients for all grid cells
+        std::array<field_type, 3> Bc; ///< interpolation coefficients for magnetix x,y, and z components
+        field_type Vc; ///< interpolation coefficients for electric potential
 		double BoundaryWidth; ///< if this is larger 0, the field will be smoothly reduced to 0 in this boundary around the tabulated field cuboid
-		double lengthconv; ///< Factor to convert length units in file to PENTrack units
-		double Bconv; ///< Factor to convert magnetic field units in file to PENTrack units
 
-
-		/**
-		 * Reads an Opera table file.
-		 *
-		 * File has to contain x,y and z coordinates, it may contain B_x, B_y ,B_z and V columns.
-		 * Sets TabField3::xl, TabField3::yl, TabField3::zl, TabField3::xdist, TabField3::ydist, TabField3::zdist, TabField3::x_mi, TabField3::y_mi, TabField3::z_mi according to the values in the table file which are used to determine the needed indeces on interpolation.
-		 *
-		 * @param tabfile Path to table file
-		 * @param Bscale Magnetic field is always scaled by this factor
-		 * @param Escale Electric field is always scaled by this factor
-		 * @param BxTab Returns magnetic field x components at grid points
-		 * @param ByTab Returns magnetic field y components at grid points
-		 * @param BzTab Returns magnetic field z components at grid points
-		 * @param VTab Returns electric potential at grid points
-		 */
-		void ReadTabFile(const std::string &tabfile, std::vector<double> &BxTab,
-				std::vector<double> &ByTab, std::vector<double> &BzTab, std::vector<double> &VTab);
-
-
+private:
 		/**
 		 * Print some information for each table column
 		 *
-		 * @param BxTab B_x column
-		 * @param ByTab B_y column
-		 * @param BzTab B_z column
-		 * @param VTab V column
+         * @param B Lists of Bx, By, and Bz magnetic field components on grid points
+         * @param V List of electric potentials on grid points
 		 */
-		void CheckTab(const std::vector<double> &BxTab, const std::vector<double> &ByTab,
-				const std::vector<double> &BzTab, const std::vector<double> &VTab);
+        void CheckTab(const std::array<std::vector<double>, 3> &B, const std::vector<double> &V);
 
 
 		/**
-		 * Calculate spatial derivatives of a table column using 1D cubic spline interpolations.
+         * Calculate spatial derivatives of a table column along one dimension using 1D cubic spline interpolations.
 		 *
-		 * @param Tab Table column of which derivatives shall be calculated
-		 * @param Tab1 Returns derivatives with respect to x
-		 * @param Tab2 Returns derivatives with respect to y
-		 * @param Tab3 Returns derivatives with respect to z
-		 * @param Tab12 Returns second derivatives with respect to x and y
-		 * @param Tab13 Returns second derivatives with respect to x and z
-		 * @param Tab23 Returns second derivatives with respect to y and z
-		 * @param Tab123 Returns third derivatives with respect to x, y and z
-		 */
-		void CalcDerivs(const std::vector<double> &Tab, std::vector<double> &Tab1, std::vector<double> &Tab2, std::vector<double> &Tab3,
-						std::vector<double> &Tab12, std::vector<double> &Tab13, std::vector<double> &Tab23, std::vector<double> &Tab123) const;
+         * @param Tab 3D array of field components on grid points
+         * @param diff_dim Coordinate dimension to differentiate (0, 1, or 2 for x, y, or z)
+         * @param DiffTab Returns 3D array of field components differentiated with respect to dimension diff_dim
+         */
+        void CalcDerivs(const array3D &Tab, const unsigned long diff_dim, array3D &DiffTab) const;
 
 
 		/**
@@ -88,10 +54,10 @@ class TabField3: public TField{
 		 *
 		 * Calls TabField3::CalcDerivs and determines the interpolation coefficients with ::tricubic_get_coeff
 		 *
-		 * @param coeff Returns coefficients
-		 * @param Tab Table column
-		 */
-		void PreInterpol(std::vector<std::vector<double> > &coeff, const std::vector<double> &Tab) const;
+         * @param Tab 3D array of field components on grid
+         * @param coeff Returns 3D array of tricubic interpolation coefficients for each grid cell
+         */
+        void PreInterpol(const array3D &Tab, field_type &coeff) const;
 
 
 		/**
@@ -131,15 +97,16 @@ class TabField3: public TField{
 		 *
 		 * Calls TabField3::ReadTabFile, TabField3::CheckTab and for each column TabField3::PreInterpol
 		 *
-		 * @param tabfile Path of table file
+         * @param xyzTab Lists of x, y, and z coordinates of grid points
+         * @param BTab Lists of Bx, By, and Bz magnetic field components on grid points
+         * @param Vtab List of electric potentials on grid points
 		 * @param Bscale Time-dependent scaling formula for magnetic field
 		 * @param Escale Time-dependent scaling formula for electric field
 		 * @param aBoundaryWidth Sets TabField3::BoundaryWidth
-		 * @param alengthconv Factor to convert length units in file to PENTrack units (default: expect cm (cgs), convert to m)
-		 * @param aBconv Factor to convert magnetic field units in file to PENTrack units (default: expect Gauss (cgs), convert to Tesla)
+         * @param alengthconv Factor to multiply length units in file with to convert them to meters
 		 */
-		TabField3(const std::string &tabfile, const std::string &Bscale, const std::string &Escale,
-				const double aBoundaryWidth, const double alengthconv = 0.01, const double aBconv = 1e-4);
+        TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std::array<std::vector<double>, 3> &BTab, const std::vector<double> &VTab,
+                  const std::string &Bscale, const std::string &Escale, const double aBoundaryWidth);
 
 
 		/**
@@ -155,7 +122,7 @@ class TabField3: public TField{
 		 * @param B Returns magnetic-field components
 		 * @param dBidxj Returns spatial derivatives of magnetic-field components (optional)
 		 */
-		void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3] = NULL) const;
+		void BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const override;
 
 
 		/**
@@ -170,10 +137,23 @@ class TabField3: public TField{
 		 * @param t Time
 		 * @param V Returns electric potential
 		 * @param Ei Returns electric field (negative spatial derivatives of V)
-		 * @param dEidxj Adds spatial derivatives of electric field components (optional)
 		 */
 		void EField(const double x, const double y, const double z, const double t,
-				double &V, double Ei[3], double dEidxj[3][3] = NULL) const;
+				double &V, double Ei[3]) const override;
 };
+
+/**
+ * Read 3D table file exported from OPERA
+ * @param params String containing parameters defined in config.in. Should contain field type "3Dtable", file name, magnetic field scaling formula, electric field scaling formula, and boundary width
+ * @return Pointer to created class, derived from TField
+ */
+std::unique_ptr<TabField3> ReadOperaField3(const std::string &params);
+
+/**
+* Read generic file containing table of magnetic field mapped on list of points, e.g. exported from COMSOL
+* @param params String containing parameters defined in config.in. Should contain field type "COMSOL", file name, magnetic field scaling formula, and boundary width
+* @return Pointer to created class, derived from TField
+*/
+std::unique_ptr<TabField3> ReadComsolField(const std::string &params);
 
 #endif // FIELD_3D_H_

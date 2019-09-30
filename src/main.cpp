@@ -430,7 +430,7 @@ void PrintBFieldCut(TConfig &config, const boost::filesystem::path &outfile, con
 			for (int k = 0; k < 3; k++)
 				Pp[k] = BCutPlanePoint[k] + i*u[k]/BCutPlaneSampleCount1 + j*v[k]/BCutPlaneSampleCount2;
 			// print B-/E-Field to file
-			cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << "\n";
+            cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << " ";
 			
 			field.BField(Pp[0], Pp[1], Pp[2], 0, B, dBidxj);
 			for (int k = 0; k < 3; k++){
