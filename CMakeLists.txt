@@ -5,6 +5,9 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include_directories("alglib-3.15.0/cpp/src")
 add_library(alglib OBJECT alglib-3.15.0/cpp/src/alglibinternal.cpp
                           alglib-3.15.0/cpp/src/integration.cpp
@@ -49,7 +52,7 @@ add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/ge
                         $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-	target_compile_options(PENTrack PUBLIC -Wall PUBLIC -std=c++11 PUBLIC -Wno-unused-local-typedefs PUBLIC -Wno-deprecated-declarations)
+	target_compile_options(PENTrack PUBLIC -Wall)
 endif()
 	
 				
