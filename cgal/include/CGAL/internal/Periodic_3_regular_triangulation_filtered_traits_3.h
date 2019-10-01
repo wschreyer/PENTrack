@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Periodic_3_triangulation_3/include/CGAL/internal/Periodic_3_regular_triangulation_filtered_traits_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Periodic_3_triangulation_3/include/CGAL/internal/Periodic_3_regular_triangulation_filtered_traits_3.h $
 // $Id: Periodic_3_regular_triangulation_filtered_traits_3.h adfdc70 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 //

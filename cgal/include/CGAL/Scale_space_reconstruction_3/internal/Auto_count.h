@@ -14,7 +14,7 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Scale_space_reconstruction_3/include/CGAL/Scale_space_reconstruction_3/internal/Auto_count.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Scale_space_reconstruction_3/include/CGAL/Scale_space_reconstruction_3/internal/Auto_count.h $
 // $Id: Auto_count.h 26c857a %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 //

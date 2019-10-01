@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/internal/Corefinement/face_graph_utils.h $
-// $Id: face_graph_utils.h ae96595 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/internal/Corefinement/face_graph_utils.h $
+// $Id: face_graph_utils.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -206,8 +206,8 @@ boost::optional< typename TweakedGetVertexPointMap<PT, NP, PM>::type >
 get_vpm(const NP& np, boost::optional<PM*> opm, boost::true_type)
 {
   if (boost::none == opm) return boost::none;
-  return boost::choose_param(
-           boost::get_param(np, internal_np::vertex_point),
+  return parameters::choose_parameter(
+           parameters::get_parameter(np, internal_np::vertex_point),
            get_property_map(boost::vertex_point, *(*opm)) );
 }
 
@@ -1615,6 +1615,7 @@ void remove_unused_polylines(
     }
   }
 
+  std::vector<vertex_descriptor> vertices_kept;
   BOOST_FOREACH(vertex_descriptor v, vertices_to_remove)
   {
     bool to_remove=true;
@@ -1629,7 +1630,31 @@ void remove_unused_polylines(
       }
     if (to_remove)
       remove_vertex(v,tm);
+    else
+      vertices_kept.push_back(v);
   }
+
+  // update next/prev pointers around vertices in vertices_kept
+  BOOST_FOREACH(vertex_descriptor v, vertices_kept)
+  {
+    halfedge_descriptor h = halfedge(v, tm), start=GT::null_halfedge();
+
+    do{
+      while ( !is_border(h, tm) || is_border(opposite(h, tm), tm) )
+        h = opposite(next(h, tm), tm);
+      halfedge_descriptor in = h;
+      if (start==GT::null_halfedge())
+        start=in;
+      else
+        if (start==in)
+          break;
+      while ( is_border(h, tm) )
+        h = opposite(next(h, tm), tm);
+      set_next(in, opposite(h, tm), tm);
+    }
+    while(true);//this loop handles non-manifold vertices
+  }
+
   BOOST_FOREACH(edge_descriptor e, edges_to_remove)
     remove_edge(e,tm);
 }

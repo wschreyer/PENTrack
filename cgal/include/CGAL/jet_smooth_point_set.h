@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Point_set_processing_3/include/CGAL/jet_smooth_point_set.h $
-// $Id: jet_smooth_point_set.h 2f9408f %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Point_set_processing_3/include/CGAL/jet_smooth_point_set.h $
+// $Id: jet_smooth_point_set.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s) : Pierre Alliez, Marc Pouget and Laurent Saboret
@@ -33,7 +33,7 @@
 #include <CGAL/point_set_processing_assertions.h>
 #include <CGAL/function.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 
 #include <iterator>
@@ -216,7 +216,8 @@ jet_smooth_point_set(
   unsigned int k,
   const NamedParameters& np)
 {
-  using boost::choose_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
   
   // basic geometric types
   typedef typename Point_set_processing_3::GetPointMap<PointRange, NamedParameters>::type PointMap;
@@ -227,10 +228,10 @@ jet_smooth_point_set(
                               typename GetSvdTraits<NamedParameters>::NoTraits>::value),
                             "Error: no SVD traits");
 
-  PointMap point_map = choose_param(get_param(np, internal_np::point_map), PointMap());
-  unsigned int degree_fitting = choose_param(get_param(np, internal_np::degree_fitting), 2);
-  unsigned int degree_monge = choose_param(get_param(np, internal_np::degree_monge), 2);
-  const cpp11::function<bool(double)>& callback = choose_param(get_param(np, internal_np::callback),
+  PointMap point_map = choose_parameter(get_parameter(np, internal_np::point_map), PointMap());
+  unsigned int degree_fitting = choose_parameter(get_parameter(np, internal_np::degree_fitting), 2);
+  unsigned int degree_monge = choose_parameter(get_parameter(np, internal_np::degree_monge), 2);
+  const cpp11::function<bool(double)>& callback = choose_parameter(get_parameter(np, internal_np::callback),
                                                                cpp11::function<bool(double)>());
 
   typedef typename Kernel::Point_3 Point;

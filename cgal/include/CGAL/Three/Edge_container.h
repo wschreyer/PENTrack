@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Three/include/CGAL/Three/Edge_container.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Three/include/CGAL/Three/Edge_container.h $
 // $Id: Edge_container.h 5b4cf63 %aI Maxime Gimeno
 // SPDX-License-Identifier: GPL-3.0+
 //

@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Installation/include/CGAL/version.h $
-// $Id: version.h 99ca804 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Installation/include/CGAL/version.h $
+// $Id: version.h 57a41b3 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //
 // Author(s)     : -
@@ -25,10 +25,10 @@
 #ifndef CGAL_VERSION_H
 #define CGAL_VERSION_H
 
-#define CGAL_VERSION 4.14
-#define CGAL_VERSION_NR 1041401000
+#define CGAL_VERSION 4.14.1
+#define CGAL_VERSION_NR 1041411000
 #define CGAL_SVN_REVISION 99999
-#define CGAL_GIT_HASH ea20dfd63fcdec0b98258c9c47b0cbb88cdb356c
+#define CGAL_GIT_HASH 0b66eb0d23a2b1d66be1094b275e7c6e7b64120b
 #define CGAL_RELEASE_DATE 20190329
 
 #include <CGAL/version_macros.h>

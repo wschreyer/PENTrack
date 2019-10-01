@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Principal_component_analysis/include/CGAL/linear_least_squares_fitting_points_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Principal_component_analysis/include/CGAL/linear_least_squares_fitting_points_2.h $
 // $Id: linear_least_squares_fitting_points_2.h ee57fc2 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

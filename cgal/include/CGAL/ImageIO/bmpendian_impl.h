@@ -13,7 +13,7 @@
 // These files are provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/CGAL_ImageIO/include/CGAL/ImageIO/bmpendian_impl.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/CGAL_ImageIO/include/CGAL/ImageIO/bmpendian_impl.h $
 // $Id: bmpendian_impl.h fd49c82 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //

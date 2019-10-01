@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh_approximation/include/CGAL/Surface_mesh_approximation/L2_metric_plane_proxy.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_approximation/include/CGAL/Surface_mesh_approximation/L2_metric_plane_proxy.h $
 // $Id: L2_metric_plane_proxy.h 24e83fc %aI Lingjie Zhu
 // SPDX-License-Identifier: GPL-3.0+
 //

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Nef_3/include/CGAL/boost/graph/convert_nef_polyhedron_to_polygon_mesh.h $
-// $Id: convert_nef_polyhedron_to_polygon_mesh.h 725e773 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Nef_3/include/CGAL/boost/graph/convert_nef_polyhedron_to_polygon_mesh.h $
+// $Id: convert_nef_polyhedron_to_polygon_mesh.h 7be5e3f %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -151,8 +151,8 @@ struct Shell_polygons_visitor
               polygons.back().push_back(vertex_indices[v[1]]);
               polygons.back().push_back(vertex_indices[v[2]]);
               polygons.push_back( std::vector<std::size_t>() );
-              polygons.back().push_back(vertex_indices[v[2]]);
               polygons.back().push_back(vertex_indices[v[0]]);
+              polygons.back().push_back(vertex_indices[v[2]]);
               polygons.back().push_back(vertex_indices[v[3]]);
             }
             else
@@ -162,8 +162,8 @@ struct Shell_polygons_visitor
               polygons.back().push_back(vertex_indices[v[0]]);
               polygons.back().push_back(vertex_indices[v[2]]);
               polygons.push_back( std::vector<std::size_t>() );
-              polygons.back().push_back(vertex_indices[v[0]]);
               polygons.back().push_back(vertex_indices[v[2]]);
+              polygons.back().push_back(vertex_indices[v[0]]);
               polygons.back().push_back(vertex_indices[v[3]]);
             }
           }

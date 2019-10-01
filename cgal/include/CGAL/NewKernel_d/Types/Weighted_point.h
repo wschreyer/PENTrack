@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/NewKernel_d/include/CGAL/NewKernel_d/Types/Weighted_point.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/NewKernel_d/include/CGAL/NewKernel_d/Types/Weighted_point.h $
 // $Id: Weighted_point.h dcf909d %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 //

@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/BGL/include/CGAL/boost/graph/parameters_interface.h $
-// $Id: parameters_interface.h c9164a0 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/BGL/include/CGAL/boost/graph/parameters_interface.h $
+// $Id: parameters_interface.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -23,6 +23,8 @@ CGAL_add_named_parameter(vertex_point_t, vertex_point, vertex_point_map)
 CGAL_add_named_parameter(halfedge_index_t, halfedge_index, halfedge_index_map)
 CGAL_add_named_parameter(edge_index_t, edge_index, edge_index_map)
 CGAL_add_named_parameter(face_index_t, face_index, face_index_map)
+CGAL_add_named_parameter(vertex_index_t, vertex_index, vertex_index_map)
+CGAL_add_named_parameter(graph_visitor_t, graph_visitor, visitor)
 
 CGAL_add_named_parameter(edge_is_constrained_t, edge_is_constrained, edge_is_constrained_map)
 CGAL_add_named_parameter(first_index_t, first_index, first_index)

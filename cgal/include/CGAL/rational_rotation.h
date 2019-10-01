@@ -16,7 +16,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Kernel_23/include/CGAL/rational_rotation.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Kernel_23/include/CGAL/rational_rotation.h $
 // $Id: rational_rotation.h 0698f79 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 // 

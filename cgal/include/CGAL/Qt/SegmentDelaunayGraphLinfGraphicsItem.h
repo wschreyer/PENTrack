@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/GraphicsView/include/CGAL/Qt/SegmentDelaunayGraphLinfGraphicsItem.h $
-// $Id: SegmentDelaunayGraphLinfGraphicsItem.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/SegmentDelaunayGraphLinfGraphicsItem.h $
+// $Id: SegmentDelaunayGraphLinfGraphicsItem.h 243c7b1 %aI Maxime Gimeno
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -200,8 +200,8 @@ SegmentDelaunayGraphLinfGraphicsItem<T>::drawAll(QPainter *painter, const QStyle
     }
     {
     m_painter->setPen(this->verticesPen());
-    QMatrix matrix = m_painter->matrix();
-    m_painter->resetMatrix();
+    QTransform matrix = m_painter->worldTransform();
+    m_painter->resetTransform();
     Converter<Kern> convert;
       typename T::Finite_vertices_iterator vit;
       for (vit = t->finite_vertices_begin();

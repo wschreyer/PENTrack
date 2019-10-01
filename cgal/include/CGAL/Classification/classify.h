@@ -13,8 +13,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Classification/include/CGAL/Classification/classify.h $
-// $Id: classify.h f5836b2 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Classification/include/CGAL/Classification/classify.h $
+// $Id: classify.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s)     : Simon Giraudot, Florent Lafarge
@@ -27,6 +27,7 @@
 #include <CGAL/internal/Surface_mesh_segmentation/Alpha_expansion_graph_cut.h>
 #include <CGAL/Bbox_3.h>
 #include <CGAL/Classification/Label_set.h>
+#include <CGAL/property_map.h>
 
 #ifdef CGAL_LINKED_WITH_TBB
 #include <tbb/parallel_for.h>

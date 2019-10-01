@@ -14,7 +14,7 @@
  WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 *****************************************************************************/
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/GraphicsView/include/CGAL/Qt/manipulatedCameraFrame_impl.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/manipulatedCameraFrame_impl.h $
 // $Id: manipulatedCameraFrame_impl.h c4b28fd %aI Maxime Gimeno
 // SPDX-License-Identifier: GPL-3.0
 

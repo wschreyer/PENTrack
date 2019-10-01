@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_filtered_traits_2.h $
-// $Id: Segment_Delaunay_graph_filtered_traits_2.h 341d2bb %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_filtered_traits_2.h $
+// $Id: Segment_Delaunay_graph_filtered_traits_2.h e2a3f66 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -27,6 +27,8 @@
 #include <CGAL/license/Segment_Delaunay_graph_2.h>
 
 #include <CGAL/disable_warnings.h>
+
+#include <CGAL/predicates/sign_of_determinant.h>
 
 #include <CGAL/Segment_Delaunay_graph_2/basic.h>
 

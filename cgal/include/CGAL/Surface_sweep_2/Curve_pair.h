@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_sweep_2/include/CGAL/Surface_sweep_2/Curve_pair.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_sweep_2/include/CGAL/Surface_sweep_2/Curve_pair.h $
 // $Id: Curve_pair.h 0625e73 %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0+
 //

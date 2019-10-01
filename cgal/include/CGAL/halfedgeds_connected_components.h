@@ -16,7 +16,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/HalfedgeDS/include/CGAL/halfedgeds_connected_components.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/HalfedgeDS/include/CGAL/halfedgeds_connected_components.h $
 // $Id: halfedgeds_connected_components.h 0698f79 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 // 

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/MVC_post_processor_3.h $
-// $Id: MVC_post_processor_3.h b688291 %aI Mael Rouxel-Labbé
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/MVC_post_processor_3.h $
+// $Id: MVC_post_processor_3.h 6b43eaa %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s)     : Mael Rouxel-Labbé
@@ -231,11 +231,13 @@ private:
                                         get(uvmap, target(hd_1, mesh))),
                               Segment_2(get(uvmap, source(hd_2, mesh)),
                                         get(uvmap, target(hd_2, mesh))))) {
+#ifdef CGAL_SMP_ARAP_DEBUG
           std::ofstream out("non-simple.txt"); // polygon lines
           out << "2 " << get(uvmap, source(hd_1, mesh)) << " 0 "
                       << get(uvmap, target(hd_1, mesh)) << " 0" << std::endl;
           out << "2 " << get(uvmap, source(hd_2, mesh)) << " 0 "
                       << get(uvmap, target(hd_2, mesh)) << " 0" << std::endl;
+#endif
           return false;
         }
       }
@@ -308,8 +310,10 @@ private:
       ct.insert_constraint(sp, tp);
     }
 
+#ifdef CGAL_SMP_ARAP_DEBUG
     std::ofstream out("constrained_triangulation.cgal");
     out << ct;
+#endif
 
     return OK;
   }
@@ -349,8 +353,10 @@ private:
       }
     } while(++fc != done);
 
+#ifdef CGAL_SMP_ARAP_DEBUG
     // Output the exterior faces of the constrained triangulation
     output_ct_exterior_faces(ct);
+#endif
 
     return OK;
   }

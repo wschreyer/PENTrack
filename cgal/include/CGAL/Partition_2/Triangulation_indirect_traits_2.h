@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Partition_2/include/CGAL/Partition_2/Triangulation_indirect_traits_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Partition_2/include/CGAL/Partition_2/Triangulation_indirect_traits_2.h $
 // $Id: Triangulation_indirect_traits_2.h f2391a3 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 // 

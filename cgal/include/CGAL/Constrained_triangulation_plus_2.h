@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Triangulation_2/include/CGAL/Constrained_triangulation_plus_2.h $
-// $Id: Constrained_triangulation_plus_2.h 9e05688 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Triangulation_2/include/CGAL/Constrained_triangulation_plus_2.h $
+// $Id: Constrained_triangulation_plus_2.h 0651c97 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -271,7 +271,7 @@ public:
       return Constraint_id(NULL);
     }
     // protects against inserting twice the same constraint
-    Constraint_id cid = hierarchy.insert_constraint(va, vb);
+    Constraint_id cid = hierarchy.insert_constraint_old_API(va, vb);
     if (va != vb && (cid != Constraint_id(NULL)) )  insert_subconstraint(va,vb); 
 
     return cid;

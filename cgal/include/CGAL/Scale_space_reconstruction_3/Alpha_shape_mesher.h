@@ -14,7 +14,7 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Scale_space_reconstruction_3/include/CGAL/Scale_space_reconstruction_3/Alpha_shape_mesher.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Scale_space_reconstruction_3/include/CGAL/Scale_space_reconstruction_3/Alpha_shape_mesher.h $
 // $Id: Alpha_shape_mesher.h 8cdfad0 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

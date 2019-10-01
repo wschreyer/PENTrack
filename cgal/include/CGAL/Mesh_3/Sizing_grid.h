@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Mesh_3/include/CGAL/Mesh_3/Sizing_grid.h $
-// $Id: Sizing_grid.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/Sizing_grid.h $
+// $Id: Sizing_grid.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -301,7 +301,7 @@ private:
 
   
   // trilinear interpolation of size
-  // http://en.wikipedia.org/wiki/Trilinear_interpolation
+  // https://en.wikipedia.org/wiki/Trilinear_interpolation
   FT size_trilinear(const Point& query) const
   {
     FT px = query.x();

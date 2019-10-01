@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Intersections_2/include/CGAL/Intersections_2/Iso_rectangle_2_Triangle_2.h $
-// $Id: Iso_rectangle_2_Triangle_2.h 43f8490 %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_2/include/CGAL/Intersections_2/Iso_rectangle_2_Triangle_2.h $
+// $Id: Iso_rectangle_2_Triangle_2.h 47b14e6 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -272,7 +272,10 @@ namespace internal {
       //remove duplicated consecutive points
       typename std::vector<Point>::iterator last = std::unique(result.begin(),result.end());
       result.erase(last,result.end());
-      
+
+      while(result.size() > 1 && result.back() == result.front())
+        result.pop_back();
+
       switch(result.size()){
         case 0:
           return intersection_return<typename K::Intersect_2, Triangle, typename K::Iso_rectangle_2>();

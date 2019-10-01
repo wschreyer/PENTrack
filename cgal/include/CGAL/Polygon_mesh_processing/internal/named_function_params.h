@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/internal/named_function_params.h $
-// $Id: named_function_params.h 3dc39c7 %aI Simon Giraudot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/internal/named_function_params.h $
+// $Id: named_function_params.h 560c77f %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -25,7 +25,7 @@
 #include <CGAL/license/Polygon_mesh_processing/core.h>
 
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 
 #define CGAL_PMP_NP_TEMPLATE_PARAMETERS CGAL_BGL_NP_TEMPLATE_PARAMETERS
 #define CGAL_PMP_NP_CLASS CGAL_BGL_NP_CLASS

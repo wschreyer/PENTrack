@@ -14,7 +14,7 @@
  WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 *****************************************************************************/
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/GraphicsView/include/CGAL/Qt/quaternion_impl.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/quaternion_impl.h $
 // $Id: quaternion_impl.h 865e6bf %aI Guillaume Damiand
 // SPDX-License-Identifier: GPL-3.0
 

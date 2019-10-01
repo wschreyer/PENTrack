@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_2.h $
-// $Id: Segment_Delaunay_graph_2.h c54a6a4 %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_2.h $
+// $Id: Segment_Delaunay_graph_2.h 5133321 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -32,6 +32,7 @@
 #include <vector>
 #include <list>
 #include <set>
+#include <stack>
 #include <map>
 #include <algorithm>
 #include <boost/tuple/tuple.hpp>
@@ -589,12 +590,8 @@ public:
     typedef std::vector<std::size_t> Vertex_indices;
     typedef std::vector<Vertex_handle> Vertices;
 
-    Vertex_indices vertex_indices;
-    vertex_indices.resize(points.size());
-
-    std::copy(boost::counting_iterator<std::size_t>(0),
-              boost::counting_iterator<std::size_t>(points.size()),
-              std::back_inserter(vertex_indices));
+    Vertex_indices vertex_indices(boost::counting_iterator<std::size_t>(0),
+                                  boost::counting_iterator<std::size_t>(points.size()));
 
     size_type n = this->number_of_vertices();
     Spatial_sort_traits_adapter_2<Gt,
@@ -972,11 +969,11 @@ protected:
 			std::map<Vertex_handle,Vertex_handle>& vmap,
 			List& l) const;
 
-  void expand_conflict_region_remove(const Face_handle& f,
-				     const Site_2& t,
-				     const Storage_site_2& ss,
-				     List& l, Face_map& fm,
-				     Sign_map& sign_map);
+  void expand_conflict_region_remove(const Face_handle& in_f,
+                                     const Site_2& t,
+                                     List& l,
+                                     Face_map& fm,
+                                     Sign_map& sign_map);
 
   void find_conflict_region_remove(const Vertex_handle& v,
 				   const Vertex_handle& vnearest,
@@ -1452,16 +1449,22 @@ protected:
   std::pair<Face_handle,Face_handle>
   find_faces_to_split(const Vertex_handle& v, const Site_2& t) const;
 
-  void expand_conflict_region(const Face_handle& f, const Site_2& t,
-			      const Storage_site_2& ss,
-#ifdef CGAL_SDG_NO_FACE_MAP
-			      List& l,
-#else
-			      List& l, Face_map& fm,
-			      std::map<Face_handle,Sign>& sign_map,
+  bool check_unregistered_face(const Face_handle& n,
+                               const Site_2& t,
+                               List& l,
+#ifndef CGAL_SDG_NO_FACE_MAP
+                               Face_map& fm,
 #endif
-			      Triple<bool, Vertex_handle,
-			      Arrangement_type>& vcross);
+                               Triple<bool, Vertex_handle, Arrangement_type>& vcross);
+
+  void expand_conflict_region(const Face_handle& in_f,
+                              const Site_2& t,
+                              List& l,
+#ifndef CGAL_SDG_NO_FACE_MAP
+                              Face_map& fm,
+                              std::map<Face_handle, Sign>& sign_map,
+#endif
+                              Triple<bool, Vertex_handle, Arrangement_type>& vcross);
 
   Vertex_handle add_bogus_vertex(Edge e, List& l);
   Vertex_list   add_bogus_vertices(List& l);

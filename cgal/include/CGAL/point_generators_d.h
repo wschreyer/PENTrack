@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Generator/include/CGAL/point_generators_d.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Generator/include/CGAL/point_generators_d.h $
 // $Id: point_generators_d.h cf0909e %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //

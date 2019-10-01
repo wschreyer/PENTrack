@@ -13,8 +13,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/CGAL_ImageIO/include/CGAL/Image_3.h $
-// $Id: Image_3.h 166606c %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/CGAL_ImageIO/include/CGAL/Image_3.h $
+// $Id: Image_3.h e79bfd5 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -154,6 +154,10 @@ public:
   double vx() const { return image_ptr->vx; }
   double vy() const { return image_ptr->vy; }
   double vz() const { return image_ptr->vz; }
+
+  double tx() const { return image_ptr->tx; }
+  double ty() const { return image_ptr->ty; }
+  double tz() const { return image_ptr->tz; }
 
   float value(const std::size_t i,
               const std::size_t j,

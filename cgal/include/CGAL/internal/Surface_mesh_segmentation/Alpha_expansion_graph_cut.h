@@ -13,8 +13,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh_segmentation/include/CGAL/internal/Surface_mesh_segmentation/Alpha_expansion_graph_cut.h $
-// $Id: Alpha_expansion_graph_cut.h 1b25f47 %aI Simon Giraudot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_segmentation/include/CGAL/internal/Surface_mesh_segmentation/Alpha_expansion_graph_cut.h $
+// $Id: Alpha_expansion_graph_cut.h 560c77f %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s)     : Ilker O. Yaz
@@ -47,7 +47,7 @@
 #endif
 #include <CGAL/trace.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 
 #include <boost/version.hpp>
 #ifdef CGAL_DO_NOT_USE_BOYKOV_KOLMOGOROV_MAXFLOW_SOFTWARE

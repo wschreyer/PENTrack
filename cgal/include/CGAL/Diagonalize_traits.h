@@ -11,7 +11,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Solver_interface/include/CGAL/Diagonalize_traits.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Solver_interface/include/CGAL/Diagonalize_traits.h $
 // $Id: Diagonalize_traits.h 821f9c0 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //

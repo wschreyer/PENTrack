@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Point_set_processing_3/include/CGAL/bilateral_smooth_point_set.h $
-// $Id: bilateral_smooth_point_set.h df17fbc %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Point_set_processing_3/include/CGAL/bilateral_smooth_point_set.h $
+// $Id: bilateral_smooth_point_set.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s) : Shihao Wu, Clement Jamin, Pierre Alliez 
@@ -33,7 +33,7 @@
 #include <CGAL/squared_distance_3.h>
 #include <CGAL/function.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 
 #include <iterator>
@@ -400,9 +400,9 @@ public:
    For more details, please see section 4 in \cgalCite{ear-2013}.  
 
    A parallel version of this function is provided and requires the executable to be 
-   linked against the <a href="http://www.threadingbuildingblocks.org">Intel TBB library</a>.
+   linked against the <a href="https://www.threadingbuildingblocks.org">Intel TBB library</a>.
    To control the number of threads used, the user may use the tbb::task_scheduler_init class.
-   See the <a href="http://www.threadingbuildingblocks.org/documentation">TBB documentation</a> 
+   See the <a href="https://www.threadingbuildingblocks.org/documentation">TBB documentation</a> 
    for more details.
 
    \pre Normals must be unit vectors
@@ -448,7 +448,8 @@ bilateral_smooth_point_set(
   unsigned int k,
   const NamedParameters& np)
 {
-  using boost::choose_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
   
   // basic geometric types
   typedef typename Point_set_processing_3::GetPointMap<PointRange, NamedParameters>::type PointMap;
@@ -463,8 +464,8 @@ bilateral_smooth_point_set(
   typedef typename std::vector<Pwn,CGAL_PSP3_DEFAULT_ALLOCATOR<Pwn> > Pwns;
   typedef typename Kernel::FT FT;
   
-  double sharpness_angle = choose_param(get_param(np, internal_np::sharpness_angle), 30.);
-  const cpp11::function<bool(double)>& callback = choose_param(get_param(np, internal_np::callback),
+  double sharpness_angle = choose_parameter(get_parameter(np, internal_np::sharpness_angle), 30.);
+  const cpp11::function<bool(double)>& callback = choose_parameter(get_parameter(np, internal_np::callback),
                                                                cpp11::function<bool(double)>());
   
   CGAL_point_set_processing_precondition(points.begin() != points.end());
@@ -477,8 +478,8 @@ bilateral_smooth_point_set(
   typedef CGAL::Orthogonal_k_neighbor_search<Tree_traits> Neighbor_search;
   typedef typename Neighbor_search::Tree Tree;
 
-  PointMap point_map = choose_param(get_param(np, internal_np::point_map), PointMap());
-  NormalMap normal_map = choose_param(get_param(np, internal_np::normal_map), NormalMap());
+  PointMap point_map = choose_parameter(get_parameter(np, internal_np::point_map), PointMap());
+  NormalMap normal_map = choose_parameter(get_parameter(np, internal_np::normal_map), NormalMap());
 
   // copy points and normals
   Pwns pwns;

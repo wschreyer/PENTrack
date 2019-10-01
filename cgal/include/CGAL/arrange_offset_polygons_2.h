@@ -12,7 +12,7 @@
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
 
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Straight_skeleton_2/include/CGAL/arrange_offset_polygons_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Straight_skeleton_2/include/CGAL/arrange_offset_polygons_2.h $
 // $Id: arrange_offset_polygons_2.h ee57fc2 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

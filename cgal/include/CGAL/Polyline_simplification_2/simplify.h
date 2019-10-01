@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polyline_simplification_2/include/CGAL/Polyline_simplification_2/simplify.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polyline_simplification_2/include/CGAL/Polyline_simplification_2/simplify.h $
 // $Id: simplify.h 09f3236 %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0+
 //

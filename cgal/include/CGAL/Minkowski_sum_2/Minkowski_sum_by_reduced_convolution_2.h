@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Minkowski_sum_2/include/CGAL/Minkowski_sum_2/Minkowski_sum_by_reduced_convolution_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Minkowski_sum_2/include/CGAL/Minkowski_sum_2/Minkowski_sum_by_reduced_convolution_2.h $
 // $Id: Minkowski_sum_by_reduced_convolution_2.h dbc45fa %aI Efi Fogel
 // SPDX-License-Identifier: GPL-3.0+
 //

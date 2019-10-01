@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/NewKernel_d/include/CGAL/NewKernel_d/Wrapper/Cartesian_wrap.h $
-// $Id: Cartesian_wrap.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/NewKernel_d/include/CGAL/NewKernel_d/Wrapper/Cartesian_wrap.h $
+// $Id: Cartesian_wrap.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: LGPL-3.0+
 //
 // Author(s)     : Marc Glisse
@@ -27,7 +27,7 @@
 #if defined(BOOST_MSVC)
 #  pragma warning(push)
 #  pragma warning(disable:4003) // not enough actual parameters for macro 'BOOST_PP_EXPAND_I'
-                                // http://lists.boost.org/boost-users/2014/11/83291.php
+                                // https://lists.boost.org/boost-users/2014/11/83291.php
 #endif 
 #include <CGAL/NewKernel_d/Wrapper/Point_d.h>
 #include <CGAL/NewKernel_d/Wrapper/Vector_d.h>

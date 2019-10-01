@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Classification/include/CGAL/Classification/OpenCV/Random_forest_classifier.h $
-// $Id: Random_forest_classifier.h 7c2674a %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Classification/include/CGAL/Classification/OpenCV/Random_forest_classifier.h $
+// $Id: Random_forest_classifier.h 0b66eb0 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s)     : Simon Giraudot
@@ -25,13 +25,23 @@
 
 #include <CGAL/Classification/Feature_set.h>
 #include <CGAL/Classification/Label_set.h>
-#if (CV_MAJOR_VERSION < 3)
-#include <cv.h>
-#include <ml.h>
+
+#include <opencv2/opencv.hpp>
+
+//In opencv version 2.X the first digit is named EPOCH,
+//until version 3.0 where EPOCH disappears and it becomes MAJOR. Hence this
+//weird condition
+#ifdef CV_VERSION_EPOCH
+  #if  CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR>= 11
+    #include <opencv2/ml.hpp>
+  #else
+    #include <opencv2/ml/ml.hpp>
+  #endif
 #else
-#include <opencv/cv.h>
-#include <opencv/ml.h>
-#endif
+  #include <opencv2/ml.hpp>
+#endif`
+
+
 
 namespace CGAL {
 

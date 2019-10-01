@@ -16,7 +16,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Inventor/include/CGAL/IO/Alpha_shape_3_VRML_2_ostream.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Inventor/include/CGAL/IO/Alpha_shape_3_VRML_2_ostream.h $
 // $Id: Alpha_shape_3_VRML_2_ostream.h 0698f79 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //

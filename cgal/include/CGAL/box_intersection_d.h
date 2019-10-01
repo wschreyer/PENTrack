@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Box_intersection_d/include/CGAL/box_intersection_d.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Box_intersection_d/include/CGAL/box_intersection_d.h $
 // $Id: box_intersection_d.h cd6fe20 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 // 

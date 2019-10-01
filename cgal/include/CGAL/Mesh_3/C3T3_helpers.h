@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Mesh_3/include/CGAL/Mesh_3/C3T3_helpers.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/C3T3_helpers.h $
 // $Id: C3T3_helpers.h 542bf5f %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 //

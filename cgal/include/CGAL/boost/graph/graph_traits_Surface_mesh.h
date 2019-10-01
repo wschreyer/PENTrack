@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh/include/CGAL/boost/graph/graph_traits_Surface_mesh.h $
-// $Id: graph_traits_Surface_mesh.h 132cf69 %aI Maxime Gimeno
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh/include/CGAL/boost/graph/graph_traits_Surface_mesh.h $
+// $Id: graph_traits_Surface_mesh.h 560c77f %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -26,7 +26,7 @@
 #include <CGAL/license/Surface_mesh.h>
 
 // include this to avoid a VC15 warning
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>

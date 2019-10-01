@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Spatial_sorting/include/CGAL/hilbert_sort_on_sphere.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Spatial_sorting/include/CGAL/hilbert_sort_on_sphere.h $
 // $Id: hilbert_sort_on_sphere.h c54a6a4 %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 //

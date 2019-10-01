@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Point_set_processing_3/include/CGAL/IO/read_ply_points.h $
-// $Id: read_ply_points.h aacd365 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Point_set_processing_3/include/CGAL/IO/read_ply_points.h $
+// $Id: read_ply_points.h f0fb562 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s) : Simon Giraudot
@@ -36,7 +36,7 @@
 #include <CGAL/Kernel_traits.h>
 #include <CGAL/IO/io.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 
 #include <boost/version.hpp>
@@ -722,8 +722,8 @@ namespace internal {
   /// \endcond
   
 
-/*
-  \ingroup PkgPointSetProcessing3IOPly
+/**
+  \ingroup PkgPointSetProcessingIOPly
 
   Reads user-selected points properties from a .ply stream (ASCII or
   binary).
@@ -863,7 +863,8 @@ bool read_ply_points(std::istream& stream,
                      const CGAL_BGL_NP_CLASS& np)
 #endif
 {
-  using boost::choose_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
 
   typedef Point_set_processing_3::Fake_point_range<OutputIteratorValueType> PointRange;
   
@@ -874,8 +875,8 @@ bool read_ply_points(std::istream& stream,
   bool has_normals = !(boost::is_same<NormalMap,
                        typename Point_set_processing_3::GetNormalMap<PointRange, CGAL_BGL_NP_CLASS>::NoMap>::value);
 
-  PointMap point_map = choose_param(get_param(np, internal_np::point_map), PointMap());
-  NormalMap normal_map = choose_param(get_param(np, internal_np::normal_map), NormalMap());
+  PointMap point_map = choose_parameter(get_parameter(np, internal_np::point_map), PointMap());
+  NormalMap normal_map = choose_parameter(get_parameter(np, internal_np::normal_map), NormalMap());
 
   if (has_normals)
     return read_ply_points_with_properties (stream, output,

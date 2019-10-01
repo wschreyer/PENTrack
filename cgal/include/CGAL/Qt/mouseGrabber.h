@@ -14,7 +14,7 @@
  WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 *****************************************************************************/
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/GraphicsView/include/CGAL/Qt/mouseGrabber.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/mouseGrabber.h $
 // $Id: mouseGrabber.h 1969ee9 %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0
 

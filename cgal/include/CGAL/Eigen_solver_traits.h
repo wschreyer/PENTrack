@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Solver_interface/include/CGAL/Eigen_solver_traits.h $
-// $Id: Eigen_solver_traits.h a5576cd %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Solver_interface/include/CGAL/Eigen_solver_traits.h $
+// $Id: Eigen_solver_traits.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: LGPL-3.0+
 //
 // Author(s)     : Gael Guennebaud
@@ -84,7 +84,7 @@ The class `Eigen_solver_traits` provides an interface to the sparse solvers of \
 \sa `CGAL::Eigen_sparse_matrix<T>`
 \sa `CGAL::Eigen_sparse_symmetric_matrix<T>`
 \sa `CGAL::Eigen_vector<T>`
-\sa http://eigen.tuxfamily.org
+\sa http://eigen.tuxfamily.org/index.php?title=Main_Page
 
 \cgalHeading{Instantiation Example}
 

@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Algebraic_kernel_d/include/CGAL/Algebraic_kernel_d/Bitstream_descartes_E08_tree.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Algebraic_kernel_d/include/CGAL/Algebraic_kernel_d/Bitstream_descartes_E08_tree.h $
 // $Id: Bitstream_descartes_E08_tree.h 5c4e0a3 %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 // 

@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Convex_hull_3/include/CGAL/Convex_hull_3/dual/interior_polyhedron_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Convex_hull_3/include/CGAL/Convex_hull_3/dual/interior_polyhedron_3.h $
 // $Id: interior_polyhedron_3.h e34529a %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0+
 //

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Convex_hull_3/include/CGAL/Convex_hull_traits_3.h $
-// $Id: Convex_hull_traits_3.h a88438e %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Convex_hull_3/include/CGAL/Convex_hull_traits_3.h $
+// $Id: Convex_hull_traits_3.h 03202d8 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -159,7 +159,12 @@ struct GT3_for_CH3 {
 
 
 
-  template <class R_, class Polyhedron = Default, class Has_filtered_predicates_tag = Tag_false>
+  template <class R_, class Polyhedron = Default,
+            class Has_filtered_predicates_tag = Boolean_tag
+            <
+              boost::is_floating_point<typename R_::FT>::type::value &&
+              R_::Has_filtered_predicates_tag::value
+            > >
 class Convex_hull_traits_3 
 {
  public:  

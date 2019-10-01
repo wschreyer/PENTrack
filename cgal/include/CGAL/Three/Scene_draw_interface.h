@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Three/include/CGAL/Three/Scene_draw_interface.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Three/include/CGAL/Three/Scene_draw_interface.h $
 // $Id: Scene_draw_interface.h 3c6640b %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 //

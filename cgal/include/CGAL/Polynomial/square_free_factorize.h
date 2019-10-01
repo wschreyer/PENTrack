@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polynomial/include/CGAL/Polynomial/square_free_factorize.h $
-// $Id: square_free_factorize.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polynomial/include/CGAL/Polynomial/square_free_factorize.h $
+// $Id: square_free_factorize.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -252,7 +252,7 @@ inline int square_free_factorize_for_regular_polynomial_
        year = {1976},
        pages = {26--35},
        location = {Yorktown Heights, New York, United States},
-       doi = {http://doi.acm.org/10.1145/800205.806320},
+       doi = {https://dl.acm.org/citation.cfm?doid=800205.806320},
        publisher = {ACM Press},
        address = {New York, NY, USA},
        }

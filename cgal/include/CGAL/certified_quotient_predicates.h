@@ -11,7 +11,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Straight_skeleton_2/include/CGAL/certified_quotient_predicates.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Straight_skeleton_2/include/CGAL/certified_quotient_predicates.h $
 // $Id: certified_quotient_predicates.h ff26773 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //

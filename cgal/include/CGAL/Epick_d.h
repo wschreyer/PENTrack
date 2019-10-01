@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/NewKernel_d/include/CGAL/Epick_d.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/NewKernel_d/include/CGAL/Epick_d.h $
 // $Id: Epick_d.h 257b180 %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 //

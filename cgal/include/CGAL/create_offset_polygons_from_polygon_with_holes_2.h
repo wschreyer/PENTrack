@@ -12,7 +12,7 @@
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
 
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Straight_skeleton_2/include/CGAL/create_offset_polygons_from_polygon_with_holes_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Straight_skeleton_2/include/CGAL/create_offset_polygons_from_polygon_with_holes_2.h $
 // $Id: create_offset_polygons_from_polygon_with_holes_2.h 599e201 %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0+
 //

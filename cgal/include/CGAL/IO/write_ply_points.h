@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Point_set_processing_3/include/CGAL/IO/write_ply_points.h $
-// $Id: write_ply_points.h 2f9408f %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Point_set_processing_3/include/CGAL/IO/write_ply_points.h $
+// $Id: write_ply_points.h f0fb562 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s) : Simon Giraudot
@@ -35,7 +35,7 @@
 #include <CGAL/IO/read_ply_points.h>
 #include <CGAL/Iterator_range.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 
 #include <boost/version.hpp>
@@ -115,15 +115,15 @@ namespace internal {
     stream << "undefined_type";
   }
 
-  template <> void property_header_type<char> (std::ostream& stream) { stream << "char"; }
-  template <> void property_header_type<signed char> (std::ostream& stream) { stream << "char"; }
-  template <> void property_header_type<unsigned char> (std::ostream& stream) { stream << "uchar"; }
-  template <> void property_header_type<short> (std::ostream& stream) { stream << "short"; }
-  template <> void property_header_type<unsigned short> (std::ostream& stream) { stream << "ushort"; }
-  template <> void property_header_type<int> (std::ostream& stream) { stream << "int"; }
-  template <> void property_header_type<unsigned int> (std::ostream& stream) { stream << "uint"; }
-  template <> void property_header_type<float> (std::ostream& stream) { stream << "float"; }
-  template <> void property_header_type<double> (std::ostream& stream) { stream << "double"; }
+  template <> inline void property_header_type<char> (std::ostream& stream) { stream << "char"; }
+  template <> inline void property_header_type<signed char> (std::ostream& stream) { stream << "char"; }
+  template <> inline void property_header_type<unsigned char> (std::ostream& stream) { stream << "uchar"; }
+  template <> inline void property_header_type<short> (std::ostream& stream) { stream << "short"; }
+  template <> inline void property_header_type<unsigned short> (std::ostream& stream) { stream << "ushort"; }
+  template <> inline void property_header_type<int> (std::ostream& stream) { stream << "int"; }
+  template <> inline void property_header_type<unsigned int> (std::ostream& stream) { stream << "uint"; }
+  template <> inline void property_header_type<float> (std::ostream& stream) { stream << "float"; }
+  template <> inline void property_header_type<double> (std::ostream& stream) { stream << "double"; }
     
   template <typename T>
   void property_header (std::ostream& stream, const PLY_property<T>& prop)
@@ -216,9 +216,9 @@ namespace internal {
 
   template <typename T>
   T no_char_character (const T& t) { return t; }
-  int no_char_character (const char& t) { return int(t); }
-  int no_char_character (const signed char& t) { return int(t); }
-  int no_char_character (const unsigned char& t) { return int(t); }
+  inline int no_char_character (const char& t) { return int(t); }
+  inline int no_char_character (const signed char& t) { return int(t); }
+  inline int no_char_character (const unsigned char& t) { return int(t); }
 
   template <typename ForwardIterator,
             typename PropertyMap,
@@ -355,7 +355,8 @@ namespace internal {
    \cgalRequiresCPP11
 
    \tparam PointRange is a model of `ConstRange`. The value type of
-   its iterator is the key type of the named parameter `point_map`.
+   its iterator is the key type of the `PropertyMap` objects provided
+   within the `PropertyHandler` parameter.
    \tparam PropertyHandler handlers to recover properties.
 
    \return `true` on success.
@@ -429,7 +430,8 @@ write_ply_points(
   const PointRange& points,
   const NamedParameters& np)
 {
-  using boost::choose_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
 
   // basic geometric types
   typedef typename Point_set_processing_3::GetPointMap<PointRange, NamedParameters>::type PointMap;
@@ -438,8 +440,8 @@ write_ply_points(
   bool has_normals = !(boost::is_same<NormalMap,
                        typename Point_set_processing_3::GetNormalMap<PointRange, NamedParameters>::NoMap>::value);
 
-  PointMap point_map = choose_param(get_param(np, internal_np::point_map), PointMap());
-  NormalMap normal_map = choose_param(get_param(np, internal_np::normal_map), NormalMap());
+  PointMap point_map = choose_parameter(get_parameter(np, internal_np::point_map), PointMap());
+  NormalMap normal_map = choose_parameter(get_parameter(np, internal_np::normal_map), NormalMap());
   
   if (has_normals)
     return write_ply_points_with_properties(

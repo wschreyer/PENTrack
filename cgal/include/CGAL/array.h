@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/STL_Extension/include/CGAL/array.h $
-// $Id: array.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/STL_Extension/include/CGAL/array.h $
+// $Id: array.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: LGPL-3.0+
 //
 // Author(s)     : Sylvain Pion
@@ -56,7 +56,7 @@ using cpp11::array;
 
 // I proposed it for Boost.Array, but it has not been integrated so far.
 // See the thread starting at
-// http://lists.boost.org/Archives/boost/2006/08/109003.php
+// https://lists.boost.org/Archives/boost/2006/08/109003.php
 //
 // C++0x has it under discussion here :
 // http://www.open-std.org/jtc1/sc22/wg21/docs/lwg-active.html#851

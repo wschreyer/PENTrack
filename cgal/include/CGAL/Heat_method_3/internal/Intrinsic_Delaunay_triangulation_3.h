@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Heat_method_3/include/CGAL/Heat_method_3/internal/Intrinsic_Delaunay_triangulation_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Heat_method_3/include/CGAL/Heat_method_3/internal/Intrinsic_Delaunay_triangulation_3.h $
 // $Id: Intrinsic_Delaunay_triangulation_3.h 5841a8b %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0+
 //

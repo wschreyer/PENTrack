@@ -13,8 +13,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Mesh_3/include/CGAL/Mesh_3/Mesh_complex_3_in_triangulation_3_base.h $
-// $Id: Mesh_complex_3_in_triangulation_3_base.h 3a8aee1 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/Mesh_complex_3_in_triangulation_3_base.h $
+// $Id: Mesh_complex_3_in_triangulation_3_base.h 89b4c98 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -537,9 +537,11 @@ public:
         fit != end; ++fit)
     {
       Facet facet = *fit;
-      Facet mirror = tr_.mirror_facet(facet);
       set_surface_patch_index(facet.first, facet.second, Surface_patch_index());
-      set_surface_patch_index(mirror.first, mirror.second, Surface_patch_index());
+      if(this->triangulation().dimension() > 2) {
+        Facet mirror = tr_.mirror_facet(facet);
+        set_surface_patch_index(mirror.first, mirror.second, Surface_patch_index());
+      }
     }
     this->number_of_facets_ = 0;
     clear_manifold_info();

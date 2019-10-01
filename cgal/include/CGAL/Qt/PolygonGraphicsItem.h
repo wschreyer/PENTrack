@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/GraphicsView/include/CGAL/Qt/PolygonGraphicsItem.h $
-// $Id: PolygonGraphicsItem.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/PolygonGraphicsItem.h $
+// $Id: PolygonGraphicsItem.h 243c7b1 %aI Maxime Gimeno
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -154,8 +154,8 @@ PolygonGraphicsItem<P>::paint(QPainter *painter,
     Converter<Traits> convert;
 
     painter->setPen(verticesPen());
-    QMatrix matrix = painter->matrix();
-    painter->resetMatrix();
+    QTransform matrix = painter->worldTransform();
+    painter->resetTransform();
     for(typename P::Vertex_iterator it = poly->vertices_begin();
         it != poly->vertices_end();
         it++){

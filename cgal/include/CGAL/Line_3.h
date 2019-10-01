@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Kernel_23/include/CGAL/Line_3.h $
-// $Id: Line_3.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Kernel_23/include/CGAL/Line_3.h $
+// $Id: Line_3.h 6c8a8f3 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -38,7 +38,7 @@ namespace CGAL {
 template <class R_>
 class Line_3 : public R_::Kernel_base::Line_3
 {
-  typedef typename R_::RT                    RT;
+  typedef typename R_::FT                    FT;
   typedef typename R_::Point_3               Point_3;
   typedef typename R_::Ray_3                 Ray_3;
   typedef typename R_::Segment_3             Segment_3;
@@ -116,7 +116,7 @@ public:
     return R().construct_point_on_3_object()(*this, 0);
   }
 
-  Point_3 point(int i) const
+  Point_3 point(const FT i) const
   { 
     return R().construct_point_on_3_object()(*this, i);
   }

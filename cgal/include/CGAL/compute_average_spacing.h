@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Point_set_processing_3/include/CGAL/compute_average_spacing.h $
-// $Id: compute_average_spacing.h 2f9408f %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Point_set_processing_3/include/CGAL/compute_average_spacing.h $
+// $Id: compute_average_spacing.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s) : Pierre Alliez and Laurent Saboret
@@ -33,7 +33,7 @@
 #include <CGAL/assertions.h>
 #include <CGAL/function.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 
 #include <iterator>
@@ -45,6 +45,11 @@
 #include <tbb/blocked_range.h>
 #include <tbb/scalable_allocator.h>
 #endif // CGAL_LINKED_WITH_TBB
+
+#ifdef DOXYGEN_RUNNING
+#define CGAL_BGL_NP_TEMPLATE_PARAMETERS NamedParameters
+#define CGAL_BGL_NP_CLASS NamedParameters
+#endif
 
 namespace CGAL {
 
@@ -184,28 +189,29 @@ compute_average_spacing(const typename Kernel::Point_3& query, ///< 3D point who
 */
 template <typename ConcurrencyTag,
 	  typename PointRange,
-          typename NamedParameters
+          typename CGAL_BGL_NP_TEMPLATE_PARAMETERS
 >
 #ifdef DOXYGEN_RUNNING
   FT
 #else
-  typename Point_set_processing_3::GetK<PointRange, NamedParameters>::Kernel::FT
+  typename Point_set_processing_3::GetK<PointRange, CGAL_BGL_NP_CLASS>::Kernel::FT
 #endif
 compute_average_spacing(
   const PointRange& points,
   unsigned int k,
-  const NamedParameters& np)
+  const CGAL_BGL_NP_CLASS& np)
 {
-  using boost::choose_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
 
   // basic geometric types
-  typedef typename Point_set_processing_3::GetPointMap<PointRange, NamedParameters>::const_type PointMap;
-  typedef typename Point_set_processing_3::GetK<PointRange, NamedParameters>::Kernel Kernel;
+  typedef typename Point_set_processing_3::GetPointMap<PointRange, CGAL_BGL_NP_CLASS>::const_type PointMap;
+  typedef typename Point_set_processing_3::GetK<PointRange, CGAL_BGL_NP_CLASS>::Kernel Kernel;
 
   typedef typename Kernel::Point_3 Point;
 
-  PointMap point_map = choose_param(get_param(np, internal_np::point_map), PointMap());
-  const cpp11::function<bool(double)>& callback = choose_param(get_param(np, internal_np::callback),
+  PointMap point_map = choose_parameter(get_parameter(np, internal_np::point_map), PointMap());
+  const cpp11::function<bool(double)>& callback = choose_parameter(get_parameter(np, internal_np::callback),
                                                                cpp11::function<bool(double)>());
   
   // types for K nearest neighbors search structure

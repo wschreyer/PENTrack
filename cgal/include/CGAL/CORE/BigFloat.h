@@ -28,7 +28,7 @@
  * WWW URL: http://cs.nyu.edu/exact/
  * Email: exact@cs.nyu.edu
  *
- * $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/CGAL_Core/include/CGAL/CORE/BigFloat.h $
+ * $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/CGAL_Core/include/CGAL/CORE/BigFloat.h $
  * $Id: BigFloat.h 2d7dcb0 %aI Laurent Rineau
  * SPDX-License-Identifier: LGPL-3.0+
  ***************************************************************************/

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Solver_interface/include/CGAL/Eigen_diagonalize_traits.h $
-// $Id: Eigen_diagonalize_traits.h 67d75ec %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Solver_interface/include/CGAL/Eigen_diagonalize_traits.h $
+// $Id: Eigen_diagonalize_traits.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: LGPL-3.0+
 //
 // Author(s) : Jocelyn Meyron and Quentin Mérigot
@@ -52,7 +52,7 @@ namespace CGAL {
 ///
 /// \cgalModels `DiagonalizeTraits`
 ///
-/// \sa http://eigen.tuxfamily.org
+/// \sa http://eigen.tuxfamily.org/index.php?title=Main_Page
 template <typename FT, unsigned int dim = 3>
 class Eigen_diagonalize_traits
 {

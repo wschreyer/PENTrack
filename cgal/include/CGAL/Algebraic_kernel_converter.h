@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Algebraic_kernel_for_circles/include/CGAL/Algebraic_kernel_converter.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Algebraic_kernel_for_circles/include/CGAL/Algebraic_kernel_converter.h $
 // $Id: Algebraic_kernel_converter.h ee57fc2 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

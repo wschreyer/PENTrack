@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/CGAL_ImageIO/include/CGAL/SEP_header.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/CGAL_ImageIO/include/CGAL/SEP_header.h $
 // $Id: SEP_header.h af2a447 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //

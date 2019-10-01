@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Homogeneous_kernel/include/CGAL/Homogeneous/function_objects.h $
-// $Id: function_objects.h bcfb7af %aI Maxime Gimeno
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Homogeneous_kernel/include/CGAL/Homogeneous/function_objects.h $
+// $Id: function_objects.h a45ccab %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -3098,12 +3098,21 @@ namespace HomogeneousKernelFunctors {
     }
 
     Point_2
-    operator()(const Line_2& l, int i) const
+    operator()(const Line_2& l, const RT& i) const
     {
       Point_2 p = K().construct_point_2_object()(l);
       Vector_2 v = K().construct_vector_2_object()(l);
       return K().construct_translated_point_2_object()
-                 (p, K().construct_scaled_vector_2_object()(v, RT(i)));
+                 (p, K().construct_scaled_vector_2_object()(v, i));
+    }
+
+    Point_2
+    operator()(const Line_2& l, const FT& i) const
+    {
+      Point_2 p = K().construct_point_2_object()(l);
+      Vector_2 v = K().construct_vector_2_object()(l);
+      return K().construct_translated_point_2_object()
+                 (p, K().construct_scaled_vector_2_object()(v, i));
     }
 
 

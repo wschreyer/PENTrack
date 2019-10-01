@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_sweep_2/include/CGAL/Surface_sweep_2/Surface_sweep_2_debug.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_sweep_2/include/CGAL/Surface_sweep_2/Surface_sweep_2_debug.h $
 // $Id: Surface_sweep_2_debug.h f1483cf %aI Efi Fogel
 // SPDX-License-Identifier: GPL-3.0+
 //

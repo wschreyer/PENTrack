@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/random_perturbation.h $
-// $Id: random_perturbation.h 3b9464f %aI Mael Rouxel-Labbé
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/random_perturbation.h $
+// $Id: random_perturbation.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -151,8 +151,8 @@ void random_perturbation(VertexRange vertices
                        , const NamedParameters& np)
 {
   typedef TriangleMesh PM;
-  using boost::get_param;
-  using boost::choose_param;
+  using parameters::get_parameter;
+  using parameters::choose_parameter;
 
   typedef typename boost::graph_traits<PM>::vertex_descriptor vertex_descriptor;
 
@@ -165,22 +165,22 @@ void random_perturbation(VertexRange vertices
 #endif
 
   typedef typename GetGeomTraits<PM, NamedParameters>::type GT;
-  GT gt = choose_param(get_param(np, internal_np::geom_traits), GT());
+  GT gt = choose_parameter(get_parameter(np, internal_np::geom_traits), GT());
 
   typedef typename GetVertexPointMap<PM, NamedParameters>::type VPMap;
-  VPMap vpmap = choose_param(get_param(np, internal_np::vertex_point),
+  VPMap vpmap = choose_parameter(get_parameter(np, internal_np::vertex_point),
                              get_property_map(vertex_point, tmesh));
 
-  typedef typename boost::lookup_named_param_def <
+  typedef typename internal_np::Lookup_named_param_def <
       internal_np::vertex_is_constrained_t,
       NamedParameters,
       Constant_property_map<vertex_descriptor, bool> // default
     > ::type VCMap;
-  VCMap vcmap = choose_param(get_param(np, internal_np::vertex_is_constrained),
-                             Constant_property_map<vertex_descriptor, bool>(false));
+  VCMap vcmap = choose_parameter(get_parameter(np, internal_np::vertex_is_constrained),
+                                 Constant_property_map<vertex_descriptor, bool>(false));
 
-  unsigned int seed = choose_param(get_param(np, internal_np::random_seed), -1);
-  bool do_project = choose_param(get_param(np, internal_np::do_project), true);
+  unsigned int seed = choose_parameter(get_parameter(np, internal_np::random_seed), -1);
+  bool do_project = choose_parameter(get_parameter(np, internal_np::do_project), true);
 
   CGAL::Random rng = (seed == unsigned(-1)) ? CGAL::Random() : CGAL::Random(seed);
 

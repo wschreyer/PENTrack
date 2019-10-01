@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Mesh_3/include/CGAL/Labeled_image_mesh_domain_3.h $
-// $Id: Labeled_image_mesh_domain_3.h 30ff350 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Labeled_image_mesh_domain_3.h $
+// $Id: Labeled_image_mesh_domain_3.h e4aaf24 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -109,12 +109,12 @@ private:
   /// Returns a box enclosing image \c im
   Bbox_3 compute_bounding_box(const Image& im) const
   {
-    return Bbox_3(-im.vx(),
-                  -im.vy(),
-                  -im.vz(),
-                  double(im.xdim()+1)*im.vx(),
-                  double(im.ydim()+1)*im.vy(),
-                  double(im.zdim()+1)*im.vz());
+    return Bbox_3(-im.vx()+im.tx(),
+                  -im.vy()+im.ty(),
+                  -im.vz()+im.tz(),
+                  double(im.xdim()+1)*im.vx()+im.tx(),
+                  double(im.ydim()+1)*im.vy()+im.ty(),
+                  double(im.zdim()+1)*im.vz()+im.tz());
   }
 };  // end class Labeled_image_mesh_domain_3
 

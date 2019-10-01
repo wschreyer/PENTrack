@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Intersections_3/include/CGAL/Intersections_3/internal/intersection_3_1_impl.h $
-// $Id: intersection_3_1_impl.h e65eba0 %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_3/include/CGAL/Intersections_3/internal/intersection_3_1_impl.h $
+// $Id: intersection_3_1_impl.h 55c9a17 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -33,6 +33,7 @@
 #include <CGAL/number_utils.h>
 #include <CGAL/Intersections_3/Iso_cuboid_3_Iso_cuboid_3.h>
 #include <CGAL/Intersections_3/Iso_cuboid_3_Line_3.h>
+#include <CGAL/utils_classes.h>
 
 #include <CGAL/Intersections_3/internal/bbox_intersection_3.h>
 namespace CGAL {
@@ -338,10 +339,13 @@ intersection(const typename K::Line_3 &l1,
   const Point_3 p4 = p2 + v2;
   if(!K().coplanar_3_object()(p1,p2,p3,p4)) return intersection_return<typename K::Intersect_3, typename K::Line_3, typename K::Line_3>();
   const Vector_3 v3 = p3 - p1;
- const Vector_3 v3v2 = cross_product(v3,v2);
+  const Vector_3 v3v2 = cross_product(v3,v2);
   const Vector_3 v1v2 = cross_product(v1,v2);
-  const FT t = ((v3v2.x()*v1v2.x()) + (v3v2.y()*v1v2.y()) + (v3v2.z()*v1v2.z())) /
-               (v1v2.squared_length());
+  const FT sl = v1v2.squared_length();
+  if(certainly(sl == FT(0)))
+    return intersection_return<typename K::Intersect_3, typename K::Line_3, typename K::Line_3>();
+  const FT t = ((v3v2.x()*v1v2.x()) + (v3v2.y()*v1v2.y()) + (v3v2.z()*v1v2.z())) / sl;
+
   return intersection_return<typename K::Intersect_3, typename K::Line_3, typename K::Line_3>(p1 + (v1 * t));
 }
 
@@ -466,7 +470,7 @@ do_intersect(const typename K::Segment_3  &s1,
              const K & k)
 {
   CGAL_precondition(! s1.is_degenerate () && ! s2.is_degenerate () );
-  bool b=do_intersect(s1.supporting_line(),s2.supporting_line(),k);
+  bool b=internal::do_intersect(s1.supporting_line(),s2.supporting_line(),k);
   if (b)
   {
     //supporting_line intersects: points are coplanar

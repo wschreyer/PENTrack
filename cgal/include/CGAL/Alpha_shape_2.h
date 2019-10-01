@@ -14,7 +14,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0+
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Alpha_shapes_2/include/CGAL/Alpha_shape_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Alpha_shapes_2/include/CGAL/Alpha_shape_2.h $
 // $Id: Alpha_shape_2.h ba3a59e %aI Mael Rouxel-Labbé
 // Author(s)     : Tran Kai Frank DA
 //                 Andreas Fabri <Andreas.Fabri@geometryfactory.com>

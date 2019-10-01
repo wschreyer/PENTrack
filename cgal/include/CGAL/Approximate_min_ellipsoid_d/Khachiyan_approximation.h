@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Bounding_volumes/include/CGAL/Approximate_min_ellipsoid_d/Khachiyan_approximation.h $
-// $Id: Khachiyan_approximation.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Bounding_volumes/include/CGAL/Approximate_min_ellipsoid_d/Khachiyan_approximation.h $
+// $Id: Khachiyan_approximation.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -250,7 +250,7 @@ namespace CGAL {
       // Complexity: O((n-start) d^2)
       //
       // Todo: maybe use something like Kahan Summation here? See
-      // <http://en.wikipedia.org/wiki/Kahan_Summation_Algorithm>.
+      // <https://en.wikipedia.org/wiki/Kahan_Summation_Algorithm>.
     {
       for (int k=start; k<n; ++k) {
 	C_it pi = tco.cartesian_begin(*P[k]);

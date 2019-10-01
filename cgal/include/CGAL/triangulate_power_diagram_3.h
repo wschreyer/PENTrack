@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Skin_surface_3/include/CGAL/triangulate_power_diagram_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Skin_surface_3/include/CGAL/triangulate_power_diagram_3.h $
 // $Id: triangulate_power_diagram_3.h 93cfd56 %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0+
 //

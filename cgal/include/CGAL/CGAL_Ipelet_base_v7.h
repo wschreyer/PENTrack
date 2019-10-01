@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/CGAL_ipelets/include/CGAL/CGAL_Ipelet_base_v7.h $
-// $Id: CGAL_Ipelet_base_v7.h d1ad2ff %aI Maxime Gimeno
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/CGAL_ipelets/include/CGAL/CGAL_Ipelet_base_v7.h $
+// $Id: CGAL_Ipelet_base_v7.h da2726e %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -276,7 +276,7 @@ public:
         return Iso_rectangle_2();
       }
       
-      for (int i=0;i<static_cast<int>(static_cast<int>(get_IpePage()->count()));++i){
+      for (int i=0;i<static_cast<int>(get_IpePage()->count());++i){
         if (get_IpePage()->select(i)==ipe::ENotSelected)
           continue;
         

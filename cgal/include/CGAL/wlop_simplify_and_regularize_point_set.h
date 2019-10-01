@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Point_set_processing_3/include/CGAL/wlop_simplify_and_regularize_point_set.h $
-// $Id: wlop_simplify_and_regularize_point_set.h c636ea1 %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Point_set_processing_3/include/CGAL/wlop_simplify_and_regularize_point_set.h $
+// $Id: wlop_simplify_and_regularize_point_set.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s) : Shihao Wu, Clement Jamin, Pierre Alliez 
@@ -32,7 +32,7 @@
 #include <CGAL/Memory_sizer.h>
 #include <CGAL/compute_average_spacing.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 #include <CGAL/algorithm.h>
 #include <iterator>
@@ -415,9 +415,9 @@ public:
    For more details, please refer to \cgalCite{wlop-2009}.
 
    A parallel version of WLOP is provided and requires the executable to be 
-   linked against the <a href="http://www.threadingbuildingblocks.org">Intel TBB library</a>.
+   linked against the <a href="https://www.threadingbuildingblocks.org">Intel TBB library</a>.
    To control the number of threads used, the user may use the tbb::task_scheduler_init class.
-   See the <a href="http://www.threadingbuildingblocks.org/documentation">TBB documentation</a> 
+   See the <a href="https://www.threadingbuildingblocks.org/documentation">TBB documentation</a> 
    for more details.
 
    \tparam ConcurrencyTag enables sequential versus parallel algorithm.
@@ -470,18 +470,19 @@ wlop_simplify_and_regularize_point_set(
   const NamedParameters& np
 )
 {
-  using boost::choose_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
   
   // basic geometric types
   typedef typename Point_set_processing_3::GetPointMap<PointRange, NamedParameters>::type PointMap;
   typedef typename Point_set_processing_3::GetK<PointRange, NamedParameters>::Kernel Kernel;
 
-  PointMap point_map = choose_param(get_param(np, internal_np::point_map), PointMap());
-  double select_percentage = choose_param(get_param(np, internal_np::select_percentage), 5.);
-  double radius = choose_param(get_param(np, internal_np::neighbor_radius), -1);
-  unsigned int iter_number = choose_param(get_param(np, internal_np::number_of_iterations), 35);
-  bool require_uniform_sampling = choose_param(get_param(np, internal_np::require_uniform_sampling), false);
-  const cpp11::function<bool(double)>& callback = choose_param(get_param(np, internal_np::callback),
+  PointMap point_map = choose_parameter(get_parameter(np, internal_np::point_map), PointMap());
+  double select_percentage = choose_parameter(get_parameter(np, internal_np::select_percentage), 5.);
+  double radius = choose_parameter(get_parameter(np, internal_np::neighbor_radius), -1);
+  unsigned int iter_number = choose_parameter(get_parameter(np, internal_np::number_of_iterations), 35);
+  bool require_uniform_sampling = choose_parameter(get_parameter(np, internal_np::require_uniform_sampling), false);
+  const cpp11::function<bool(double)>& callback = choose_parameter(get_parameter(np, internal_np::callback),
                                                                cpp11::function<bool(double)>());
 
   typedef typename Kernel::Point_3   Point;

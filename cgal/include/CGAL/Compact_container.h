@@ -13,8 +13,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/STL_Extension/include/CGAL/Compact_container.h $
-// $Id: Compact_container.h 3a8aee1 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/STL_Extension/include/CGAL/Compact_container.h $
+// $Id: Compact_container.h 68f321c %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //
 // Author(s)     : Sylvain Pion
@@ -28,6 +28,7 @@
 #include <CGAL/Default.h>
 
 #include <cmath>
+#include <cstddef>
 #include <iterator>
 #include <algorithm>
 #include <vector>
@@ -815,7 +816,8 @@ private:
 
   static char * clean_pointer(char * p)
   {
-    return ((p - (char *) NULL) & ~ (std::ptrdiff_t) START_END) + (char *) NULL;
+    return reinterpret_cast<char*>(reinterpret_cast<std::ptrdiff_t>(p) &
+                                   ~ (std::ptrdiff_t) START_END);
   }
 
   // Returns the pointee, cleaned up from the squatted bits.
@@ -828,7 +830,8 @@ private:
   static Type type(const_pointer ptr)
   {
     char * p = (char *) Traits::pointer(*ptr);
-    return (Type) (p - clean_pointer(p));
+    return (Type) (reinterpret_cast<std::ptrdiff_t>(p) -
+                   reinterpret_cast<std::ptrdiff_t>(clean_pointer(p)));
   }
 
   // Sets the pointer part and the type of the pointee.
@@ -837,7 +840,8 @@ private:
     // This out of range compare is always true and causes lots of
     // unnecessary warnings.
     // CGAL_precondition(0 <= t && t < 4);
-    Traits::pointer(*ptr) = (void *) ((clean_pointer((char *) p)) + (int) t);
+    Traits::pointer(*ptr) = reinterpret_cast<void *>
+      (reinterpret_cast<std::ptrdiff_t>(clean_pointer((char *) p)) + (int) t);
   }
 
 public:

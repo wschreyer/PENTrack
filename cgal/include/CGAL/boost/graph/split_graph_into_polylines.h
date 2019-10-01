@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/BGL/include/CGAL/boost/graph/split_graph_into_polylines.h $
-// $Id: split_graph_into_polylines.h a2e8a1c %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/BGL/include/CGAL/boost/graph/split_graph_into_polylines.h $
+// $Id: split_graph_into_polylines.h 377d707 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //
 // Author(s)     : Laurent Rineau, Xiang Gao
@@ -201,7 +201,16 @@ void duplicate_terminal_vertices(Graph& graph,
     
 } // namespace internal
 
-  
+template <typename Graph,
+          typename Visitor,
+          typename IsTerminal,
+          typename LessForVertexDescriptors>
+void
+split_graph_into_polylines(const Graph& graph,
+                           Visitor& polyline_visitor,
+                           IsTerminal is_terminal,
+                           LessForVertexDescriptors less);
+
 /*!
 \ingroup PkgBGLRef
 splits into polylines the graph `g` at vertices of degree greater than 2

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/GraphicsView/include/CGAL/Qt/RegularGridGraphicsItem.h $
-// $Id: RegularGridGraphicsItem.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/RegularGridGraphicsItem.h $
+// $Id: RegularGridGraphicsItem.h 243c7b1 %aI Maxime Gimeno
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -180,8 +180,8 @@ void
 
   /*
   painter->setPen(this->verticesPen());
-  QMatrix matrix = painter->matrix();
-  painter->resetMatrix();
+  QTransform matrix = painter->worldTransform();
+  painter->resetTransform();
   for(int i = 0; i < nw; i++){
     for(int j = 0; j < nh; j++){
       painter->drawPoint(matrix.map(QPointF(i*dw, j*dh)));

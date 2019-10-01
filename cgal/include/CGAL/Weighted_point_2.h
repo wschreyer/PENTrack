@@ -16,7 +16,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Kernel_23/include/CGAL/Weighted_point_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Kernel_23/include/CGAL/Weighted_point_2.h $
 // $Id: Weighted_point_2.h 7fa4b38 %aI Maxime Gimeno
 // SPDX-License-Identifier: LGPL-3.0+
 //

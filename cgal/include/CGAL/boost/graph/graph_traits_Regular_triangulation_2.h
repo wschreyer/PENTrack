@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Triangulation_2/include/CGAL/boost/graph/graph_traits_Regular_triangulation_2.h $
-// $Id: graph_traits_Regular_triangulation_2.h 28d55f8 %aI Mael Rouxel-Labbé
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Triangulation_2/include/CGAL/boost/graph/graph_traits_Regular_triangulation_2.h $
+// $Id: graph_traits_Regular_triangulation_2.h 560c77f %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -22,7 +22,7 @@
 #define CGAL_GRAPH_TRAITS_REGULAR_TRIANGULATION_2_H
 
 // include this to avoid a VC15 warning
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 
 #include <boost/config.hpp>
 #include <boost/iterator_adaptors.hpp>

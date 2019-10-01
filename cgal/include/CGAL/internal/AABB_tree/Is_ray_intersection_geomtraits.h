@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/AABB_tree/include/CGAL/internal/AABB_tree/Is_ray_intersection_geomtraits.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/AABB_tree/include/CGAL/internal/AABB_tree/Is_ray_intersection_geomtraits.h $
 // $Id: Is_ray_intersection_geomtraits.h ee57fc2 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

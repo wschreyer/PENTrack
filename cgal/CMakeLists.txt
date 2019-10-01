@@ -3,18 +3,19 @@
 # refer to the root source directory of the project as ${CMAKE_SOURCE_DIR} or
 # ${CMAKE_SOURCE_DIR} and to the root binary directory of the project as
 # ${CMAKE_BINARY_DIR} or ${CMAKE_BINARY_DIR}.
-if(NOT PROJECT_NAME)
-  project(CGAL CXX C)
-endif()
 
 # Minimal version of CMake:
 cmake_minimum_required(VERSION 3.1)
+
+if(NOT PROJECT_NAME)
+  project(CGAL CXX C)
+endif()
 
 # Tested version:
 cmake_policy(VERSION 3.1)
 
 if(POLICY CMP0056)
-  # http://www.cmake.org/cmake/help/v3.2/policy/CMP0056.html
+  # https://cmake.org/cmake/help/v3.2/policy/CMP0056.html
   #
   # Fix a bug: `try_compile` should use `CMAKE_EXE_LINKER_FLAGS`.
   # That variable can contain important flags like
@@ -910,7 +911,7 @@ install(PROGRAMS ${scripts} DESTINATION ${CGAL_INSTALL_BIN_DIR})
 install(DIRECTORY ${CGAL_MODULES_REL_DIR}/                DESTINATION ${CGAL_INSTALL_CMAKE_DIR} )
 install(FILES     ${CGAL_MODULES_REL_DIR}/UseCGAL.cmake   DESTINATION ${CGAL_INSTALL_CMAKE_DIR} )
 
-if ( GMP_IN_CGAL_AUXILIARY OR MPFR_IN_CGAL_AUXILIARY )
+if ( IS_DIRECTORY auxiliary/gmp/include AND IS_DIRECTORY auxiliary/gmp/lib )
   install(DIRECTORY auxiliary/gmp/include/ DESTINATION ${CGAL_INSTALL_INC_DIR} )
   install(DIRECTORY auxiliary/gmp/lib/     DESTINATION ${CGAL_INSTALL_LIB_DIR} )
 endif()
@@ -959,12 +960,17 @@ endif()
 #
 #--------------------------------------------------------------------------------------------------
 
+if(NOT TARGET ALL_CGAL_TARGETS)
+  add_custom_target( ALL_CGAL_TARGETS )
+endif()
+
 macro( add_programs subdir target ON_OFF )
 
   cache_set( CGAL_EXECUTABLE_TARGETS "" )
   
   add_custom_target( ${target} )
-  
+  add_dependencies( ALL_CGAL_TARGETS ${target} )
+
   option( WITH_${target} "Select ${target}" ${ON_OFF} )
   if ( WITH_${target} )
     add_subdirectory( ${subdir} EXCLUDE_FROM_ALL )

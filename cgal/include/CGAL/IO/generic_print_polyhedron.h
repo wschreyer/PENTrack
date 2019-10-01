@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polyhedron_IO/include/CGAL/IO/generic_print_polyhedron.h $
-// $Id: generic_print_polyhedron.h 911b6eb %aI Maxime Gimeno
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polyhedron_IO/include/CGAL/IO/generic_print_polyhedron.h $
+// $Id: generic_print_polyhedron.h 560c77f %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -24,7 +24,7 @@
 
 #include <CGAL/license/Polyhedron.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 #include <CGAL/property_map.h>
 #include <boost/graph/graph_traits.hpp>

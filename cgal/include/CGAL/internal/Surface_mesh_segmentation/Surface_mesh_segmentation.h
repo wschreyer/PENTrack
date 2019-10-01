@@ -13,7 +13,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh_segmentation/include/CGAL/internal/Surface_mesh_segmentation/Surface_mesh_segmentation.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_segmentation/include/CGAL/internal/Surface_mesh_segmentation/Surface_mesh_segmentation.h $
 // $Id: Surface_mesh_segmentation.h 8cdfad0 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

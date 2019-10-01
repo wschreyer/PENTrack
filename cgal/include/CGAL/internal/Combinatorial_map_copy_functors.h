@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Combinatorial_map/include/CGAL/internal/Combinatorial_map_copy_functors.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Combinatorial_map/include/CGAL/internal/Combinatorial_map_copy_functors.h $
 // $Id: Combinatorial_map_copy_functors.h 7b9b04f %aI Guillaume Damiand
 // SPDX-License-Identifier: LGPL-3.0+
 //

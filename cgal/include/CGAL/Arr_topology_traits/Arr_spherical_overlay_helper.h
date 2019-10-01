@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Arrangement_on_surface_2/include/CGAL/Arr_topology_traits/Arr_spherical_overlay_helper.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/Arr_topology_traits/Arr_spherical_overlay_helper.h $
 // $Id: Arr_spherical_overlay_helper.h 7936109 %aI Efi Fogel
 // SPDX-License-Identifier: GPL-3.0+
 //

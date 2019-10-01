@@ -35,7 +35,7 @@
  *      - added comments and traces
  *      - copied BICGSTAB algorithm WITH preconditioner from Graphite 1.9 code
  *
- * $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/OpenNL/include/CGAL/OpenNL/bicgstab.h $
+ * $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/OpenNL/include/CGAL/OpenNL/bicgstab.h $
  * $Id: bicgstab.h 8cdfad0 %aI Sébastien Loriot
  * SPDX-License-Identifier: LGPL-3.0+
  */

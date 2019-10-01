@@ -50,8 +50,8 @@
  * WWW URL: http://cs.nyu.edu/exact/
  * Email: exact@cs.nyu.edu
  *
- * $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/CGAL_Core/include/CGAL/CORE/poly/Poly.h $
- * $Id: Poly.h 6b568a8 %aI Sébastien Loriot
+ * $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/CGAL_Core/include/CGAL/CORE/poly/Poly.h $
+ * $Id: Poly.h aa0a9c8 %aI Laurent Rineau
  * SPDX-License-Identifier: LGPL-3.0+
  ***************************************************************************/
 
@@ -65,7 +65,6 @@
 #include <CGAL/tss.h>
 
 namespace CORE { 
-using namespace std;
 class Expr;
 // ==================================================
 // Typedefs
@@ -117,25 +116,25 @@ public:
   Polynomial(const Polynomial &);
   Polynomial(const VecNT &);
   Polynomial(int n, const char* s[]);
-  Polynomial(const string & s, char myX='x');
+  Polynomial(const std::string & s, char myX='x');
   Polynomial(const char* s, char myX='x');
   ~Polynomial();
 
   private:
   void constructX(int n, Polynomial<NT>& P);
-  void constructFromString(string & s, char myX='x');
+  void constructFromString(std::string & s, char myX='x');
   int getnumber(const char* c, int i, unsigned int len, Polynomial<NT> & P);
   bool isint(char c);
   int getint(const char* c, int i, unsigned int len, int & n);
   int matchparen(const char* cstr, int start);
-  int getbasicterm(string & s, Polynomial<NT> & P);
-  int getterm(string & s, Polynomial<NT> & P);
+  int getbasicterm(std::string & s, Polynomial<NT> & P);
+  int getterm(std::string & s, Polynomial<NT> & P);
 
 
   public:
   //Returns a Polynomial corresponding to s, which is supposed to
   //contain as place-holders the chars 'x' and 'y'.
-  Polynomial<NT> getpoly(string & s);
+  Polynomial<NT> getpoly(std::string & s);
 
   // Assignment:
   Polynomial & operator=(const Polynomial&);

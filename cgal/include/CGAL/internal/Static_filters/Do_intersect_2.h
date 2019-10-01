@@ -14,7 +14,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Filtered_kernel/include/CGAL/internal/Static_filters/Do_intersect_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Filtered_kernel/include/CGAL/internal/Static_filters/Do_intersect_2.h $
 // $Id: Do_intersect_2.h 0d3ac75 %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 //

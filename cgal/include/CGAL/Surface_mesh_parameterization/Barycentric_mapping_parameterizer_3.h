@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/Barycentric_mapping_parameterizer_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/Barycentric_mapping_parameterizer_3.h $
 // $Id: Barycentric_mapping_parameterizer_3.h 2f9408f %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

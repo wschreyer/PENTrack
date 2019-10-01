@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Boolean_set_operations_2/include/CGAL/Boolean_set_operations_2/Indexed_event.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Boolean_set_operations_2/include/CGAL/Boolean_set_operations_2/Indexed_event.h $
 // $Id: Indexed_event.h 0b5353c %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

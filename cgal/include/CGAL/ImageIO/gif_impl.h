@@ -13,7 +13,7 @@
 // These files are provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/CGAL_ImageIO/include/CGAL/ImageIO/gif_impl.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/CGAL_ImageIO/include/CGAL/ImageIO/gif_impl.h $
 // $Id: gif_impl.h 777d305 %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 //

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/GraphicsView/include/CGAL/Qt/DemosMainWindow_impl.h $
-// $Id: DemosMainWindow_impl.h 32c0064 %aI Maxime Gimeno
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/DemosMainWindow_impl.h $
+// $Id: DemosMainWindow_impl.h 272b436 %aI Maxime Gimeno
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -458,9 +458,14 @@ void DemosMainWindow::readState(QString groupname, Options /*what_to_save*/)
   settings.beginGroup(groupname);
   resize(settings.value("size", this->size()).toSize());
 
-  QDesktopWidget* desktop = qApp->desktop();
   QPoint pos = settings.value("pos", this->pos()).toPoint();
-  if(desktop->availableGeometry(pos).contains(pos)) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
+  if(QGuiApplication::screenAt(pos)) {
+#else
+   QDesktopWidget* desktop = qApp->desktop();
+     if(desktop->availableGeometry(pos).contains(pos)) {
+#endif
+
     move(pos);
   }
   QByteArray mainWindowState = settings.value("state").toByteArray();

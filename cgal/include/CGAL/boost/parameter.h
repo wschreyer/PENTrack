@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/BGL/include/CGAL/boost/parameter.h $
-// $Id: parameter.h ba21ecb %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/BGL/include/CGAL/boost/parameter.h $
+// $Id: parameter.h 8648a72 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -111,6 +111,7 @@ BOOST_PARAMETER_NAME( (dump_after_perturb_prefix, tag ) dump_after_perturb_prefi
 BOOST_PARAMETER_NAME( (dump_after_exude_prefix, tag ) dump_after_exude_prefix_)
 BOOST_PARAMETER_NAME( (number_of_initial_points, tag) number_of_initial_points_)
 BOOST_PARAMETER_NAME( (maximal_number_of_vertices, tag ) maximal_number_of_vertices_)
+BOOST_PARAMETER_NAME( (nonlinear_growth_of_balls, tag ) nonlinear_growth_of_balls_)
 BOOST_PARAMETER_NAME( (pointer_to_error_code, tag ) pointer_to_error_code_)
 BOOST_PARAMETER_NAME( (pointer_to_stop_atomic_boolean, tag ) pointer_to_stop_atomic_boolean_)
 

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Arrangement_on_surface_2/include/CGAL/graph_traits_Arrangement_2.h $
-// $Id: graph_traits_Arrangement_2.h f99d3db %aI Mael Rouxel-Labbé
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/graph_traits_Arrangement_2.h $
+// $Id: graph_traits_Arrangement_2.h 560c77f %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -33,7 +33,7 @@
  */
 
 // include this to avoid a VC15 warning
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 
 #include <boost/graph/graph_concepts.hpp>
 #include <CGAL/boost/iterator/counting_iterator.hpp>

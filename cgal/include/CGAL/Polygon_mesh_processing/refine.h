@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/refine.h $
-// $Id: refine.h 2cd40ad %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/refine.h $
+// $Id: refine.h cebf065 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -83,20 +83,20 @@ namespace Polygon_mesh_processing {
            VertexOutputIterator vertices_out,
            const NamedParameters& np)
   {
-    using boost::choose_param;
-    using boost::get_param;
+    using parameters::choose_parameter;
+    using parameters::get_parameter;
 
     CGAL_precondition(is_triangle_mesh(tmesh) );
 
     typedef typename GetVertexPointMap<TriangleMesh,NamedParameters>::type VPmap;
-    VPmap vpm = choose_param(get_param(np, internal_np::vertex_point),
+    VPmap vpm = choose_parameter(get_parameter(np, internal_np::vertex_point),
                              get_property_map(vertex_point, tmesh));
 
     internal::Refine_Polyhedron_3<TriangleMesh, VPmap> refine_functor(tmesh, vpm);
     refine_functor.refine(faces,
       faces_out,
       vertices_out,
-      choose_param(get_param(np, internal_np::density_control_factor), CGAL::sqrt(2.)));
+      choose_parameter(get_parameter(np, internal_np::density_control_factor), CGAL::sqrt(2.)));
     return std::make_pair(faces_out, vertices_out);
   }
 

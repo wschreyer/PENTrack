@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_2/Finite_edge_interior_conflict_C2.h $
-// $Id: Finite_edge_interior_conflict_C2.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_2/Finite_edge_interior_conflict_C2.h $
+// $Id: Finite_edge_interior_conflict_C2.h cd4554b %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -423,12 +423,17 @@ private:
 #if 1
     CGAL_assertion( p.is_segment() || q.is_segment() );
 
-    Voronoi_vertex_2 vpqr(p, q, r);
-    Voronoi_vertex_2 vqps(q, p, s);
-
-    if ( vpqr.incircle_no_easy(s) == ZERO &&
-	 vqps.incircle_no_easy(r) == ZERO ) {
-      return false;
+    if ( !(r.is_point() && s.is_point() && r.point()==s.point() ) &&
+         !(r.is_segment() && s.is_segment() && r.source_of_supporting_site()==s.source_of_supporting_site()
+                                            && r.target_of_supporting_site()==s.target_of_supporting_site() ) )
+    {
+      Voronoi_vertex_2 vpqr(p, q, r);
+      Voronoi_vertex_2 vqps(q, p, s);
+      //check if the edge is degenerate
+      if ( vpqr.incircle_no_easy(s) == ZERO &&
+           vqps.incircle_no_easy(r) == ZERO ) {
+        return false;
+      }
     }
 
     if ( p.is_segment() && q.is_segment() ) {

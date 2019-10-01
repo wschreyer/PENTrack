@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_2/Segment_Delaunay_graph_hierarchy_2_impl.h $
-// $Id: Segment_Delaunay_graph_hierarchy_2_impl.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_2/Segment_Delaunay_graph_hierarchy_2_impl.h $
+// $Id: Segment_Delaunay_graph_hierarchy_2_impl.h 4e15225 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -478,8 +478,7 @@ insert_segment_interior(const Site_2& t, const Storage_site_2& ss,
     vcross(false, Vertex_handle(), AT2::DISJOINT);
 
   hierarchy[0]->initialize_conflict_region(start_f, l);
-  hierarchy[0]->expand_conflict_region(start_f, t, ss, l, fm,
-				       sign_map, vcross);
+  hierarchy[0]->expand_conflict_region(start_f, t, l, fm, sign_map, vcross);
 
   CGAL_assertion( vcross.third == AT2::DISJOINT ||
 		  vcross.third == AT2::CROSSING ||

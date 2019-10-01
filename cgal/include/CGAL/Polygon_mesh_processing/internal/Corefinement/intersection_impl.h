@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/internal/Corefinement/intersection_impl.h $
-// $Id: intersection_impl.h 302cebf %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/internal/Corefinement/intersection_impl.h $
+// $Id: intersection_impl.h d6ea587 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -659,7 +659,7 @@ class Intersection_of_triangle_meshes
     if ( cpp11::get<3>(inter_res) ) // is edge target in triangle plane
       nodes.add_new_node(get(vpm1, target(h_1,tm1)));
     else{
-      if (cpp11::get<3>(inter_res)) // is edge source in triangle plane
+      if (cpp11::get<2>(inter_res)) // is edge source in triangle plane
         nodes.add_new_node(get(vpm1, source(h_1,tm1)));
       else
         nodes.add_new_node(h_1,f_2,tm1,tm2,vpm1,vpm2);

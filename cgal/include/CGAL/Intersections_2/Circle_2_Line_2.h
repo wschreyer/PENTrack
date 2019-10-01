@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Intersections_2/include/CGAL/Intersections_2/Circle_2_Line_2.h $
-// $Id: Circle_2_Line_2.h 43f8490 %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_2/include/CGAL/Intersections_2/Circle_2_Line_2.h $
+// $Id: Circle_2_Line_2.h e23d76c %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -30,6 +30,7 @@
 #include <CGAL/Circle_2.h>
 #include <CGAL/Line_2.h>
 #include <CGAL/squared_distance_2_1.h>
+#include <CGAL/Intersection_traits_2.h>
 
 namespace CGAL {
 namespace Intersections {
@@ -38,45 +39,26 @@ namespace internal {
 template <class K>
 bool
 do_intersect(const typename K::Circle_2 & c, 
-	     const typename K::Line_2& l,
-	     const K&)
+             const typename K::Line_2& l,
+             const K&)
 {
-    return squared_distance(c.center(), l) <= c.squared_radius();
+  return squared_distance(c.center(), l) <= c.squared_radius();
 }
 
 template <class K>
 bool
 do_intersect(const typename K::Line_2& l, 
-	     const typename K::Circle_2 & c,
-	     const K&)
+             const typename K::Circle_2 & c,
+             const K&)
 {
-    return squared_distance(c.center(), l) <= c.squared_radius();
+  return squared_distance(c.center(), l) <= c.squared_radius();
 }
 
 } // namespace internal
 } // namespace Intersections
-  
-template <class K>
-inline
-bool
-do_intersect(const Circle_2<K> & c, 
-	     const Line_2<K> & l)
-{
-  typedef typename K::Do_intersect_2 Do_intersect;
-  return Do_intersect()(c, l);
-}
 
-template <class K>
-inline
-bool
-do_intersect(const Line_2<K> & l, 
-	     const Circle_2<K> & c)
-{
-  typedef typename K::Do_intersect_2 Do_intersect;
-  return Do_intersect()(c, l);
-}
+CGAL_DO_INTERSECT_FUNCTION(Circle_2, Line_2, 2)
 
-
-} //namespace CGAL
+} // namespace CGAL
 
 #endif

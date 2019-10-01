@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Installation/include/CGAL/license/TDS_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Installation/include/CGAL/license/TDS_3.h $
 // $Id: TDS_3.h 15fe22c %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 //

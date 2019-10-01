@@ -11,8 +11,8 @@
 // Licensees holding a valid commercial license may use this file in
 // accordance with the commercial license agreement provided with the software.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh/include/CGAL/Surface_mesh/Surface_mesh.h $
-// $Id: Surface_mesh.h 27d47e5 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh/include/CGAL/Surface_mesh/Surface_mesh.h $
+// $Id: Surface_mesh.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
@@ -56,7 +56,7 @@
 #include <CGAL/IO/File_scanner_OFF.h>
 #include <CGAL/Handle_hash_function.h>
 #include <CGAL/boost/graph/named_params_helper.h>
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 
 namespace CGAL {
 
@@ -2110,19 +2110,23 @@ private: //------------------------------------------------------- private data
     bool has_fcolors;
     boost::tie(fcolors, has_fcolors) = sm.template property_map<typename Mesh::Face_index, CGAL::Color >("f:color");
 
+    using parameters::choose_parameter;
+    using parameters::get_parameter;
+
     if(!has_fcolors && !has_vcolors)
       os << "OFF\n" << sm.number_of_vertices() << " " << sm.number_of_faces() << " 0\n";
     else
       os << "COFF\n" << sm.number_of_vertices() << " " << sm.number_of_faces() << " 0\n";
     std::vector<int> reindex;
     typename Polygon_mesh_processing::GetVertexPointMap<Surface_mesh<P>, NamedParameters>::const_type
-        vpm = choose_param(get_param(np, internal_np::vertex_point),
+        vpm = choose_parameter(get_parameter(np, internal_np::vertex_point),
                            get_const_property_map(CGAL::vertex_point, sm));
     reindex.resize(sm.num_vertices());
     int n = 0;
     BOOST_FOREACH(Vertex_index v, sm.vertices()){
-      
-      os << get(vpm, v);
+
+      P p  = get(vpm, v); 
+      os << p.x() << " " << p.y() << " " << p.z();
       if(has_vcolors)
       {
         CGAL::Color color = vcolors[v];
@@ -2200,8 +2204,11 @@ private: //------------------------------------------------------- private data
    typedef typename Mesh::Face_index Face_index;
    typedef typename Mesh::Vertex_index Vertex_index;
    typedef typename Mesh::size_type size_type;
+   using parameters::choose_parameter;
+   using parameters::get_parameter;
+
     typename CGAL::Polygon_mesh_processing::GetVertexPointMap<Surface_mesh<P>, NamedParameters>::type
-        vpm = choose_param(get_param(np, CGAL::internal_np::vertex_point),
+        vpm = choose_parameter(get_parameter(np, CGAL::internal_np::vertex_point),
                            get_property_map(CGAL::vertex_point, sm));
     int n, f, e;
     std::string off;
@@ -2221,7 +2228,7 @@ private: //------------------------------------------------------- private data
     }
     sm.reserve(sm.num_vertices()+n, sm.num_faces()+2*f, sm.num_edges()+e);
     std::vector<Vertex_index> vertexmap(n);
-    P p;
+
     Vector_3 v;
     typename Mesh::template Property_map<Vertex_index,CGAL::Color> vcolor;
     typename Mesh::template Property_map<Vertex_index,Vector_3> vnormal;
@@ -2236,10 +2243,11 @@ private: //------------------------------------------------------- private data
 
     for(int i=0; i < n; i++){
       is >> sm_skip_comments;
-      is >> p;
+      double x, y, z;
+      is >> iformat(x) >> iformat(y) >> iformat(z);
       
       Vertex_index vi = sm.add_vertex();
-      put(vpm, vi, p);
+      put(vpm, vi, P(x, y, z));
       
       
       vertexmap[i] = vi;

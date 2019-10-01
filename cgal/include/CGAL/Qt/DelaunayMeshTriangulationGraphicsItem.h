@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/GraphicsView/include/CGAL/Qt/DelaunayMeshTriangulationGraphicsItem.h $
-// $Id: DelaunayMeshTriangulationGraphicsItem.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/DelaunayMeshTriangulationGraphicsItem.h $
+// $Id: DelaunayMeshTriangulationGraphicsItem.h 243c7b1 %aI Maxime Gimeno
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -265,14 +265,14 @@ DelaunayMeshTriangulationGraphicsItem<T>::paintSeeds(QPainter *painter)
   {
     Converter<Geom_traits> convert;
     painter->setPen(this->seedsPen());
-    QMatrix matrix = painter->matrix();
-    painter->resetMatrix();
+    QTransform matrix = painter->worldTransform();
+    painter->resetTransform();
 
     typename std::list<Point>::iterator sit;
     for(sit = seeds_begin; sit != seeds_end; ++sit)
       painter->drawPoint(matrix.map(convert(*sit)));
 
-    painter->setMatrix(matrix);
+    painter->setWorldTransform(matrix);
   }
 }
 

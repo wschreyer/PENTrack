@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Property_map/include/CGAL/Dynamic_property_map.h $
-// $Id: Dynamic_property_map.h 915c3e7 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Property_map/include/CGAL/Dynamic_property_map.h $
+// $Id: Dynamic_property_map.h 1fe5100 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -26,6 +26,9 @@
 #include <CGAL/property_map.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+
+#include <boost/type_traits/is_same.hpp>
+#include <boost/mpl/if.hpp>
 
 namespace CGAL {
 
@@ -131,8 +134,12 @@ struct Dynamic_with_index
 {
   typedef Key key_type;
   typedef Value value_type;
-  typedef value_type& reference;
-  typedef boost::lvalue_property_map_tag category;
+  typedef typename boost::mpl::if_<  boost::is_same<bool, Value>,
+                                     value_type,
+                                     value_type&>::type  reference;
+  typedef typename boost::mpl::if_<  boost::is_same<bool, Value>,
+                                     boost::read_write_property_map_tag,
+                                     boost::lvalue_property_map_tag>::type  category;
 
   Dynamic_with_index()
     : m_values()

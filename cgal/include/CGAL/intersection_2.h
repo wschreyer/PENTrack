@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Intersections_2/include/CGAL/intersection_2.h $
-// $Id: intersection_2.h 31b5d5d %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_2/include/CGAL/intersection_2.h $
+// $Id: intersection_2.h 38afb85 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -29,10 +29,12 @@
 #define CGAL_INTERSECTION_2_H
 
 #include <CGAL/Intersections_2/Bbox_2_Circle_2.h>
+#include <CGAL/Intersections_2/Bbox_2_Line_2.h>
 #include <CGAL/Intersections_2/Bbox_2_Point_2.h>
+#include <CGAL/Intersections_2/Bbox_2_Ray_2.h>
 
-#include <CGAL/Intersections_2/Circle_2_Iso_rectangle_2.h>
 #include <CGAL/Intersections_2/Circle_2_Circle_2.h>
+#include <CGAL/Intersections_2/Circle_2_Iso_rectangle_2.h>
 #include <CGAL/Intersections_2/Circle_2_Line_2.h>
 #include <CGAL/Intersections_2/Circle_2_Point_2.h>
 
@@ -49,9 +51,9 @@
 #include <CGAL/Intersections_2/Line_2_Segment_2.h>
 #include <CGAL/Intersections_2/Line_2_Triangle_2.h>
 
+#include <CGAL/Intersections_2/Point_2_Point_2.h>
 #include <CGAL/Intersections_2/Point_2_Ray_2.h>
 #include <CGAL/Intersections_2/Point_2_Segment_2.h>
-#include <CGAL/Intersections_2/Point_2_Point_2.h>
 #include <CGAL/Intersections_2/Point_2_Triangle_2.h>
 
 #include <CGAL/Intersections_2/Ray_2_Ray_2.h>
@@ -62,6 +64,5 @@
 #include <CGAL/Intersections_2/Segment_2_Triangle_2.h>
 
 #include <CGAL/Intersections_2/Triangle_2_Triangle_2.h>
-
 
 #endif // CGAL_INTERSECTION_2_H

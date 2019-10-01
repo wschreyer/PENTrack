@@ -11,7 +11,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/STL_Extension/include/CGAL/hash_openmesh.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/STL_Extension/include/CGAL/hash_openmesh.h $
 // $Id: hash_openmesh.h 26c857a %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 // 

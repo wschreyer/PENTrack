@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Algebraic_kernel_d/include/CGAL/Algebraic_kernel_d/Curve_pair_analysis_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Algebraic_kernel_d/include/CGAL/Algebraic_kernel_d/Curve_pair_analysis_2.h $
 // $Id: Curve_pair_analysis_2.h 3ba6262 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 // 

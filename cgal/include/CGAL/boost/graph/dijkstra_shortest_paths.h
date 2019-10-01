@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/BGL/include/CGAL/boost/graph/dijkstra_shortest_paths.h $
-// $Id: dijkstra_shortest_paths.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/BGL/include/CGAL/boost/graph/dijkstra_shortest_paths.h $
+// $Id: dijkstra_shortest_paths.h 560c77f %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -23,7 +23,7 @@
 #define CGAL_BOOST_GRAPH_DIJKSTRA_SHORTEST_PATHS_H
 
 // This will push/pop a VC15 warning
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 
 #include <boost/version.hpp>
 #include <climits>

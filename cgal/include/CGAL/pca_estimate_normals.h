@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Point_set_processing_3/include/CGAL/pca_estimate_normals.h $
-// $Id: pca_estimate_normals.h 2f9408f %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Point_set_processing_3/include/CGAL/pca_estimate_normals.h $
+// $Id: pca_estimate_normals.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s) : Pierre Alliez and Laurent Saboret
@@ -35,7 +35,7 @@
 #include <CGAL/Memory_sizer.h>
 #include <CGAL/function.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 
 #include <iterator>
@@ -199,7 +199,9 @@ pca_estimate_normals(
   unsigned int k,
   const NamedParameters& np)
 {
-  using boost::choose_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
+
   CGAL_TRACE("Calls pca_estimate_normals()\n");
 
   // basic geometric types
@@ -211,9 +213,9 @@ pca_estimate_normals(
                               typename Point_set_processing_3::GetNormalMap<PointRange, NamedParameters>::NoMap>::value),
                             "Error: no normal map");
 
-  PointMap point_map = choose_param(get_param(np, internal_np::point_map), PointMap());
-  NormalMap normal_map = choose_param(get_param(np, internal_np::normal_map), NormalMap());
-  const cpp11::function<bool(double)>& callback = choose_param(get_param(np, internal_np::callback),
+  PointMap point_map = choose_parameter(get_parameter(np, internal_np::point_map), PointMap());
+  NormalMap normal_map = choose_parameter(get_parameter(np, internal_np::normal_map), NormalMap());
+  const cpp11::function<bool(double)>& callback = choose_parameter(get_parameter(np, internal_np::callback),
                                                                cpp11::function<bool(double)>());
 
   typedef typename Kernel::Point_3 Point;

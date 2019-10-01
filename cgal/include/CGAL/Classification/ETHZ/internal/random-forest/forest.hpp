@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Classification/include/CGAL/Classification/ETHZ/internal/random-forest/forest.hpp $
-// $Id: forest.hpp c81fbe4 %aI Simon Giraudot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Classification/include/CGAL/Classification/ETHZ/internal/random-forest/forest.hpp $
+// $Id: forest.hpp 48dda04 %aI Simon Giraudot
 // SPDX-License-Identifier: MIT
 //
 // Author(s)     : Stefan Walk
@@ -44,6 +44,8 @@
 #if VERBOSE_TREE_PROGRESS
 #include <cstdio>
 #endif
+
+#include <CGAL/algorithm.h>
 
 #include <CGAL/tags.h>
 
@@ -111,7 +113,7 @@ public:
     std::vector<int> in_bag_samples = sample_idxes;
 
     // Bagging: draw random sample indexes used for this tree
-    std::random_shuffle (in_bag_samples.begin(),in_bag_samples.end());
+    CGAL::cpp98::random_shuffle (in_bag_samples.begin(),in_bag_samples.end());
 
     // Train the tree
     trees[i_tree].train(samples, labels, &in_bag_samples[0], n_in_bag_samples, split_generator, gen);

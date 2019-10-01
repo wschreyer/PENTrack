@@ -13,8 +13,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/self_intersections.h $
-// $Id: self_intersections.h ea240cf %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/self_intersections.h $
+// $Id: self_intersections.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -273,7 +273,7 @@ self_intersections(const TriangleMesh& tmesh
 #ifdef DOXYGEN_RUNNING
                  , const NamedParameters& np)
 #else
-                 , const cgal_bgl_named_params<P,T,R>& np)
+                 , const Named_function_parameters<P,T,R>& np)
 #endif
 {
   return self_intersections(faces(tmesh), tmesh, out, np);
@@ -341,8 +341,8 @@ self_intersections( const FaceRange& face_range,
   );
 
   typedef typename GetVertexPointMap<TM, NamedParameters>::const_type VertexPointMap;
-  VertexPointMap vpmap = boost::choose_param(get_param(np, internal_np::vertex_point),
-                                             get_const_property_map(boost::vertex_point, tmesh));
+  VertexPointMap vpmap = parameters::choose_parameter(parameters::get_parameter(np, internal_np::vertex_point),
+                                                      get_const_property_map(boost::vertex_point, tmesh));
 
   BOOST_FOREACH(face_descriptor f, face_range)
   {
@@ -367,7 +367,7 @@ self_intersections( const FaceRange& face_range,
   typedef typename GetGeomTraits<TM, NamedParameters>::type GeomTraits;
   CGAL::internal::Intersect_facets<TM,GeomTraits,Box,OutputIterator,VertexPointMap>
     intersect_facets(tmesh, out, vpmap,
-      boost::choose_param(get_param(np, internal_np::geom_traits), GeomTraits()));
+      parameters::choose_parameter(parameters::get_parameter(np, internal_np::geom_traits), GeomTraits()));
 
   std::ptrdiff_t cutoff = 2000;
   CGAL::box_self_intersection_d(box_ptr.begin(), box_ptr.end(),intersect_facets,cutoff);

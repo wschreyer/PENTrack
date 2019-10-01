@@ -16,7 +16,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon/include/CGAL/Polygon_2/Polygon_2_vertex_circulator.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon/include/CGAL/Polygon_2/Polygon_2_vertex_circulator.h $
 // $Id: Polygon_2_vertex_circulator.h 6596ba9 %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 // 

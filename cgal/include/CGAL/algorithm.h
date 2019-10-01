@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/STL_Extension/include/CGAL/algorithm.h $
-// $Id: algorithm.h ab04858 %aI Marc Glisse
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/STL_Extension/include/CGAL/algorithm.h $
+// $Id: algorithm.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -408,7 +408,7 @@ namespace internal {
 namespace algorithm {
 
 // Implementation of the algorithm described here:
-//   http://en.wikipedia.org/w/index.php?title=Selection_algorithm&oldid=480099620#Partition-based_general_selection_algorithm
+//   https://en.wikipedia.org/w/index.php?title=Selection_algorithm&oldid=480099620#Partition-based_general_selection_algorithm
 template <class RandomAccessIterator, class Compare>
 RandomAccessIterator
 partition(RandomAccessIterator left,

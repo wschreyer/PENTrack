@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/merge_border_vertices.h $
-// $Id: merge_border_vertices.h 89df0d9 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/merge_border_vertices.h $
+// $Id: merge_border_vertices.h aa47744 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -218,8 +218,11 @@ void merge_duplicated_vertices_in_boundary_cycle(
   typedef typename boost::graph_traits<PolygonMesh>::halfedge_descriptor halfedge_descriptor;
   typedef typename GetVertexPointMap<PolygonMesh, NamedParameter>::const_type Vpm;
 
-  Vpm vpm = choose_param(get_param(np, internal_np::vertex_point),
-                         get_const_property_map(vertex_point, pm));
+  using parameters::get_parameter;
+  using parameters::choose_parameter;
+
+  Vpm vpm = choose_parameter(get_parameter(np, internal_np::vertex_point),
+                             get_const_property_map(vertex_point, pm));
 
   // collect all the halfedges of the cycle
   std::vector< std::pair<halfedge_descriptor, std::size_t> > cycle_hedges;

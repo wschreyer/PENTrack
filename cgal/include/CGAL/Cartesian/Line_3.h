@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Cartesian_kernel/include/CGAL/Cartesian/Line_3.h $
-// $Id: Line_3.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Cartesian_kernel/include/CGAL/Cartesian/Line_3.h $
+// $Id: Line_3.h 6c8a8f3 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -33,7 +33,7 @@ namespace CGAL {
 template < class R_ >
 class LineC3
 {
-  typedef typename R_::RT                   RT;
+  typedef typename R_::FT                   FT;
   typedef typename R_::Point_3              Point_3;
   typedef typename R_::Vector_3             Vector_3;
   typedef typename R_::Direction_3          Direction_3;
@@ -95,7 +95,7 @@ public:
       return Direction_3(to_vector());
   }
 
-  Point_3     point(int i) const;
+  Point_3     point(const FT i) const;
 
   bool        has_on(const Point_3 &p) const;
   bool        is_degenerate() const;
@@ -122,8 +122,8 @@ LineC3<R>::operator!=(const LineC3<R> &l) const
 template < class R >
 inline
 typename LineC3<R>::Point_3
-LineC3<R>::point(int i) const
-{ return point() + to_vector()*RT(i); }
+LineC3<R>::point(const FT i) const
+{ return point() + i * to_vector(); }
 
 template < class R >
 inline

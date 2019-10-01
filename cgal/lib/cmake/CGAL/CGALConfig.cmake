@@ -72,6 +72,7 @@ endif()
 include(${CGAL_MODULES_DIR}/CGAL_CreateSingleSourceCGALProgram.cmake)
 include(${CGAL_MODULES_DIR}/CGAL_Macros.cmake)
 include(${CGAL_MODULES_DIR}/CGAL_Common.cmake)
+include(${CGAL_MODULES_DIR}/CGAL_TweakFindBoost.cmake)
 
 set(CGAL_USE_FILE ${CGAL_MODULES_DIR}/UseCGAL.cmake)
 
@@ -130,7 +131,11 @@ include(CGAL_setup_target_dependencies)
 foreach(cgal_lib ${CGAL_LIBRARIES})
   set(WITH_${cgal_lib} TRUE)
   if(${cgal_lib}_FOUND AND NOT TARGET ${cgal_lib})
-    add_library(${cgal_lib} INTERFACE)
+    if(CGAL_BUILDING_LIBS OR CMAKE_VERSION VERSION_LESS "3.11")
+      add_library(${cgal_lib} INTERFACE)
+    else()
+      add_library(${cgal_lib} INTERFACE IMPORTED GLOBAL)
+    endif()
     if(NOT TARGET CGAL::${cgal_lib})
       add_library(CGAL::${cgal_lib} ALIAS ${cgal_lib})
     endif()
@@ -148,6 +153,9 @@ endforeach()
 
 # Temporary? Change the CMAKE module path
 cgal_setup_module_path()
+
+set(CGAL_USE_FILE ${CGAL_MODULES_DIR}/UseCGAL.cmake)
+include(${CGAL_MODULES_DIR}/CGAL_target_use_TBB.cmake)
 
 include("${CGAL_MODULES_DIR}/CGAL_parse_version_h.cmake")
 cgal_parse_version_h( "${CGAL_INSTALLATION_PACKAGE_DIR}/include/CGAL/version.h"

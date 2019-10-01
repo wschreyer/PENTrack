@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh/include/CGAL/draw_surface_mesh.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh/include/CGAL/draw_surface_mesh.h $
 // $Id: draw_surface_mesh.h ae5b6e0 %aI Guillaume Damiand
 // SPDX-License-Identifier: GPL-3.0+
 //

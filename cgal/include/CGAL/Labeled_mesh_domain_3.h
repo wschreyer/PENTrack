@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Mesh_3/include/CGAL/Labeled_mesh_domain_3.h $
-// $Id: Labeled_mesh_domain_3.h 7490f34 %aI Mael Rouxel-Labbé
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Labeled_mesh_domain_3.h $
+// $Id: Labeled_mesh_domain_3.h e4aaf24 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -88,10 +88,10 @@ namespace internal {
   /// Returns a box enclosing image \c im
   inline Bbox_3 compute_bounding_box(const Image_3& im)
   {
-    return Bbox_3(-1,-1,-1,
-                  double(im.xdim())*im.vx()+1,
-                  double(im.ydim())*im.vy()+1,
-                  double(im.zdim())*im.vz()+1);
+    return Bbox_3(-1+im.tx(),-1+im.ty(),-1+im.tz(),
+                  double(im.xdim())*im.vx()+im.tx()+1,
+                  double(im.ydim())*im.vy()+im.ty()+1,
+                  double(im.zdim())*im.vz()+im.tz()+1);
   }
 
   template <typename Image_values_to_subdom_indices>

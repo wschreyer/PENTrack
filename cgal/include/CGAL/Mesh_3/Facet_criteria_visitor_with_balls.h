@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Mesh_3/include/CGAL/Mesh_3/Facet_criteria_visitor_with_balls.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/Facet_criteria_visitor_with_balls.h $
 // $Id: Facet_criteria_visitor_with_balls.h 0fcc6c0 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 //

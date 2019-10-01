@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Interpolation/include/CGAL/sibson_gradient_fitting.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Interpolation/include/CGAL/sibson_gradient_fitting.h $
 // $Id: sibson_gradient_fitting.h 8b6826c %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 //

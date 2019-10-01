@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Inscribed_areas/include/CGAL/Largest_empty_iso_rectangle_2.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Inscribed_areas/include/CGAL/Largest_empty_iso_rectangle_2.h $
 // $Id: Largest_empty_iso_rectangle_2.h bc455b4 %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0+
 // 

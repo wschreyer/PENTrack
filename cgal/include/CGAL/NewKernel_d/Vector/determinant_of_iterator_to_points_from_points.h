@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/NewKernel_d/include/CGAL/NewKernel_d/Vector/determinant_of_iterator_to_points_from_points.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/NewKernel_d/include/CGAL/NewKernel_d/Vector/determinant_of_iterator_to_points_from_points.h $
 // $Id: determinant_of_iterator_to_points_from_points.h 0698f79 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //

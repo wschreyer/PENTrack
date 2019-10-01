@@ -8,7 +8,7 @@
 // Licensees holding a valid commercial license may use this file in
 // accordance with the commercial license agreement provided with the software.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Number_types/include/CGAL/FPU_gcc_i386.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Number_types/include/CGAL/FPU_gcc_i386.h $
 // $Id: FPU_gcc_i386.h 0698f79 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //

@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/HalfedgeDS/include/CGAL/boost/graph/graph_traits_HalfedgeDS.h $
-// $Id: graph_traits_HalfedgeDS.h 76ccc9a %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/HalfedgeDS/include/CGAL/boost/graph/graph_traits_HalfedgeDS.h $
+// $Id: graph_traits_HalfedgeDS.h 560c77f %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -24,7 +24,7 @@
 #include <functional>
 
 // include this to avoid a VC15 warning
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 
 #include <boost/config.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>

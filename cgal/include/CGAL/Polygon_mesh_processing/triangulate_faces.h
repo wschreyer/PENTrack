@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/triangulate_faces.h $
-// $Id: triangulate_faces.h 9f9ae00 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/triangulate_faces.h $
+// $Id: triangulate_faces.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -431,20 +431,20 @@ bool triangulate_face(typename boost::graph_traits<PolygonMesh>::face_descriptor
                       PolygonMesh& pmesh,
                       const NamedParameters& np)
 {
-  using boost::choose_param;
-  using boost::get_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
 
   //VertexPointMap
   typedef typename GetVertexPointMap<PolygonMesh, NamedParameters>::type VPMap;
-  VPMap vpmap = choose_param(get_param(np, internal_np::vertex_point),
+  VPMap vpmap = choose_parameter(get_parameter(np, internal_np::vertex_point),
                              get_property_map(vertex_point, pmesh));
 
   //Kernel
   typedef typename GetGeomTraits<PolygonMesh, NamedParameters>::type Kernel;
-  Kernel traits = choose_param(get_param(np, internal_np::geom_traits), Kernel());
+  Kernel traits = choose_parameter(get_parameter(np, internal_np::geom_traits), Kernel());
 
   //Option
-  bool use_cdt = choose_param(get_param(np, internal_np::use_delaunay_triangulation), true);
+  bool use_cdt = choose_parameter(get_parameter(np, internal_np::use_delaunay_triangulation), true);
 
   internal::Triangulate_modifier<PolygonMesh, VPMap, Kernel> modifier(vpmap, traits);
   return modifier.triangulate_face(f, pmesh, use_cdt);
@@ -486,20 +486,20 @@ bool triangulate_faces(FaceRange face_range,
                        PolygonMesh& pmesh,
                        const NamedParameters& np)
 {
-  using boost::choose_param;
-  using boost::get_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
 
   //VertexPointMap
   typedef typename GetVertexPointMap<PolygonMesh, NamedParameters>::type VPMap;
-  VPMap vpmap = choose_param(get_param(np, internal_np::vertex_point),
+  VPMap vpmap = choose_parameter(get_parameter(np, internal_np::vertex_point),
                              get_property_map(vertex_point, pmesh));
 
   //Kernel
   typedef typename GetGeomTraits<PolygonMesh, NamedParameters>::type Kernel;
-  Kernel traits = choose_param(get_param(np, internal_np::geom_traits), Kernel());
+  Kernel traits = choose_parameter(get_parameter(np, internal_np::geom_traits), Kernel());
 
   //Option
-  bool use_cdt = choose_param(get_param(np, internal_np::use_delaunay_triangulation), true);
+  bool use_cdt = choose_parameter(get_parameter(np, internal_np::use_delaunay_triangulation), true);
 
   internal::Triangulate_modifier<PolygonMesh, VPMap, Kernel> modifier(vpmap, traits);
   return modifier(face_range, pmesh, use_cdt);

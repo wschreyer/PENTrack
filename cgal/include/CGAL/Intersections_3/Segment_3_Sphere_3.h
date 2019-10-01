@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Intersections_3/include/CGAL/Intersections_3/Segment_3_Sphere_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_3/include/CGAL/Intersections_3/Segment_3_Sphere_3.h $
 // $Id: Segment_3_Sphere_3.h 1622410 %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 //

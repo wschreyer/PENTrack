@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Classification/include/CGAL/Classification/ETHZ/internal/random-forest/tree.hpp $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Classification/include/CGAL/Classification/ETHZ/internal/random-forest/tree.hpp $
 // $Id: tree.hpp c81fbe4 %aI Simon Giraudot
 // SPDX-License-Identifier: MIT
 //

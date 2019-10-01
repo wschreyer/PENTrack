@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Cartesian_kernel/include/CGAL/Cartesian/point_constructions_2.h $
-// $Id: point_constructions_2.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Cartesian_kernel/include/CGAL/Cartesian/point_constructions_2.h $
+// $Id: point_constructions_2.h 6c8a8f3 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -34,7 +34,7 @@ namespace CGAL {
 template < class K >
 inline
 typename K::Point_2
-line_get_point(const LineC2<K> &l, int i)
+line_get_point(const LineC2<K> &l, const typename K::FT &i)
 {
   typename K::FT x, y;
   line_get_pointC2(l.a(), l.b(), l.c(), i, x, y);

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/orbifold_shortest_path.h $
-// $Id: orbifold_shortest_path.h d940632 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/orbifold_shortest_path.h $
+// $Id: orbifold_shortest_path.h 82103c8 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s)     : Mael Rouxel-Labbé
@@ -48,7 +48,11 @@ class Dijkstra_end_exception : public std::exception
 {
   const char* what() const throw ()
   {
+#ifdef CGAL_SMP_ORBIFOLD_DEBUG
     return "Dijkstra: reached the target vertex";
+#else
+    return "";
+#endif
   }
 };
 
@@ -197,7 +201,9 @@ void compute_shortest_paths_between_cones(const TriangleMesh& mesh,
   }
 
   std::ofstream out("shortest_path.selection.txt");
+#ifdef CGAL_SMP_ORBIFOLD_DEBUG
   internal::output_shortest_paths_to_selection_file(mesh, seams, out);
+#endif
 }
 
 } // namespace Surface_mesh_parameterization

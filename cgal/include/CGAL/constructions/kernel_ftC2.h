@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Cartesian_kernel/include/CGAL/constructions/kernel_ftC2.h $
-// $Id: kernel_ftC2.h 212944b %aI Mael
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Cartesian_kernel/include/CGAL/constructions/kernel_ftC2.h $
+// $Id: kernel_ftC2.h 0d7fd46 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -280,7 +280,7 @@ line_y_at_xC2(const FT &a, const FT &b, const FT &c, const FT &x)
 template < class FT > 
 inline
 void
-line_get_pointC2(const FT &a, const FT &b, const FT &c, int i,
+line_get_pointC2(const FT &a, const FT &b, const FT &c, const FT &i,
                  FT &x, FT &y)
 {
   if (CGAL_NTS is_zero(b))

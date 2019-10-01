@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Triangulation_2/include/CGAL/Triangulation_2/insert_constraints.h $
-// $Id: insert_constraints.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Triangulation_2/include/CGAL/Triangulation_2/insert_constraints.h $
+// $Id: insert_constraints.h e6d0080 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -52,12 +52,8 @@ namespace CGAL {
     typedef std::vector<std::size_t> Vertex_indices;
     typedef std::vector<Vertex_handle> Vertices;
 
-    Vertex_indices vertex_indices;
-    vertex_indices.resize(points.size());
-
-    std::copy(boost::counting_iterator<std::ptrdiff_t>(0),
-              boost::counting_iterator<std::ptrdiff_t>(points.size()),
-              std::back_inserter(vertex_indices));
+    Vertex_indices vertex_indices(boost::counting_iterator<std::ptrdiff_t>(0),
+                                  boost::counting_iterator<std::ptrdiff_t>(points.size()));
 
     typename T::size_type n = t.number_of_vertices();
     CGAL::Spatial_sort_traits_adapter_2<

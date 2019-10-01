@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/ARAP_parameterizer_3.h $
-// $Id: ARAP_parameterizer_3.h 2f9408f %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/ARAP_parameterizer_3.h $
+// $Id: ARAP_parameterizer_3.h 82103c8 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s)     : Mael Rouxel-Labbé
@@ -1228,7 +1228,9 @@ private:
     if(status != OK)
       return status;
 
+#ifdef CGAL_SMP_ARAP_DEBUG
     output_uvmap("ARAP_final_post_processing.off", mesh, vertices, faces, uvmap, vimap);
+#endif
 
     return OK;
   }
@@ -1293,7 +1295,11 @@ public:
 
     // Compute the initial parameterization of the mesh
     status = compute_initial_uv_map(mesh, bhd, uvmap, vimap);
+
+#ifdef CGAL_SMP_ARAP_DEBUG
     output_uvmap("ARAP_initial_param.off", mesh, vertices, faces, uvmap, vimap);
+#endif
+
     if(status != OK)
       return status;
 
@@ -1341,7 +1347,9 @@ public:
                                                uvmap, vimap, vpmap, A);
 
       // Output the current situation
-//      output_uvmap("ARAP_iteration_", ite, mesh, vertices, faces, uvmap, vimap);
+#ifdef CGAL_SMP_ARAP_DEBUG
+      output_uvmap("ARAP_iteration_", ite, mesh, vertices, faces, uvmap vimap);
+#endif
       energy_last = energy_this;
       energy_this = compute_current_energy(mesh, faces, ctmap, lp, lpmap,
                                                         ltmap, uvmap);
@@ -1368,7 +1376,9 @@ public:
       }
     }
 
+#ifdef CGAL_SMP_ARAP_DEBUG
     output_uvmap("ARAP_final_pre_processing.off", mesh, vertices, faces, uvmap, vimap);
+#endif
 
     if(!is_one_to_one_mapping(mesh, faces, uvmap)) {
      // Use post processing to handle flipped elements

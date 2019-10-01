@@ -12,11 +12,11 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Circular_kernel_2/include/CGAL/Circular_kernel_2/Intersection_traits.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Circular_kernel_2/include/CGAL/Circular_kernel_2/Intersection_traits.h $
 // $Id: Intersection_traits.h ff26773 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Circular_kernel_2/include/CGAL/Circular_kernel_2/Intersection_traits.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Circular_kernel_2/include/CGAL/Circular_kernel_2/Intersection_traits.h $
 // $Id: Intersection_traits.h ff26773 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //

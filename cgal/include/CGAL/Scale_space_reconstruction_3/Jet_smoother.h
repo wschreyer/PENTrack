@@ -13,7 +13,7 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Scale_space_reconstruction_3/include/CGAL/Scale_space_reconstruction_3/Jet_smoother.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Scale_space_reconstruction_3/include/CGAL/Scale_space_reconstruction_3/Jet_smoother.h $
 // $Id: Jet_smoother.h b484182 %aI Simon Giraudot
 // SPDX-License-Identifier: GPL-3.0+
 //

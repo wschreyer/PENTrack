@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Intersections_3/include/CGAL/Intersections_3/Point_3_Segment_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_3/include/CGAL/Intersections_3/Point_3_Segment_3.h $
 // $Id: Point_3_Segment_3.h 057f4ea %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //

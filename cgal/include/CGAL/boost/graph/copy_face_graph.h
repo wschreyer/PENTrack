@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/BGL/include/CGAL/boost/graph/copy_face_graph.h $
-// $Id: copy_face_graph.h c8c1c11 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/BGL/include/CGAL/boost/graph/copy_face_graph.h $
+// $Id: copy_face_graph.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //
 //
@@ -29,7 +29,7 @@
 #include <CGAL/boost/graph/Euler_operations.h>
 #include <CGAL/boost/graph/iterator.h>
 #include <CGAL/boost/graph/helpers.h>
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 #include <CGAL/property_map.h>
 #include <boost/unordered_map.hpp>
@@ -70,6 +70,10 @@ void copy_face_graph_impl(const SourceMesh& sm, TargetMesh& tm,
   std::vector<sm_halfedge_descriptor> sm_border_halfedges;
 
   tm_face_descriptor tm_null_face = boost::graph_traits<TargetMesh>::null_face();
+
+  reserve(tm, static_cast<typename boost::graph_traits<TargetMesh>::vertices_size_type>(vertices(sm).size()),
+              static_cast<typename boost::graph_traits<TargetMesh>::edges_size_type>(edges(sm).size()),
+              static_cast<typename boost::graph_traits<TargetMesh>::faces_size_type>(faces(sm).size()) );
 
   //insert halfedges and create each vertex when encountering its halfedge
   BOOST_FOREACH(sm_edge_descriptor sm_e, edges(sm))
@@ -244,7 +248,7 @@ boost::function_output_iterator<Output_iterator_functor<PMAP> > make_functor(PMA
   return boost::make_function_output_iterator(Output_iterator_functor<PMAP>(map));
 }
 
-inline Emptyset_iterator make_functor(const boost::param_not_found&)
+inline Emptyset_iterator make_functor(const internal_np::Param_not_found&)
 {
   return Emptyset_iterator();
 }
@@ -328,26 +332,27 @@ template <typename SourceMesh, typename TargetMesh,
           >
 void copy_face_graph(const SourceMesh& sm, TargetMesh& tm,
                      #ifndef DOXYGEN_RUNNING
-                     const CGAL::cgal_bgl_named_params<T1,Tag1,Base1>& np1,
-                     const CGAL::cgal_bgl_named_params<T2,Tag2,Base2>& np2
+                     const CGAL::Named_function_parameters<T1,Tag1,Base1>& np1,
+                     const CGAL::Named_function_parameters<T2,Tag2,Base2>& np2
                      #else
                      const NamedParameters1& np1,
                      const NamedParameters2& np2
                      #endif
                      )
 {
-  using boost::choose_param;
+  using parameters::choose_parameter;
+  using parameters::get_parameter;
   internal::copy_face_graph(sm, tm,
                             CGAL::graph_has_property<SourceMesh,boost::halfedge_index_t>(),
-                            choose_param(get_param(np1, internal_np::vertex_to_vertex_output_iterator),
-                                         impl::make_functor(get_param(np1, internal_np::vertex_to_vertex_map))),
-                            choose_param(get_param(np1, internal_np::halfedge_to_halfedge_output_iterator),
-                                         impl::make_functor(get_param(np1, internal_np::halfedge_to_halfedge_map))),
-                            choose_param(get_param(np1, internal_np::face_to_face_output_iterator),
-                                         impl::make_functor(get_param(np1, internal_np::face_to_face_map))),
-                            choose_param(get_param(np1, internal_np::vertex_point),
+                            choose_parameter(get_parameter(np1, internal_np::vertex_to_vertex_output_iterator),
+                                         impl::make_functor(get_parameter(np1, internal_np::vertex_to_vertex_map))),
+                            choose_parameter(get_parameter(np1, internal_np::halfedge_to_halfedge_output_iterator),
+                                         impl::make_functor(get_parameter(np1, internal_np::halfedge_to_halfedge_map))),
+                            choose_parameter(get_parameter(np1, internal_np::face_to_face_output_iterator),
+                                         impl::make_functor(get_parameter(np1, internal_np::face_to_face_map))),
+                            choose_parameter(get_parameter(np1, internal_np::vertex_point),
                                          get(vertex_point, sm)),
-                            choose_param(get_param(np2, internal_np::vertex_point),
+                            choose_parameter(get_parameter(np2, internal_np::vertex_point),
                                          get(vertex_point, tm)));
 }
 
@@ -360,7 +365,7 @@ void copy_face_graph(const SourceMesh& sm, TargetMesh& tm)
 template <typename SourceMesh, typename TargetMesh, 
           typename T, typename Tag, typename Base >
 void copy_face_graph(const SourceMesh& sm, TargetMesh& tm, 
-                     const CGAL::cgal_bgl_named_params<T,Tag,Base>& np)
+                     const CGAL::Named_function_parameters<T,Tag,Base>& np)
 {
   copy_face_graph(sm, tm, np, parameters::all_default());
 }

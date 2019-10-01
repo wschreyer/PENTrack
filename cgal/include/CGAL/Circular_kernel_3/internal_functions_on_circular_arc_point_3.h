@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Circular_kernel_3/include/CGAL/Circular_kernel_3/internal_functions_on_circular_arc_point_3.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Circular_kernel_3/include/CGAL/Circular_kernel_3/internal_functions_on_circular_arc_point_3.h $
 // $Id: internal_functions_on_circular_arc_point_3.h ee57fc2 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

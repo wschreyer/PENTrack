@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/internal/Isotropic_remeshing/remesh_impl.h $
-// $Id: remesh_impl.h 2863e74 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polygon_mesh_processing/include/CGAL/Polygon_mesh_processing/internal/Isotropic_remeshing/remesh_impl.h $
+// $Id: remesh_impl.h e676118 %aI Sebastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -1060,7 +1060,7 @@ namespace internal {
 
     // PMP book :
     // "maps the vertices back to the surface"
-    void project_to_surface(boost::param_not_found)
+    void project_to_surface(internal_np::Param_not_found)
     {
       //todo : handle the case of boundary vertices
 #ifdef CGAL_PMP_REMESHING_VERBOSE
@@ -1638,6 +1638,9 @@ private:
         BOOST_FOREACH(halfedge_descriptor hf,
                       halfedges_around_face(h, mesh_))
         {
+          if(face(opposite(hf, mesh_), mesh_) == boost::graph_traits<PM>::null_face())
+            continue;
+
           vertex_descriptor vc = target(hf, mesh_);
           vertex_descriptor va = target(next(hf, mesh_), mesh_);
           vertex_descriptor vb = target(next(next(hf, mesh_), mesh_), mesh_);

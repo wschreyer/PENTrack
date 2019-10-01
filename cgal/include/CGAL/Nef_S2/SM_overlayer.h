@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Nef_S2/include/CGAL/Nef_S2/SM_overlayer.h $
-// $Id: SM_overlayer.h ee57fc2 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Nef_S2/include/CGAL/Nef_S2/SM_overlayer.h $
+// $Id: SM_overlayer.h d93eb58 %aI Maxime Gimeno
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -871,16 +871,17 @@ create_from_segments(Forward_iterator start, Forward_iterator end)
   SM_output O(*this,From_input); 
 
   typedef typename PHS_traits::INPUT Input_range;
+  PH_geometry ph_g;
   Positive_halfsphere_sweep SP(
     Input_range(L_pos.begin(),L_pos.end()),O,
-    PH_geometry());
+    ph_g);
   SP.sweep();
   //CGAL_NEF_TRACEN("POS SWEEP\n"<<(dump(std::cerr),""));
   v=--this->svertices_end(); e=--this->shalfedges_end();
-
+  NH_geometry nh_g;
   Negative_halfsphere_sweep SM(
     Input_range(L_neg.begin(),L_neg.end()),O,
-    NH_geometry());
+    nh_g);
   SM.sweep();
   //CGAL_NEF_TRACEN("NEG SWEEP\n"<<(dump(std::cerr),""));
   ++v; ++e;
@@ -943,16 +944,17 @@ create_from_circles(Forward_iterator start, Forward_iterator end)
   SM_output O(*this,From_input); 
 
   typedef typename PHS_traits::INPUT Input_range;
+  PH_geometry ph_g;
   Positive_halfsphere_sweep SP(
     Input_range(L_pos.begin(),L_pos.end()),O,
-    PH_geometry());
+    ph_g);
   SP.sweep();
   //CGAL_NEF_TRACEN("POS SWEEP\n"<<(dump(std::cerr),""));
   v=--this->svertices_end(); e=--this->shalfedges_end();
-
+  NH_geometry nh_geom;
   Negative_halfsphere_sweep SM(
     Input_range(L_neg.begin(),L_neg.end()), O,
-    NH_geometry());
+    nh_geom);
   SM.sweep();
   //CGAL_NEF_TRACEN("NEG SWEEP\n"<<(dump(std::cerr),""));
   ++v; ++e;

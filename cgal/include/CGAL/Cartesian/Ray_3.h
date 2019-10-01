@@ -16,8 +16,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Cartesian_kernel/include/CGAL/Cartesian/Ray_3.h $
-// $Id: Ray_3.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Cartesian_kernel/include/CGAL/Cartesian/Ray_3.h $
+// $Id: Ray_3.h 6c8a8f3 %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -74,7 +74,7 @@ public:
   {
       return get_pointee_or_identity(base)[1];
   }
-  Point_3     point(int i) const;
+  Point_3     point(const FT i) const;
 
   Direction_3 direction() const;
   Vector_3    to_vector() const;
@@ -107,12 +107,12 @@ RayC3<R>::operator!=(const RayC3<R> &r) const
 template < class R >
 CGAL_KERNEL_INLINE
 typename RayC3<R>::Point_3
-RayC3<R>::point(int i) const
+RayC3<R>::point(const FT i) const
 {
-  CGAL_kernel_precondition( i >= 0 );
-  if (i == 0) return source();
-  if (i == 1) return second_point();
-  return source() + FT(i) * (second_point() - source());
+  CGAL_kernel_precondition( i >= FT(0) );
+  if (i == FT(0)) return source();
+  if (i == FT(1)) return second_point();
+  return source() + i * to_vector();
 }
 
 template < class R >

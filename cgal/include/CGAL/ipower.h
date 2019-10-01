@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Algebraic_foundations/include/CGAL/ipower.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Algebraic_foundations/include/CGAL/ipower.h $
 // $Id: ipower.h 0698f79 %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 // 
@@ -22,7 +22,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Algebraic_foundations/include/CGAL/ipower.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Algebraic_foundations/include/CGAL/ipower.h $
 
 #ifndef CGAL_IPOWER_H
 #define CGAL_IPOWER_H

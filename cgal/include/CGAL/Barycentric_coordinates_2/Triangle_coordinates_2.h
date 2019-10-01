@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY, AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Barycentric_coordinates_2/include/CGAL/Barycentric_coordinates_2/Triangle_coordinates_2.h $
-// $Id: Triangle_coordinates_2.h 3dd0aa1 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Barycentric_coordinates_2/include/CGAL/Barycentric_coordinates_2/Triangle_coordinates_2.h $
+// $Id: Triangle_coordinates_2.h 1dd7473 %aI albert-github
 // SPDX-License-Identifier: GPL-3.0+
 //
 // Author(s) : Dmitry Anisimov, David Bommes, Kai Hormann, and Pierre Alliez.
@@ -51,7 +51,7 @@ namespace Barycentric_coordinates {
 /*!
  * \ingroup PkgBarycentricCoordinates2Ref
  * The class `Triangle_coordinates_2` implements barycentric coordinates ( <a href="http://mathworld.wolfram.com/BarycentricCoordinates.html" target=blanc>[1]</a>,
- * <a href="http://en.wikipedia.org/wiki/Barycentric_coordinate_system" target=blanc>[2]</a> ) with respect to an arbitrary non-degenerate triangle in the plane.
+ * <a href="https://en.wikipedia.org/wiki/Barycentric_coordinate_system" target=blanc>[2]</a> ) with respect to an arbitrary non-degenerate triangle in the plane.
  * This class is parameterized by a traits class `Traits`.
 
 \tparam Traits must be a model of the concept `BarycentricTraits_2`.

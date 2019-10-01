@@ -11,7 +11,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Installation/include/CGAL/Surface_mesh/Surface_mesh_fwd.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Installation/include/CGAL/Surface_mesh/Surface_mesh_fwd.h $
 // $Id: Surface_mesh_fwd.h 3c70f8b %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //

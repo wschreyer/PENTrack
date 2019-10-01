@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Envelope_2/include/CGAL/Envelope_2/Env_divide_and_conquer_2_impl.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Envelope_2/include/CGAL/Envelope_2/Env_divide_and_conquer_2_impl.h $
 // $Id: Env_divide_and_conquer_2_impl.h 2df88cb %aI Efi Fogel
 // SPDX-License-Identifier: GPL-3.0+
 //

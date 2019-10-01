@@ -11,8 +11,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Solver_interface/include/CGAL/Eigen_matrix.h $
-// $Id: Eigen_matrix.h 047938e %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Solver_interface/include/CGAL/Eigen_matrix.h $
+// $Id: Eigen_matrix.h 2eb411d %aI Sébastien Loriot
 // SPDX-License-Identifier: LGPL-3.0+
 //
 // Author(s)     : Gael Guennebaud
@@ -29,7 +29,7 @@ namespace CGAL {
 /*!
 \ingroup PkgSolverInterfaceRef
 
-The class `Eigen_sparse_matrix` is a wrapper around \ref thirdpartyEigen "Eigen" matrix type
+The class `Eigen_sparse_matrix` is a wrapper around `Eigen` matrix type
 <a href="http://eigen.tuxfamily.org/dox/classEigen_1_1SparseMatrix.html">`Eigen::SparseMatrix`</a>
 that represents general matrices, be they symmetric or not.
 
@@ -316,7 +316,7 @@ private:
 /*!
 \ingroup PkgSolverInterfaceRef
 
-The class `Eigen_sparse_symmetric_matrix` is a wrapper around \ref thirdpartyEigen "Eigen" matrix type
+The class `Eigen_sparse_symmetric_matrix` is a wrapper around `Eigen` matrix type
 <a href="http://eigen.tuxfamily.org/dox/classEigen_1_1SparseMatrix.html">`Eigen::SparseMatrix` </a>
 
 Since the matrix is symmetric, only the lower triangle part is stored.
@@ -352,7 +352,7 @@ struct Eigen_sparse_symmetric_matrix
 /*!
 \ingroup PkgSolverInterfaceRef
 
-The class `Eigen_matrix` is a wrapper around \ref thirdpartyEigen "Eigen" matrix type
+The class `Eigen_matrix` is a wrapper around `Eigen` matrix type
 <a href="http://eigen.tuxfamily.org/dox/classEigen_1_1Matrix.html">`Eigen::Matrix`</a>.
 
 \cgalModels `SvdTraits::Matrix` 

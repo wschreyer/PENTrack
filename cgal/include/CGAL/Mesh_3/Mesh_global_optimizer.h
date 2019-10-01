@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Mesh_3/include/CGAL/Mesh_3/Mesh_global_optimizer.h $
-// $Id: Mesh_global_optimizer.h c28e05b %aI Mael Rouxel-Labbé
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/Mesh_global_optimizer.h $
+// $Id: Mesh_global_optimizer.h 49d526c %aI Jane Tournois
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -138,7 +138,7 @@ protected:
     , m_lock_ds(bbox, num_grid_cells_per_axis)
   {
     big_moves_current_size_ = 0;
-    big_moves_smallest_ = std::numeric_limits<FT>::max();
+    big_moves_smallest_ = (std::numeric_limits<FT>::max)();
   }
 
   void update_big_moves(const FT& new_sq_move)
@@ -177,7 +177,7 @@ protected:
   void clear_big_moves()
   {
     big_moves_current_size_ = 0;
-    big_moves_smallest_ = std::numeric_limits<FT>::max();
+    big_moves_smallest_ = (std::numeric_limits<FT>::max)();
     big_moves_.clear();
   }
 

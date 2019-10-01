@@ -13,7 +13,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Algebraic_kernel_d/include/CGAL/RS/rs2_calls.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Algebraic_kernel_d/include/CGAL/RS/rs2_calls.h $
 // $Id: rs2_calls.h a06d390 %aI Laurent Rineau
 // SPDX-License-Identifier: LGPL-3.0+
 //

@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/QP_solver/include/CGAL/QP_solver/QP__partial_base.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/QP_solver/include/CGAL/QP_solver/QP__partial_base.h $
 // $Id: QP__partial_base.h c54a6a4 %aI Andreas Fabri
 // SPDX-License-Identifier: GPL-3.0+
 // 

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Principal_component_analysis_LGPL/include/CGAL/centroid.h $
-// $Id: centroid.h 0698f79 %aI Sébastien Loriot
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Principal_component_analysis_LGPL/include/CGAL/centroid.h $
+// $Id: centroid.h 8871603 %aI Simon Giraudot
 // SPDX-License-Identifier: LGPL-3.0+
 // 
 //
@@ -788,7 +788,7 @@ centroid(InputIterator begin,
       it++)
   {
     const Tetrahedron& tetrahedron = *it;
-    FT unsigned_volume = tetrahedron.volume();
+    FT unsigned_volume = CGAL::abs(tetrahedron.volume());
     Point c = K().construct_centroid_3_object()(tetrahedron[0],tetrahedron[1],tetrahedron[2],tetrahedron[3]);
     v = v + unsigned_volume * (c - ORIGIN);
     sum_volumes += unsigned_volume;

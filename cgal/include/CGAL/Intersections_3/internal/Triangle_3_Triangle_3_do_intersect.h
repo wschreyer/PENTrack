@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Intersections_3/include/CGAL/Intersections_3/internal/Triangle_3_Triangle_3_do_intersect.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_3/include/CGAL/Intersections_3/internal/Triangle_3_Triangle_3_do_intersect.h $
 // $Id: Triangle_3_Triangle_3_do_intersect.h 4111e3e %aI Andreas Fabri
 // SPDX-License-Identifier: LGPL-3.0+
 // 

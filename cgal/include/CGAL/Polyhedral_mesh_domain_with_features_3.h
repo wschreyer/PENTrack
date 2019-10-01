@@ -13,8 +13,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Mesh_3/include/CGAL/Polyhedral_mesh_domain_with_features_3.h $
-// $Id: Polyhedral_mesh_domain_with_features_3.h 24bccaa %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Polyhedral_mesh_domain_with_features_3.h $
+// $Id: Polyhedral_mesh_domain_with_features_3.h dfb37e2 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -217,7 +217,7 @@ public:
     stored_polyhedra.push_back(bounding_polyhedron);
     get(face_patch_id_t<Patch_id>(), stored_polyhedra.back());
     this->add_primitives(stored_polyhedra.back());
-    if(bounding_polyhedron.empty()) {
+    if(CGAL::is_empty(bounding_polyhedron)) {
       this->set_surface_only();
     } else {
       this->add_primitives_to_bounding_tree(stored_polyhedra.back());

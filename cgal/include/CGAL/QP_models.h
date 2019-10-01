@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/QP_solver/include/CGAL/QP_models.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/QP_solver/include/CGAL/QP_models.h $
 // $Id: QP_models.h 26c857a %aI Mael Rouxel-Labbé
 // SPDX-License-Identifier: GPL-3.0+
 // 

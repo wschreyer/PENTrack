@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Point_set_3/include/CGAL/Point_set_3.h $
-// $Id: Point_set_3.h f5836b2 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Point_set_3/include/CGAL/Point_set_3.h $
+// $Id: Point_set_3.h 2f81a21 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -31,7 +31,7 @@
 
 #include <CGAL/demangle.h>
 
-#include <CGAL/boost/graph/named_function_params.h>
+#include <CGAL/boost/graph/Named_function_parameters.h>
 #include <CGAL/boost/graph/named_params_helper.h>
 
 
@@ -959,13 +959,13 @@ public:
 #ifdef DOXYGEN_RUNNING
   unspecified_type
 #else
-  cgal_bgl_named_params
+  Named_function_parameters
   <typename Kernel_traits<Point>::Kernel,
    internal_np::geom_traits_t,
-   cgal_bgl_named_params
+   Named_function_parameters
    <typename CGAL::Point_set_3<Point, Vector>::template Property_map<Vector>,
     internal_np::normal_t,
-    cgal_bgl_named_params
+    Named_function_parameters
     <typename CGAL::Point_set_3<Point, Vector>::template Property_map<Point>,
      internal_np::point_t> > >
 #endif
@@ -1302,13 +1302,13 @@ namespace Point_set_processing_3
   namespace parameters
   {
     template <typename Point, typename Vector>
-    cgal_bgl_named_params
+    Named_function_parameters
     <typename Kernel_traits<Point>::Kernel,
      internal_np::geom_traits_t,
-     cgal_bgl_named_params
+     Named_function_parameters
      <typename CGAL::Point_set_3<Point, Vector>::template Property_map<Vector>,
       internal_np::normal_t,
-      cgal_bgl_named_params
+      Named_function_parameters
       <typename CGAL::Point_set_3<Point, Vector>::template Property_map<Point>,
        internal_np::point_t> > >
     inline all_default(const CGAL::Point_set_3<Point, Vector>& ps)

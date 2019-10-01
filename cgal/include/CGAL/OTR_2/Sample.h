@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Optimal_transportation_reconstruction_2/include/CGAL/OTR_2/Sample.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Optimal_transportation_reconstruction_2/include/CGAL/OTR_2/Sample.h $
 // $Id: Sample.h ee57fc2 %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //

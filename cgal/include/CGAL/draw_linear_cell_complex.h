@@ -12,7 +12,7 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Linear_cell_complex/include/CGAL/draw_linear_cell_complex.h $
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Linear_cell_complex/include/CGAL/draw_linear_cell_complex.h $
 // $Id: draw_linear_cell_complex.h 12ae925 %aI Guillaume Damiand
 // SPDX-License-Identifier: LGPL-3.0+
 //

@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Convex_hull_3/include/CGAL/Extreme_points_traits_adapter_3.h $
-// $Id: Extreme_points_traits_adapter_3.h a88438e %aI Andreas Fabri
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Convex_hull_3/include/CGAL/Extreme_points_traits_adapter_3.h $
+// $Id: Extreme_points_traits_adapter_3.h e54c24f %aI Sébastien Loriot
 // SPDX-License-Identifier: GPL-3.0+
 //
 //
@@ -221,16 +221,17 @@ public:
     Orientation_2 orientation_2_object ()const{return Orientation_2(vpm_,static_cast<const Btt*>(this)->orientation_2_object() );}
   };
   
-  typedef Proj_traits_3<typename Base_traits::Traits_xy_3> Traits_xy_3;
-  typedef Proj_traits_3<typename Base_traits::Traits_yz_3> Traits_yz_3;
-  typedef Proj_traits_3<typename Base_traits::Traits_xz_3> Traits_xz_3;
+  typedef internal::Convex_hull_3::Projection_traits<Base_traits> Base_PTraits;
+  typedef Proj_traits_3<typename Base_PTraits::Traits_xy_3> Traits_xy_3;
+  typedef Proj_traits_3<typename Base_PTraits::Traits_yz_3> Traits_yz_3;
+  typedef Proj_traits_3<typename Base_PTraits::Traits_xz_3> Traits_xz_3;
   
   Traits_xy_3 construct_traits_xy_3_object()const
-  {return Traits_xy_3(vpm_, static_cast<const Base_traits*>(this)->construct_traits_xy_3_object());}
+  {return Traits_xy_3(vpm_, Base_PTraits(static_cast<const Base_traits&>(*this)).construct_traits_xy_3_object());}
   Traits_yz_3 construct_traits_yz_3_object()const
-  {return Traits_yz_3(vpm_, static_cast<const Base_traits*>(this)->construct_traits_yz_3_object());}
+  {return Traits_yz_3(vpm_, Base_PTraits(static_cast<const Base_traits&>(*this)).construct_traits_yz_3_object());}
   Traits_xz_3 construct_traits_xz_3_object()const
-  {return Traits_xz_3(vpm_, static_cast<const Base_traits*>(this)->construct_traits_xz_3_object());}
+  {return Traits_xz_3(vpm_, Base_PTraits(static_cast<const Base_traits&>(*this)).construct_traits_xz_3_object());}
 
   typename boost::property_traits<PointPropertyMap>::reference
   get_point(const typename boost::property_traits<PointPropertyMap>::key_type& k) const

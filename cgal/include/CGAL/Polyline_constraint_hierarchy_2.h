@@ -12,8 +12,8 @@
 // This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14/Triangulation_2/include/CGAL/Polyline_constraint_hierarchy_2.h $
-// $Id: Polyline_constraint_hierarchy_2.h 7c22eb1 %aI Laurent Rineau
+// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Triangulation_2/include/CGAL/Polyline_constraint_hierarchy_2.h $
+// $Id: Polyline_constraint_hierarchy_2.h e79bfd5 %aI Laurent Rineau
 // SPDX-License-Identifier: GPL-3.0+
 // 
 //
@@ -247,6 +247,7 @@ public:
 
   // insert/remove
   void add_Steiner(T va, T vb, T vx);
+  Vertex_list* insert_constraint_old_API(T va, T vb);
   Vertex_list* insert_constraint(T va, T vb);
   void append_constraint(Constraint_id cid, T va, T vb);
   void swap(Constraint_id first, Constraint_id second);
@@ -255,6 +256,7 @@ public:
   void remove_constraint(Vertex_handle va, Vertex_handle vb)
   {
     remove_constraint(constraint_map[make_edge(va,vb)]);
+    constraint_map.erase(make_edge(va,vb));
   }
 
   void split_constraint(T va, T vb, T vc);
@@ -759,13 +761,13 @@ Polyline_constraint_hierarchy_2<T,Compare,Data>::concatenate2(Constraint_id firs
   // now we really concatenate the vertex lists
   // Note that all iterators pointing into second remain valid.
   first.vl_ptr()->pop_back(); // because it is the same as second.front()
-  Vertex_it back_it = first.vl_ptr()->skip_end();
-  --back_it;
+  Vertex_it back_it = second.vl_ptr()->skip_begin();
+
   second.vl_ptr()->splice(second.vl_ptr()->skip_begin(), *(first.vl_ptr()), first.vl_ptr()->skip_begin(), first.vl_ptr()->skip_end());
 
   // Note that for VC8 with iterator debugging the iterators pointing into second
   // are NOT valid      So we have to update them
-  for(Vertex_it it = back_it, succ = it, end = first.vl_ptr()->skip_end(); 
+  for(Vertex_it it = second.vl_ptr()->skip_begin(), succ = it, end = back_it; 
       ++succ != end; 
       ++it){
     typename Sc_to_c_map::iterator scit = sc_to_c_map.find(make_edge(*it,*succ));
@@ -867,6 +869,34 @@ template <class T, class Compare, class Data>
 typename Polyline_constraint_hierarchy_2<T,Compare,Data>::Vertex_list*
 Polyline_constraint_hierarchy_2<T,Compare,Data>::
 insert_constraint(T va, T vb){
+  Edge        he = make_edge(va, vb);
+  Vertex_list*  children = new Vertex_list; 
+  Context_list* fathers;
+
+  typename Sc_to_c_map::iterator scit = sc_to_c_map.find(he);
+  if(scit == sc_to_c_map.end()){
+    fathers = new Context_list;
+    sc_to_c_map.insert(std::make_pair(he,fathers));
+  } else {
+    fathers = scit->second;
+  }
+
+  children->push_front(Node(va, true));  // was he.first
+  children->push_back(Node(vb, true));   // was he.second
+  constraint_set.insert(children);
+  Context ctxt;
+  ctxt.enclosing = children;
+  ctxt.pos     = children->skip_begin();
+  fathers->push_front(ctxt);
+
+  return children;
+}
+
+  
+template <class T, class Compare, class Data>
+typename Polyline_constraint_hierarchy_2<T,Compare,Data>::Vertex_list*
+Polyline_constraint_hierarchy_2<T,Compare,Data>::
+insert_constraint_old_API(T va, T vb){
   Edge        he = make_edge(va, vb);
 
   // First, check if the constraint was already inserted.
