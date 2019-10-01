@@ -19,7 +19,6 @@ PENTrack
 *.out
 *.root
 doc/
-cgal/
 
 # ignore images
 *.png

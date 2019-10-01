@@ -59,27 +59,13 @@ TParticle* TParticleSource::CreateParticle(double t, double x, double y, double 
 }
 
 
-TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
-	if (area_sum.back() == 0)
-		throw std::runtime_error("Surface source did not find surface to start particles from!");
-	CPoint p;
-	CVector nv;
-	do{
-		std::uniform_real_distribution<double> areadist(0, area_sum.back());
-		double area = areadist(mc);
-		int index = std::distance(area_sum.begin(), std::lower_bound(area_sum.begin(), area_sum.end(), area));
-		CTriangle tri = (geometry.mesh.GetTrianglesBegin() + index)->first;
-		std::uniform_real_distribution<double> unidist(0, 1);
-		double a = unidist(mc); // generate random point on triangle (see Numerical Recipes 3rd ed., p. 1114)
-		double b = unidist(mc);
-		if (a+b > 1){
-			a = 1 - a;
-			b = 1 - b;
-		}
-		nv = tri.supporting_plane().orthogonal_vector();
-		nv = nv/sqrt(nv.squared_length());
-		p = tri[0] + a*(tri[1] - tri[0]) + b*(tri[2] - tri[0]);
-	}while (!InSourceVolume(p[0], p[1], p[2]));
+TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field){
+    CPoint p;
+    CVector nv;
+    unsigned ID;
+    do{
+        geometry.mesh.RandomPointOnSurface(p, nv, ID, mc, GetSourceVolumeBoundingBox());
+    } while(!InSourceVolume(p[0], p[1], p[2]));
 	p = p + nv*REFLECT_TOLERANCE; // move point slightly away from surface
 
 	double Ekin = spectrum(mc);
@@ -125,7 +111,7 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 	cout << " minimal potential = " << MinPot << "eV\n";
 }
 
-TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
+TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field){
 	std::uniform_real_distribution<double> timedist(0, fActiveTime);
 	if (fPhaseSpaceWeighting){ // if particle density should be weighted by available phase space
 		if (MinPot == numeric_limits<double>::infinity()){ // if minimum potential energy has not yet been determined
@@ -186,10 +172,10 @@ TParticleSource* CreateParticleSource(TConfig &config, const TGeometry &geometry
 		source = new TSTLVolumeSource(sc);
 	}
 	else if (sourcemode == "cylsurface"){
-		source = new TCylindricalSurfaceSource(sc, geometry);
+		source = new TCylindricalSurfaceSource(sc);
 	}
 	else if (sourcemode == "STLsurface"){
-		source = new TSTLSurfaceSource(sc, geometry);
+		source = new TSTLSurfaceSource(sc);
 	}
 	else
 		throw std::runtime_error((boost::format("Could not load source %1%!") % sourcemode).str());

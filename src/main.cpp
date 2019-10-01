@@ -17,8 +17,6 @@
 #include <memory>
 #include <boost/format.hpp>
 
-using namespace std;
-
 #include "particle.h"
 #include "config.h"
 #include "fields.h"
@@ -26,6 +24,8 @@ using namespace std;
 #include "source.h"
 #include "mc.h" 
 #include "microroughness.h"
+
+using namespace std;
 
 TConfig ConfigInit(int argc, char **argv); // read config.in
 void OutputCodes(const map<string, map<int, int> > &ID_counter); // print simulation summary at program exit
@@ -522,39 +522,22 @@ void PrintBField(const boost::filesystem::path &outfile, const TFieldManager &fi
  * @param geom TGeometry structure which shall be sampled
  */
 void PrintGeometry(const boost::filesystem::path &outfile, TGeometry &geom){
-    double p1[3], p2[3];
-    double theta, phi;
-    // create count line segments with length raylength
-    unsigned count = 1000000, collcount = 0, raylength = 1;
+    unsigned count = 1000000;
 
     ofstream f(outfile.c_str());
     f << "x y z ID" << '\n'; // print file header
 
-    CBox bbox = geom.mesh.GetBoundingBox();
-    srand(time(NULL));
 	chrono::time_point<chrono::steady_clock> collstart = chrono::steady_clock::now();
+	std::mt19937_64 r(std::chrono::duration_cast<std::chrono::nanoseconds>(collstart.time_since_epoch()).count());
 	for (unsigned i = 0; i < count; i++){
-    	// random segment start point
-        for (int j = 0; j < 3; j++)
-        	p1[j] = (double)rand()/RAND_MAX * (bbox.max(j) - bbox.min(j)) + bbox.min(j);
-		// random segment direction
-        theta = (double)rand()/RAND_MAX*pi;
-		phi = (double)rand()/RAND_MAX*2*pi;
-		// translate direction and length into segment end point
-		p2[0] = p1[0] + raylength*sin(theta)*cos(phi);
-		p2[1] = p1[1] + raylength*sin(theta)*sin(phi);
-		p2[2] = p1[2] + raylength*cos(theta);
-
-	    multimap<TCollision, bool> c;
-	    geom.GetCollisions(0,p1,0,p2,c);
-		collcount += c.size();
-
-		for (auto i = c.begin(); i != c.end(); i++)
-			f << p1[0] + i->first.s*(p2[0]-p1[0]) << " " << p1[1] + i->first.s*(p2[1] - p1[1]) << " " << p1[2] + i->first.s*(p2[2] - p1[2]) << " " << i->first.ID << '\n'; // print all intersection points into file
+        std::array<double, 3> p, n;
+        unsigned ID;
+        geom.mesh.RandomPointOnSurface(p, n, ID, r, geom.mesh.GetBoundingBox());
+		f << p[0] << " " << p[1] << " " << p[2] << " " << ID << '\n'; // print all intersection points into file
     }
 	chrono::time_point<chrono::steady_clock> collend = chrono::steady_clock::now();
 	float colltimer = chrono::duration_cast<chrono::nanoseconds>(collend - collstart).count();
     // print some time statistics
-    printf("Wrote %u tests, %u collisions in %fms (%fms per Test, %fms per Collision) into %s\n",count,collcount,colltimer/1e6,colltimer/count/1e6,colltimer/collcount/1e6, outfile.c_str());
+    printf("Wrote %u points in %fms (%fms per point) into %s\n",count,colltimer/1e6,colltimer/count/1e6, outfile.c_str());
     f.close();	
 }

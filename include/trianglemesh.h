@@ -23,72 +23,32 @@
 #define TRIANGLEMESH_H_
 
 #include <vector>
+#include <memory>
+#include <random>
+
+#include <algorithm>
 
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
-#include <CGAL/AABB_triangle_primitive.h>
+#include <CGAL/AABB_face_graph_triangle_primitive.h>
+#include <CGAL/Surface_mesh.h>
+#include <CGAL/Side_of_triangle_mesh.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
+
+static const double REFLECT_TOLERANCE = 1e-8;  ///< max distance of reflection point to actual surface collision point
 
 typedef CGAL::Simple_cartesian<double> CKernel; ///< Geometric Kernel used for CGAL types
 typedef CKernel::Segment_3 CSegment; ///< CGAL segment type
 typedef CKernel::Point_3 CPoint; ///< CGAL point type
-typedef CKernel::Triangle_3 CTriangle; ///< CGAL triangle type
 typedef CKernel::Vector_3 CVector; ///< CGAL vector type
-typedef CGAL::Bbox_3 CBox; ///< CGAL Box type
-typedef std::vector< std::pair<CTriangle, int> > CTriangleList; ///< list used to store all triangles
-typedef CTriangleList::const_iterator CIterator; ///< Iterator of triangle list. This is stored in the AABB tree.
+typedef CKernel::Iso_cuboid_3 CCuboid; ///< CGAL cuboid type
 
-/**
- * This primitive provides the conversion facilities between CTriangle and the types needed by CGAL AABB_tree
- */
-struct CPrimitive {
-public:
-	typedef CIterator Id; ///< Type returned by CPrimitive::id().
-	typedef CPoint Point; ///< Type returned by CPrimitive::reference_point().
-	typedef CTriangle Datum; ///< Type returned by CPrimitive::datum().
-private:
-	Id m_pt; ///< this is what the AABB tree stores internally
-public:
-	/**
-	 * Needed default constructor
-	 */
-	CPrimitive(): m_pt() {}
-
-	/**
-	 * Constructor
-	 *
-	 * this constructor is the one that receives the iterators from the
-	 * iterator range given as input to the AABB_tree
-	 */
-	CPrimitive(CIterator it): m_pt(it) {}
-
-	/**
-	 * Return internal iterator.
-	 */
-	const Id& id() const { return m_pt; }
-
-	/**
-	 * Return the CGAL Primitive
-	 */
-	Datum datum() const{ return m_pt->first; }
-	/**
-	 * Return a reference point.
-	 *
-	 * returns a reference point which must be on the primitive
-	 */
-	Point reference_point() const{ return m_pt->first.vertex(0); }
-};
-
-
-
+typedef CGAL::Surface_mesh<CPoint> CMesh;
+typedef CGAL::AABB_face_graph_triangle_primitive<CMesh> CPrimitive;
 typedef CGAL::AABB_traits<CKernel, CPrimitive> CTraits; ///< CGAL triangle traits type
 typedef CGAL::AABB_tree<CTraits> CTree; ///< CGAL AABB tree type containing CPrimitives
-#if CGAL_VERSION_NR<1040301000
-	typedef boost::optional< CTree::Object_and_primitive_id > CIntersection; ///< CGAL 4.2 or older segment-triangle intersection type
-#else
-	typedef boost::optional< CTree::Intersection_and_primitive_id<CSegment>::Type > CIntersection; ///< CGAL 4.3 segment-triangle intersection type
-#endif
-
+typedef boost::optional< CTree::Intersection_and_primitive_id<CSegment>::Type > CIntersection; ///< CGAL segment-triangle intersection type
 
 
 /**
@@ -107,16 +67,14 @@ struct TCollision{
 	 * @param tri Triangle the segment collided with
 	 * @param point Collision point
 	 */
-	TCollision(const CSegment &segment, const CIterator &tri, const CPoint &point){
-		s = /*std::min(1., std::max(0.,*/ (point - segment.start())*segment.to_vector()/segment.squared_length()/*))*/;
-		ID = tri->second;
-		CVector n = tri->first.supporting_plane().orthogonal_vector();
-		n = n/sqrt(n.squared_length());
-		normal[0] = n[0];
-		normal[1] = n[1];
-		normal[2] = n[2];
-		distnormal = segment.to_vector()*n;
-	}
+	TCollision(const CSegment &segment, const CVector &n, const CPoint &point, const unsigned aID){
+      s = /*std::min(1., std::max(0.,*/ (point - segment.start())*segment.to_vector()/segment.squared_length()/*))*/;
+      ID = aID;
+      normal[0] = n[0];
+      normal[1] = n[1];
+      normal[2] = n[2];
+      distnormal = segment.to_vector()*n;
+    };
 
 	/**
 	 * Overloaded operator, needed for sorting
@@ -136,8 +94,14 @@ struct TCollision{
  */
 class TTriangleMesh{
 private:
-	CTriangleList triangles; ///< list of triangles
-	CTree tree; ///< AABB tree
+    struct CTriangleMesh{
+        std::unique_ptr<CMesh> mesh;
+        std::unique_ptr<CTree> tree;
+        int ID;
+        std::discrete_distribution<size_t> triangle_sampler;
+    };
+	std::vector<CTriangleMesh> meshes;
+	std::discrete_distribution<size_t> mesh_sampler;
 
 public:
 	/**
@@ -171,6 +135,12 @@ public:
 		return InSolid(p[0], p[1], p[2]);
 	}
 
+	CCuboid GetBoundingBox() const{
+	    std::vector<CCuboid> b;
+	    std::transform(meshes.begin(), meshes.end(), std::back_inserter(b), [](const CTriangleMesh &m){ return m.tree->bbox(); });
+	    return CGAL::bbox_3(b.begin(), b.end());
+	}
+
 	/**
 	 * Test if point is inside the mesh
 	 *
@@ -180,11 +150,7 @@ public:
 	 *
 	 * @return Returns true if point inside the mesh
 	 */
-	bool InSolid(const double x, const double y, const double z) const{
-		std::vector<TCollision> colls = Collision(std::vector<double>{x, y, z}, std::vector<double>{x, y, tree.bbox().zmin() - 1});
-		return (colls.size() & 1); // return true if collided with surface and number of collisions is odd
-	}
-
+	bool InSolid(const double x, const double y, const double z) const;
 	/**
 	  * Test if point is inside the mesh
 	  *
@@ -192,30 +158,82 @@ public:
 	  *
 	  * @return Returns true if point is inside the mesh
 	  */
-	bool InSolid(const CPoint &p) const{
+	template<class Point> bool InSolid(Point p) const{
 		return InSolid(p[0], p[1], p[2]);
 	}
 
 	/**
-	 * Return iterator to triangle list
+	 * Return list of solids the point is inside of
+	 * @param p Point
+	 * @return List of solid IDs
 	 */
-	CIterator GetTrianglesBegin() const{
-		return triangles.begin();
+    template<class Point> std::vector<unsigned> GetSolids(Point p) const{
+        std::vector<unsigned> solids;
+        for (auto &m: meshes){
+            if (m.tree->number_of_intersected_primitives(CKernel::Ray_3(CPoint(p[0],p[1],p[2]), CVector(0., 0., 1.))) % 2 != 0)
+                solids.push_back(m.ID);
+        }
+        return solids;
+    }
+
+	/**
+	 * Check if point is contained in bounding box
+	 */
+	template<class Object> bool InBoundingBox(Object p) const{
+        return std::any_of(meshes.begin(), meshes.end(), [&p](const CTriangleMesh &mesh){ return CGAL::do_intersect(p, mesh.tree->bbox()); });
 	}
 
 	/**
-	 * Return iterator to triangle list
+	 * Return random point on surface
 	 */
-	CIterator GetTrianglesEnd() const{
-		return triangles.end();
+	template<class Point, class Vector, class RandomGenerator, class BoundingBox> void RandomPointOnSurface(Point &p, Vector &n, unsigned &ID, RandomGenerator &rand, BoundingBox bbox){
+        size_t meshidx;
+        do{
+            meshidx = mesh_sampler(rand);
+        }while (not CGAL::do_intersect(meshes[meshidx].tree->bbox(), bbox));
+        ID = meshes[meshidx].ID;
+        CMesh::Face_index faceidx(meshes[meshidx].triangle_sampler(rand));
+        std::vector<CPoint> vertices;
+        for (auto v: meshes[meshidx].mesh->vertices_around_face(meshes[meshidx].mesh->halfedge(faceidx))) {
+            vertices.push_back(meshes[meshidx].mesh->point(v));
+        }
+        std::uniform_real_distribution<double> unidist(0, 1);
+        double a = unidist(rand); // generate random point on triangle (see Numerical Recipes 3rd ed., p. 1114)
+        double b = unidist(rand);
+        if (a+b > 1){
+            a = 1 - a;
+            b = 1 - b;
+        }
+        CPoint pp = vertices[0] + a*(vertices[1] - vertices[0]) + b*(vertices[2] - vertices[0]);
+        CVector nv = CGAL::Polygon_mesh_processing::compute_face_normal(faceidx, *meshes[meshidx].mesh);
+        p = {pp.x(), pp.y(), pp.z()};
+        n = {nv.x(), nv.y(), nv.z()};
 	}
 
 	/**
-	 * Return bounding box of mesh
+	 * Return random point in volume bounded by mesh
 	 */
-	CBox GetBoundingBox() const{
-		return tree.bbox();
-	}
+	template<class RandomGenerator> std::array<double, 3> RandomPointInVolume(RandomGenerator &rand) const{
+        std::array<double, 3> p;
+        do{
+            p = RandomPointInBoundingBox(rand);
+        }while (!InSolid(p));
+        return p;
+    }
+
+	/**
+	 * Return random point in bounding box
+	 */
+    template<class RandomGenerator> std::array<double, 3> RandomPointInBoundingBox(RandomGenerator &rand) const{
+        std::vector<double> bvols;
+        std::transform(meshes.begin(), meshes.end(), std::back_inserter(bvols), [](const CTriangleMesh &mesh){ return CCuboid(mesh.tree->bbox()).volume(); });
+        std::discrete_distribution<unsigned> dist(bvols.begin(), bvols.end());
+        CCuboid bbox = meshes[dist(rand)].tree->bbox();
+        std::uniform_real_distribution<double> unidist(0, 1);
+        return {bbox.xmin() + unidist(rand)*(bbox.xmax() - bbox.xmin()),
+                bbox.ymin() + unidist(rand)*(bbox.ymax() - bbox.ymin()),
+                bbox.zmin() + unidist(rand)*(bbox.zmax() - bbox.zmin())};
+    }
 };
 
 #endif // TRIANGLEMESH_H_
