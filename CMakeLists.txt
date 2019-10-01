@@ -5,16 +5,16 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-include_directories("alglib-3.14.0/cpp/src")
-add_library(alglib OBJECT alglib-3.14.0/cpp/src/alglibinternal.cpp
-                          alglib-3.14.0/cpp/src/integration.cpp
-                          alglib-3.14.0/cpp/src/optimization.cpp
-                          alglib-3.14.0/cpp/src/alglibmisc.cpp
-                          alglib-3.14.0/cpp/src/interpolation.cpp
-                          alglib-3.14.0/cpp/src/solvers.cpp
-                          alglib-3.14.0/cpp/src/ap.cpp
-                          alglib-3.14.0/cpp/src/linalg.cpp
-                          alglib-3.14.0/cpp/src/specialfunctions.cpp)
+include_directories("alglib-3.15.0/cpp/src")
+add_library(alglib OBJECT alglib-3.15.0/cpp/src/alglibinternal.cpp
+                          alglib-3.15.0/cpp/src/integration.cpp
+                          alglib-3.15.0/cpp/src/optimization.cpp
+                          alglib-3.15.0/cpp/src/alglibmisc.cpp
+                          alglib-3.15.0/cpp/src/interpolation.cpp
+                          alglib-3.15.0/cpp/src/solvers.cpp
+                          alglib-3.15.0/cpp/src/ap.cpp
+                          alglib-3.15.0/cpp/src/linalg.cpp
+                          alglib-3.15.0/cpp/src/specialfunctions.cpp)
 						
 include_directories("tricubic-1.0/src/libtricubic")
 add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
