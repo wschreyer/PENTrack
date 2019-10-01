@@ -9,6 +9,10 @@ The stable releases are quite outdated. The new release described in [this paper
 Prerequisites
 -----------
 
+### CMake
+
+CMake 3.1 or newer is required to build PENTrack.
+
 ### Compiler
 
 A C++11-compatible compiler is required.
@@ -21,13 +25,16 @@ The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGA
 
 Boost 1.53.0 - 1.69.0 have been tested. Boost 1.64.0 is unusable as it contains [a bug](https://svn.boost.org/trac10/ticket/12516) that prevents compiling PENTrack.
 
+### GMP and MPFR
+
+GMP 4.2 and MPFR 2.2.1 (or newer) are required for the CGAL library. They should be available on almost all Linux distributions.
 
 Included libraries
 ------------------
 
 ### CGAL
 
-The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to detect collisions of particle tracks with the experiment geometry defined by triangle meshes using AABB trees.
+The [Computational Geometry Algorithms Library](http://www.cgal.org/) provides axis-aligned bounding-box (AABB) trees to quickly detect collisions of particle tracks with the experiment geometry defined by triangle meshes. It also provides lots of routines to check those meshes for errors.
 
 CGAL 4.14 is included in the repository.
 
@@ -71,13 +78,15 @@ PENTrack expects the STL files to be in unit Meters.
 
 Gravity acts in negative z-direction, so choose your coordinate system accordingly.
 
-Do not choose a too high resolution. Usually, setting the deviation tolerance to a value small enough to represent every detail in your geometry and leaving angle tolerance at the most coarse setting is good enough. Low angle tolerance quickly increases triangle count and degeneracy.
+Do not choose a too high resolution. Spatial tolerances of 1mm to 3mm and angle tolerances of 10 degrees are usually good enough. Low tolerances quickly increase triangle count. Unless you have very complicated parts, the resulting STL files typically have file sizes of less than 1 MB.
+
+PENTrack will warn you of potential issues in triangle meshes (holes, self-intersections). If you get such warnings, check if the summary at the end of the simulation lists particles that encountered geometry errors. If it does, you might want to fix the affected meshes by simplifying parts, re-exporting with different resolution, or repairing them in e.g. [MeshLab](http://meshlab.sourceforge.net/).
 
 If you want to export several parts of a Solidworks assembly you can do the following:
 
 1. Select the part(s) to be exported and right-click.
 2. Select "Invert selection" and hide all other parts.
-3. Now you can save the remaining parts in a single STL file (make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together).
+3. Now you can save the remaining parts in a single STL file. Make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together. For resolution, the "Fine" preset is usually a good choice.
 4. You can check the positioning of the parts with e.g. [MeshLab](http://meshlab.sourceforge.net/), SolidView, Minimagics, Solidworks...
 
 ### Fields

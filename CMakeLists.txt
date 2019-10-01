@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.12)
+cmake_minimum_required (VERSION 3.1)
 project (PENTrack CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -20,7 +20,7 @@ include_directories("tricubic-1.0/src/libtricubic")
 add_library(libtricubic OBJECT tricubic-1.0/src/libtricubic/libtricubic.cpp tricubic-1.0/src/libtricubic/tricubic_utils.cpp)
 
 set(CGAL_DONT_OVERRIDE_CMAKE_FLAGS TRUE CACHE BOOL "Tell CGAL not to override compiler flags")
-find_package(CGAL PATHS "cgal")
+find_package(CGAL HINTS "cgal")
 if (CGAL_FOUND)
 	message(STATUS "CGAL version: " ${CGAL_VERSION})
 	if (CGAL_VERSION VERSION_LESS 4.14)
