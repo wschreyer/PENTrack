@@ -20,7 +20,7 @@
 
 // A faster implementation of the tricubic_eval function from libtricubic.
 inline double tricubic_eval_fast(double a[64], double x, double y, double z) {
-	double result = 0.0;
+/*	double result = 0.0;
 	for (int i = 0; i < 4; ++i) {
 		for (int j = 0; j < 4; ++j) {
 			for (int k = 0; k < 4; ++k) {
@@ -28,7 +28,25 @@ inline double tricubic_eval_fast(double a[64], double x, double y, double z) {
 			}
 		}
 	}
-	return result;
+    return result;
+*/
+	double rx = 0.;
+	for (int i = 3; i >= 0; --i){
+	    double ry = 0.;
+	    for (int j = 3; j >= 0; --j){
+	        double rz = 0.;
+	        for (int k = 3; k >= 0; --k){
+                rz += a[i + 4*j + 16*k];
+                if (k > 0) rz *= z;
+	        }
+	        ry += rz;
+	        if (j > 0) ry *= y;
+	    }
+	    rx += ry;
+	    if (i > 0) rx *= x;
+	}
+
+	return rx;
 }
 
 inline double tricubic_eval_fast(double a[64], double x, double y, double z, int derx, int dery, int derz) {
@@ -40,7 +58,7 @@ inline double tricubic_eval_fast(double a[64], double x, double y, double z, int
 		{ 1.0, 2.0, 2.0, 0.0 },
 		{ 1.0, 3.0, 6.0, 6.0 },
 	};
-	
+/*
 	double result = 0.0;
 	for (int i = derx; i <= 3; ++i) {
 		for (int j = dery; j <= 3; ++j) {
@@ -51,7 +69,25 @@ inline double tricubic_eval_fast(double a[64], double x, double y, double z, int
 			}
 		}
 	}
-	return result;
+    return result;
+*/
+    double rx = 0.;
+    for (int i = 3; i >= derx; --i){
+        double ry = 0.;
+        for (int j = 3; j >= dery; --j){
+            double rz = 0.;
+            for (int k = 3; k >= derz; --k){
+                rz += fact[k][derz] * a[i + 4*j + 16*k];
+                if (k > derz) rz *= z;
+            }
+            ry += fact[j][dery] * rz;
+            if (j > dery) ry *= y;
+        }
+        rx += fact[i][derx] * ry;
+        if (i > derx) rx *= x;
+    }
+
+	return rx;
 }
 
 
@@ -420,11 +456,11 @@ void TabField3::BField(const double x, const double y, const double z, const dou
     for (unsigned i = 0; i < 3; ++i){
         if (not Bc[i].empty()){
             double *coeff = const_cast<double*>(&Bc[i](index)[0]);
-            B[i] = Bscale*tricubic_eval(coeff, r[0], r[1], r[2]);
+            B[i] = Bscale*tricubic_eval_fast(coeff, r[0], r[1], r[2]);
             if (dBidxj != nullptr){
-                dBidxj[i][0] = Bscale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 0, 0)/dist[0];
-                dBidxj[i][1] = Bscale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 1, 0)/dist[1];
-                dBidxj[i][2] = Bscale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 0, 1)/dist[2];
+                dBidxj[i][0] = Bscale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 0)/dist[0];
+                dBidxj[i][1] = Bscale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 0)/dist[1];
+                dBidxj[i][2] = Bscale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 0, 1)/dist[2];
             }
 		}
     }
@@ -521,20 +557,20 @@ void TabField3::EField(const double x, const double y, const double z, const dou
         }
 
         double *coeff = const_cast<double*>(&Vc[index[0]][index[1]][index[2]][0]);
-        V = tricubic_eval(coeff, r[0], r[1], r[2]);
-        Ei[0] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 0, 0)/dist[0];
-        Ei[1] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 1, 0)/dist[1];
-        Ei[2] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 0, 1)/dist[2];
+        V = tricubic_eval_fast(coeff, r[0], r[1], r[2]);
+        Ei[0] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 0)/dist[0];
+        Ei[1] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 0)/dist[1];
+        Ei[2] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 0, 1)/dist[2];
 /*        if (dEidxj != nullptr){ // calculate higher derivatives
-            dEidxj[0][0] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 2, 0, 0)/dist[0]/dist[0];
-            dEidxj[0][1] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 1, 0)/dist[0]/dist[1];
-            dEidxj[0][2] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 0, 1)/dist[0]/dist[2];
-            dEidxj[1][0] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 1, 0)/dist[1]/dist[0];
-            dEidxj[1][1] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 2, 0)/dist[1]/dist[1];
-            dEidxj[1][2] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 1, 1)/dist[1]/dist[2];
-            dEidxj[2][0] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 1, 0, 1)/dist[2]/dist[0];
-            dEidxj[2][1] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 1, 1)/dist[2]/dist[1];
-            dEidxj[2][2] = -Escale*tricubic_eval(coeff, r[0], r[1], r[2], 0, 0, 2)/dist[2]/dist[2];
+            dEidxj[0][0] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 2, 0, 0)/dist[0]/dist[0];
+            dEidxj[0][1] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 1, 0)/dist[0]/dist[1];
+            dEidxj[0][2] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 1)/dist[0]/dist[2];
+            dEidxj[1][0] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 1, 0)/dist[1]/dist[0];
+            dEidxj[1][1] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 2, 0)/dist[1]/dist[1];
+            dEidxj[1][2] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 1)/dist[1]/dist[2];
+            dEidxj[2][0] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 1)/dist[2]/dist[0];
+            dEidxj[2][1] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 1)/dist[2]/dist[1];
+            dEidxj[2][2] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 0, 2)/dist[2]/dist[2];
 		}*/
 
         for (int i = 0; i < 3; i++){
