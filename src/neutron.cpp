@@ -8,6 +8,8 @@
 #include "proton.h"
 #include "electron.h"
 
+#include <valarray>
+
 using namespace std;
 
 const char* NAME_NEUTRON = "neutron";
@@ -72,24 +74,36 @@ void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type 
 void TNeutron::TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+    material mat = leaving.mat;
+    std::valarray<double> n(normal, 3);
+    if (vnormal < 0){
+        mat = entering.mat;
+        vnormal *= -1;
+        n *= -1;
+    }
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
 	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
-	for (int i = 0; i < 3; i++)
-		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
+	std::valarray<double> specular_trans(&y2[3], 3);
+	specular_trans += (k2/k1 - 1)*n*vnormal;
 
 	double theta_t, phi_t;
-	std::uniform_real_distribution<double> unidist(0, 2.*pi);
-	phi_t = unidist(mc);
-	std::sincos_distribution<double> sincosdist(0, pi/2.);
-	theta_t = sincosdist(mc);
 
-	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
-	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
-	y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
-	y2[4] = vabs*sin(phi_t)*sin(theta_t);
-	y2[5] = vabs*cos(theta_t);
-	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+	double vabs = std::sqrt((specular_trans*specular_trans).sum());
+	do {
+        std::uniform_real_distribution<double> unidist(0, 2.*pi);
+        phi_t = unidist(mc);
+        std::sincos_distribution<double> sincosdist(0, pi/2.);
+        theta_t = sincosdist(mc);
+        y2[3] = vabs * cos(phi_t) * sin(theta_t);    // new velocity with respect to z-axis
+        y2[4] = vabs * sin(phi_t) * sin(theta_t);
+        y2[5] = vabs * cos(theta_t);
+        if (mat.DiffProb > 0) {
+            RotateVector(&y2[3], &n[0], &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+        } else {
+            RotateVector(&y2[3], &specular_trans[0], &y1[3]);
+        }
+    }while(y2[3]*n[0] + y2[4]*n[1] + y2[5]*n[2] <= 0); // resample until velocity points into correct hemisphere
 }
 
 void TNeutron::Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
@@ -147,25 +161,36 @@ void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &
 void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
 	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-	//particle was neither transmitted nor absorbed, so it has to be reflected
+	material mat = entering.mat;
+	std::valarray<double> n(normal, 3);
+	if (vnormal > 0){
+	    mat = leaving.mat;
+	    vnormal *= -1;
+	    n *= -1;
+	}
 
-	double phi_r, theta_r;
-	std::uniform_real_distribution<double> unidist(0, 2.*pi);
-	phi_r = unidist(mc);
-	std::sincos_distribution<double> sincosdist(0, pi/2.);
-	theta_r = sincosdist(mc);
-
-	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
 	x2 = x1;
 	y2[0] = y1[0];
 	y2[1] = y1[1];
 	y2[2] = y1[2];
 	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
-	y2[4] = vabs*sin(phi_r)*sin(theta_r);
-	y2[5] = vabs*cos(theta_r);
-	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
-//				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
+	do {
+        std::uniform_real_distribution<double> unidist(0, 2.*pi);
+        double phi_r = unidist(mc);
+        std::sincos_distribution<double> sincosdist(0, pi/2.);
+        double theta_r = sincosdist(mc);
+
+        y2[3] = vabs * cos(phi_r) * sin(theta_r);    // new velocity with respect to z-axis
+        y2[4] = vabs * sin(phi_r) * sin(theta_r);
+        y2[5] = vabs * cos(theta_r);
+        if (mat.DiffProb > 0) {
+            RotateVector(&y2[3], &n[0], &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+        } else { // if DiffProb == 0 use modified Lambert model
+            std::valarray<double> specular_refl(&y1[3],3);
+            specular_refl -= 2*vnormal*n;
+            RotateVector(&y2[3], &specular_refl[0], &y1[3]); // rotate velocity into coordinate system defined by specularly reflected velocity vector
+        }
+    }while(y2[3]*n[0] + y2[4]*n[1] + y2[5]*n[2] <= 0); // resample until velocity points into correct reflection hemisphere
 	y2[6] = y1[6];
 	y2[8] = y1[8];
 }
@@ -207,7 +232,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 		double reflprob = norm((k1 - k2)/(k1 + k2)); // specular reflection probability
 		if (Enormal > Estep){ // transmission only possible if Enormal > Estep
 			if (prob < MRreflprob + MRtransprob + reflprob*(1 - MRreflprob - MRtransprob)){ // reflection, scale down reflprob so MRreflprob + MRtransprob + reflprob + transprob = 1
-				if (!UseMRModel && unidist(mc) < mat.DiffProb){
+				if (!UseMRModel && unidist(mc) < mat.DiffProb + mat.ModifiedLambertProb){
 					ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
 				}
 				else{
@@ -215,7 +240,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 				}
 			}
 			else{
-				if (!UseMRModel && unidist(mc) < mat.DiffProb){
+				if (!UseMRModel && unidist(mc) < mat.DiffProb + mat.ModifiedLambertProb){
 					TransmitLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert transmission
 				}
 				else{
@@ -237,7 +262,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 				ID = ID_ABSORBED_ON_SURFACE;
 			}
 			else{ // no absorption -> reflection
-				if (!UseMRModel && unidist(mc) < mat.DiffProb){
+				if (!UseMRModel && unidist(mc) < mat.DiffProb + mat.ModifiedLambertProb){
 					ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
 				}
 				else{

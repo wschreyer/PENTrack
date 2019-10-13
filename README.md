@@ -125,7 +125,7 @@ Physics
 
 All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment.
 
-Interaction of UCN with matter is described with the Fermi-potential formalism and the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection, and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall.
+Interaction of UCN with matter is described with the Fermi-potential formalism. Diffuse scattering is described with the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) (scattering angle cosine-distributed around surface normal), a modified Lambert model (scattering angle cosine-distributed around specular scattering vector), or the MicroRoughness model (see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)). Spin flips on wall bounce can also be included. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall.
 
 A particle's spin can be tracked by integrating the [Bargmann-Michel-Telegdi](https://doi.org/10.1007/s10701-011-9579-7) equation along a particle's trajectory. To reduce computation time a magnetic-field threshold can be defined to limit spin tracking to regions where the adiabatic condition is not fulfilled.
 
