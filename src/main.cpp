@@ -17,6 +17,7 @@
 #include <memory>
 #include <boost/format.hpp>
 
+#include "tracking.h"
 #include "particle.h"
 #include "config.h"
 #include "fields.h"
@@ -151,21 +152,20 @@ int main(int argc, char **argv){
         progress_display progress(simcount);
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
-			TParticle *p = source->CreateParticle(mc, geom, field);
-			p->Integrate(SimTime, configin[p->GetName()], mc, geom, field); // integrate particle
+			unique_ptr<TParticle> p(source->CreateParticle(mc, geom, field));
+			TTracker t;
+			t.IntegrateParticle(p, SimTime, configin[p->GetName()], mc, geom, field); // integrate particle
 			ID_counter[p->GetName()][p->GetStopID()]++; // increment counters
 			ntotalsteps += p->GetNumberOfSteps();
 
 			if (secondaries == 1){
-				std::vector<TParticle*> secondaries = p->GetSecondaryParticles();
-				for (auto i = secondaries.begin(); i != secondaries.end(); i++){
-					(*i)->Integrate(SimTime, configin[(*i)->GetName()], mc, geom, field); // integrate secondary particles
-					ID_counter[(*i)->GetName()][(*i)->GetStopID()]++;
-					ntotalsteps += (*i)->GetNumberOfSteps();
+				for (auto& i: p->GetSecondaryParticles()){
+					t.IntegrateParticle(i, SimTime, configin[i->GetName()], mc, geom, field); // integrate secondary particles
+					ID_counter[i->GetName()][i->GetStopID()]++;
+					ntotalsteps += i->GetNumberOfSteps();
 				}
 			}
 
-			delete p;
             ++progress;
 		}
 	}

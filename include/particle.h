@@ -21,6 +21,25 @@ static const double MAX_TRACK_DEVIATION = 0.001; ///< max deviation of actual tr
 static const int STATE_VARIABLES = 9; ///< number of variables in trajectory integration (position, velocity, proper time, polarization, path length)
 static const int SPIN_STATE_VARIABLES = 5; ///< number of variables in spin integration (spin vector, time, total phase)
 
+typedef double value_type; ///< data type used for trajectory integration
+typedef std::vector<value_type> state_type; ///< type representing current particle state (position, velocity, proper time, and polarization) or spin state (x,y,z component)
+typedef boost::numeric::odeint::runge_kutta_dopri5<state_type, value_type> stepper_type; ///< basic integration stepper (5th-order Runge-Kutta)
+typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type; ///< integration step length controller
+typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type; ///< integration step interpolator
+//	typedef boost::numeric::odeint::bulirsch_stoer_dense_out<state_type, value_type> dense_stepper_type2; ///< alternative stepper type (Bulirsch-Stoer)
+
+/**
+ * Enum containing all types of log files.
+ *
+ * Is passed to GetLogStream to identify, which file stream should be returned.
+ */
+enum LogStream { endLog, ///< end log
+    snapshotLog, ///< snapshot log
+    hitLog, ///< hit log
+    trackLog, ///< track log
+    spinLog ///< spin log
+};
+
 /**
  * Basic particle class (virtual).
  *
@@ -29,26 +48,6 @@ static const int SPIN_STATE_VARIABLES = 5; ///< number of variables in spin inte
  * Optionally, derived particles can also re-implement TParticle::Epot, TParticle::PrintStartEnd, TParticle::PrintTrack, TParticle::PrintSnapshots, TParticle::PrintHits and define its own constructors.
  */
 struct TParticle{
-protected:
-	typedef double value_type; ///< data type used for trajectory integration
-	typedef std::vector<value_type> state_type; ///< type representing current particle state (position, velocity, proper time, and polarization) or spin state (x,y,z component)
-	typedef boost::numeric::odeint::runge_kutta_dopri5<state_type, value_type> stepper_type; ///< basic integration stepper (5th-order Runge-Kutta)
-	typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type; ///< integration step length controller
-	typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type; ///< integration step interpolator
-//	typedef boost::numeric::odeint::bulirsch_stoer_dense_out<state_type, value_type> dense_stepper_type2; ///< alternative stepper type (Bulirsch-Stoer)
-
-	/**
-	 * Enum containing all types of log files.
-	 *
-	 * Is passed to GetLogStream to identify, which file stream should be returned.
-	 */
-	enum LogStream { endLog, ///< end log
-					snapshotLog, ///< snapshot log
-					hitLog, ///< hit log
-					trackLog, ///< track log
-					spinLog ///< spin log
-					};
-
 private:
 	std::string name; ///< particle name (has to be initialized in all derived classes!)
 	const long double q; ///< charge [C] (has to be initialized in all derived classes!)
@@ -73,10 +72,7 @@ private:
 	long double noflipprob; ///< total probability of NO spinflip calculated by spin tracking
 	int Nstep; ///< number of integration steps
 
-	std::vector<TParticle*> secondaries; ///< list of secondary particles
-
-	std::vector<std::pair<solid, bool> > currentsolids; ///< solids in which particle is currently inside
-
+	std::vector<std::unique_ptr<TParticle> > secondaries;
 public:
 	/**
 	 * Return name of particle
@@ -219,13 +215,6 @@ public:
 	int GetNumberOfSteps() const { return Nstep; };
 
 	/**
-	 * Return vector containing all secondary particles
-	 *
-	 * @return Vector containing all secondary particles
-	 */
-	std::vector<TParticle*> GetSecondaryParticles() const { return secondaries; };
-
-	/**
 	 * Return initial total energy
 	 *
 	 * @return Initial total energy
@@ -252,6 +241,13 @@ public:
 	 * @return Final kinetic energy
 	 */
 	double GetFinalKineticEnergy() const;
+
+	std::vector<std::unique_ptr<TParticle> >& GetSecondaryParticles(){ return secondaries; }
+
+	void SetStopID(const stopID aID){ ID = aID; }
+
+	void SetFinalState(const value_type& x, const state_type& y, const state_type& spin,
+	        const double anoflipprob, const solid& sld);
 
 	/**
 	 * Constructor, initializes TParticle::type, TParticle::q, TParticle::m, TParticle::mu
@@ -286,31 +282,7 @@ public:
 	/**
 	 * Destructor, deletes secondaries
 	 */
-	virtual ~TParticle();
-
-
-	/**
-	 * Integrate particle trajectory.
-	 *
-	 * Takes inital state vector ystart and integrates the trajectory step by step.
-	 * If a step is longer than MAX_SAMPLE_DIST, the step is split by interpolating intermediate points.
-	 * On each step it checks for interaction with solids, prints snapshots and track into files and calls TParticle::OnStep.
-	 * TParticle::StopIntegration is called if TParticle::tau or tmax are reached; or if something happens to the particle (absorption, error, ...)
-	 *
-	 * @param tmax Max. absolute time at which integration will be stopped
-	 * @param particleconf Option map containing particle specific options from particle.in
-	 * @param mc Random-number generator
-	 * @param geom Geometry of the simulation
-	 * @param field TFieldManager containing all electromagnetic fields
-	 */
-	void Integrate(double tmax, std::map<std::string, std::string> &particleconf, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
-
-private:
-
-	/**
-	 * Return first non-ignored solid in TParticle::currentsolids list
-	 */
-	const solid& GetCurrentsolid() const;
+	virtual ~TParticle(){ };
 
 
 	/**
@@ -326,7 +298,7 @@ private:
 	void derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager *field) const;
 
 
-	/**
+    /**
 	 * Equations of motion dy/dx = f(x,y).
 	 *
 	 * Equations of motion (fully relativistic).
@@ -342,99 +314,59 @@ private:
 	void EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[3], const double dBidxj[3][3], const double E[3]) const;
 
 
-	/**
-	 * Check if particle hit a material boundary
-	 *
-	 * Check if particle hit a material boundary. Iterate exact collision point and call DoStep and DoHit appropriately.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment
-	 * @param y2 End point of line segment
-	 * @param stepper Trajectory integrator, used to calculate intermediate state vectors
-	 * @param hitlog Should hits be logged to file?
-	 * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
-	 * @return Returns true if particle was reflected/absorbed
-	 */
-	bool CheckHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-			TMCGenerator &mc, const TGeometry &geom, const bool hitlog);
+    /**
+     * Call OnStep for particle-dependent physics processes on a step.
+     *
+     * Check if trajectory has been altered by physics processes, return true if it was.
+     *
+     * @param x1 Start time of line segment
+     * @param y1 Start point of line segment
+     * @param x2 End time of line segment
+     * @param y2 End point of line segment
+     * @param stepper Trajectory integrator, used to calculate intermediate state vectors
+     * @param currentsolid Material the particle is in during this step
+     * @param mc Random-number generator
+     * @param geom Geometry
+     * @return Returns true if trajectory was altered
+     */
+    void DoStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+                const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field);
 
-	/**
-	 * Call OnStep for particle-dependent physics processes on a step.
-	 *
-	 * Check if trajectory has been altered by physics processes, return true if it was.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment
-	 * @param y2 End point of line segment
-	 * @param stepper Trajectory integrator, used to calculate intermediate state vectors
-	 * @param currentsolid Material the particle is in during this step
-	 * @param mc Random-number generator
-	 * @param geom Geometry
-	 * @return Returns true if trajectory was altered
-	 */
-	bool DoStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper, const solid &currentsolid,
-			TMCGenerator &mc, const TGeometry &geom);
+    /**
+     * Call OnHit to check if particle should cross material boundary.
+     *
+     * Update list of solids the particle is in, check for geometry-tracking errors.
+     *
+     * @param x1 Start time of line segment
+     * @param y1 Start point of line segment
+     * @param x2 End time of line segment
+     * @param y2 End point of line segment
+     * @param stepper Trajectory integrator, used to calculate intermediate state vectors
+     * @param mc Random-number generator
+     * @param geom Geometry
+     * @param hitlog Set true if hits should be logged to hitlog.out
+     * @return Returns true if trajectory was altered
+     */
+    void DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+               const double normal[3], const solid &leaving, const solid &entering,
+               TMCGenerator &mc);
 
-	/**
-	 * Call OnHit to check if particle should cross material boundary.
-	 *
-	 * Update list of solids the particle is in, check for geometry-tracking errors.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment
-	 * @param y2 End point of line segment
-	 * @param stepper Trajectory integrator, used to calculate intermediate state vectors
-	 * @param mc Random-number generator
-	 * @param geom Geometry
-	 * @param hitlog Set true if hits should be logged to hitlog.out
-	 * @return Returns true if trajectory was altered
-	 */
-	bool DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-			TMCGenerator &mc, const TGeometry &geom, const bool hitlog);
 
-	/**
-	 * Iterate collision point
-	 *
-	 * Split trajectory step right before and after collision point and call function recursively for each segment.
-	 *
-	 * @param x1 Start time of line segment
-	 * @param y1 Start point of line segment
-	 * @param x2 End time of line segment
-	 * @param y2 End point of line segment
-	 * @param coll Collision found in this segment
-	 * @param stepper Trajectory integrator, used to calculate intermediate state vectors
-	 * @param geom Geometry
-	 * @param interation Increase iteration count for each recursive call to limit number of iterations
-	 * @return Returns true if collision point was successfully iterated
-	 */
-        bool iterate_collision(value_type &x1, state_type &y1, value_type &x2, state_type &y2, const TCollision &coll, const dense_stepper_type &stepper, const TGeometry &geom, unsigned int iteration = 0);
+    /**
+     * Virtual routine which is called when particles reaches its lifetime, has to be implemented for each derived particle.
+     *
+     * @param t Time when the particle decayed
+     * @param y State (position, velocity, proper time, polarization, path length) of particle when it decayed
+     * @param mc Random-number generator
+     * @param geom Geometry of the simulation
+     * @param field TFieldManager containing all electromagnetic fields
+     * @param secondaries Add any secondary particles produced in this decay
+     */
+    void DoDecay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
-	/**
-	 * Simulate spin precession
-	 *
-	 * Integrates general BMT equation over one time step.
-	 * If the conditions given by times and Bmax are not fulfilled, the spin vector will simply be rotated along the magnetic field, keeping the spin projection onto the magnetic field constant.
-	 *
-	 * @param spin Spin vector, returns new spin vector after step
-	 * @param stepper Trajectory integrator containing last step
-	 * @param x2 Time at end of step [s]
-	 * @param y2 Particle state vector at end of step (position, velocity, proper time, and polarisation)
-	 * @param times Absolute time intervals in between spin integration should be carried out [s]
-	 * @param interpolatefields If this is set to true, the magnetic and electric fields will be interpolated between the trajectory-step points. This will speed up spin tracking in high, static fields, but might break spin tracking in small, quickly varying fields (e.g. spin-flip pulses)
-	 * @param Bmax Spin integration will only be carried out, if magnetic field is below this value [T]
-	 * @param flipspin If set to true, polarisation in y2 will be randomly set when magnetic field rises above Bmax, weighted by spin projection onto the magnetic field
-	 * @param spinloginterval Min. distance [s] between spin-trajectory prints
-	 * @param nextspinlog Time at which the next spin-trajectory point should be written to file
-	 *
-	 * @return Return probability of spin flip
-	 */
-	double IntegrateSpin(state_type &spin, const dense_stepper_type &stepper, const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
-						const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin, const double spinloginterval, double &nextspinlog) const;
+    void DoPolarize(const double t, state_type &y, const double polarization, TMCGenerator &mc);
 
-	/**
+    /**
 	 * Calculate spin precession axis.
 	 *
 	 * Includes relativistic distortion of magnetic and electric fields and Thomas precession.
@@ -461,7 +393,7 @@ private:
 	 */
 	void SpinPrecessionAxis(const double t, const double B[3], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const;
 
-	/**
+    /**
 	 * Equations of motion of spin vector.
 	 *
 	 * Calculates spin-precession axis either directly or from pre-calculated splines
@@ -542,6 +474,7 @@ protected:
 	virtual void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const = 0;
 
 
+public:
 	/**
 	 * Return stream for each log type.
 	 *
@@ -622,9 +555,6 @@ protected:
 	 * @return Returns potential energy [eV]
 	 */
 	virtual double GetPotentialEnergy(const value_type t, const state_type &y, const TFieldManager &field, const solid &sld) const;
-
 };
 
-
-
-#endif // PARTICLE_H_
+#endif // PARTICLE_H__
