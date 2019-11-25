@@ -6,6 +6,7 @@
 #include <random>
 
 #include "tracking.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -36,26 +37,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
 
     bool resetintegration = false;
 
-    float nextsnapshot = -1;
-    bool snapshotlog = false;
-    istringstream(particleconf["snapshotlog"]) >> snapshotlog;
-    istringstream snapshots(particleconf["snapshots"]);
-    if (snapshotlog){
-        do{
-            snapshots >> nextsnapshot;
-        }while (snapshots.good() && nextsnapshot < x); // find first snapshot time
-    }
-
-    bool tracklog = false;
-    istringstream(particleconf["tracklog"]) >> tracklog;
-    if (tracklog)
-        p->PrintTrack(x, y, p->GetFinalSpin(), p->GetFinalSolid(), field);
-    double trackloginterval = 1e-3;
-    istringstream(particleconf["trackloginterval"]) >> trackloginterval;
-    value_type lastsave = x;
-
-    bool hitlog = false;
-    istringstream(particleconf["hitlog"]) >> hitlog;
+    logger->PrintTrack(p, x, y, x, y, p->GetFinalSpin(), p->GetFinalSolid(), field);
 
     bool flipspin = false;
     istringstream(particleconf["flipspin"]) >> flipspin;
@@ -63,8 +45,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
     bool spininterpolatefields = false;
     istringstream(particleconf["interpolatefields"]) >> spininterpolatefields;
 
-    int spinlog = false;
-    double SpinBmax = 0, spinloginterval = 0, nextspinlog = numeric_limits<double>::infinity();
+    double SpinBmax = 0;
     vector<double> SpinTimes;
     istringstream(particleconf["Bmax"]) >> SpinBmax;
     istringstream SpinTimess(particleconf["spintimes"]);
@@ -74,10 +55,6 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
         if (SpinTimess)
             SpinTimes.push_back(t);
     }while(SpinTimess.good());
-    istringstream(particleconf["spinlog"]) >> spinlog;
-    istringstream(particleconf["spinloginterval"]) >> spinloginterval;
-    if (spinlog)
-        nextspinlog = 0.;
     state_type spin = p->GetFinalSpin();
 
     dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
@@ -87,7 +64,6 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
 
     currentsolids = geom.GetSolids(x, &y[0]);
     p->SetStopID(ID_UNKNOWN);
-    double noflipprob = 1.;
 
     while (p->GetStopID() == ID_UNKNOWN){ // integrate as long as nothing happened to particle
         if (resetintegration){
@@ -130,7 +106,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
 //			d2 = pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2);
 //			cout << x2 - x1 << " " << sqrt(l2) << " " << sqrt(d2) << " " << 0.5*sqrt(l2 - d2) << "\n";
 
-            resetintegration = CheckHit(p, x1, y1, x2, y2, stepper, mc, geom, field, hitlog); // check if particle hit a material boundary or was absorbed between y1 and y2
+            resetintegration = CheckHit(p, x1, y1, x2, y2, stepper, mc, geom, field); // check if particle hit a material boundary or was absorbed between y1 and y2
             if (resetintegration){
                 x = x2; // if particle path was changed: reset integration end point
                 y = y2;
@@ -141,23 +117,11 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
         }
 
         // take snapshots at certain times
-        if (snapshotlog && snapshots.good()){
-            if (stepper.previous_time() <= nextsnapshot && x > nextsnapshot){
-                state_type ysnap(STATE_VARIABLES);
-                stepper.calc_state(nextsnapshot, ysnap);
-//				cout << "\n Snapshot at " << nextsnapshot << " s \n";
+        logger->PrintSnapshot(p, stepper.previous_time(), stepper.previous_state(), x, y, spin, stepper, geom, field);
 
-                p->Print(nextsnapshot, ysnap, spin, geom, field, snapshotLog);
-                snapshots >> nextsnapshot;
-            }
-        }
+        IntegrateSpin(p, spin, stepper, x, y, SpinTimes, field, spininterpolatefields, SpinBmax, mc, flipspin); // calculate spin precession and spin-flip probability
 
-        noflipprob *= 1. - IntegrateSpin(p, spin, stepper, x, y, SpinTimes, field, spininterpolatefields, SpinBmax, mc, flipspin, spinloginterval, nextspinlog); // calculate spin precession and spin-flip probability
-
-        if (tracklog && x - lastsave > trackloginterval/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])){
-            p->PrintTrack(x, y, spin, GetCurrentsolid(), field);
-            lastsave = x;
-        }
+        logger->PrintTrack(p, stepper.previous_time(), stepper.previous_state(), x, y, spin, GetCurrentsolid(), field);
 
 //		progress += 100*max(y[6]/tau, max((x - tstart)/(tmax - tstart), y[8]/maxtraj)) - progress.count();
 
@@ -174,8 +138,8 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
         p->DoDecay(x, y, mc, geom, field);
     }
 
-    p->SetFinalState(x, y, spin, noflipprob, GetCurrentsolid());
-    p->Print(x, y, spin, geom, field, endLog);
+    p->SetFinalState(x, y, spin, GetCurrentsolid());
+    logger->Print(p, x, y, spin, geom, field);
 
 
 //	cout << "x: " << yend[0];
@@ -194,7 +158,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
 
 
 bool TTracker::CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-        const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, const bool hitlog){
+        const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){
     if (!geom.CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
 //    printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
         p->SetStopID(ID_HIT_BOUNDARIES);
@@ -227,13 +191,13 @@ bool TTracker::CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1
                 return true;
             }
 
-            if (DoHit(p, xc1, yc1, xc2, yc2, stepper, mc, geom, hitlog)){
+            if (DoHit(p, xc1, yc1, xc2, yc2, stepper, mc, geom)){
                 x2 = xc2;
                 y2 = yc2;
                 return true;
             }
 
-            if (CheckHit(p, xc2, yc2, x2, y2, stepper, mc, geom, field, hitlog)){
+            if (CheckHit(p, xc2, yc2, x2, y2, stepper, mc, geom, field)){
                 return true;
             }
         }
@@ -298,7 +262,7 @@ bool TTracker::DoStep(const std::unique_ptr<TParticle>& p, const value_type x1, 
 }
 
 bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-        const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const bool hitlog) {
+        const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom) {
     bool trajectoryaltered = false, traversed = true;
 
     multimap<TCollision, bool> colls;
@@ -371,8 +335,7 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
             }
         }
 
-        if (hitlog)
-            p->PrintHit(x1, y1, y2, coll->first.normal, leaving, entering); // print collision to file if requested
+        logger->PrintHit(p, x1, y1, y2, coll->first.normal, leaving, entering); // print collision to file if requested
     }
 
     if (traversed){
@@ -391,12 +354,12 @@ const solid& TTracker::GetCurrentsolid() const{
 }
 
 
-double TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
+void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
         const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
-        const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin, const double spinloginterval, double &nextspinlog) const{
+        const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const{
     value_type x1 = stepper.previous_time();
     if (p->GetGyromagneticRatio() == 0 || x1 == x2)
-        return 0;
+        return;
 
     state_type y1 = stepper.previous_state();
     double B1[3], B2[3], polarisation;
@@ -407,17 +370,15 @@ double TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &
 
     if (Babs2 == 0){ // if there's no magnetic field or particle is leaving magnetic field, do nothing
         std::fill(spin.begin(), spin.end(), 0); // set all spin components to zero
-        return 0;
+        return;
     }
     else if (Babs1 == 0 && Babs2 > 0){ // if particle enters magnetic field
 //		std::cout << "Entering magnetic field\n";
-        if (flipspin){
-            p->DoPolarize(x2, y2, 0., mc); // if spin flips are allowed, choose random polarization
-        }
+        p->DoPolarize(x2, y2, 0., flipspin, mc); // if spin flips are allowed, choose random polarization
         spin[0] = y2[7]*B2[0]/Babs2; // set spin (anti-)parallel to field
         spin[1] = y2[7]*B2[1]/Babs2;
         spin[2] = y2[7]*B2[2]/Babs2;
-        return 0.5;
+        return;
     }
     else{ // if particle already is in magnetic field, calculate spin-projection on magnetic field
         polarisation = (spin[0]*B1[0] + spin[1]*B1[1] + spin[2]*B1[2])/Babs1/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
@@ -453,14 +414,10 @@ double TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &
                 alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
         }
 
-        if (x1 >= nextspinlog){
-            // PrintSpin(x1, spin, stepper, field);
-            p->PrintSpin(x1, y1, spin, stepper, field);
-            nextspinlog += spinloginterval;
-        }
 
         dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(1e-12, 1e-12, stepper_type());
         spinstepper.initialize(spin, x1, std::abs(pi/p->GetGyromagneticRatio()/Babs1)); // initialize integrator with step size = half rotation
+        logger->PrintSpin(p, x1, spinstepper, stepper, field);
         unsigned int steps = 0;
         while (true){
             // take an integration step, SpinDerivs contains right-hand side of equation of motion
@@ -474,13 +431,8 @@ double TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &
             else
                 spin = spinstepper.current_state();
 
-            if (t >= nextspinlog){
-                // PrintSpin(t, spin, stepper, field);
-                state_type y(STATE_VARIABLES);
-                stepper.calc_state(t,y);
-                p->PrintSpin(t, y, spin, stepper, field);
-                nextspinlog += spinloginterval;
-            }
+            logger->PrintSpin(p, t, spinstepper, stepper, field);
+
             if (t >= x2)
                 break;
         }
@@ -505,16 +457,9 @@ double TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &
 
 
     if (Babs2 > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
-        double flipprob = 0.5*(1 - y2[7]*polarisation);
-//		if ((integrate1 || integrate2) && Babs1 < Bmax)
-//			std::cout << x2 << "s flipprob " << flipprob << "\n";
-        if (flipspin){
-            p->DoPolarize(x2, y2, polarisation, mc);
-        }
+        p->DoPolarize(x2, y2, polarisation, flipspin, mc);
         spin[0] = B2[0]*y2[7]/Babs2;
         spin[1] = B2[1]*y2[7]/Babs2;
         spin[2] = B2[2]*y2[7]/Babs2;
-        return flipprob;
     }
-    return 0;
 }

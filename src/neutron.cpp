@@ -12,12 +12,6 @@ using namespace std;
 
 const char* NAME_NEUTRON = "neutron";
 
-ofstream TNeutron::endout; ///< endlog file stream
-ofstream TNeutron::snapshotout; ///< snapshot file stream
-ofstream TNeutron::trackout; ///< tracklog file stream
-ofstream TNeutron::hitout; ///< hitlog file stream
-ofstream TNeutron::spinout; ///< spinlog file stream
-
 TNeutron::TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
 		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
 		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){

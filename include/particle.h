@@ -29,18 +29,6 @@ typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type
 //	typedef boost::numeric::odeint::bulirsch_stoer_dense_out<state_type, value_type> dense_stepper_type2; ///< alternative stepper type (Bulirsch-Stoer)
 
 /**
- * Enum containing all types of log files.
- *
- * Is passed to GetLogStream to identify, which file stream should be returned.
- */
-enum LogStream { endLog, ///< end log
-    snapshotLog, ///< snapshot log
-    hitLog, ///< hit log
-    trackLog, ///< track log
-    spinLog ///< spin log
-};
-
-/**
  * Basic particle class (virtual).
  *
  * Includes all functionality (integration, file output).
@@ -200,6 +188,8 @@ public:
 	 */
 	int GetNumberOfHits() const { return Nhit; };
 
+	int GetNumberOfSpinflips() const { return Nspinflip; };
+
 	/**
 	 * Return probability that spin of particle was not flipped, determined with integration of BMT equation
 	 *
@@ -246,8 +236,7 @@ public:
 
 	void SetStopID(const stopID aID){ ID = aID; }
 
-	void SetFinalState(const value_type& x, const state_type& y, const state_type& spin,
-	        const double anoflipprob, const solid& sld);
+	void SetFinalState(const value_type& x, const state_type& y, const state_type& spin, const solid& sld);
 
 	/**
 	 * Constructor, initializes TParticle::type, TParticle::q, TParticle::m, TParticle::mu
@@ -364,7 +353,7 @@ public:
      */
     void DoDecay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
-    void DoPolarize(const double t, state_type &y, const double polarization, TMCGenerator &mc);
+    void DoPolarize(const double t, state_type &y, const double polarization, const bool flipspin, TMCGenerator &mc);
 
     /**
 	 * Calculate spin precession axis.
@@ -475,75 +464,6 @@ protected:
 
 
 public:
-	/**
-	 * Return stream for each log type.
-	 *
-	 * Purely virtual function, has to be implemented for each particle type.
-	 *
-	 * @param str Enum specifying which stream should be returned
-	 *
-	 * @return Returns stream corresponding to str
-	 */
-	virtual std::ofstream& GetLogStream(const LogStream str) const = 0;
-
-	
-	/**
-	 * Print start and current values to the endLog returned by GetLogStream.
-	 *
-	 * This is a simple prototype that can be overridden by derived particle classes.
-	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param spin Current spin vector
-	 * @param geom Geometry of the simulation
-	 * @param field TFieldManager containing all electromagnetic fields
-	 * @param logType Select either endlog or snapshotlog
-	 */
-	virtual void Print(const value_type x, const state_type &y, const state_type &spin, const TGeometry &geom, const TFieldManager &field, const LogStream logType) const;
-
-
-	/**
-	 * Print current track point  to the trackLog returned by GetLogStream.
-	 *
-	 * This is a simple prototype that can be overridden by derived particle classes.
-	 *
-	 * @param x Current time
-	 * @param y Current state vector
-	 * @param spin Spin vector
-	 * @param sld Solid in which the particle is currently.
-	 * @param field TFieldManager containing all electromagnetic fields
-	 */
-	virtual void PrintTrack(const value_type x, const state_type &y, const state_type &spin, const solid &sld, const TFieldManager &field) const;
-
-
-	/**
-	 * Print material boundary hits to the hitLog returned by GetLogStream.
-	 *
-	 * This is a simple prototype that can be overridden by derived particle classes.
-	 *
-	 * @param x Time of material hit
-	 * @param y1 State vector before material hit
-	 * @param y2 State vector after material hit
-	 * @param normal Normal vector of hit surface
-	 * @param leaving Material which is left at this boundary
-	 * @param entering Material which is entered at this boundary
-	 */
-	virtual void PrintHit(const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering) const;
-
-
-	/**
-	 * Write spin state to the spinLog returned by GetLogStream.
-	 *
-	 * This is a simple prototype that can be overridden by derived particle classes.
-	 *
-	 * @param x time
-	 * @param spin Spin vector
-	 * @param stepper Trajectory integrator used to calculate spin-precession axis at time t
-	 * @param field TFieldManager containing all electromagnetic fields
-	 */
-	// virtual void PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
-	virtual void PrintSpin(const value_type x, const state_type &y, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const;
-
 	/**
 	 * Calculate potential energy of particle
 	 *

@@ -25,6 +25,7 @@
 #include "source.h"
 #include "mc.h" 
 #include "microroughness.h"
+#include "logger.h"
 
 using namespace std;
 
@@ -132,7 +133,8 @@ int main(int argc, char **argv){
 	std::cout << "Random Seed: " << seed << "\n\n";
 	mc.seed(seed);
 
-
+	std::cout << "Setting up logger\n";
+	CreateLogger(configin);
 	
 	cout << "Loading source...\n";
 	// load source configuration from geometry.in

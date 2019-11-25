@@ -39,12 +39,6 @@ public:
 			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
 
 protected:
-	static std::ofstream endout; ///< endlog file stream
-	static std::ofstream snapshotout; ///< snapshot file stream
-	static std::ofstream trackout; ///< tracklog file stream
-	static std::ofstream hitout; ///< hitlog file stream
-	static std::ofstream spinout; ///< spinlog file stream
-	
 	/**
 	 * This method is executed, when a particle crosses a material boundary.
 	 *
@@ -72,25 +66,6 @@ protected:
 	 * For parameter doc see TParticle::Decay
 	 */
 	void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const;
-
-
-	/**
-	 * Return this particle type's log files
-	 *
-	 * @param str Enum specifying, which log file should be returned.
-	 *
-	 * @return log file
-	 */
-	std::ofstream& GetLogStream(const LogStream str) const{
-		switch (str){
-			case endLog: return endout;
-			case snapshotLog: return snapshotout;
-			case hitLog: return hitout;
-			case trackLog: return trackout;
-			case spinLog: return spinout;
-		}
-		throw std::out_of_range("Unknown LogStream requested!\n");
-	};
 };
 
 #endif // ELECTRON_H_

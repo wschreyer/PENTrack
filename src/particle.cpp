@@ -223,176 +223,15 @@ void TParticle::DoDecay(const double t, const state_type &y, TMCGenerator &mc, c
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
 }
 
-void TParticle::DoPolarize(const double t, state_type &y, const double polarization, TMCGenerator &mc){
-    double prevpol = y[7];
-    polarization_distribution<double> pdist(polarization);
-    y[7] = pdist(mc);
-    if (y[7] != prevpol)
-        ++Nspinflip;
-}
-
-
-void TParticle::Print(const value_type x, const state_type &y, const state_type &spin, const TGeometry &geom, const TFieldManager &field, const LogStream logType) const{
-	ofstream &file = GetLogStream(logType);
-	if (!file.is_open()){
-		ostringstream filename;
-		filename << setw(12) << setfill('0') << jobnumber << name;
-		if (logType == endLog)
-			filename << "end.out";
-		else if (logType == snapshotLog)
-			filename << "snapshot.out";
-		boost::filesystem::path outfile = outpath / filename.str();
-//		cout << "Creating " << outfile << '\n';
-		file.open(outfile.c_str());
-		if (!file.is_open()){
-			throw std::runtime_error("Could not create" + outfile.native());
-		}
-		file <<	"jobnumber particle "
-					"tstart xstart ystart zstart "
-					"vxstart vystart vzstart polstart "
-					"Sxstart Systart Szstart "
-					"Hstart Estart Bstart Ustart solidstart "
-					"tend xend yend zend "
-					"vxend vyend vzend polend "
-					"Sxend Syend Szend "
-					"Hend Eend Bend Uend solidend "
-					"stopID Nspinflip spinflipprob "
-					"Nhit Nstep trajlength Hmax wL\n";
-		file << std::setprecision(std::numeric_limits<double>::digits10); // need maximum precision for wL and delwL 
+void TParticle::DoPolarize(const double t, state_type &y, const double polarization, const bool flipspin, TMCGenerator &mc){
+	double flipprob = 0.5*(1 - y[7]*polarization);
+	noflipprob *= 1. - flipprob;
+	if (flipspin){
+		double prevpol = y[7];
+		y[7] = polarization_distribution<double>(polarization)(mc);
+		if (y[7] != prevpol)
+			++Nspinflip;
 	}
-//	cout << "Printing status\n";
-
-	value_type E = GetKineticEnergy(&y[3]);
-	double B[3], Ei[3], V;
-
-	field.BField(ystart[0], ystart[1], ystart[2], tstart, B);
-	field.EField(ystart[0], ystart[1], ystart[2], tstart, V, Ei);
-
-	file	<< jobnumber << " " << particlenumber << " "
-			<< tstart << " " << ystart[0] << " " << ystart[1] << " " << ystart[2] << " "
-			<< ystart[3] << " " << ystart[4] << " " << ystart[5] << " " << ystart[7] << " "
-			<< spinstart[0] << " " << spinstart[1] << " " << spinstart[2] << " " << GetInitialTotalEnergy(geom, field) << " " << GetInitialKineticEnergy() << " "
-			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << solidstart.ID << " ";
-
-	double H;
-	solid sld = geom.GetSolid(x, &y[0]);
-	H = E + GetPotentialEnergy(x, y, field, sld);
-
-	field.BField(y[0], y[1], y[2], x, B);
-	field.EField(y[0], y[1], y[2], x, V, Ei);
-
-	double wL = 0;
-	if (spin[3] > 0)
-		wL = spin[4]/spin[3];
-
-	file	<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
-			<< y[3] << " " << y[4] << " " << y[5] << " " << y[7] << " "
-			<< spin[0] << " " << spin[1] << " " << spin[2] << " " << H << " " << E << " "
-			<< sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]) << " " << V << " " << sld.ID << " "
-			<< ID << " " << Nspinflip << " " << 1 - noflipprob << " "
-			<< Nhit << " " << Nstep << " " << y[8] << " " << Hmax << " " << wL << '\n';
-}
-
-
-void TParticle::PrintTrack(const value_type x, const state_type &y, const state_type &spin, const solid &sld, const TFieldManager &field) const{
-	ofstream &trackfile = GetLogStream(trackLog);
-	if (!trackfile.is_open()){
-		ostringstream filename;
-		filename << setw(12) << setfill('0') << jobnumber << name << "track.out";
-		boost::filesystem::path outfile = outpath / filename.str();
-//		cout << "Creating " << outfile << '\n';
-		trackfile.open(outfile.c_str());
-		if (!trackfile.is_open()){
-			throw std::runtime_error("Could not create" + outfile.native());
-		}
-		trackfile << 	"jobnumber particle polarisation "
-						"t x y z vx vy vz "
-						"H E Bx dBxdx dBxdy dBxdz By dBydx "
-						"dBydy dBydz Bz dBzdx dBzdy dBzdz Ex Ey Ez V\n";
-		trackfile.precision(10);
-	}
-
-//	cout << "-";
-	double B[3] = {0,0,0};
-	double dBidxj[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
-	double E[3] = {0,0,0};
-	double V = 0;
-	field.BField(y[0],y[1],y[2],x,B, dBidxj);
-	field.EField(y[0],y[1],y[2],x,V,E);
-	value_type Ek = GetKineticEnergy(&y[3]);
-	value_type H = Ek + GetPotentialEnergy(x, y, field, sld);
-
-	trackfile << jobnumber << " " << particlenumber << " " << y[7] << " "
-				<< x << " " << y[0] << " " << y[1] << " " << y[2] << " " << y[3] << " " << y[4] << " " << y[5] << " "
-				<< H << " " << Ek << " ";
-	for (int i = 0; i < 3; i++){
-		trackfile << B[i] << " ";
-		for (int j = 0; j < 3; j++)
-			trackfile << dBidxj[i][j] << " ";
-	}
-	trackfile << E[0] << " " << E[1] << " " << E[2] << " " << V << '\n';
-}
-
-
-void TParticle::PrintHit(const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering) const{
-	ofstream &hitfile = GetLogStream(hitLog);
-	if (!hitfile.is_open()){
-		ostringstream filename;
-		filename << setw(12) << setfill('0') << jobnumber << name << "hit.out";
-		boost::filesystem::path outfile = outpath / filename.str();
-//		cout << "Creating " << outfile << '\n';
-		hitfile.open(outfile.c_str());
-		if (!hitfile.is_open()){
-			throw std::runtime_error("Could not create" + outfile.native());
-		}
-		hitfile << "jobnumber particle "
-					"t x y z v1x v1y v1z pol1 "
-					"v2x v2y v2z pol2 "
-					"nx ny nz solid1 solid2\n";
-		hitfile.precision(10);
-	}
-
-//	cout << ":";
-	hitfile << jobnumber << " " << particlenumber << " "
-			<< x << " " << y1[0] << " " << y1[1] << " " << y1[2] << " " << y1[3] << " " << y1[4] << " " << y1[5] << " " << y1[7] << " "
-			<< y2[3] << " " << y2[4] << " " << y2[5] << " " << y2[7] << " "
-			<< normal[0] << " " << normal[1] << " " << normal[2] << " " << leaving.ID << " " << entering.ID << '\n';
-}
-
-
-// void TParticle::PrintSpin(const value_type x, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const{
-void TParticle::PrintSpin(const value_type x, const state_type &y, const state_type &spin, const dense_stepper_type &stepper, const TFieldManager &field) const{
-	ofstream &spinfile = GetLogStream(spinLog);
-	double B[3] = {0,0,0};
-	field.BField(y[0],y[1],y[2],x,B);
-	if (!spinfile.is_open()){
-		std::ostringstream filename;
-		filename << std::setw(12) << std::setfill('0') << jobnumber << std::setw(0) << name << "spin.out";
-		boost::filesystem::path outfile = outpath / filename.str();
-//		std::cout << "Creating " << outfile << '\n';
-		spinfile.open(outfile.c_str());
-		if(!spinfile.is_open())
-		{
-			throw std::runtime_error("Could not open " + outfile.native());
-		}
-
-		//need the maximum accuracy in spinoutlog for the larmor frequency to see any difference
-		spinfile << std::setprecision(std::numeric_limits<double>::digits10);
-		// spinfile << "jobnumber particle t Sx Sy Sz Wx Wy Wz\n";
-		spinfile << "jobnumber particle t x y z Sx Sy Sz Wx Wy Wz Bx By Bz\n";
-	}
-//	std::cout << "/";
-	double Omega[3];
-	SpinPrecessionAxis(x, stepper, field, Omega[0], Omega[1], Omega[2]);
-
-	// spinfile << jobnumber << " " << particlenumber << " "
-	// 		<< x << " " << spin[0] << " " << spin[1] << " " << spin[2] << " "
-	// 		<< Omega[0] << " " << Omega[1] << " " << Omega[2] << "\n";
-	spinfile << jobnumber << " " << particlenumber << " "
-			<< x << " " << y[0] << " " << y[1] << " " << y[2] << " "
-			<< spin[0] << " " << spin[1] << " " << spin[2] << " "
-			<< Omega[0] << " " << Omega[1] << " " << Omega[2] << " "
-			<< B[0] << " " << B[1] << " " << B[2] << "\n";
 }
 
 
@@ -430,11 +269,9 @@ double TParticle::GetPotentialEnergy(const value_type t, const state_type &y, co
 	return result;
 }
 
-void TParticle::SetFinalState(const value_type& x, const state_type& y, const state_type& spin,
-        const double anoflipprob, const solid& sld) {
+void TParticle::SetFinalState(const value_type& x, const state_type& y, const state_type& spin, const solid& sld) {
     tend = x;
     yend = y;
     spinend = spin;
-    noflipprob *= anoflipprob;
     solidend = sld;
 }

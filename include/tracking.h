@@ -1,7 +1,3 @@
-//
-// Created by wolfgang on 11/22/19.
-//
-
 #ifndef PENTRACK_TRACKING_H
 #define PENTRACK_TRACKING_H
 
@@ -50,7 +46,7 @@ private:
      * @return Returns true if particle was reflected/absorbed
      */
     bool CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-             const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, const bool hitlog);
+             const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
     /**
      * Iterate collision point
@@ -105,7 +101,7 @@ private:
      * @return Returns true if trajectory was altered
      */
     bool DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-            const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const bool hitlog);
+            const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom);
 
     /**
      * Return first non-ignored solid in TParticle::currentsolids list
@@ -131,9 +127,9 @@ private:
      *
      * @return Return probability of spin flip
      */
-    double IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
+    void IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
             const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
-            const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin, const double spinloginterval, double &nextspinlog) const;
+            const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const;
 
 
 
