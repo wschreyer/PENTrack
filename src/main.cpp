@@ -25,7 +25,6 @@
 #include "source.h"
 #include "mc.h" 
 #include "microroughness.h"
-#include "logger.h"
 
 using namespace std;
 
@@ -133,9 +132,6 @@ int main(int argc, char **argv){
 	std::cout << "Random Seed: " << seed << "\n\n";
 	mc.seed(seed);
 
-	std::cout << "Setting up logger\n";
-	CreateLogger(configin);
-	
 	cout << "Loading source...\n";
 	// load source configuration from geometry.in
 	unique_ptr<TParticleSource> source(CreateParticleSource(configin, geom));
@@ -152,10 +148,10 @@ int main(int argc, char **argv){
 	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
 	    cout << "Simulating " << simcount << " " << source->GetParticleName() << "s...\n";
         progress_display progress(simcount);
+		TTracker t(configin);
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
 			unique_ptr<TParticle> p(source->CreateParticle(mc, geom, field));
-			TTracker t;
 			t.IntegrateParticle(p, SimTime, configin[p->GetName()], mc, geom, field); // integrate particle
 			ID_counter[p->GetName()][p->GetStopID()]++; // increment counters
 			ntotalsteps += p->GetNumberOfSteps();
@@ -187,10 +183,6 @@ int main(int argc, char **argv){
 			InitTime, SimulationTime);
 	printf("That's it... Have a nice day!\n");
 	
-
-	ostringstream fileprefix;
-	fileprefix << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0);
-
 	return 0;
 }
 

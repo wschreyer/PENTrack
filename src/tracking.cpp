@@ -6,10 +6,12 @@
 #include <random>
 
 #include "tracking.h"
-#include "logger.h"
 
 using namespace std;
 
+TTracker::TTracker(TConfig& config){
+    logger = CreateLogger(config);
+}
 
 void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tmax, std::map<std::string, std::string> &particleconf,
         TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){

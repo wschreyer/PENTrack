@@ -8,12 +8,15 @@
 #include "geometry.h"
 #include "fields.h"
 #include "particle.h"
+#include "logger.h"
 
 
 class TTracker {
 private:
     std::vector<std::pair<solid, bool> > currentsolids; ///< solids in which particle is currently inside
+    std::unique_ptr<TLogger> logger;
 public:
+    TTracker(TConfig& config);
     /**
      * Integrate particle trajectory.
      *
