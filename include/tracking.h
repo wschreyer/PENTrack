@@ -9,7 +9,7 @@
 #include "fields.h"
 #include "particle.h"
 #include "logger.h"
-
+#include "stepper.h"
 
 class TTracker {
 private:
@@ -35,42 +35,6 @@ public:
                            TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 private:
     /**
-     * Check if particle hit a material boundary
-     *
-     * Check if particle hit a material boundary. Iterate exact collision point and call DoStep and DoHit appropriately.
-     *
-     * @param x1 Start time of line segment
-     * @param y1 Start point of line segment
-     * @param x2 End time of line segment
-     * @param y2 End point of line segment
-     * @param stepper Trajectory integrator, used to calculate intermediate state vectors
-     * @param hitlog Should hits be logged to file?
-     * @param iteration Iteration counter (incremented by recursive calls to avoid infinite loop)
-     * @return Returns true if particle was reflected/absorbed
-     */
-    bool CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-             const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
-
-    /**
-     * Iterate collision point
-     *
-     * Split trajectory step right before and after collision point and call function recursively for each segment.
-     *
-     * @param x1 Start time of line segment
-     * @param y1 Start point of line segment
-     * @param x2 End time of line segment
-     * @param y2 End point of line segment
-     * @param coll Collision found in this segment
-     * @param stepper Trajectory integrator, used to calculate intermediate state vectors
-     * @param geom Geometry
-     * @param interation Increase iteration count for each recursive call to limit number of iterations
-     * @return Returns true if collision point was successfully iterated
-     */
-    bool iterate_collision(value_type &x1, state_type &y1, value_type &x2, state_type &y2,
-                           const TCollision &coll, const dense_stepper_type &stepper, const TGeometry &geom,
-                           const unsigned int iteration = 0);
-
-    /**
      * Call OnStep for particle-dependent physics processes on a step.
      *
      * Check if trajectory has been altered by physics processes, return true if it was.
@@ -85,8 +49,7 @@ private:
      * @param geom Geometry
      * @return Returns true if trajectory was altered
      */
-    bool DoStep(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-            const dense_stepper_type &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field);
+    void DoStep(const std::unique_ptr<TParticle>& p, TStep &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field);
 
     /**
      * Call OnHit to check if particle should cross material boundary.
@@ -103,8 +66,7 @@ private:
      * @param hitlog Set true if hits should be logged to hitlog.out
      * @return Returns true if trajectory was altered
      */
-    bool DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-            const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom);
+    void DoHit(const std::unique_ptr<TParticle>& p, TStep &stepper, TMCGenerator &mc, const TGeometry &geom);
 
     /**
      * Return first non-ignored solid in TParticle::currentsolids list
@@ -130,8 +92,8 @@ private:
      *
      * @return Return probability of spin flip
      */
-    void IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
-            const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
+    void IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const TStep &stepper,
+            const std::vector<double> &times, const TFieldManager &field,
             const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const;
 
 

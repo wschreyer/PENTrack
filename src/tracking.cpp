@@ -31,15 +31,12 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
 //	cout << "x: " << yend[0] << "m y: " << yend[1] << "m z: " << yend[2]
 //		 << "m E: " << GetFinalKineticEnergy() << "eV t: " << tend << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
 
-    // set initial values for integrator
-    value_type x = p->GetFinalTime();
-    if (x > tmax)
+    if (p->GetFinalTime() > tmax)
         throw runtime_error("Tried to start trajectory simulation past the maximum simulation time. Check time settings.");
-    state_type y = p->GetFinalState();
+    // set initial values for integrator
+    TStep stepper(p->GetFinalTime(), p->GetFinalState());
 
-    bool resetintegration = false;
-
-    logger->PrintTrack(p, x, y, x, y, p->GetFinalSpin(), p->GetFinalSolid(), field);
+    logger->PrintTrack(p, stepper, p->GetFinalSpin(), p->GetFinalSolid(), field);
 
     bool flipspin = false;
     istringstream(particleconf["flipspin"]) >> flipspin;
@@ -59,89 +56,49 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
     }while(SpinTimess.good());
     state_type spin = p->GetFinalSpin();
 
-    dense_stepper_type stepper = boost::numeric::odeint::make_dense_output(1e-9, 1e-9, stepper_type());
-    stepper.initialize(y, x, 10.*MAX_TRACK_DEVIATION/sqrt(y[3]*y[3] + y[4]*y[4] + y[5]*y[5])); // initialize stepper with fixed spatial length
-
-//	progress_display progress(100, cout, ' ' + to_string(particlenumber) + ' ');
-
-    currentsolids = geom.GetSolids(x, &y[0]);
+    currentsolids = geom.GetSolids(p->GetFinalTime(), &p->GetFinalState()[0]);
     p->SetStopID(ID_UNKNOWN);
 
     while (p->GetStopID() == ID_UNKNOWN){ // integrate as long as nothing happened to particle
-        if (resetintegration){
-            stepper.initialize(y, x, stepper.current_time_step()); // (re-)start integration with last step size
-        }
-        value_type x1 = x; // save point before next step
-        state_type y1 = y;
+        stopID ID = stepper.next([&](const state_type &y, state_type &dydx, const value_type &x){ p->derivs(y, dydx, x, field); }, geom);    //std::bind(&TParticle::derivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, field), geom);
+        p->SetStopID(ID);
+        if (ID != ID_UNKNOWN)
+            break;
 
-        try{
-            stepper.do_step(std::bind(&TParticle::derivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, &field));
-            x = stepper.current_time();
-            y = stepper.current_state();
+        if (stepper.IsStepOverCollision()){
+            DoHit(p, stepper, mc, geom);
         }
-        catch(...){ // catch Exceptions thrown by odeint
-            p->SetStopID(ID_ODEINT_ERROR);
-        }
-
-        if (tau > 0 && y[6] > tau){ // if proper time is larger than lifetime
-            x = x1 + (x - x1)*(tau - y1[6])/(y[6] - y1[6]); // interpolate decay time in lab frame
-            stepper.calc_state(x, y);
-        }
-        if (x > tmax){	//If stepsize overshot max simulation time
-            x = tmax;
-            stepper.calc_state(x, y);
-        }
-
-        while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) to reduce chord length, go through all pieces
-            double l2 = pow(y[8] - y1[8], 2); // actual length of step squared
-            double d2 = pow(y[0] - y1[0], 2) + pow(y[1] - y1[1], 2) + pow(y[2] - y1[2], 2); // length of straight line between start and end point of step squared
-            double dev2 = 0.25*(l2 - d2); // max. possible squared deviation of real path from straight line
-            value_type x2 = x;
-            state_type y2 = y;
-            if (dev2 > MAX_TRACK_DEVIATION*MAX_TRACK_DEVIATION){ // if deviation is larger than MAX_TRACK_DEVIATION
-//				cout << "split " << x - x1 << " " << sqrt(l2) << " " << sqrt(d2) << " " << sqrt(dev2) << "\n";
-                x2 = x1 + (x - x1)/ceil(sqrt(dev2)/MAX_TRACK_DEVIATION); // split step to reduce deviation
-                stepper.calc_state(x2, y2);
-                assert(x2 <= x);
+        else{
+            if (tau > 0 && stepper.GetProperTime() >= tau){ // if proper time is larger than lifetime
+                stepper.SetStepEndToMatchComponent(6, tau);
+                p->SetStopID(ID_DECAYED);
             }
-//			l2 = pow(y2[8] - y1[8], 2);
-//			d2 = pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2);
-//			cout << x2 - x1 << " " << sqrt(l2) << " " << sqrt(d2) << " " << 0.5*sqrt(l2 - d2) << "\n";
-
-            resetintegration = CheckHit(p, x1, y1, x2, y2, stepper, mc, geom, field); // check if particle hit a material boundary or was absorbed between y1 and y2
-            if (resetintegration){
-                x = x2; // if particle path was changed: reset integration end point
-                y = y2;
+            if (stepper.GetTime() >= tmax){	//If stepsize overshot max simulation time
+                stepper.SetStepEnd(tmax);
+                p->SetStopID(ID_NOT_FINISH);
+            }
+            if (stepper.GetPathLength() >= maxtraj){
+                stepper.SetStepEndToMatchComponent(8, maxtraj);
+                p->SetStopID(ID_NOT_FINISH);
             }
 
-            x1 = x2;
-            y1 = y2;
+            DoStep(p, stepper, GetCurrentsolid(), mc, field);
         }
 
         // take snapshots at certain times
-        logger->PrintSnapshot(p, stepper.previous_time(), stepper.previous_state(), x, y, spin, stepper, geom, field);
+        logger->PrintSnapshot(p, stepper, spin, geom, field);
 
-        IntegrateSpin(p, spin, stepper, x, y, SpinTimes, field, spininterpolatefields, SpinBmax, mc, flipspin); // calculate spin precession and spin-flip probability
+        IntegrateSpin(p, spin, stepper, SpinTimes, field, spininterpolatefields, SpinBmax, mc, flipspin); // calculate spin precession and spin-flip probability
 
-        logger->PrintTrack(p, stepper.previous_time(), stepper.previous_state(), x, y, spin, GetCurrentsolid(), field);
-
-//		progress += 100*max(y[6]/tau, max((x - tstart)/(tmax - tstart), y[8]/maxtraj)) - progress.count();
-
-        if (p->GetStopID() == ID_UNKNOWN && y[6] >= tau) // proper time >= tau?
-            p->SetStopID(ID_DECAYED);
-        else if (p->GetStopID() == ID_UNKNOWN && (x >= tmax || y[8] >= maxtraj)) // time > tmax or trajectory length > max length?
-            p->SetStopID(ID_NOT_FINISH);
+        logger->PrintTrack(p, stepper, spin, GetCurrentsolid(), field);
     }
 
-//	cout << "Done" << endl;
-
-    if (p->GetStopID() == ID_DECAYED){ // if particle reached its lifetime call TParticle::Decay
-//		cout << "Decayed!\n";
-        p->DoDecay(x, y, mc, geom, field);
+    if (p->GetStopID() == ID_DECAYED){
+        p->DoDecay(stepper.GetTime(), stepper.GetState(), mc, geom, field);
     }
 
-    p->SetFinalState(x, y, spin, GetCurrentsolid());
-    logger->Print(p, x, y, spin, geom, field);
+    p->SetFinalState(stepper.GetTime(), stepper.GetState(), spin, GetCurrentsolid());
+    logger->Print(p, stepper.GetTime(), stepper, spin, geom, field);
 
 
 //	cout << "x: " << yend[0];
@@ -159,117 +116,14 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
 }
 
 
-bool TTracker::CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-        const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){
-    if (!geom.CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
-//    printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
-        p->SetStopID(ID_HIT_BOUNDARIES);
-        return true;
-    }
-    if (x2 == x1)
-        return false;
-
-    solid currentsolid = GetCurrentsolid();
-
-    multimap<TCollision, bool> colls;
-    bool collfound = false;
-    try{
-        collfound = geom.GetCollisions(x1, &y1[0], x2, &y2[0], colls);
-    }
-    catch(...){
-        p->SetStopID(ID_CGAL_ERROR);
-        return true;
-    }
-
-    if (collfound){	// if there is a collision with a wall
-        value_type xc1 = x1, xc2 = x2;
-//    for (auto c: colls)
-//      cout << x1 << " " << x2 - x1 << " " << c.first.distnormal << " " << c.first.s << " " << c.first.ID << endl;
-        state_type yc1 = y1, yc2 = y2;
-        if (iterate_collision(xc1, yc1, xc2, yc2, colls.begin()->first, stepper, geom)){
-            if (xc1 > x1 && DoStep(p, x1, y1, xc1, yc1, stepper, currentsolid, mc, field)){
-                x2 = xc1;
-                y2 = yc1;
-                return true;
-            }
-
-            if (DoHit(p, xc1, yc1, xc2, yc2, stepper, mc, geom)){
-                x2 = xc2;
-                y2 = yc2;
-                return true;
-            }
-
-            if (CheckHit(p, xc2, yc2, x2, y2, stepper, mc, geom, field)){
-                return true;
-            }
-        }
-
-    }
-    else{ // if there was no collision: just check for absorption in solid with highest priority
-        return DoStep(p, x1, y1, x2, y2, stepper, currentsolid, mc, field);
-    }
-    return false;
+void TTracker::DoStep(const std::unique_ptr<TParticle>& p, TStep &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field) {
+    p->DoStep(stepper, currentsolid, mc, field);
 }
 
-bool TTracker::iterate_collision(value_type &x1, state_type &y1, value_type &x2, state_type &y2,
-        const TCollision &coll, const dense_stepper_type &stepper, const TGeometry &geom, unsigned int iteration){
-    if (pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2) < REFLECT_TOLERANCE*REFLECT_TOLERANCE){
-        return true; // successfully iterated collision point
-    }
-    if (x2 - x1 < 4*(x1 + x2)*numeric_limits<value_type>::epsilon()){
-        cout << "Collision point iteration limited by numerical precision.\n";
-        return true;
-    }
-    if (iteration >= 100){
-        cout << "Collision point iteration reached max. iterations. " << x1 << " " << x2 - x1 << " " << coll.distnormal << " " << coll.s << "\n";
-        return true;
-    }
+void TTracker::DoHit(const std::unique_ptr<TParticle>& p, TStep &stepper, TMCGenerator &mc, const TGeometry &geom) {
+    bool traversed = true;
 
-//  value_type xc = x1 + (x2 - x1)*coll.s;
-//  if (xc == x1 || xc == x2)
-    value_type xc = x1 + (x2 - x1)*0.5;
-    state_type yc(STATE_VARIABLES);
-    stepper.calc_state(xc, yc);
-    multimap<TCollision, bool> colls;
-    if (geom.GetCollisions(x1, &y1[0], xc, &yc[0], colls)){ // if collision in first segment, further iterate
-//    cout << "1 " << x1 << " " << xc1 - x1 << endl;
-        if (iterate_collision(x1, y1, xc, yc, colls.begin()->first, stepper, geom, iteration + 1)){
-            x2 = xc;
-            y2 = yc;
-            return true; // if successfully iterated
-        }
-    }
-    if (geom.GetCollisions(xc, &yc[0], x2, &y2[0], colls)){ // if collision in second segment, further iterate
-//    cout << "2 " << xc1 << " " << xc2 - xc1 << endl;
-        if (iterate_collision(xc, yc, x2, y2, colls.begin()->first, stepper, geom, iteration + 1)){
-            x1 = xc;
-            y1 = yc;
-            return true; // if successfully iterated
-        }
-    }
-    return false; // if no iteration successful, actual trajectory curves past surface
-}
-
-
-bool TTracker::DoStep(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-        const dense_stepper_type &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field) {
-    value_type x2temp = x2;
-    state_type y2temp = y2;
-    p->DoStep(x1, y1, x2, y2, stepper, currentsolid, mc, field);
-    if (x2temp == x2 && y2temp == y2)
-        return false;
-    else{
-        return true;
-    }
-}
-
-bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-        const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom) {
-    bool trajectoryaltered = false, traversed = true;
-
-    multimap<TCollision, bool> colls;
-    if (!geom.GetCollisions(x1, &y1[0], x2, &y2[0], colls))
-        throw std::runtime_error("Called DoHit for a trajectory segment that does not contain a collision!");
+    multimap<TCollision, bool> colls = stepper.GetCollisions();
 
     vector<pair<solid, bool> > newsolids = currentsolids;
     for (auto coll: colls){
@@ -279,7 +133,7 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
         if (coll.first.distnormal < 0){ // if entering solid
             if (foundsld != newsolids.end()){ // if solid has been entered before (self-intersecting surface)
 //	cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
-                if (coll.first.s > 0) // if collision happened right at the start of the step it is likely that the hit solid was already added to the list in the previous step and we will ignore this one
+//                if (coll.first.s > 0) // if collision happened right at the start of the step it is likely that the hit solid was already added to the list in the previous step and we will ignore this one
                     newsolids.push_back(make_pair(sld, foundsld->second)); // add additional entry to list, with ignore state as on first entry
             }
             else
@@ -287,14 +141,15 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
         }
         else if (coll.first.distnormal > 0){ // if leaving solid
             if (foundsld == newsolids.end()){ // if solid was not entered before something went wrong
-                if (coll.first.s > 0){ // if collision happened right at the start of the step it is likely that the hit solid was already removed from the list in the previous step and this is not an error
+//                if (coll.first.s > 0){ // if collision happened right at the start of the step it is likely that the hit solid was already removed from the list in the previous step and this is not an error
 //	  cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
 //          throw runtime_error((boost::format("Particle inside '%1%' which it did not enter before!") % sld.name).str());
                     cout << "Particle inside solid " << sld.name << " which it did not enter before. Stopping it!\n";
                     p->SetStopID(ID_GEOMETRY_ERROR);
-                    return true;
+                    exit(-1);
+                    return;
                 }
-            }
+//            }
             else
                 newsolids.erase(foundsld); // remove solid from list
         }
@@ -302,7 +157,7 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
 //      throw runtime_error("Particle crossed surface with parallel track!");
             cout << "Particle crossed surface with parallel track. Stopping it!\n";
             p->SetStopID(ID_GEOMETRY_ERROR);
-            return true;
+            return;
         }
     }
 
@@ -317,37 +172,25 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
         auto coll = find_if(colls.begin(), colls.end(), [&leaving, &entering](const pair<TCollision, bool> &c){ return !c.second && (c.first.ID == leaving.ID || c.first.ID == entering.ID); });
         if (coll == colls.end())
             throw std::runtime_error("Did not find collision corresponding to entering/leaving solid!");
-        value_type x2temp = x2;
-        state_type y2temp = y2;
-        p->DoHit(x1, y1, x2, y2, coll->first.normal, leaving, entering, mc); // do particle specific things
-        if (x2temp == x2 && y2temp == y2){ // if end point of step was not modified
-            trajectoryaltered = false;
+        value_type prevtime = stepper.GetTime();
+        auto prevpos = stepper.GetPosition();
+        p->DoHit(stepper, coll->first.normal, leaving, entering, mc); // do particle specific things
+        if (stepper.GetTime() == prevtime && stepper.GetPosition() == prevpos){
             traversed = true;
         }
+        else if (stepper.GetTime() == stepper.GetStartTime() && stepper.GetPosition() == stepper.GetPosition(stepper.GetStartTime())){
+            traversed = false;
+        }
         else{
-            trajectoryaltered = true;
-            if (x2 == x2temp && y2[0] == y2temp[0] && y2[1] == y2temp[1] && y2[2] == y2temp[2]){
-                traversed = true;
-            }
-            else if (x2 == x1 && y2[0] == y1[0] && y2[1] == y1[1] && y2[2] == y1[2]){
-                traversed = false;
-            }
-            else{
-                throw std::runtime_error("OnHit routine returned inconsistent position. That should not happen!");
-            }
+            throw std::runtime_error("OnHit routine returned inconsistent position. That should not happen!");
         }
 
-        logger->PrintHit(p, x1, y1, y2, coll->first.normal, leaving, entering); // print collision to file if requested
+        logger->PrintHit(p, stepper, coll->first.normal, leaving, entering); // print collision to file if requested
     }
 
     if (traversed){
         currentsolids = newsolids; // if surface was traversed (even if it was  physically ignored) replace current solids with list of new solids
     }
-
-    if (trajectoryaltered || p->GetStopID() != ID_UNKNOWN)
-        return true;
-
-    return false;
 }
 
 const solid& TTracker::GetCurrentsolid() const{
@@ -356,14 +199,16 @@ const solid& TTracker::GetCurrentsolid() const{
 }
 
 
-void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
-        const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
+void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const TStep &stepper,
+        const std::vector<double> &times, const TFieldManager &field,
         const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const{
-    value_type x1 = stepper.previous_time();
+    value_type x1 = stepper.GetStartTime();
+    value_type x2 = stepper.GetTime();
     if (p->GetGyromagneticRatio() == 0 || x1 == x2)
         return;
 
-    state_type y1 = stepper.previous_state();
+    state_type y1 = stepper.GetState(x1);
+    state_type y2 = stepper.GetState(x2);
     double B1[3], B2[3], polarisation;
     field.BField(y1[0], y1[1], y1[2], x1, B1);
     field.BField(y2[0], y2[1], y2[2], x2, B2);
@@ -419,11 +264,11 @@ void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &sp
 
         dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(1e-12, 1e-12, stepper_type());
         spinstepper.initialize(spin, x1, std::abs(pi/p->GetGyromagneticRatio()/Babs1)); // initialize integrator with step size = half rotation
-        logger->PrintSpin(p, x1, spinstepper, stepper, field);
+        logger->PrintSpin(p, spinstepper, stepper, field);
         unsigned int steps = 0;
         while (true){
             // take an integration step, SpinDerivs contains right-hand side of equation of motion
-            spinstepper.do_step(std::bind(&TParticle::SpinDerivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, stepper, &field, omega_int));
+            spinstepper.do_step([&](const state_type &y, state_type &dydx, const value_type &x){ p->SpinDerivs(y, dydx, x, stepper, field, omega_int); }); //std::bind(&TParticle::SpinDerivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, stepper, field, omega_int));
             steps++;
             double t = spinstepper.current_time();
             if (t > x2){ // if stepper overshot, calculate end point and stop
@@ -433,7 +278,7 @@ void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &sp
             else
                 spin = spinstepper.current_state();
 
-            logger->PrintSpin(p, t, spinstepper, stepper, field);
+            logger->PrintSpin(p, spinstepper, stepper, field);
 
             if (t >= x2)
                 break;

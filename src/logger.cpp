@@ -21,7 +21,7 @@ std::unique_ptr<TLogger> CreateLogger(TConfig& config){
 }
 
 
-void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, const state_type &y, const state_type &spin,
+void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type &x, const TStep &stepper, const state_type &spin,
         const TGeometry &geom, const TFieldManager &field, const std::string suffix){
     bool log;
     istringstream(config[p->GetName()][suffix + "log"]) >> log;
@@ -41,6 +41,7 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, con
                              "stopID", "Nspinflip", "spinflipprob",
                              "Nhit", "Nstep", "trajlength", "Hmax", "wL"};
 
+    state_type y = stepper.GetState(x);
     value_type E = p->GetKineticEnergy(&y[3]);
     double Bstart[3], Eistart[3], Vstart;
 
@@ -78,22 +79,20 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, con
     Log(p->GetName(), suffix, titles, vars);
 }
 
-void TLogger::PrintSnapshot(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, const value_type x2, const state_type &y2,
-                   const state_type &spin, const dense_stepper_type& stepper, const TGeometry &geom, const TFieldManager &field){
+void TLogger::PrintSnapshot(const std::unique_ptr<TParticle>& p, const TStep &stepper,
+                   const state_type &spin, const TGeometry &geom, const TFieldManager &field){
     bool log;
     istringstream(config[p->GetName()]["snapshotlog"]) >> log;
     if (not log)
         return;
     istringstream snapshottimes(config[p->GetName()]["snapshots"]);
-    auto tsnap = find_if(istream_iterator<double>(snapshottimes), istream_iterator<double>(), [&](const double& tsnapshot){ return x1 <= tsnapshot and tsnapshot < x2; });
+    auto tsnap = find_if(istream_iterator<double>(snapshottimes), istream_iterator<double>(), [&](const double& tsnapshot){ return stepper.GetStartTime() <= tsnapshot and tsnapshot < stepper.GetTime(); });
     if (tsnap != istream_iterator<double>()){
-        state_type ysnap(STATE_VARIABLES);
-        stepper.calc_state(*tsnap, ysnap);
-        Print(p, *tsnap, ysnap, spin, geom, field, "snapshot");
+        Print(p, *tsnap, stepper, spin, geom, field, "snapshot");
     }
 }
 
-void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, const value_type x, const state_type& y,
+void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const TStep &stepper,
                 const state_type &spin, const solid &sld, const TFieldManager &field){
     bool log;
     double interval;
@@ -102,7 +101,9 @@ void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x
     if (not log or interval <= 0)
         return;
 
-    if (y[8] > 0 and int(y1[8]/interval) == int(y[8]/interval)) // if this is the first point or tracklength did cross an integer multiple of trackloginterval
+    value_type x = stepper.GetTime();
+    state_type y = stepper.GetState();
+    if (y[8] > 0 and int(stepper.GetPathLength(stepper.GetStartTime())/interval) == int(y[8]/interval)) // if this is the first point or tracklength did cross an integer multiple of trackloginterval
         return;
 
     vector<string> titles = {"jobnumber", "particle", "polarisation",
@@ -134,7 +135,7 @@ void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x
     Log(p->GetName(), "track", titles, vars);
 }
 
-void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering){
+void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const TStep &stepper, const double *normal, const solid &leaving, const solid &entering){
     bool log;
     istringstream(config[p->GetName()]["hitlog"]) >> log;
     if (not log)
@@ -145,6 +146,9 @@ void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, 
                              "v2x", "v2y", "v2z", "pol2",
                              "nx", "ny", "nz", "solid1", "solid2"};
 
+    value_type x = stepper.GetStartTime();
+    state_type y1 = stepper.GetState(x);
+    state_type y2 = stepper.GetState();
     vector<double> vars = {static_cast<double>(jobnumber), static_cast<double>(p->GetParticleNumber()),
                            x, y1[0], y1[1], y1[2], y1[3], y1[4], y1[5], y1[7],
                            y2[3], y2[4], y2[5], y2[7],
@@ -153,8 +157,8 @@ void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, 
     Log(p->GetName(), "hit", titles, vars);
 }
 
-void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x, const dense_stepper_type& spinstepper,
-               const dense_stepper_type &trajectory_stepper, const TFieldManager &field) {
+void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const dense_stepper_type& spinstepper,
+               const TStep &trajectory_stepper, const TFieldManager &field) {
     bool log;
     double interval;
     istringstream(config[p->GetName()]["spinlog"]) >> log;
@@ -163,6 +167,7 @@ void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x,
         return;
 
     double x1 = spinstepper.previous_time();
+    double x = spinstepper.current_time();
     if (x > x1 and int(x1 / interval) == int(x / interval)) // if time crossed an integer multiple of spinloginterval
         return;
 
@@ -173,8 +178,7 @@ void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x,
                              "Bx", "By", "Bz"};
 
     double B[3] = {0,0,0};
-    state_type y(STATE_VARIABLES);
-    trajectory_stepper.calc_state(x, y);
+    state_type y = trajectory_stepper.GetState(x);
     field.BField(y[0],y[1],y[2],x,B);
     double Omega[3];
     p->SpinPrecessionAxis(x, trajectory_stepper, field, Omega[0], Omega[1], Omega[2]);
@@ -194,7 +198,7 @@ void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x,
 
 
 
-void TTextLogger::Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars){
+void TTextLogger::Log(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars){
     ofstream &file = logstreams[particlename + suffix];
     if (!file.is_open()){
         std::ostringstream filename;
@@ -227,7 +231,7 @@ TROOTLogger::TROOTLogger(TConfig& aconfig){
         throw std::runtime_error("Could not open " + outfile.native());
 }
 
-void TROOTLogger::Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars){
+void TROOTLogger::Log(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars){
     string name = particlename + suffix;
     TNtupleD* tree = static_cast<TNtupleD*>(ROOTfile->Get(name.c_str()));
     if (not tree){

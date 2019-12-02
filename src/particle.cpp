@@ -94,12 +94,12 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 
 
 
-void TParticle::derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager *field) const{
+void TParticle::derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager &field) const{
 	double B[3], dBidxj[3][3], E[3], V; // magnetic/electric field and electric potential in lab frame
 	if (q != 0 || (mu != 0 && y[7] != 0)) // if particle has charge or magnetic moment, calculate magnetic field
-		field->BField(y[0],y[1],y[2], x, B, dBidxj);
+		field.BField(y[0],y[1],y[2], x, B, dBidxj);
  	if (q != 0) // if particle has charge caculate electric field
-		field->EField(y[0],y[1],y[2], x, V, E);
+		field.EField(y[0],y[1],y[2], x, V, E);
 	EquationOfMotion(y, dydx, x, B, dBidxj, E);
 }
 
@@ -139,10 +139,10 @@ void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const va
 
 
 
-void TParticle::SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, const TFieldManager &field, double &Omegax, double &Omegay, double &Omegaz) const{
+void TParticle::SpinPrecessionAxis(const double t, const TStep &stepper, const TFieldManager &field, double &Omegax, double &Omegay, double &Omegaz) const{
 	double B[3], dBidxj[3][3], V, E[3];
-	state_type y(STATE_VARIABLES), dydt(STATE_VARIABLES);
-	stepper.calc_state(t, y); // calculate particle state at time t
+	state_type y = stepper.GetState(t);
+	state_type dydt(STATE_VARIABLES);
 	field.BField(y[0], y[1], y[2], t, B, dBidxj);
 	field.EField(y[0], y[1], y[2], t, V, E);
 	EquationOfMotion(y, dydt, t, B, dBidxj, E); // calculate velocity and acceleration required for vxE effect and Thomas precession
@@ -176,7 +176,7 @@ void TParticle::SpinPrecessionAxis(const double t, const double B[3], const doub
 }
 
 
-void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const dense_stepper_type &stepper, const TFieldManager *field, const std::vector<alglib::spline1dinterpolant> &omega) const{
+void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const TStep &stepper, const TFieldManager &field, const std::vector<alglib::spline1dinterpolant> &omega) const{
 	double omegax, omegay, omegaz;
 	if (omega.size() == 3){ // if interpolator exists, use it
 		omegax = alglib::spline1dcalc(omega[0], x);
@@ -184,7 +184,7 @@ void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_ty
 		omegaz = alglib::spline1dcalc(omega[2], x);
 	}
 	else
-		SpinPrecessionAxis(x, stepper, *field, omegax, omegay, omegaz); // else calculate precession axis directly
+		SpinPrecessionAxis(x, stepper, field, omegax, omegay, omegaz); // else calculate precession axis directly
 
 	dydx[0] = omegay*y[2] - omegaz*y[1]; // dS/dt = W x S
 	dydx[1] = omegaz*y[0] - omegax*y[2];
@@ -194,25 +194,32 @@ void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_ty
 }
 
 
-void TParticle::DoStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-                       const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field){
-    state_type y2temp = y2;
+void TParticle::DoStep(TStep &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field){
+    double prevpol = stepper.GetPolarization();
     vector<TParticle*> secs;
-    OnStep(x1, y1, x2, y2, stepper, currentsolid, mc, ID, secs);
+	value_type x2 = stepper.GetTime();
+	state_type y2 = stepper.GetState();
+    OnStep(stepper.GetStartTime(), stepper.GetState(stepper.GetStartTime()), x2, y2, stepper.GetStepper(), currentsolid, mc, ID, secs);
+	if (x2 != stepper.GetTime() or y2 != stepper.GetState(x2))
+		stepper.SetStepEnd(x2, y2);
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
-    Hmax = max(GetKineticEnergy(&y2[3]) + GetPotentialEnergy(x2, y2, field, currentsolid), Hmax);
-    if (y2temp[7] != y2[7])
+	state_type y = stepper.GetState();
+    Hmax = max(GetKineticEnergy(&y[3]) + GetPotentialEnergy(stepper.GetTime(), y, field, currentsolid), Hmax);
+    if (prevpol != stepper.GetPolarization())
         Nspinflip++;
     Nstep++;
 }
 
-void TParticle::DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-                      const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc){
-    state_type y2temp = y2;
+void TParticle::DoHit(TStep &stepper, const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc){
+    double prevpol = stepper.GetPolarization();
     vector<TParticle*> secs;
-    OnHit(x1, y1, x2, y2, normal, leaving, entering, mc, ID, secs); // do particle specific things
+	value_type x2 = stepper.GetTime();
+	state_type y2 = stepper.GetState();
+    OnHit(stepper.GetStartTime(), stepper.GetState(stepper.GetStartTime()), x2, y2, normal, leaving, entering, mc, ID, secs); // do particle specific things
+	if (x2 != stepper.GetTime() or y2 != stepper.GetState(x2))
+		stepper.SetStepEnd(x2, y2);
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
-    if (y2temp[7] != y2[7])
+    if (prevpol != stepper.GetPolarization())
         Nspinflip++;
     Nhit++;
 }

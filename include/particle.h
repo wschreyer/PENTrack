@@ -13,20 +13,10 @@
 #include <boost/numeric/odeint.hpp>
 #include "interpolation.h"
 
+#include "stepper.h"
 #include "geometry.h"
 #include "mc.h"
 #include "fields.h"
-
-static const double MAX_TRACK_DEVIATION = 0.001; ///< max deviation of actual trajectory from straight line between start and end points of a step used for geometry-intersection test. If deviation is larger, the step will be split
-static const int STATE_VARIABLES = 9; ///< number of variables in trajectory integration (position, velocity, proper time, polarization, path length)
-static const int SPIN_STATE_VARIABLES = 5; ///< number of variables in spin integration (spin vector, time, total phase)
-
-typedef double value_type; ///< data type used for trajectory integration
-typedef std::vector<value_type> state_type; ///< type representing current particle state (position, velocity, proper time, and polarization) or spin state (x,y,z component)
-typedef boost::numeric::odeint::runge_kutta_dopri5<state_type, value_type> stepper_type; ///< basic integration stepper (5th-order Runge-Kutta)
-typedef boost::numeric::odeint::controlled_runge_kutta<stepper_type> controlled_stepper_type; ///< integration step length controller
-typedef boost::numeric::odeint::dense_output_runge_kutta<controlled_stepper_type> dense_stepper_type; ///< integration step interpolator
-//	typedef boost::numeric::odeint::bulirsch_stoer_dense_out<state_type, value_type> dense_stepper_type2; ///< alternative stepper type (Bulirsch-Stoer)
 
 /**
  * Basic particle class (virtual).
@@ -284,7 +274,7 @@ public:
 	 * @param dydx Returns derivatives of y with respect to x
 	 * @param x Time
 	 */
-	void derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager *field) const;
+	void derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager &field) const;
 
 
     /**
@@ -318,8 +308,7 @@ public:
      * @param geom Geometry
      * @return Returns true if trajectory was altered
      */
-    void DoStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
-                const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field);
+    void DoStep(TStep &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field);
 
     /**
      * Call OnHit to check if particle should cross material boundary.
@@ -336,9 +325,7 @@ public:
      * @param hitlog Set true if hits should be logged to hitlog.out
      * @return Returns true if trajectory was altered
      */
-    void DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-               const double normal[3], const solid &leaving, const solid &entering,
-               TMCGenerator &mc);
+    void DoHit(TStep &stepper, const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc);
 
 
     /**
@@ -366,7 +353,7 @@ public:
 	 * @param Omegay Returns y component of precession axis in lab frame
 	 * @param Omegaz Returns z component of precession axis in lab frame
 	 */
-	void SpinPrecessionAxis(const double t, const dense_stepper_type &stepper, const TFieldManager &field, double &Omegax, double &Omegay, double &Omegaz) const;
+	void SpinPrecessionAxis(const double t, const TStep &stepper, const TFieldManager &field, double &Omegax, double &Omegay, double &Omegaz) const;
 
 	/**
 	 * Calculate spin precession axis.
@@ -394,7 +381,7 @@ public:
 	 * @param omega Vector of three splines used to interpolate spin-precession axis (can be empty)
 	 */
 	void SpinDerivs(const state_type &y, state_type &dydx, const value_type x,
-			const dense_stepper_type &stepper, const TFieldManager *field, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
+			const TStep &stepper, const TFieldManager &field, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
 
 	/**
 	 * Calculate kinetic energy.

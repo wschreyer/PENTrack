@@ -8,6 +8,7 @@
 #include "particle.h"
 #include "geometry.h"
 #include "fields.h"
+#include "stepper.h"
 
 #ifdef USEROOT
 #include "TFile.h"
@@ -17,7 +18,7 @@
 class TLogger {
 protected:
     TConfig config;
-    virtual void Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars) = 0;
+    virtual void Log(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) = 0;
 public:
     virtual ~TLogger(){ };
     /**
@@ -32,7 +33,7 @@ public:
      * @param field TFieldManager containing all electromagnetic fields
      * @param logType Select either endlog or snapshotlog
      */
-    void Print(const std::unique_ptr<TParticle>& p, const value_type x, const state_type &y, const state_type &spin,
+    void Print(const std::unique_ptr<TParticle>& p, const value_type &x, const TStep &stepper, const state_type &spin,
             const TGeometry &geom, const TFieldManager &field, const std::string suffix = "end");
 
     /**
@@ -47,8 +48,7 @@ public:
      * @param field TFieldManager containing all electromagnetic fields
      * @param logType Select either endlog or snapshotlog
      */
-    void PrintSnapshot(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, const value_type x2, const state_type &y2,
-                       const state_type &spin, const dense_stepper_type& stepper, const TGeometry &geom, const TFieldManager &field);
+    void PrintSnapshot(const std::unique_ptr<TParticle>& p, const TStep& stepper, const state_type &spin, const TGeometry &geom, const TFieldManager &field);
 
 
     /**
@@ -62,7 +62,7 @@ public:
      * @param sld Solid in which the particle is currently.
      * @param field TFieldManager containing all electromagnetic fields
      */
-    void PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, const value_type x, const state_type& y,
+    void PrintTrack(const std::unique_ptr<TParticle>& p, const TStep &stepper,
                     const state_type &spin, const solid &sld, const TFieldManager &field);
 
 
@@ -78,7 +78,7 @@ public:
      * @param leaving Material which is left at this boundary
      * @param entering Material which is entered at this boundary
      */
-    void PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering);
+    void PrintHit(const std::unique_ptr<TParticle>& p, const TStep &stepper, const double *normal, const solid &leaving, const solid &entering);
 
 
     /**
@@ -91,8 +91,8 @@ public:
      * @param stepper Trajectory integrator used to calculate spin-precession axis at time t
      * @param field TFieldManager containing all electromagnetic fields
      */
-    void PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x, const dense_stepper_type& spinstepper,
-                   const dense_stepper_type &trajectory_stepper, const TFieldManager &field);
+    void PrintSpin(const std::unique_ptr<TParticle>& p, const dense_stepper_type& spinstepper,
+                   const TStep &trajectory_stepper, const TFieldManager &field);
 
     virtual void Close(){ };
 };
@@ -100,7 +100,7 @@ public:
 class TTextLogger: public TLogger {
 private:
     std::map<std::string, std::ofstream> logstreams;
-    void Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars) final;
+    void Log(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) final;
 public:
     TTextLogger(TConfig& aconfig){ config = aconfig; };
     ~TTextLogger() final { for (auto &s: logstreams){ s.second.close(); } };
@@ -110,7 +110,7 @@ public:
 class TROOTLogger: public TLogger {
 private:
     TFile* ROOTfile;
-    void Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars) final;
+    void Log(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) final;
 public:
     TROOTLogger(TConfig &aconfig);
     ~TROOTLogger() final;
