@@ -215,7 +215,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 	double MRreflprob = 0, MRtransprob = 0;
 	if (UseMRModel){ 	// handle MicroRoughness reflection/transmission separately
 		MRreflprob = MR::MRProb(false, &y1[3], normal, leaving, entering);
-		if (0.5*m_n*(y1[0]*y1[0] + y1[1]*y1[1] + y1[2]*y1[2]) > Estep) // MicroRoughness transmission can happen if neutron energy > potential step
+		if (GetKineticEnergy(&y1[3]) > Estep) // MicroRoughness transmission can happen if neutron energy > potential step
 			MRtransprob = MR::MRProb(true, &y1[3], normal, leaving, entering);
 	}
 	double prob = unidist(mc);

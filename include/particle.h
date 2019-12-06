@@ -475,6 +475,7 @@ private:
 	void SpinDerivs(const state_type &y, state_type &dydx, const value_type x,
 			const dense_stepper_type &stepper, const TFieldManager *field, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
 
+protected:
 	/**
 	 * Calculate kinetic energy.
 	 *
@@ -486,7 +487,6 @@ private:
 	 */
 	double GetKineticEnergy(const value_type v[3]) const;
 
-protected:
 	/**
 	 * This virtual method is executed, when a particle crosses a material boundary.
 	 *
