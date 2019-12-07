@@ -33,38 +33,32 @@ void TNeutron::Transmit(const value_type x1, const state_type &y1, value_type &x
 	// specular transmission (refraction)
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-    double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
+	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
 	for (int i = 0; i < 3; i++)
 		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 }
 
 void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
 		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
-	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-	material mat = vnormal < 0 ? entering.mat : leaving.mat;
 
 	if (!MR::MRValid(&y1[3], normal, leaving, entering)){ // check if MicroRoughness model should be applied
-		std::cout << "Tried to use micro-roughness model in invalid energy regime. That should not happen!\n";
-		exit(-1);
+		throw runtime_error("Tried to use micro-roughness model in invalid energy regime. That should not happen!");
 	}
 	
-	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
-	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
-	for (int i = 0; i < 3; i++)
-		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
-
 	double theta_t, phi_t;
 	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &y1[3], normal, leaving, entering)); // scale up maximum to make sure it lies above all values of scattering distribution
+	std::uniform_real_distribution<double> phidist(0, 2.*pi);
+	std::sin_distribution<double> sindist(0, pi/2.);
 	do{
-		std::uniform_real_distribution<double> phidist(0, 2.*pi);
 		phi_t = phidist(mc);
-		std::sin_distribution<double> sindist(0, pi/2.);
 		theta_t = sindist(mc);
 	}while (MRprobdist(mc) > MR::MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
 
+	double Estep = CalcPotentialStep(leaving.mat, entering.mat, y1);
+	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5] - 2*Estep/m_n);
+	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
-	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
+
 	y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
 	y2[4] = vabs*sin(phi_t)*sin(theta_t);
 	y2[5] = vabs*cos(theta_t);
@@ -136,10 +130,10 @@ void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &
 	double phi_r, theta_r;
 	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &y1[3], normal, leaving, entering)); // scale up maximum to make sure it lies above all values of scattering distribution
 //			cout << "max: " << MRmax << '\n';
+	std::uniform_real_distribution<double> unidist(0, 2.*pi);
+	std::sin_distribution<double> sindist(0, pi/2.);
 	do{
-		std::uniform_real_distribution<double> unidist(0, 2.*pi);
 		phi_r = unidist(mc);
-		std::sin_distribution<double> sindist(0, pi/2.);
 		theta_r = sindist(mc);
 	}while (MRprobdist(mc) > MR::MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
 
