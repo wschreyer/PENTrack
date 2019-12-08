@@ -77,7 +77,7 @@ stopID TStep::next(std::function<void(const state_type&, state_type&, const valu
     int nsubsteps = dev2 > 0 ? static_cast<int>(ceil(sqrt(dev2)/MAX_TRACK_DEVIATION)) : 1;
     for (int i = 0; i < nsubsteps; ++i){
         double x1 = xstart + i*(xend - xstart)/nsubsteps;
-        double x2 = i + 1 == nsubsteps ? xend : xstart + (i+1)*(xend-xstart)/nsubsteps;
+        double x2 = (i + 1 == nsubsteps) ? xend : xstart + (i+1)*(xend-xstart)/nsubsteps;
         if (iterate_collision(x1, GetState(x1), x2, GetState(x2), geometry, 0))
             break;
     }

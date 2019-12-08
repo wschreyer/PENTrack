@@ -72,6 +72,14 @@ public:
         next_step_over_collision = false;
         next_step = x;
     };
+    void SetVelocity(const std::array<double, 3> &v){
+        yend[3] = v[0];
+        yend[4] = v[1];
+        yend[5] = v[2];
+    }
+    void SetPolarization(const value_type &pol){
+        yend[7] = pol;
+    }
 };
 
 #endif //STEPPER_H_

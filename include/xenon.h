@@ -45,7 +45,7 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnHit
 	 */
-	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+	void OnHit(TStep &stepper, const double normal[3],
 			const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 	
@@ -56,7 +56,7 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnStep
 	 */
-	void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+	void OnStep(TStep &stepper,
 			const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
@@ -65,7 +65,7 @@ protected:
 	 *
 	 * For parameter doc see TParticle::Decay
 	 */
-	void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const;
+	void Decay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const;
 };
 
 #endif // XENON_H_

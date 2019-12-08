@@ -42,7 +42,7 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type &x, co
                              "Nhit", "Nstep", "trajlength", "Hmax", "wL"};
 
     state_type y = stepper.GetState(x);
-    value_type E = p->GetKineticEnergy(&y[3]);
+    value_type E = p->GetKineticEnergy(stepper.GetVelocity(x));
     double Bstart[3], Eistart[3], Vstart;
 
     value_type tstart = p->GetInitialTime();
@@ -53,7 +53,7 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type &x, co
 
     double H;
     solid sld = geom.GetSolid(x, &y[0]);
-    H = E + p->GetPotentialEnergy(x, y, field, sld);
+    H = E + p->GetPotentialEnergy(x, stepper.GetPosition(x), stepper.GetVelocity(x), stepper.GetPolarization(x), field, sld);
 
     double B[3], Ei[3], V;
     field.BField(y[0], y[1], y[2], x, B);
@@ -117,8 +117,8 @@ void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const TStep &stepp
     double V = 0;
     field.BField(y[0],y[1],y[2],x,B, dBidxj);
     field.EField(y[0],y[1],y[2],x,V,E);
-    value_type Ek = p->GetKineticEnergy(&y[3]);
-    value_type H = Ek + p->GetPotentialEnergy(x, y, field, sld);
+    value_type Ek = p->GetKineticEnergy(stepper.GetVelocity());
+    value_type H = Ek + p->GetPotentialEnergy(stepper.GetTime(), stepper.GetPosition(), stepper.GetVelocity(), stepper.GetPolarization(), field, sld);
 
     vector<double> vars = {static_cast<double>(jobnumber), static_cast<double>(p->GetParticleNumber()), y[7],
                            x, y[0], y[1], y[2], y[3], y[4], y[5],

@@ -15,22 +15,22 @@
 using namespace std;
 
 double TParticle::GetInitialTotalEnergy(const TGeometry &geom, const TFieldManager &field) const{
-	return GetKineticEnergy(&ystart[3]) + GetPotentialEnergy(tstart, ystart, field, geom.GetSolid(tstart, &ystart[0]));
+	return GetInitialKineticEnergy() + GetPotentialEnergy(tstart, {ystart[0], ystart[1], ystart[2]}, {ystart[3], ystart[4], ystart[5]}, ystart[7], field, geom.GetSolid(tstart, &ystart[0]));
 }
 
 
 double TParticle::GetFinalTotalEnergy(const TGeometry &geom, const TFieldManager &field) const{
-	return GetKineticEnergy(&yend[3]) + GetPotentialEnergy(tend, yend, field, geom.GetSolid(tend, &yend[0]));
+	return GetFinalKineticEnergy() + GetPotentialEnergy(tend, {yend[0], yend[1], yend[2]}, {yend[3], yend[4], yend[5]}, yend[7], field, geom.GetSolid(tend, &yend[0]));
 }
 
 
 double TParticle::GetInitialKineticEnergy() const{
-	return GetKineticEnergy(&ystart[3]);
+	return GetKineticEnergy({ystart[3], ystart[4], ystart[5]});
 }
 
 
 double TParticle::GetFinalKineticEnergy() const{
-	return GetKineticEnergy(&yend[3]);
+	return GetKineticEnergy({yend[3], yend[4], yend[5]});
 }
 
 TParticle::TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
@@ -197,14 +197,9 @@ void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_ty
 void TParticle::DoStep(TStep &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field){
     double prevpol = stepper.GetPolarization();
     vector<TParticle*> secs;
-	value_type x2 = stepper.GetTime();
-	state_type y2 = stepper.GetState();
-    OnStep(stepper.GetStartTime(), stepper.GetState(stepper.GetStartTime()), x2, y2, stepper.GetStepper(), currentsolid, mc, ID, secs);
-	if (x2 != stepper.GetTime() or y2 != stepper.GetState(x2))
-		stepper.SetStepEnd(x2, y2);
+    OnStep(stepper, currentsolid, mc, ID, secs);
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
-	state_type y = stepper.GetState();
-    Hmax = max(GetKineticEnergy(&y[3]) + GetPotentialEnergy(stepper.GetTime(), y, field, currentsolid), Hmax);
+    Hmax = max(GetKineticEnergy(stepper.GetVelocity()) + GetPotentialEnergy(stepper.GetTime(), stepper.GetPosition(), stepper.GetVelocity(), stepper.GetPolarization(), field, currentsolid), Hmax);
     if (prevpol != stepper.GetPolarization())
         Nspinflip++;
     Nstep++;
@@ -213,36 +208,32 @@ void TParticle::DoStep(TStep &stepper, const solid &currentsolid, TMCGenerator &
 void TParticle::DoHit(TStep &stepper, const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc){
     double prevpol = stepper.GetPolarization();
     vector<TParticle*> secs;
-	value_type x2 = stepper.GetTime();
-	state_type y2 = stepper.GetState();
-    OnHit(stepper.GetStartTime(), stepper.GetState(stepper.GetStartTime()), x2, y2, normal, leaving, entering, mc, ID, secs); // do particle specific things
-	if (x2 != stepper.GetTime() or y2 != stepper.GetState(x2))
-		stepper.SetStepEnd(x2, y2);
+    OnHit(stepper, normal, leaving, entering, mc, ID, secs); // do particle specific things
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
     if (prevpol != stepper.GetPolarization())
         Nspinflip++;
     Nhit++;
 }
 
-void TParticle::DoDecay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){
+void TParticle::DoDecay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){
     vector<TParticle*> secs;
-    Decay(t, y, mc, geom, field, secs);
+    Decay(stepper, mc, geom, field, secs);
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
 }
 
-void TParticle::DoPolarize(const double t, state_type &y, const double polarization, const bool flipspin, TMCGenerator &mc){
-	double flipprob = 0.5*(1 - y[7]*polarization);
+void TParticle::DoPolarize(TStep &stepper, const double polarization, const bool flipspin, TMCGenerator &mc){
+	double prevpol = stepper.GetPolarization();
+	double flipprob = 0.5*(1 - prevpol*polarization);
 	noflipprob *= 1. - flipprob;
 	if (flipspin){
-		double prevpol = y[7];
-		y[7] = polarization_distribution<double>(polarization)(mc);
-		if (y[7] != prevpol)
+		stepper.SetPolarization(polarization_distribution<double>(polarization)(mc));
+		if (stepper.GetPolarization() != prevpol)
 			++Nspinflip;
 	}
 }
 
 
-double TParticle::GetKineticEnergy(const value_type v[3]) const{
+double TParticle::GetKineticEnergy(const std::array<double, 3> &v) const{
 	double beta2 = (v[0]*v[0] + v[1]*v[1] + v[2]*v[2])/c_0/c_0;
 	double gammaminusone;
 
@@ -259,20 +250,20 @@ double TParticle::GetKineticEnergy(const value_type v[3]) const{
 }
 
 
-double TParticle::GetPotentialEnergy(const value_type t, const state_type &y, const TFieldManager &field, const solid &sld) const{
+double TParticle::GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const TFieldManager &field, const solid &sld) const{
 	value_type result = 0;
 	if (q != 0 || mu != 0){
 		double B[3], E[3], V;
 		if (mu != 0){
-			field.BField(y[0],y[1],y[2],t,B);
-			result += -y[7]*mu/ele_e*sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
+			field.BField(pos[0], pos[1], pos[2], t, B);
+			result += -pol*mu/ele_e*sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
 		}
 		if (q != 0){
-			field.EField(y[0],y[1],y[2],t,V,E);
+			field.EField(pos[0], pos[1], pos[2],t,V,E);
 			result += q/ele_e*V;
 		}
 	}
-	result += m*gravconst*y[2];
+	result += m*gravconst*pos[2];
 	return result;
 }
 

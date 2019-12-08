@@ -16,23 +16,22 @@ TProton::TProton(const int number, const double t, const double x, const double 
 }
 
 
-void TProton::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+void TProton::OnHit(TStep &stepper, const double normal[3],
 		const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
 
 }
 
 
-void TProton::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+void TProton::OnStep(TStep &stepper,
 		const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	if (currentsolid.ID > 1){
-		x2 = x1;
-		y2 = y1;
+		stepper.SetStepEnd(stepper.GetStartTime());
 		ID = ID_ABSORBED_IN_MATERIAL;
 //		printf("Absorption!\n");
 	}
 }
 
 
-void TProton::Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const{
+void TProton::Decay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const{
 
 };

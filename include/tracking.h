@@ -92,7 +92,7 @@ private:
      *
      * @return Return probability of spin flip
      */
-    void IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const TStep &stepper,
+    void IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, TStep &stepper,
             const std::vector<double> &times, const TFieldManager &field,
             const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const;
 

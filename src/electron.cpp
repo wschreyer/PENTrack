@@ -16,17 +16,16 @@ TElectron::TElectron(const int number, const double t, const double x, const dou
 }
 
 
-void TElectron::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+void TElectron::OnHit(TStep &stepper, const double normal[3],
 		const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
 
 }
 
 
-void TElectron::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+void TElectron::OnStep(TStep &stepper,
 		const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	if (currentsolid.ID > 1){
-		x2 = x1;
-		y2 = y1;
+		stepper.SetStepEnd(stepper.GetStartTime());
 		ID = ID_ABSORBED_IN_MATERIAL;
 //		printf("Absorption!\n");
 	}
@@ -51,6 +50,6 @@ void TElectron::OnStep(const value_type x1, const state_type &y1, value_type &x2
 }
 
 
-void TElectron::Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const{
+void TElectron::Decay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const{
 
 }

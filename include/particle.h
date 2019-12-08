@@ -338,9 +338,9 @@ public:
      * @param field TFieldManager containing all electromagnetic fields
      * @param secondaries Add any secondary particles produced in this decay
      */
-    void DoDecay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
+    void DoDecay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
-    void DoPolarize(const double t, state_type &y, const double polarization, const bool flipspin, TMCGenerator &mc);
+    void DoPolarize(TStep &stepper, const double polarization, const bool flipspin, TMCGenerator &mc);
 
     /**
 	 * Calculate spin precession axis.
@@ -392,7 +392,7 @@ public:
 	 *
 	 * @return Kinetic energy [eV]
 	 */
-	double GetKineticEnergy(const value_type v[3]) const;
+	double GetKineticEnergy(const std::array<double, 3> &v) const;
 
 protected:
 	/**
@@ -412,7 +412,7 @@ protected:
 	 * @param ID If particle is stopped, set this to the appropriate stopID
 	 * @param secondaries Add any secondary particles produced in this interaction
 	 */
-	virtual void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	virtual void OnHit(TStep &stepper,
 						const double normal[3], const solid &leaving, const solid &entering,
 						TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
@@ -433,7 +433,7 @@ protected:
 	 * @param ID If particle is stopped, set this to the appropriate stopID
 	 * @param secondaries Add any secondary particles produced in this interaction
 	 */
-	virtual void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+	virtual void OnStep(TStep &stepper,
 			const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
 
 
@@ -447,7 +447,7 @@ protected:
 	 * @param field TFieldManager containing all electromagnetic fields
 	 * @param secondaries Add any secondary particles produced in this decay
 	 */
-	virtual void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const = 0;
+	virtual void Decay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const = 0;
 
 
 public:
@@ -461,7 +461,7 @@ public:
 	 *
 	 * @return Returns potential energy [eV]
 	 */
-	virtual double GetPotentialEnergy(const value_type t, const state_type &y, const TFieldManager &field, const solid &sld) const;
+	virtual double GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const TFieldManager &field, const solid &sld) const;
 };
 
 #endif // PARTICLE_H__

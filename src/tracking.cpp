@@ -27,9 +27,9 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
     double maxtraj;
     istringstream(particleconf["lmax"]) >> maxtraj;
 
-//	cout << "Particle no.: " << particlenumber << " particle type: " << name << '\n';
-//	cout << "x: " << yend[0] << "m y: " << yend[1] << "m z: " << yend[2]
-//		 << "m E: " << GetFinalKineticEnergy() << "eV t: " << tend << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
+//	cout << "Particle no.: " << p->GetParticleNumber() << " particle type: " << p->GetName() << '\n';
+//	cout << "x: " << p->GetFinalState()[0] << "m y: " << p->GetFinalState()[1] << "m z: " << p->GetFinalState()[2]
+//		 << "m E: " << p->GetFinalKineticEnergy() << "eV t: " << p->GetFinalTime() << "s tau: " << tau << "s lmax: " << maxtraj << "m\n";
 
     if (p->GetFinalTime() > tmax)
         throw runtime_error("Tried to start trajectory simulation past the maximum simulation time. Check time settings.");
@@ -94,7 +94,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
     }
 
     if (p->GetStopID() == ID_DECAYED){
-        p->DoDecay(stepper.GetTime(), stepper.GetState(), mc, geom, field);
+        p->DoDecay(stepper, mc, geom, field);
     }
 
     p->SetFinalState(stepper.GetTime(), stepper.GetState(), spin, GetCurrentsolid());
@@ -199,7 +199,7 @@ const solid& TTracker::GetCurrentsolid() const{
 }
 
 
-void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const TStep &stepper,
+void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, TStep &stepper,
         const std::vector<double> &times, const TFieldManager &field,
         const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const{
     value_type x1 = stepper.GetStartTime();
@@ -221,7 +221,7 @@ void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &sp
     }
     else if (Babs1 == 0 && Babs2 > 0){ // if particle enters magnetic field
 //		std::cout << "Entering magnetic field\n";
-        p->DoPolarize(x2, y2, 0., flipspin, mc); // if spin flips are allowed, choose random polarization
+        p->DoPolarize(stepper, 0., flipspin, mc); // if spin flips are allowed, choose random polarization
         spin[0] = y2[7]*B2[0]/Babs2; // set spin (anti-)parallel to field
         spin[1] = y2[7]*B2[1]/Babs2;
         spin[2] = y2[7]*B2[2]/Babs2;
@@ -304,7 +304,7 @@ void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &sp
 
 
     if (Babs2 > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
-        p->DoPolarize(x2, y2, polarisation, flipspin, mc);
+        p->DoPolarize(stepper, polarisation, flipspin, mc);
         spin[0] = B2[0]*y2[7]/Babs2;
         spin[1] = B2[1]*y2[7]/Babs2;
         spin[2] = B2[2]*y2[7]/Babs2;

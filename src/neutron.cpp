@@ -18,53 +18,58 @@ TNeutron::TNeutron(const int number, const double t, const double x, const doubl
 
 }
 
-void TNeutron::Transmit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-		const double normal[3], const solid &leaving, const solid &entering) const{
-	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+void TNeutron::Transmit(TStep &stepper,const double normal[3], const solid &leaving, const solid &entering) const{
+	array<double, 3> v1 = stepper.GetVelocity(stepper.GetStartTime());
+	double vnormal = v1[0]*normal[0] + v1[1]*normal[1] + v1[2]*normal[2]; // velocity normal to reflection plane
 
 	// specular transmission (refraction)
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
-	for (int i = 0; i < 3; i++)
-		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
+    	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, stepper)); // wavenumber in second solid (use only real part for transmission!)
+	array<double, 3> v2 = stepper.GetVelocity();
+	for (int i = 0; i < 3; i++){
+		v2[i] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
+	}
+	stepper.SetVelocity(v2);
 }
 
-void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
-
-	if (!MR::MRValid(&y1[3], normal, leaving, entering)){ // check if MicroRoughness model should be applied
+void TNeutron::TransmitMR(TStep &stepper, const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
+	array<double, 3> v1 = stepper.GetVelocity(stepper.GetStartTime());
+	if (!MR::MRValid(&v1[0], normal, leaving, entering)){ // check if MicroRoughness model should be applied
 		throw runtime_error("Tried to use micro-roughness model in invalid energy regime. That should not happen!");
 	}
 	
 	double theta_t, phi_t;
-	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &y1[3], normal, leaving, entering)); // scale up maximum to make sure it lies above all values of scattering distribution
+	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &v1[0], normal, leaving, entering)); // scale up maximum to make sure it lies above all values of scattering distribution
 	std::uniform_real_distribution<double> phidist(0, 2.*pi);
 	std::sin_distribution<double> sindist(0, pi/2.);
 	do{
 		phi_t = phidist(mc);
 		theta_t = sindist(mc);
-	}while (MRprobdist(mc) > MR::MRDist(true, false, &y1[3], normal, leaving, entering, theta_t, phi_t));
+	}while (MRprobdist(mc) > MR::MRDist(true, false, &v1[0], normal, leaving, entering, theta_t, phi_t));
+	double Estep = CalcPotentialStep(leaving.mat, entering.mat, stepper);
+	double E = GetKineticEnergy(v1) - Estep;
+	double vabs = sqrt(2.*E/GetMass());
 
-	double Estep = CalcPotentialStep(leaving.mat, entering.mat, y1);
-	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5] - 2*Estep/m_n);
-	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	double vnormal = v1[0]*normal[0] + v1[1]*normal[1] + v1[2]*normal[2]; // velocity normal to reflection plane
 	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
-
-	y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
-	y2[4] = vabs*sin(phi_t)*sin(theta_t);
-	y2[5] = vabs*cos(theta_t);
-	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+	array<double, 3> v2;
+	v2[0] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
+	v2[1] = vabs*sin(phi_t)*sin(theta_t);
+	v2[2] = vabs*cos(theta_t);
+	RotateVector(&v2[0], normal, &v1[0]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+	stepper.SetVelocity(v2);
 }
 
-void TNeutron::TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
-	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+void TNeutron::TransmitLambert(TStep &stepper, const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
+	array<double, 3> v1 = stepper.GetVelocity(stepper.GetStartTime());
+	double vnormal = v1[0]*normal[0] + v1[1]*normal[1] + v1[2]*normal[2]; // velocity normal to reflection plane
 	double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
 	double k1 = sqrt(Enormal); // wavenumber in first solid (use only real part for transmission!)
-	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, y2)); // wavenumber in second solid (use only real part for transmission!)
+	double k2 = sqrt(Enormal - CalcPotentialStep(leaving.mat, entering.mat, stepper)); // wavenumber in second solid (use only real part for transmission!)
+	array<double, 3> v2 = stepper.GetVelocity();
 	for (int i = 0; i < 3; i++)
-		y2[i + 3] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
+		v2[i] += (k2/k1 - 1)*(normal[i]*vnormal); // refract (scale normal velocity by k2/k1)
 
 	double theta_t, phi_t;
 	std::uniform_real_distribution<double> unidist(0, 2.*pi);
@@ -73,69 +78,64 @@ void TNeutron::TransmitLambert(const value_type x1, const state_type &y1, value_
 	theta_t = sincosdist(mc);
 
 	if (vnormal < 0) theta_t = pi - theta_t; // if velocity points into volume invert polar angle
-	double vabs = sqrt(y2[3]*y2[3] + y2[4]*y2[4] + y2[5]*y2[5]);
-	y2[3] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
-	y2[4] = vabs*sin(phi_t)*sin(theta_t);
-	y2[5] = vabs*cos(theta_t);
-	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+	double vabs = sqrt(v2[0]*v2[0] + v2[1]*v2[1] + v2[2]*v2[2]);
+	v2[0] = vabs*cos(phi_t)*sin(theta_t);	// new velocity with respect to z-axis
+	v2[1] = vabs*sin(phi_t)*sin(theta_t);
+	v2[2] = vabs*cos(theta_t);
+	RotateVector(&v2[0], normal, &v1[0]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+	stepper.SetVelocity(v2);
 }
 
-void TNeutron::Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-		const double normal[3], const solid &leaving, const solid &entering) const{
-	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+void TNeutron::Reflect(TStep &stepper, const double normal[3], const solid &leaving, const solid &entering) const{
 	//particle was neither transmitted nor absorbed, so it has to be reflected
-
 	//************** specular reflection **************
-//				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
-	x2 = x1;
-	y2[0] = y1[0];
-	y2[1] = y1[1];
-	y2[2] = y1[2];
-	y2[3] -= 2*vnormal*normal[0]; // reflect velocity
-	y2[4] -= 2*vnormal*normal[1];
-	y2[5] -= 2*vnormal*normal[2];
-	y2[6] = y1[6];
-	y2[8] = y1[8];
+	array<double, 3> v1 = stepper.GetVelocity(stepper.GetStartTime());
+	double vnormal = v1[0]*normal[0] + v1[1]*normal[1] + v1[2]*normal[2]; // velocity normal to reflection plane
+
+	stepper.SetStepEnd(stepper.GetStartTime());
+	array<double, 3> v2 = stepper.GetVelocity();
+	v2[0] -= 2*vnormal*normal[0]; // reflect velocity
+	v2[1] -= 2*vnormal*normal[1];
+	v2[2] -= 2*vnormal*normal[2];
+	stepper.SetVelocity(v2);
 }
 
-void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+void TNeutron::ReflectMR(TStep &stepper,
 		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
-	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	array<double, 3> v1 = stepper.GetVelocity(stepper.GetStartTime());
+	double vnormal = v1[0]*normal[0] + v1[1]*normal[1] + v1[2]*normal[2]; // velocity normal to reflection plane
 	material mat = vnormal < 0 ? entering.mat : leaving.mat;
-	if (!MR::MRValid(&y1[3], normal, leaving, entering)){
-		std::cout << "Tried to use micro-roughness model in invalid energy regime. That should not happen!\n";
-		exit(-1);
+	if (!MR::MRValid(&v1[0], normal, leaving, entering)){
+		throw runtime_error("Tried to use micro-roughness model in invalid energy regime. That should not happen!");
 	}
 
 	double phi_r, theta_r;
-	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &y1[3], normal, leaving, entering)); // scale up maximum to make sure it lies above all values of scattering distribution
+	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &v1[0], normal, leaving, entering)); // scale up maximum to make sure it lies above all values of scattering distribution
 //			cout << "max: " << MRmax << '\n';
 	std::uniform_real_distribution<double> unidist(0, 2.*pi);
 	std::sin_distribution<double> sindist(0, pi/2.);
 	do{
 		phi_r = unidist(mc);
 		theta_r = sindist(mc);
-	}while (MRprobdist(mc) > MR::MRDist(false, false, &y1[3], normal, leaving, entering, theta_r, phi_r));
+	}while (MRprobdist(mc) > MR::MRDist(false, false, &v1[0], normal, leaving, entering, theta_r, phi_r));
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
-	x2 = x1;
-	y2[0] = y1[0];
-	y2[1] = y1[1];
-	y2[2] = y1[2];
-	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
-	y2[4] = vabs*sin(phi_r)*sin(theta_r);
-	y2[5] = vabs*cos(theta_r);
-	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+	stepper.SetStepEnd(stepper.GetStartTime());
+	array<double, 3> v2 = stepper.GetVelocity();
+	double vabs = sqrt(v2[0]*v2[0] + v2[1]*v2[1] + v2[2]*v2[2]);
+	v2[0] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
+	v2[1] = vabs*sin(phi_r)*sin(theta_r);
+	v2[2] = vabs*cos(theta_r);
+	RotateVector(&v2[0], normal, &v1[0]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
 //				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
-	y2[6] = y1[6];
-	y2[8] = y1[8];
+	stepper.SetVelocity(v2);
 }
 
-void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+void TNeutron::ReflectLambert(TStep &stepper,
 		const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const{
-	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
 	//particle was neither transmitted nor absorbed, so it has to be reflected
+	array<double, 3> v1 = stepper.GetVelocity(stepper.GetStartTime());
+	double vnormal = v1[0]*normal[0] + v1[1]*normal[1] + v1[2]*normal[2]; // velocity normal to reflection plane
 
 	double phi_r, theta_r;
 	std::uniform_real_distribution<double> unidist(0, 2.*pi);
@@ -144,49 +144,46 @@ void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_t
 	theta_r = sincosdist(mc);
 
 	if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
-	x2 = x1;
-	y2[0] = y1[0];
-	y2[1] = y1[1];
-	y2[2] = y1[2];
-	double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-	y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
-	y2[4] = vabs*sin(phi_r)*sin(theta_r);
-	y2[5] = vabs*cos(theta_r);
-	RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
+	stepper.SetStepEnd(stepper.GetStartTime());
+	array<double, 3> v2 = stepper.GetVelocity();
+	double vabs = sqrt(v2[0]*v2[0] + v2[1]*v2[1] + v2[2]*v2[2]);
+	v2[0] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
+	v2[1] = vabs*sin(phi_r)*sin(theta_r);
+	v2[2] = vabs*cos(theta_r);
+	RotateVector(&v2[0], normal, &v1[0]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
 //				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
-	y2[6] = y1[6];
-	y2[8] = y1[8];
+	stepper.SetVelocity(v2);
 }
 
-void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+void TNeutron::OnHit(TStep &stepper, const double normal[3],
 		const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
-
-    double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	array<double, 3> v1 = stepper.GetVelocity(stepper.GetStartTime());
+	double vnormal = v1[0]*normal[0] + v1[1]*normal[1] + v1[2]*normal[2]; // velocity normal to reflection plane
     double Enormal = 0.5*m_n*vnormal*vnormal; // energy normal to reflection plane
     material mat = vnormal < 0 ? entering.mat : leaving.mat; // use material properties of the solid whose surface was hit
 
     std::uniform_real_distribution<double> unidist(0, 1);
     if (unidist(mc) < mat.SpinflipProb){ // should spin be flipped?
-        y2[7] *= -1;
+		stepper.SetPolarization(-stepper.GetPolarization());
     }
 
-    double Estep = CalcPotentialStep(leaving.mat, entering.mat, y2);
+    double Estep = CalcPotentialStep(leaving.mat, entering.mat, stepper);
 
 //		cout << "Leaving " << leaving->ID << " Entering " << entering->ID << " Enormal = " << Enormal << " Estep = " << Estep;
 
-    bool UseMRModel = MR::MRValid(&y1[3], normal, leaving, entering);
+    bool UseMRModel = MR::MRValid(&v1[0], normal, leaving, entering);
 	double MRreflprob = 0, MRtransprob = 0;
 	if (UseMRModel){ 	// handle MicroRoughness reflection/transmission separately
-		MRreflprob = MR::MRProb(false, &y1[3], normal, leaving, entering);
-		if (GetKineticEnergy(&y1[3]) > Estep) // MicroRoughness transmission can happen if neutron energy > potential step
-			MRtransprob = MR::MRProb(true, &y1[3], normal, leaving, entering);
+		MRreflprob = MR::MRProb(false, &v1[0], normal, leaving, entering);
+		if (GetKineticEnergy(v1) > Estep) // MicroRoughness transmission can happen if neutron energy > potential step
+			MRtransprob = MR::MRProb(true, &v1[0], normal, leaving, entering);
 	}
 	double prob = unidist(mc);
 	if (UseMRModel && prob < MRreflprob){
-		ReflectMR(x1, y1, x2, y2, normal, leaving, entering, mc);
+		ReflectMR(stepper, normal, leaving, entering, mc);
 	}
 	else if (UseMRModel && prob < MRreflprob + MRtransprob){
-		TransmitMR(x1, y1, x2, y2, normal, leaving, entering, mc);
+		TransmitMR(stepper, normal, leaving, entering, mc);
 	}
 
 	else{
@@ -196,18 +193,18 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 		if (Enormal > Estep){ // transmission only possible if Enormal > Estep
 			if (prob < MRreflprob + MRtransprob + reflprob*(1 - MRreflprob - MRtransprob)){ // reflection, scale down reflprob so MRreflprob + MRtransprob + reflprob + transprob = 1
 				if (!UseMRModel && unidist(mc) < mat.DiffProb){
-					ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
+					ReflectLambert(stepper, normal, leaving, entering, mc); // Lambert reflection
 				}
 				else{
-					Reflect(x1, y1, x2, y2, normal, leaving, entering); // specular reflection
+					Reflect(stepper, normal, leaving, entering); // specular reflection
 				}
 			}
 			else{
 				if (!UseMRModel && unidist(mc) < mat.DiffProb){
-					TransmitLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert transmission
+					TransmitLambert(stepper, normal, leaving, entering, mc); // Lambert transmission
 				}
 				else{
-					Transmit(x1, y1, x2, y2, normal, leaving, entering); // specular transmission
+					Transmit(stepper, normal, leaving, entering); // specular transmission
 				}
 			}
 		}
@@ -226,10 +223,10 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 			}
 			else{ // no absorption -> reflection
 				if (!UseMRModel && unidist(mc) < mat.DiffProb){
-					ReflectLambert(x1, y1, x2, y2, normal, leaving, entering, mc); // Lambert reflection
+					ReflectLambert(stepper, normal, leaving, entering, mc); // Lambert reflection
 				}
 				else{
-					Reflect(x1, y1, x2, y2, normal, leaving, entering); // specular reflection
+					Reflect(stepper, normal, leaving, entering); // specular reflection
 				}
 			}
 		}
@@ -238,17 +235,16 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 }
 
 
-void TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+void TNeutron::OnStep(TStep &stepper,
 					const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
 	if (currentsolid.mat.FermiImag > 0){
-		complex<double> E(0.5*(double)m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
+		complex<double> E(GetKineticEnergy(stepper.GetVelocity()), currentsolid.mat.FermiImag*1e-9); // E + i*W
 		complex<double> k = sqrt(2*(double)m_n*E)*(double)ele_e/(double)hbar; // wave vector
-		double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
+		double l = stepper.GetPathLength() - stepper.GetPathLength(stepper.GetStartTime()); // travelled length
 		std::exponential_distribution<double> expdist(2*imag(k));
 		double abspath = expdist(mc);
 		if (abspath < l){
-			x2 = x1 + abspath/l*(x2 - x1); // if absorbed, interpolate stopping time and position
-			stepper.calc_state(x2, y2);
+			stepper.SetStepEndToMatchComponent(8, stepper.GetPathLength(stepper.GetStartTime()) + abspath);
 			ID = ID_ABSORBED_IN_MATERIAL;
 //			printf("Absorption!\n");
 		}
@@ -256,7 +252,7 @@ void TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2,
 }
 
 
-void TNeutron::Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const{
+void TNeutron::Decay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const{
 	double E_p, E_e, phi_p, phi_e, theta_p, theta_e;
 	double pol_p, pol_e;
 	double m_nue = 1 / pow(c_0, 2); // [eV/c^2]
@@ -319,9 +315,10 @@ void TNeutron::Decay(const double t, const state_type &y, TMCGenerator &mc, cons
 
 //-------- Step 8 ----------------------------------------------------------------------------------------------------------
 	// boost p,e,nu into moving frame of neutron
-	vector<double> beta({y[3]/static_cast<double>(c_0),
-						y[4]/static_cast<double>(c_0),
-						y[5]/static_cast<double>(c_0)});
+	array<double, 3> v = stepper.GetVelocity();
+	vector<double> beta({v[0]/static_cast<double>(c_0),
+						 v[1]/static_cast<double>(c_0),
+						 v[2]/static_cast<double>(c_0)});
 	BOOST(beta,pe);
 	BOOST(beta,pp);
 	BOOST(beta,pnue);
@@ -344,11 +341,13 @@ void TNeutron::Decay(const double t, const state_type &y, TMCGenerator &mc, cons
 	pol_p = uni_dist(mc) < 0.5 ? 1 : -1;
 	pol_e = uni_dist(mc) < 0.5 ? 1 : -1;
 
-	secondaries.push_back(new TProton(GetParticleNumber(), t, y[0], y[1], y[2], E_p, phi_p, theta_p, pol_p, mc, geom, field));
-	secondaries.push_back(new TElectron(GetParticleNumber(), t, y[0], y[1], y[2], E_e, phi_e, theta_e, pol_e, mc, geom, field));
+	double t = stepper.GetTime();
+	array<double, 3> pos = stepper.GetPosition();
+	secondaries.push_back(new TProton(GetParticleNumber(), t, pos[0], pos[1], pos[2], E_p, phi_p, theta_p, pol_p, mc, geom, field));
+	secondaries.push_back(new TElectron(GetParticleNumber(), t, pos[0], pos[1], pos[2], E_e, phi_e, theta_e, pol_e, mc, geom, field));
 }
 
 
-double TNeutron::GetPotentialEnergy(const value_type t, const state_type &y, const TFieldManager &field, const solid &sld) const{
-    return TParticle::GetPotentialEnergy(t, y, field, sld) + MaterialPotential(sld.mat, y);
+double TNeutron::GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const TFieldManager &field, const solid &sld) const{
+    return TParticle::GetPotentialEnergy(t, pos, v, pol, field, sld) + MaterialPotential(t, pos, v, pol, sld.mat);
 }

@@ -49,8 +49,8 @@ protected:
 	 *
 	 * @return Return material potential [eV]
 	 */
-	double MaterialPotential(const material &mat, const state_type &y) const{
-		return mat.FermiReal*1e-9 - mat.InternalBField*GetMagneticMoment()*y[7]/ele_e;
+	double MaterialPotential(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const material &mat) const{
+		return mat.FermiReal*1e-9 - mat.InternalBField*GetMagneticMoment()*pol/ele_e;
 	}
 
 	/**
@@ -62,8 +62,10 @@ protected:
 	 *
 	 * @return Returns step in Fermi potential [eV]
 	 */
-	double CalcPotentialStep(const material &leaving, const material &entering, const state_type &y) const{
-		return MaterialPotential(entering, y) - MaterialPotential(leaving, y);
+	double CalcPotentialStep(const material &leaving, const material &entering, const TStep &stepper) const{
+		double t1 = stepper.GetStartTime();
+		return MaterialPotential(stepper.GetTime(), stepper.GetPosition(), stepper.GetVelocity(), stepper.GetPolarization(), entering)
+			 - MaterialPotential(t1, stepper.GetPosition(t1), stepper.GetVelocity(t1), stepper.GetPolarization(t1), leaving);
 	}
 	
 	/**
@@ -74,7 +76,7 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnHit
 	 */
-	void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
+	void OnHit(TStep &stepper, const double normal[3],
 			const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
@@ -84,7 +86,7 @@ protected:
 	 * Refracts neutron velocity.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void Transmit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void Transmit(TStep &stepper,
 			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
@@ -93,7 +95,7 @@ protected:
 	 * Refracts or scatters the neutron according to Micro Roughness model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void TransmitMR(TStep &stepper,
 			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
 
 	/**
@@ -102,7 +104,7 @@ protected:
 	 * Refracts or scatters the neutron according to Lambert model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void TransmitLambert(TStep &stepper,
 			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
 
 	/**
@@ -111,7 +113,7 @@ protected:
 	 * Reflects neutron specularly.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void Reflect(TStep &stepper,
 			const double normal[3], const solid &leaving, const solid &entering) const;
 
 	/**
@@ -120,7 +122,7 @@ protected:
 	 * Reflects or scatters the neutron according to Micro Roughness model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void ReflectMR(TStep &stepper,
 			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
 
 	/**
@@ -129,7 +131,7 @@ protected:
 	 * Reflects or scatters the neutron according to Lambert model.
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
-	void ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
+	void ReflectLambert(TStep &stepper,
 			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
 
 	/**
@@ -137,7 +139,7 @@ protected:
 	 *
 	 * For parameter doc see TParticle::OnStep
 	 */
-	void OnStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
+	void OnStep(TStep &stepper,
 			const solid &currentsolid, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const;
 
 
@@ -173,7 +175,7 @@ protected:
 	 * @param field TFieldManager class
 	 * @param secondaries Electron and proton from neutron decay are added to this list
 	 */
-	void Decay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const;
+	void Decay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field, std::vector<TParticle*> &secondaries) const;
 
 
 	/**
@@ -186,7 +188,7 @@ protected:
 	 *
 	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
-	value_type GetPotentialEnergy(const value_type t, const state_type &y, const TFieldManager &field, const solid &sld) const;
+	double GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const TFieldManager &field, const solid &sld) const override;
 };
 
 
