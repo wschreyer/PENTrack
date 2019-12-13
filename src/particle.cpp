@@ -15,29 +15,47 @@
 using namespace std;
 
 double TParticle::GetInitialTotalEnergy(const TGeometry &geom, const TFieldManager &field) const{
-	return GetInitialKineticEnergy() + GetPotentialEnergy(tstart, {ystart[0], ystart[1], ystart[2]}, {ystart[3], ystart[4], ystart[5]}, ystart[7], field, geom.GetSolid(tstart, &ystart[0]));
+	return GetInitialKineticEnergy() + GetPotentialEnergy(tstart, posstart, vstart, polstart, field, geom.GetSolid(tstart, &posstart[0]));
 }
 
 
 double TParticle::GetFinalTotalEnergy(const TGeometry &geom, const TFieldManager &field) const{
-	return GetFinalKineticEnergy() + GetPotentialEnergy(tend, {yend[0], yend[1], yend[2]}, {yend[3], yend[4], yend[5]}, yend[7], field, geom.GetSolid(tend, &yend[0]));
+	return GetFinalKineticEnergy() + GetPotentialEnergy(tend, posend, vend, polend, field, geom.GetSolid(tend, &posend[0]));
 }
 
 
 double TParticle::GetInitialKineticEnergy() const{
-	return GetKineticEnergy({ystart[3], ystart[4], ystart[5]});
+	return GetKineticEnergy(vstart);
 }
 
 
 double TParticle::GetFinalKineticEnergy() const{
-	return GetKineticEnergy({yend[3], yend[4], yend[5]});
+	return GetKineticEnergy(vend);
 }
 
 TParticle::TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
-		const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
-		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
-		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
-		  tstart(t), tend(t), Hmax(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0){
+		const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation,
+		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield):
+		name(aname),
+		q(qq),
+		m(mm),
+		mu(mumu),
+		gamma(agamma),
+		particlenumber(number),
+		ID(ID_UNKNOWN),
+		tstart(t),
+		tend(t),
+		posstart({x, y, z}),
+		posend({x, y, z}),
+		pathlength(0),
+		propertime(0),
+		spinphase(0),
+		spinintegrationtime(0),
+		Nhit(0),
+		Nspinflip(0),
+		noflipprob(1),
+		Nstep(0)
+		{
 
 	// for small velocities Ekin/m is very small and the relativstic claculation beta^2 = 1 - 1/gamma^2 gives large round-off errors
 	// the round-off error can be estimated as 2*epsilon
@@ -49,25 +67,17 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 		beta2 = ((((6.0*Eoverm - 5.0)*Eoverm + 4.0)*Eoverm - 3.0)*Eoverm + 2.0)*Eoverm; // use series expansion
 	else
 		beta2 = 1.0 - 1.0/(Eoverm + 1)/(Eoverm + 1); // relativstic beta^2
-	double vstart = c_0*sqrt(beta2);
+	double vabs = c_0*sqrt(beta2);
+
+	vstart[0] = vabs*cos(phi)*sin(theta); // velocity
+	vstart[1] = vabs*sin(phi)*sin(theta);
+	vstart[2] = vabs*cos(theta);
+	vend = vstart;
 
 	if (polarisation < -1 || polarisation > 1)
 		throw std::runtime_error("Polarisation has to be between -1 and 1");
-
-	ystart.resize(STATE_VARIABLES, 0);
-	ystart[0] = x; // position
-	ystart[1] = y;
-	ystart[2] = z;
-	ystart[3] = vstart*cos(phi)*sin(theta); // velocity
-	ystart[4] = vstart*sin(phi)*sin(theta);
-	ystart[5] = vstart*cos(theta);
-	ystart[6] = 0; // proper time
 	std::polarization_distribution<double> pdist(polarisation);
-	ystart[7] = pdist(amc); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
-	ystart[8] = 0;
-	yend = ystart;
-
-	spinstart.resize(SPIN_STATE_VARIABLES, 0);
+	polstart = polend = pdist(amc); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
 
 	double B[3];
 	afield.BField(x, y, z, t, B);
@@ -79,14 +89,11 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 		spinstart[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
 		spinstart[2] = polarisation;
 		RotateVector(&spinstart[0], B); // rotate initial spin vector such that its z-component is parallel to magnetic field
-
-		spinstart[3] = 0; // initial integration time is zero
-		spinstart[4] = 0; // initial phase is zero
 	}
 
 	spinend = spinstart;
 
-	solidend = solidstart = geometry.GetSolid(t, &ystart[0]); // set to solid with highest priority
+	solidend = solidstart = geometry.GetSolid(t, &posstart[0]); // set to solid with highest priority
 	Hmax = GetInitialTotalEnergy(geometry, afield);
 }
 
@@ -94,108 +101,95 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 
 
 
-void TParticle::derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager &field) const{
+std::array<double, 3> TParticle::EquationOfMotion(const double &t, const std::array<double, 3>& pos, const std::array<double, 3>& v, const int& polarization, const TFieldManager &field) const{
 	double B[3], dBidxj[3][3], E[3], V; // magnetic/electric field and electric potential in lab frame
-	if (q != 0 || (mu != 0 && y[7] != 0)) // if particle has charge or magnetic moment, calculate magnetic field
-		field.BField(y[0],y[1],y[2], x, B, dBidxj);
+	if (q != 0 || (mu != 0 && polarization != 0)) // if particle has charge or magnetic moment, calculate magnetic field
+		field.BField(pos[0], pos[1], pos[2], t, B, dBidxj);
  	if (q != 0) // if particle has charge caculate electric field
-		field.EField(y[0],y[1],y[2], x, V, E);
-	EquationOfMotion(y, dydx, x, B, dBidxj, E);
+		field.EField(pos[0], pos[1], pos[2], t, V, E);
+	return EquationOfMotion(t, pos, v, polarization, B, dBidxj, E);
 }
 
-void TParticle::EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[3], const double dBidxj[3][3], const double E[3]) const{
-	dydx[0] = y[3]; // time derivatives of position = velocity
-	dydx[1] = y[4];
-	dydx[2] = y[5];
-
-	value_type F[3] = {0,0,0}; // Force in lab frame
+std::array<double, 3> TParticle::EquationOfMotion(const double &t, const std::array<double, 3>& pos, const std::array<double, 3>& v, const int& polarization,
+										const double B[3], const double dBidxj[3][3], const double E[3]) const{
+	array<double, 3> F = {0,0,0}; // Force in lab frame
 	F[2] += -gravconst*m*ele_e; // add gravitation to force
 	if (q != 0){
-		F[0] += q*(E[0] + y[4]*B[2] - y[5]*B[1]); // add Lorentz-force
-		F[1] += q*(E[1] + y[5]*B[0] - y[3]*B[2]);
-		F[2] += q*(E[2] + y[3]*B[1] - y[4]*B[0]);
+		F[0] += q*(E[0] + v[1]*B[2] - v[2]*B[1]); // add Lorentz-force
+		F[1] += q*(E[1] + v[2]*B[0] - v[0]*B[2]);
+		F[2] += q*(E[2] + v[0]*B[1] - v[1]*B[0]);
 	}
-	if (mu != 0 && y[7] != 0 && (B[0] != 0 || B[1] != 0 || B[2] != 0)){
+	if (mu != 0 && polarization != 0 && (B[0] != 0 || B[1] != 0 || B[2] != 0)){
 		double Babs = sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
 		double dBdxi[3] = {	(B[0]*dBidxj[0][0] + B[1]*dBidxj[1][0] + B[2]*dBidxj[2][0])/Babs,
 							(B[0]*dBidxj[0][1] + B[1]*dBidxj[1][1] + B[2]*dBidxj[2][1])/Babs,
 							(B[0]*dBidxj[0][2] + B[1]*dBidxj[1][2] + B[2]*dBidxj[2][2])/Babs}; // derivatives of |B|
-		F[0] += y[7]*mu*dBdxi[0]; // add force on magnetic dipole moment
-		F[1] += y[7]*mu*dBdxi[1];
-		F[2] += y[7]*mu*dBdxi[2];
+		F[0] += polarization*mu*dBdxi[0]; // add force on magnetic dipole moment
+		F[1] += polarization*mu*dBdxi[1];
+		F[2] += polarization*mu*dBdxi[2];
 	}
-	double v2 = y[3]*y[3] + y[4]*y[4] + y[5]*y[5];
-	value_type inversegamma = sqrt(1 - v2/(c_0*c_0)); // relativstic factor 1/gamma
-	dydx[3] = inversegamma/m/ele_e*(F[0] - (y[3]*y[3]*F[0] + y[3]*y[4]*F[1] + y[3]*y[5]*F[2])/c_0/c_0); // general relativstic equation of motion
-	dydx[4] = inversegamma/m/ele_e*(F[1] - (y[4]*y[3]*F[0] + y[4]*y[4]*F[1] + y[4]*y[5]*F[2])/c_0/c_0); // dv/dt = 1/gamma/m*(F - v * v^T * F / c^2)
-	dydx[5] = inversegamma/m/ele_e*(F[2] - (y[5]*y[3]*F[0] + y[5]*y[4]*F[1] + y[5]*y[5]*F[2])/c_0/c_0);
-
-	dydx[6] = inversegamma; // derivative of proper time is 1/gamma
-	dydx[7] = 0; // polarisaton does not change
-	dydx[8] = sqrt(v2); // derivative of path length is abs(velocity)
+	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
+	double inversegamma = sqrt(1. - v2/(c_0*c_0)); // relativstic factor 1/gamma
+	array<double, 3> a;
+	a[0] = inversegamma/m/ele_e*(F[0] - (v[0]*v[0]*F[0] + v[0]*v[1]*F[1] + v[0]*v[2]*F[2])/c_0/c_0); // general relativstic equation of motion
+	a[1] = inversegamma/m/ele_e*(F[1] - (v[1]*v[0]*F[0] + v[1]*v[1]*F[1] + v[1]*v[2]*F[2])/c_0/c_0); // dv/dt = 1/gamma/m*(F - v * v^T * F / c^2)
+	a[2] = inversegamma/m/ele_e*(F[2] - (v[2]*v[0]*F[0] + v[2]*v[1]*F[1] + v[2]*v[2]*F[2])/c_0/c_0);
+	return a;
 }
 
 
 
 
 
-void TParticle::SpinPrecessionAxis(const double t, const TStep &stepper, const TFieldManager &field, double &Omegax, double &Omegay, double &Omegaz) const{
+std::array<double, 3> TParticle::SpinPrecessionAxis(const double t, const TStep &stepper, const TFieldManager &field) const{
 	double B[3], dBidxj[3][3], V, E[3];
-	state_type y = stepper.GetState(t);
-	state_type dydt(STATE_VARIABLES);
-	field.BField(y[0], y[1], y[2], t, B, dBidxj);
-	field.EField(y[0], y[1], y[2], t, V, E);
-	EquationOfMotion(y, dydt, t, B, dBidxj, E); // calculate velocity and acceleration required for vxE effect and Thomas precession
-	SpinPrecessionAxis(t, B, E, dydt, Omegax, Omegay, Omegaz); // calculate precession axis
+	auto pos = stepper.GetPosition(t);
+	field.BField(pos[0], pos[1], pos[2], t, B, dBidxj);
+	field.EField(pos[0], pos[1], pos[2], t, V, E);
+	auto v = stepper.GetVelocity(t);
+	auto a = EquationOfMotion(t, pos, v, stepper.GetPolarization(t), B, dBidxj, E); // calculate velocity and acceleration required for vxE effect and Thomas precession
+	return SpinPrecessionAxis(t, B, E, v, a); // calculate precession axis
 }
 
-void TParticle::SpinPrecessionAxis(const double t, const double B[3], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const{
-	double v2 = dydt[0]*dydt[0] + dydt[1]*dydt[1] + dydt[2]*dydt[2];
+std::array<double, 3> TParticle::SpinPrecessionAxis(const double t, const double B[3], const double E[3], const std::array<double, 3> &v, const std::array<double, 3> &a) const{
+	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2];
 	double gamma_rel = 1./sqrt(1. - v2/c_0/c_0);
-	double Bdotv = B[0]*dydt[0] + B[1]*dydt[1] + B[2]*dydt[2];
+	double Bdotv = B[0]*v[0] + B[1]*v[1] + B[2]*v[2];
 	double Bparallel[3];
 	for (int j = 0; j < 3; j++)
-		Bparallel[j] = Bdotv*dydt[j]/v2; // magnetic-field component parallel to velocity
+		Bparallel[j] = Bdotv*v[j]/v2; // magnetic-field component parallel to velocity
 
 	// spin precession axis due to relativistically distorted magnetic field, omega_B = -gyro/gamma * ( (1 - gamma)*(v.B)*v/v^2 + gamma*B - gamma*(v x E)/c^2 )
 	double OmegaB[3];
-	OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0] - gamma_rel*(dydt[1]*E[2] - dydt[2]*E[1])/c_0/c_0);
-	OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1] - gamma_rel*(dydt[2]*E[0] - dydt[0]*E[2])/c_0/c_0);
-	OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2] - gamma_rel*(dydt[0]*E[1] - dydt[1]*E[0])/c_0/c_0);
+	OmegaB[0] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[0] + gamma_rel*B[0] - gamma_rel*(v[1]*E[2] - v[2]*E[1])/c_0/c_0);
+	OmegaB[1] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[1] + gamma_rel*B[1] - gamma_rel*(v[2]*E[0] - v[0]*E[2])/c_0/c_0);
+	OmegaB[2] = -gamma/gamma_rel * ((1 - gamma_rel)*Bparallel[2] + gamma_rel*B[2] - gamma_rel*(v[0]*E[1] - v[1]*E[0])/c_0/c_0);
 
 	// Thomas precession in lab frame, omega_T = gamma^2/(gamma + 1)/c^2*(dv/dt x v)
 	double OmegaT[3] = {0,0,0};
-	OmegaT[0] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[4]*dydt[2] - dydt[5]*dydt[1])/c_0/c_0;
-	OmegaT[1] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[5]*dydt[0] - dydt[3]*dydt[2])/c_0/c_0;
-	OmegaT[2] = gamma_rel*gamma_rel/(gamma_rel + 1)*(dydt[3]*dydt[1] - dydt[4]*dydt[0])/c_0/c_0;
+	OmegaT[0] = gamma_rel*gamma_rel/(gamma_rel + 1)*(a[1]*v[2] - a[2]*v[1])/c_0/c_0;
+	OmegaT[1] = gamma_rel*gamma_rel/(gamma_rel + 1)*(a[2]*v[0] - a[0]*v[2])/c_0/c_0;
+	OmegaT[2] = gamma_rel*gamma_rel/(gamma_rel + 1)*(a[0]*v[1] - a[1]*v[0])/c_0/c_0;
 
 	// Total spin precession is sum of magnetic-field precession and Thomas precession
-	Omegax = OmegaB[0] + OmegaT[0];
-	Omegay = OmegaB[1] + OmegaT[1];
-	Omegaz = OmegaB[2] + OmegaT[2];
+	return {OmegaB[0] + OmegaT[0], OmegaB[1] + OmegaT[1], OmegaB[2] + OmegaT[2]};
 }
 
 
-void TParticle::SpinDerivs(const state_type &y, state_type &dydx, const value_type x, const TStep &stepper, const TFieldManager &field, const std::vector<alglib::spline1dinterpolant> &omega) const{
-	double omegax, omegay, omegaz;
+std::array<double, 3> TParticle::SpinEquationOfMotion(const double &t, const std::array<double, 3> &spin, const std::array<double, 3> &omega) const{
+/*	array<double, 3> W(omega);
 	if (omega.size() == 3){ // if interpolator exists, use it
-		omegax = alglib::spline1dcalc(omega[0], x);
-		omegay = alglib::spline1dcalc(omega[1], x);
-		omegaz = alglib::spline1dcalc(omega[2], x);
+		W[0] = alglib::spline1dcalc(omega_int[0], t);
+		W[1] = alglib::spline1dcalc(omega_int[1], t);
+		W[2] = alglib::spline1dcalc(omega_int[2], t);
 	}
-	else
-		SpinPrecessionAxis(x, stepper, field, omegax, omegay, omegaz); // else calculate precession axis directly
-
-	dydx[0] = omegay*y[2] - omegaz*y[1]; // dS/dt = W x S
-	dydx[1] = omegaz*y[0] - omegax*y[2];
-	dydx[2] = omegax*y[1] - omegay*y[0];
-	dydx[3] = 1.; // integrate time
-	dydx[4] = sqrt(omegax*omegax + omegay*omegay + omegaz*omegaz); // integrate precession phase
+*/
+	return {omega[1]*spin[2] - omega[2]*spin[1], omega[2]*spin[0] - omega[0]*spin[2], omega[0]*spin[1] - omega[1]*spin[0]}; // dS/dt = W x S
 }
 
 
 void TParticle::DoStep(TStep &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field){
-    double prevpol = stepper.GetPolarization();
+    int prevpol = stepper.GetPolarization();
     vector<TParticle*> secs;
     OnStep(stepper, currentsolid, mc, ID, secs);
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
@@ -206,7 +200,7 @@ void TParticle::DoStep(TStep &stepper, const solid &currentsolid, TMCGenerator &
 }
 
 void TParticle::DoHit(TStep &stepper, const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc){
-    double prevpol = stepper.GetPolarization();
+    int prevpol = stepper.GetPolarization();
     vector<TParticle*> secs;
     OnHit(stepper, normal, leaving, entering, mc, ID, secs); // do particle specific things
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
@@ -221,9 +215,14 @@ void TParticle::DoDecay(const TStep &stepper, TMCGenerator &mc, const TGeometry 
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
 }
 
-void TParticle::DoPolarize(TStep &stepper, const double polarization, const bool flipspin, TMCGenerator &mc){
-	double prevpol = stepper.GetPolarization();
+void TParticle::DoPolarize(TStep &stepper, const TFieldManager &field, const bool flipspin, TMCGenerator &mc){
+	int prevpol = stepper.GetPolarization();
+	double B[3];
+	auto pos = stepper.GetPosition();
+	field.BField(pos[0], pos[1], pos[2], stepper.GetTime(), B);
+	double polarization = stepper.GetSpinPolarization({B[0], B[1], B[2]});
 	double flipprob = 0.5*(1 - prevpol*polarization);
+	cout << " polarizing: " << polarization << ", " << flipprob << '\n';
 	noflipprob *= 1. - flipprob;
 	if (flipspin){
 		stepper.SetPolarization(polarization_distribution<double>(polarization)(mc));
@@ -242,7 +241,7 @@ double TParticle::GetKineticEnergy(const std::array<double, 3> &v) const{
 	// if a series expansion to order O(beta^8) has a smaller error than epsilon, we will use the series expansion
 
 	//cout << pow(beta2, 5) << " " << (0.5 + (3.0/8.0 + (5.0/16.0 + 35.0/128.0*beta2)*beta2)*beta2)*beta2 << " " << 1.0/sqrt(1.0 - beta2) - 1.0 << "\n";
-	if (pow(beta2, 5) < numeric_limits<value_type>::epsilon()) // if error in series expansion O(beta^10) is smaller than rounding error in gamma factor
+	if (pow(beta2, 5) < numeric_limits<double>::epsilon()) // if error in series expansion O(beta^10) is smaller than rounding error in gamma factor
 		gammaminusone = (0.5 + (3.0/8.0 + (5.0/16.0 + 35.0/128.0*beta2)*beta2)*beta2)*beta2; // use series expansion for energy calculation with small beta
 	else
 		gammaminusone = 1.0/sqrt(1.0 - beta2) - 1.0; // use relativistic formula for larger beta
@@ -250,8 +249,8 @@ double TParticle::GetKineticEnergy(const std::array<double, 3> &v) const{
 }
 
 
-double TParticle::GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const TFieldManager &field, const solid &sld) const{
-	value_type result = 0;
+double TParticle::GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const int pol, const TFieldManager &field, const solid &sld) const{
+	double result = 0;
 	if (q != 0 || mu != 0){
 		double B[3], E[3], V;
 		if (mu != 0){
@@ -267,9 +266,16 @@ double TParticle::GetPotentialEnergy(const double t, const std::array<double, 3>
 	return result;
 }
 
-void TParticle::SetFinalState(const value_type& x, const state_type& y, const state_type& spin, const solid& sld) {
-    tend = x;
-    yend = y;
+void TParticle::SetFinalState(const double& t, const std::array<double, 3>& pos, const std::array<double, 3>& v, const int& polarization, const double& propert, const double& path,
+					const std::array<double, 3>& spin, const double& phase, const double& spintime, const solid& sld) {
+    tend = t;
+    posend = pos;
+	vend = v;
+	polend = polarization;
+	propertime = propert;
+	pathlength = path;
     spinend = spin;
+	spinphase = phase;
+	spinintegrationtime = spintime;
     solidend = sld;
 }

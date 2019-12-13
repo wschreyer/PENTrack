@@ -72,32 +72,6 @@ private:
      * Return first non-ignored solid in TParticle::currentsolids list
      */
     const solid& GetCurrentsolid() const;
-
-    /**
-     * Simulate spin precession
-     *
-     * Integrates general BMT equation over one time step.
-     * If the conditions given by times and Bmax are not fulfilled, the spin vector will simply be rotated along the magnetic field, keeping the spin projection onto the magnetic field constant.
-     *
-     * @param spin Spin vector, returns new spin vector after step
-     * @param stepper Trajectory integrator containing last step
-     * @param x2 Time at end of step [s]
-     * @param y2 Particle state vector at end of step (position, velocity, proper time, and polarisation)
-     * @param times Absolute time intervals in between spin integration should be carried out [s]
-     * @param interpolatefields If this is set to true, the magnetic and electric fields will be interpolated between the trajectory-step points. This will speed up spin tracking in high, static fields, but might break spin tracking in small, quickly varying fields (e.g. spin-flip pulses)
-     * @param Bmax Spin integration will only be carried out, if magnetic field is below this value [T]
-     * @param flipspin If set to true, polarisation in y2 will be randomly set when magnetic field rises above Bmax, weighted by spin projection onto the magnetic field
-     * @param spinloginterval Min. distance [s] between spin-trajectory prints
-     * @param nextspinlog Time at which the next spin-trajectory point should be written to file
-     *
-     * @return Return probability of spin flip
-     */
-    void IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, TStep &stepper,
-            const std::vector<double> &times, const TFieldManager &field,
-            const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const;
-
-
-
 };
 
 

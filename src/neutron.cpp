@@ -12,7 +12,7 @@ using namespace std;
 
 const char* NAME_NEUTRON = "neutron";
 
-TNeutron::TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+TNeutron::TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation,
 		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
 		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
 
@@ -240,11 +240,12 @@ void TNeutron::OnStep(TStep &stepper,
 	if (currentsolid.mat.FermiImag > 0){
 		complex<double> E(GetKineticEnergy(stepper.GetVelocity()), currentsolid.mat.FermiImag*1e-9); // E + i*W
 		complex<double> k = sqrt(2*(double)m_n*E)*(double)ele_e/(double)hbar; // wave vector
-		double l = stepper.GetPathLength() - stepper.GetPathLength(stepper.GetStartTime()); // travelled length
+		double l2 = stepper.GetPathLength();
+		double l1 = stepper.GetPathLength(stepper.GetStartTime());
 		std::exponential_distribution<double> expdist(2*imag(k));
 		double abspath = expdist(mc);
-		if (abspath < l){
-			stepper.SetStepEndToMatchComponent(8, stepper.GetPathLength(stepper.GetStartTime()) + abspath);
+		if (abspath < l2 - l1){
+			stepper.SetStepEndToMatch([&](const double& t){ return stepper.GetPathLength(t); }, l1 + abspath);
 			ID = ID_ABSORBED_IN_MATERIAL;
 //			printf("Absorption!\n");
 		}
@@ -348,6 +349,6 @@ void TNeutron::Decay(const TStep &stepper, TMCGenerator &mc, const TGeometry &ge
 }
 
 
-double TNeutron::GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const TFieldManager &field, const solid &sld) const{
+double TNeutron::GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const int pol, const TFieldManager &field, const solid &sld) const{
     return TParticle::GetPotentialEnergy(t, pos, v, pol, field, sld) + MaterialPotential(t, pos, v, pol, sld.mat);
 }

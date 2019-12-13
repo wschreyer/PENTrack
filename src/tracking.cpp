@@ -34,9 +34,9 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
     if (p->GetFinalTime() > tmax)
         throw runtime_error("Tried to start trajectory simulation past the maximum simulation time. Check time settings.");
     // set initial values for integrator
-    TStep stepper(p->GetFinalTime(), p->GetFinalState());
+    TStep stepper(p->GetFinalTime(), p->GetFinalPosition(), p->GetFinalVelocity(), p->GetFinalProperTime(), p->GetFinalPolarization(), p->GetFinalPathlength());
 
-    logger->PrintTrack(p, stepper, p->GetFinalSpin(), p->GetFinalSolid(), field);
+    logger->PrintTrack(p, stepper, p->GetFinalSolid(), field);
 
     bool flipspin = false;
     istringstream(particleconf["flipspin"]) >> flipspin;
@@ -54,13 +54,15 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
         if (SpinTimess)
             SpinTimes.push_back(t);
     }while(SpinTimess.good());
-    state_type spin = p->GetFinalSpin();
 
-    currentsolids = geom.GetSolids(p->GetFinalTime(), &p->GetFinalState()[0]);
+    currentsolids = geom.GetSolids(p->GetFinalTime(), &p->GetFinalPosition()[0]);
     p->SetStopID(ID_UNKNOWN);
 
     while (p->GetStopID() == ID_UNKNOWN){ // integrate as long as nothing happened to particle
-        stopID ID = stepper.next([&](const state_type &y, state_type &dydx, const value_type &x){ p->derivs(y, dydx, x, field); }, geom);    //std::bind(&TParticle::derivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, field), geom);
+        stopID ID = stepper.next(
+            [&](const double &t, const array<double, 3>& pos, const array<double, 3>& v, const double& polarization){
+                return p->EquationOfMotion(t, pos, v, polarization, field);
+            }, geom);
         p->SetStopID(ID);
         if (ID != ID_UNKNOWN)
             break;
@@ -70,7 +72,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
         }
         else{
             if (tau > 0 && stepper.GetProperTime() >= tau){ // if proper time is larger than lifetime
-                stepper.SetStepEndToMatchComponent(6, tau);
+                stepper.SetStepEndToMatch([&](const double &t){ return stepper.GetProperTime(t); }, tau);
                 p->SetStopID(ID_DECAYED);
             }
             if (stepper.GetTime() >= tmax){	//If stepsize overshot max simulation time
@@ -78,7 +80,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
                 p->SetStopID(ID_NOT_FINISH);
             }
             if (stepper.GetPathLength() >= maxtraj){
-                stepper.SetStepEndToMatchComponent(8, maxtraj);
+                stepper.SetStepEndToMatch([&](const double &t){ return stepper.GetPathLength(t); }, maxtraj);
                 p->SetStopID(ID_NOT_FINISH);
             }
 
@@ -86,19 +88,27 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
         }
 
         // take snapshots at certain times
-        logger->PrintSnapshot(p, stepper, spin, geom, field);
+        logger->PrintSnapshot(p, stepper, geom, field);
 
-        IntegrateSpin(p, spin, stepper, SpinTimes, field, spininterpolatefields, SpinBmax, mc, flipspin); // calculate spin precession and spin-flip probability
+        bool spincollapse = stepper.IntegrateSpin([&](const double &t, const TStep &stepper){
+                                                    return p->SpinPrecessionAxis(t, stepper, field); 
+                                                }, SpinTimes, abs(p->GetGyromagneticRatio()*SpinBmax), spininterpolatefields,
+                                                [&](const double &t, const array<double, 3> &spin, const TStep &trajectory_stepper){
+                                                    logger->PrintSpin(p, t, spin, trajectory_stepper, field);
+                                                });
+        if (spincollapse)
+            p->DoPolarize(stepper, field, flipspin, mc);
 
-        logger->PrintTrack(p, stepper, spin, GetCurrentsolid(), field);
+        logger->PrintTrack(p, stepper, GetCurrentsolid(), field);
     }
 
     if (p->GetStopID() == ID_DECAYED){
         p->DoDecay(stepper, mc, geom, field);
     }
 
-    p->SetFinalState(stepper.GetTime(), stepper.GetState(), spin, GetCurrentsolid());
-    logger->Print(p, stepper.GetTime(), stepper, spin, geom, field);
+    p->SetFinalState(stepper.GetTime(), stepper.GetPosition(), stepper.GetVelocity(), stepper.GetProperTime(), stepper.GetPolarization(), stepper.GetPathLength(),
+                    stepper.GetSpin(), stepper.GetSpinIntegrationTime(), stepper.GetSpinPhase(), GetCurrentsolid());
+    logger->Print(p, stepper.GetTime(), stepper, geom, field);
 
 
 //	cout << "x: " << yend[0];
@@ -172,7 +182,7 @@ void TTracker::DoHit(const std::unique_ptr<TParticle>& p, TStep &stepper, TMCGen
         auto coll = find_if(colls.begin(), colls.end(), [&leaving, &entering](const pair<TCollision, bool> &c){ return !c.second && (c.first.ID == leaving.ID || c.first.ID == entering.ID); });
         if (coll == colls.end())
             throw std::runtime_error("Did not find collision corresponding to entering/leaving solid!");
-        value_type prevtime = stepper.GetTime();
+        double prevtime = stepper.GetTime();
         auto prevpos = stepper.GetPosition();
         p->DoHit(stepper, coll->first.normal, leaving, entering, mc); // do particle specific things
         if (stepper.GetTime() == prevtime && stepper.GetPosition() == prevpos){
@@ -199,114 +209,3 @@ const solid& TTracker::GetCurrentsolid() const{
 }
 
 
-void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, TStep &stepper,
-        const std::vector<double> &times, const TFieldManager &field,
-        const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const{
-    value_type x1 = stepper.GetStartTime();
-    value_type x2 = stepper.GetTime();
-    if (p->GetGyromagneticRatio() == 0 || x1 == x2)
-        return;
-
-    state_type y1 = stepper.GetState(x1);
-    state_type y2 = stepper.GetState(x2);
-    double B1[3], B2[3], polarisation;
-    field.BField(y1[0], y1[1], y1[2], x1, B1);
-    field.BField(y2[0], y2[1], y2[2], x2, B2);
-    double Babs1 = sqrt(B1[0]*B1[0] + B1[1]*B1[1] + B1[2]*B1[2]);
-    double Babs2 = sqrt(B2[0]*B2[0] + B2[1]*B2[1] + B2[2]*B2[2]);
-
-    if (Babs2 == 0){ // if there's no magnetic field or particle is leaving magnetic field, do nothing
-        std::fill(spin.begin(), spin.end(), 0); // set all spin components to zero
-        return;
-    }
-    else if (Babs1 == 0 && Babs2 > 0){ // if particle enters magnetic field
-//		std::cout << "Entering magnetic field\n";
-        p->DoPolarize(stepper, 0., flipspin, mc); // if spin flips are allowed, choose random polarization
-        spin[0] = y2[7]*B2[0]/Babs2; // set spin (anti-)parallel to field
-        spin[1] = y2[7]*B2[1]/Babs2;
-        spin[2] = y2[7]*B2[2]/Babs2;
-        return;
-    }
-    else{ // if particle already is in magnetic field, calculate spin-projection on magnetic field
-        polarisation = (spin[0]*B1[0] + spin[1]*B1[1] + spin[2]*B1[2])/Babs1/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
-    }
-
-    bool integrate1 = false, integrate2 = false;;
-    for (unsigned int i = 0; i < times.size(); i += 2){
-        integrate1 |= (x1 >= times[i] && x1 < times[i+1]);
-        integrate2 |= (x2 >= times[i] && x2 < times[i+1]);
-    }
-
-    if ((integrate1 || integrate2) && (Babs1 < Bmax || Babs2 < Bmax)){ // do spin integration only, if time is in specified range and field is smaller than Bmax
-//		if ((!integrate1 && integrate2) || (Babs1 > Bmax && Babs2 < Bmax))
-//			std::cout << x1 << "s " << y1[7] - polarisation << " ";
-
-        vector<alglib::spline1dinterpolant> omega_int;
-        if (interpolatefields){
-            alglib::real_1d_array ts; // set up values for interpolation of precession axis
-            vector<alglib::real_1d_array> omega(3);
-            omega_int.resize(3);
-            const int int_points = 10;
-            ts.setlength(int_points + 1);
-            for (int i = 0; i < 3; i++)
-                omega[i].setlength(int_points + 1);
-
-            for (int i = 0; i <= int_points; i++){ // calculate precession axis at several points along trajectory step
-                double t = x1 + i*(x2 - x1)/int_points;
-                ts[i] = t;
-                p->SpinPrecessionAxis(t, stepper, field, omega[0][i], omega[1][i], omega[2][i]);
-            }
-
-            for (int i = 0; i < 3; i++)
-                alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
-        }
-
-
-        dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(1e-12, 1e-12, stepper_type());
-        spinstepper.initialize(spin, x1, std::abs(pi/p->GetGyromagneticRatio()/Babs1)); // initialize integrator with step size = half rotation
-        logger->PrintSpin(p, spinstepper, stepper, field);
-        unsigned int steps = 0;
-        while (true){
-            // take an integration step, SpinDerivs contains right-hand side of equation of motion
-            spinstepper.do_step([&](const state_type &y, state_type &dydx, const value_type &x){ p->SpinDerivs(y, dydx, x, stepper, field, omega_int); }); //std::bind(&TParticle::SpinDerivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, stepper, field, omega_int));
-            steps++;
-            double t = spinstepper.current_time();
-            if (t > x2){ // if stepper overshot, calculate end point and stop
-                t = x2;
-                spinstepper.calc_state(t, spin);
-            }
-            else
-                spin = spinstepper.current_state();
-
-            logger->PrintSpin(p, spinstepper, stepper, field);
-
-            if (t >= x2)
-                break;
-        }
-
-        // calculate new spin projection
-        polarisation = (spin[0]*B2[0] + spin[1]*B2[1] + spin[2]*B2[2])/Babs2/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
-    }
-    else if ((Babs1 < Bmax || Babs2 < Bmax)){ // if time outside selected ranges, parallel-transport spin along magnetic field
-        if (polarisation*polarisation >= 1){ // catch rounding errors
-            spin[0] = 0;
-            spin[1] = 0;
-        }
-        else{
-            std::uniform_real_distribution<double> phidist(0, 2.*pi);
-            double spinaz = phidist(mc); // random azimuth
-            spin[0] = sqrt(1 - polarisation*polarisation)*sin(spinaz);
-            spin[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
-        }
-        spin[2] = polarisation;
-        RotateVector(&spin[0], B2); // rotate spin vector onto magnetic field vector
-    }
-
-
-    if (Babs2 > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
-        p->DoPolarize(stepper, polarisation, flipspin, mc);
-        spin[0] = B2[0]*y2[7]/Babs2;
-        spin[1] = B2[1]*y2[7]/Babs2;
-        spin[2] = B2[2]*y2[7]/Babs2;
-    }
-}

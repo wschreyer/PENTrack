@@ -4,6 +4,8 @@ simtype 1
 simcount 100000
 simtime 0.001
 
+ROOTlog 1
+
 secondaries 0
 
 

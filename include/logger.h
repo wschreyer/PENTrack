@@ -18,6 +18,7 @@
 class TLogger {
 protected:
     TConfig config;
+    double lastspinlog;
     virtual void Log(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) = 0;
 public:
     virtual ~TLogger(){ };
@@ -33,7 +34,7 @@ public:
      * @param field TFieldManager containing all electromagnetic fields
      * @param logType Select either endlog or snapshotlog
      */
-    void Print(const std::unique_ptr<TParticle>& p, const value_type &x, const TStep &stepper, const state_type &spin,
+    void Print(const std::unique_ptr<TParticle>& p, const double &t, const TStep &stepper,
             const TGeometry &geom, const TFieldManager &field, const std::string suffix = "end");
 
     /**
@@ -48,7 +49,7 @@ public:
      * @param field TFieldManager containing all electromagnetic fields
      * @param logType Select either endlog or snapshotlog
      */
-    void PrintSnapshot(const std::unique_ptr<TParticle>& p, const TStep& stepper, const state_type &spin, const TGeometry &geom, const TFieldManager &field);
+    void PrintSnapshot(const std::unique_ptr<TParticle>& p, const TStep& stepper, const TGeometry &geom, const TFieldManager &field);
 
 
     /**
@@ -63,7 +64,7 @@ public:
      * @param field TFieldManager containing all electromagnetic fields
      */
     void PrintTrack(const std::unique_ptr<TParticle>& p, const TStep &stepper,
-                    const state_type &spin, const solid &sld, const TFieldManager &field);
+                    const solid &sld, const TFieldManager &field);
 
 
     /**
@@ -91,7 +92,7 @@ public:
      * @param stepper Trajectory integrator used to calculate spin-precession axis at time t
      * @param field TFieldManager containing all electromagnetic fields
      */
-    void PrintSpin(const std::unique_ptr<TParticle>& p, const dense_stepper_type& spinstepper,
+    void PrintSpin(const std::unique_ptr<TParticle>& p, const double& t, const std::array<double, 3>& spin,
                    const TStep &trajectory_stepper, const TFieldManager &field);
 
     virtual void Close(){ };
@@ -102,7 +103,7 @@ private:
     std::map<std::string, std::ofstream> logstreams;
     void Log(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) final;
 public:
-    TTextLogger(TConfig& aconfig){ config = aconfig; };
+    TTextLogger(TConfig& aconfig){ config = aconfig; lastspinlog = std::numeric_limits<double>::lowest(); };
     ~TTextLogger() final { for (auto &s: logstreams){ s.second.close(); } };
 };
 

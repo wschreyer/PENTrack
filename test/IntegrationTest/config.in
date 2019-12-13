@@ -3,6 +3,8 @@ simtype 1
 simcount 1000
 simtime 10
 
+ROOTlog 1
+
 secondaries 0
 
 materials_file ../../in/materials.in

@@ -37,7 +37,7 @@ public:
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+	TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation,
 			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
 	
 protected:
@@ -49,7 +49,7 @@ protected:
 	 *
 	 * @return Return material potential [eV]
 	 */
-	double MaterialPotential(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const material &mat) const{
+	double MaterialPotential(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const int pol, const material &mat) const{
 		return mat.FermiReal*1e-9 - mat.InternalBField*GetMagneticMoment()*pol/ele_e;
 	}
 
@@ -188,7 +188,7 @@ protected:
 	 *
 	 * @return Returns potential energy plus Fermi-Potential of solid
 	 */
-	double GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const TFieldManager &field, const solid &sld) const override;
+	double GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const int pol, const TFieldManager &field, const solid &sld) const override;
 };
 
 

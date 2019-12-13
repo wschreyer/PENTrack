@@ -28,19 +28,27 @@
 struct TParticle{
 private:
 	std::string name; ///< particle name (has to be initialized in all derived classes!)
-	const long double q; ///< charge [C] (has to be initialized in all derived classes!)
-	const long double m; ///< mass [eV/c^2] (has to be initialized in all derived classes!)
-	const long double mu; ///< magnetic moment [J/T] (has to be initialized in all derived classes!)
-	const long double gamma; ///< gyromagnetic ratio [rad/(s T)] (has to be initialized in all derived classes!)
+	long double q; ///< charge [C] (has to be initialized in all derived classes!)
+	long double m; ///< mass [eV/c^2] (has to be initialized in all derived classes!)
+	long double mu; ///< magnetic moment [J/T] (has to be initialized in all derived classes!)
+	long double gamma; ///< gyromagnetic ratio [rad/(s T)] (has to be initialized in all derived classes!)
 	int particlenumber; ///< particle number
 	stopID ID; ///< particle fate (defined in globals.h)
 	
-	value_type tstart; ///< start time
-	value_type tend; ///< stop time
-	state_type ystart; ///< state vector before integration (position, velocity, proper time, polarization, and path length)
-	state_type yend; ///< state vector after integration (position, velocity, proper time, polarization, and path length)
-	state_type spinstart; ///< spin vector before integration
-	state_type spinend; ///< spin vector after integration
+	double tstart; ///< start time
+	double tend; ///< stop time
+	std::array<double, 3> posstart;
+	std::array<double, 3> posend;
+	std::array<double, 3> vstart;
+	std::array<double, 3> vend;
+	int polstart;
+	int polend;
+	double pathlength;
+	double propertime;
+	std::array<double, 3> spinstart; ///< spin vector before integration
+	std::array<double, 3> spinend; ///< spin vector after integration
+	double spinphase;
+	double spinintegrationtime;
 	solid solidstart; ///< solid in which the particle started
 	solid solidend; ///< solid in which particle stopped
 
@@ -106,42 +114,27 @@ public:
 	 *
 	 * @return Time when particle was created
 	 */
-	value_type GetInitialTime() const { return tstart; };
+	double GetInitialTime() const { return tstart; };
 
 	/**
 	 * Return time when particle was stopped
 	 *
 	 * @return Time when particle was stopped
 	 */
-	value_type GetFinalTime() const { return tend; };
+	double GetFinalTime() const { return tend; };
 
-	/**
-	 * Return initial state of particle (position, velocity, proper time, and polarization)
-	 *
-	 * @return Initial state of particle
-	 */
-	state_type GetInitialState() const { return ystart; };
-
-	/**
-	 * Return final state of particle (position, velocity, proper time, and polarization)
-	 *
-	 * @return Final state of particle
-	 */
-	state_type GetFinalState() const { return yend; };
-
-	/**
-	 * Return initial spin vector of particle
-	 *
-	 * @return Initial spin vector of particle
-	 */
-	state_type GetInitialSpin() const { return spinstart; };
-
-	/**
-	 * Return final spin vector of particle
-	 *
-	 * @return Final spin vector of particle
-	 */
-	state_type GetFinalSpin() const { return spinend; };
+	std::array<double, 3> GetInitialPosition() const { return posstart; };
+	std::array<double, 3> GetFinalPosition() const { return posend; };
+	std::array<double, 3> GetInitialVelocity() const { return vstart; };
+	std::array<double, 3> GetFinalVelocity() const { return vend; };
+	int GetInitialPolarization() const { return polstart; };
+	int GetFinalPolarization() const { return polend; };
+	double GetFinalPathlength() const { return pathlength; };
+	double GetFinalProperTime() const { return propertime; };
+	std::array<double, 3> GetInitialSpin() const { return spinstart; };
+	std::array<double, 3> GetFinalSpin() const { return spinend; };
+	double GetFinalSpinPhase() const { return spinphase; };
+	double GetFinalSpinIntegrationTime() const { return spinintegrationtime; };
 
 	/**
 	 * Return solid in which particle was created
@@ -163,13 +156,6 @@ public:
 	 * @return Maximal total energy
 	 */
 	double GetMaxTotalEnergy() const { return Hmax; };
-
-	/**
-	 * Return total length of particle trajectory
-	 *
-	 * @return Length of trajectory
-	 */
-	double GetTrajectoryLength() const { return yend[8]; };
 
 	/**
 	 * Return number of times particle hit any part of geometry
@@ -226,7 +212,8 @@ public:
 
 	void SetStopID(const stopID aID){ ID = aID; }
 
-	void SetFinalState(const value_type& x, const state_type& y, const state_type& spin, const solid& sld);
+	void SetFinalState(const double& t, const std::array<double, 3>& pos, const std::array<double, 3>& v, const int& polarization, const double& propert, const double& path,
+					const std::array<double, 3>& spin, const double& phase, const double& spintime, const solid& sld);
 
 	/**
 	 * Constructor, initializes TParticle::type, TParticle::q, TParticle::m, TParticle::mu
@@ -252,11 +239,8 @@ public:
 	 * @param afield TFieldManager containing all electromagnetic fields
 	 */
 	TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
-			const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+			const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation,
 			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
-
-	TParticle(const TParticle &p) = delete; ///< TParticle is not copyable
-	TParticle& operator=(const TParticle &p) = delete; ///< TParticle is not copyable
 
 	/**
 	 * Destructor, deletes secondaries
@@ -274,7 +258,7 @@ public:
 	 * @param dydx Returns derivatives of y with respect to x
 	 * @param x Time
 	 */
-	void derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager &field) const;
+	std::array<double, 3> EquationOfMotion(const double &t, const std::array<double, 3>& pos, const std::array<double, 3>& v, const int& polarization, const TFieldManager &field) const;
 
 
     /**
@@ -290,7 +274,8 @@ public:
 	 * @param dBidxj Spatial derivatives of magnetic field
 	 * @param E Electric field
 	 */
-	void EquationOfMotion(const state_type &y, state_type &dydx, const value_type x, const double B[3], const double dBidxj[3][3], const double E[3]) const;
+	std::array<double, 3> EquationOfMotion(const double &t, const std::array<double, 3>& pos, const std::array<double, 3>& v, const int& polarization,
+										const double B[3], const double dBidxj[3][3], const double E[3]) const;
 
 
     /**
@@ -340,7 +325,7 @@ public:
      */
     void DoDecay(const TStep &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
-    void DoPolarize(TStep &stepper, const double polarization, const bool flipspin, TMCGenerator &mc);
+    void DoPolarize(TStep &stepper, const TFieldManager &field, const bool flipspin, TMCGenerator &mc);
 
     /**
 	 * Calculate spin precession axis.
@@ -353,7 +338,7 @@ public:
 	 * @param Omegay Returns y component of precession axis in lab frame
 	 * @param Omegaz Returns z component of precession axis in lab frame
 	 */
-	void SpinPrecessionAxis(const double t, const TStep &stepper, const TFieldManager &field, double &Omegax, double &Omegay, double &Omegaz) const;
+	std::array<double, 3> SpinPrecessionAxis(const double t, const TStep &stepper, const TFieldManager &field) const;
 
 	/**
 	 * Calculate spin precession axis.
@@ -367,7 +352,7 @@ public:
 	 * @param dydt Right-hand side of particle's equation of motion, velocity and acceleration required to calculate vxE effect and Thomas precession
 	 * @param Omega Returns precession axis as 3-vector in lab frame
 	 */
-	void SpinPrecessionAxis(const double t, const double B[3], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const;
+	std::array<double, 3> SpinPrecessionAxis(const double t, const double B[3], const double E[3], const std::array<double, 3> &v, const std::array<double, 3> &a) const;
 
     /**
 	 * Equations of motion of spin vector.
@@ -380,8 +365,7 @@ public:
 	 * @param stepper Trajectory integrator used to calculate spin-precession axis
 	 * @param omega Vector of three splines used to interpolate spin-precession axis (can be empty)
 	 */
-	void SpinDerivs(const state_type &y, state_type &dydx, const value_type x,
-			const TStep &stepper, const TFieldManager &field, const std::vector<alglib::spline1dinterpolant> &omega_int) const;
+	std::array<double, 3> SpinEquationOfMotion(const double &t, const std::array<double, 3> &spin, const std::array<double, 3> &omega) const;
 
 	/**
 	 * Calculate kinetic energy.
@@ -461,7 +445,7 @@ public:
 	 *
 	 * @return Returns potential energy [eV]
 	 */
-	virtual double GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const double pol, const TFieldManager &field, const solid &sld) const;
+	virtual double GetPotentialEnergy(const double t, const std::array<double, 3> &pos, const std::array<double, 3> &v, const int pol, const TFieldManager &field, const solid &sld) const;
 };
 
 #endif // PARTICLE_H__
