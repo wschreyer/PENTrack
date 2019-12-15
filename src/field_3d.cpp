@@ -471,8 +471,8 @@ void TabField3::BField(const double x, const double y, const double z, const dou
         if (dBidxj != nullptr){
             for (unsigned j = 0; j < 3; ++j){
                 dBidxj[i][j] *= Bscale;
-                FieldSmthr(x, y, z, B[i], dBidxj[i]); // apply field smoothing to each component
             }
+            FieldSmthr(x, y, z, B[i], dBidxj[i]); // apply field smoothing to each component
         }
         else
             FieldSmthr(x, y, z, B[i], nullptr);
