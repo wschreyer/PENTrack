@@ -13,11 +13,14 @@ std::istream& operator>>(std::istream &str, material &mat){
 		throw std::runtime_error((boost::format("Could not read material %s!") % mat.name).str());
     str >> mat.InternalBField;
     if (!str){
-        std::cout << "No internal magnetic field given for material " << mat.name << ". Assuming 0T.\n";
+        std::cout << "No internal magnetic field set for material " << mat.name << ". Assuming 0T.\n";
         mat.InternalBField = 0.;
     }
-    mat.ModifiedLambertProb = 0.;
     str >> mat.ModifiedLambertProb;
+	if (not str){
+		std::cout << "No modified-Lambert reflection set for material " << mat.name << ". Assuming 0.\n";
+	    mat.ModifiedLambertProb = 0.;
+	}
 
     int diffmodels = 0;
     if (mat.DiffProb != 0) ++diffmodels;
