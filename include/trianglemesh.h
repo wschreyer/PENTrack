@@ -44,8 +44,8 @@ typedef CKernel::Point_3 CPoint; ///< CGAL point type
 typedef CKernel::Vector_3 CVector; ///< CGAL vector type
 typedef CKernel::Iso_cuboid_3 CCuboid; ///< CGAL cuboid type
 
-typedef CGAL::Surface_mesh<CPoint> CMesh;
-typedef CGAL::AABB_face_graph_triangle_primitive<CMesh> CPrimitive;
+typedef CGAL::Surface_mesh<CPoint> CMesh; ///< CGAL triangle mesh type
+typedef CGAL::AABB_face_graph_triangle_primitive<CMesh> CPrimitive; ///< CGAL triangle type contained in AABB tree
 typedef CGAL::AABB_traits<CKernel, CPrimitive> CTraits; ///< CGAL triangle traits type
 typedef CGAL::AABB_tree<CTraits> CTree; ///< CGAL AABB tree type containing CPrimitives
 typedef boost::optional< CTree::Intersection_and_primitive_id<CSegment>::Type > CIntersection; ///< CGAL segment-triangle intersection type
@@ -64,8 +64,9 @@ struct TCollision{
 	 * Create TCollision object
 	 *
 	 * @param segment Segment that collided with mesh
-	 * @param tri Triangle the segment collided with
+	 * @param n Normal vector of hit surface
 	 * @param point Collision point
+	 * @param aID ID of hit surface
 	 */
 	TCollision(const CSegment &segment, const CVector &n, const CPoint &point, const unsigned aID){
       s = /*std::min(1., std::max(0.,*/ (point - segment.start())*segment.to_vector()/segment.squared_length()/*))*/;
@@ -78,6 +79,8 @@ struct TCollision{
 
 	/**
 	 * Overloaded operator, needed for sorting
+	 * 
+	 * Ascending distance along segment, descending ID if distance equal
 	 */
 	inline bool operator < (const TCollision c) const {
 		if (s == c.s)
@@ -94,14 +97,17 @@ struct TCollision{
  */
 class TTriangleMesh{
 private:
+	/**
+	 * Class containing triangle mesh and AABB tree for each loaded StL file
+	 */
     struct CTriangleMesh{
-        std::unique_ptr<CMesh> mesh;
-        std::unique_ptr<CTree> tree;
-        int ID;
-        std::discrete_distribution<size_t> triangle_sampler;
+        std::unique_ptr<CMesh> mesh; ///< Triangle mesh
+        std::unique_ptr<CTree> tree; ///< Axis-aligned bounding-box tree for fast intersection search
+        int ID; ///< unique ID for each StL file
+        std::discrete_distribution<size_t> triangle_sampler; ///< Probability distribution to randomly sample triangles from mesh weighted by their areas.
     };
-	std::vector<CTriangleMesh> meshes;
-	std::discrete_distribution<size_t> mesh_sampler;
+	std::vector<CTriangleMesh> meshes; ///< List of triangle meshes from all loaded StL files
+	std::discrete_distribution<size_t> mesh_sampler; ///< Probability distribution to randomly sample meshes weighted by their areas
 
 public:
 	/**
@@ -135,6 +141,11 @@ public:
 		return InSolid(p[0], p[1], p[2]);
 	}
 
+	/**
+	 * Get overall bounding box containing all meshes
+	 * 
+	 * @return Overall bounding box.
+	 */
 	CCuboid GetBoundingBox() const{
 	    std::vector<CCuboid> b;
 	    std::transform(meshes.begin(), meshes.end(), std::back_inserter(b), [](const CTriangleMesh &m){ return m.tree->bbox(); });
@@ -178,6 +189,10 @@ public:
 
 	/**
 	 * Check if point is contained in bounding box
+	 * 
+	 * @param p Point
+	 * 
+	 * @return Returns true if point is contained in bounding box
 	 */
 	template<class Object> bool InBoundingBox(Object p) const{
         return std::any_of(meshes.begin(), meshes.end(), [&p](const CTriangleMesh &mesh){ return CGAL::do_intersect(p, mesh.tree->bbox()); });
@@ -185,6 +200,12 @@ public:
 
 	/**
 	 * Return random point on surface
+	 * 
+	 * @param p Returned point
+	 * @param n Returned normal vector of surface at point
+	 * @param ID Returned ID of surface at point
+	 * @param rand Random number generator
+	 * @param bbox Bounding box that point should be contained in
 	 */
 	template<class Point, class Vector, class RandomGenerator, class BoundingBox> void RandomPointOnSurface(Point &p, Vector &n, unsigned &ID, RandomGenerator &rand, BoundingBox bbox){
         size_t meshidx;
@@ -212,6 +233,10 @@ public:
 
 	/**
 	 * Return random point in volume bounded by mesh
+	 * 
+	 * @param rand Random number generator
+	 * 
+	 * @return Point
 	 */
 	template<class RandomGenerator> std::array<double, 3> RandomPointInVolume(RandomGenerator &rand) const{
         std::array<double, 3> p;
@@ -223,6 +248,10 @@ public:
 
 	/**
 	 * Return random point in bounding box
+	 * 
+	 * @param rand Random number generator
+	 * 
+	 * @return Point
 	 */
     template<class RandomGenerator> std::array<double, 3> RandomPointInBoundingBox(RandomGenerator &rand) const{
         std::vector<double> bvols;

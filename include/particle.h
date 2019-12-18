@@ -60,7 +60,7 @@ private:
 	long double noflipprob; ///< total probability of NO spinflip calculated by spin tracking
 	int Nstep; ///< number of integration steps
 
-	std::vector<std::unique_ptr<TParticle> > secondaries;
+	std::vector<std::unique_ptr<TParticle> > secondaries; ///< list of secondary particles
 public:
 	/**
 	 * Return name of particle
@@ -188,6 +188,11 @@ public:
 	 */
 	int GetNumberOfHits() const { return Nhit; };
 
+	/**
+	 * Return number of times the particle's spin was flipped
+	 * 
+	 * @return Number of spin flips
+	 */
 	int GetNumberOfSpinflips() const { return Nspinflip; };
 
 	/**
@@ -232,10 +237,28 @@ public:
 	 */
 	double GetFinalKineticEnergy() const;
 
+	/**
+	 * Return list of secondary particles
+	 * 
+	 * @return List of particles
+	 */
 	std::vector<std::unique_ptr<TParticle> >& GetSecondaryParticles(){ return secondaries; }
 
+	/**
+	 * Set ID of particle
+	 * 
+	 * @param aID ID to set
+	 */
 	void SetStopID(const stopID aID){ ID = aID; }
 
+	/**
+	 * Set final state of particles
+	 * 
+	 * @param x Stop time
+	 * @param y Stop state (position, velocity, proper time, polarization, trajectory length)
+	 * @param spin 3-vector of particle spin
+	 * @param sld Solid the particle was stopped in
+	 */
 	void SetFinalState(const value_type& x, const state_type& y, const state_type& spin, const solid& sld);
 
 	/**
@@ -283,6 +306,7 @@ public:
 	 * @param y	State vector (position, velocity, proper time, and polarization)
 	 * @param dydx Returns derivatives of y with respect to x
 	 * @param x Time
+	 * @param field TFieldManager used to calculate magnetic and electric fields
 	 */
 	void derivs(const state_type &y, state_type &dydx, const value_type x, const TFieldManager *field) const;
 
@@ -315,7 +339,8 @@ public:
      * @param stepper Trajectory integrator, used to calculate intermediate state vectors
      * @param currentsolid Material the particle is in during this step
      * @param mc Random-number generator
-     * @param geom Geometry
+     * @param field TFieldManager used to calculate electric and magnetic fields
+	 * 
      * @return Returns true if trajectory was altered
      */
     void DoStep(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const dense_stepper_type &stepper,
@@ -330,10 +355,11 @@ public:
      * @param y1 Start point of line segment
      * @param x2 End time of line segment
      * @param y2 End point of line segment
-     * @param stepper Trajectory integrator, used to calculate intermediate state vectors
+	 * @param normal Normal vector of the hit surface
+	 * @param leaving Material that particle is leaving
+	 * @param entering Material that particle is entering
      * @param mc Random-number generator
-     * @param geom Geometry
-     * @param hitlog Set true if hits should be logged to hitlog.out
+	 * 
      * @return Returns true if trajectory was altered
      */
     void DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
@@ -349,10 +375,18 @@ public:
      * @param mc Random-number generator
      * @param geom Geometry of the simulation
      * @param field TFieldManager containing all electromagnetic fields
-     * @param secondaries Add any secondary particles produced in this decay
      */
     void DoDecay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
 
+	/**
+	 * Randomly set polarization of particle
+	 * 
+	 * @param t Time
+	 * @param y Returns state (position, velocity, proper time, polarization, path length) after polarization was set
+	 * @param polarization Projection of spin onto polarization axis [-1..1]
+	 * @param flipspin Indicates if polarization should actually be able to flip
+	 * @param mc TMCGenerator random number generator
+	 */
     void DoPolarize(const double t, state_type &y, const double polarization, const bool flipspin, TMCGenerator &mc);
 
     /**
@@ -362,6 +396,7 @@ public:
 	 *
 	 * @param t Time
 	 * @param stepper Trajectory integrator used to calculate position and velocity at time t
+	 * @param field TFieldManager used to calculate electric and magnetic fields
 	 * @param Omegax Returns x component of precession axis in lab frame
 	 * @param Omegay Returns y component of precession axis in lab frame
 	 * @param Omegaz Returns z component of precession axis in lab frame
@@ -374,11 +409,12 @@ public:
 	 * Includes relativistic distortion of magnetic and electric fields and Thomas precession.
 	 *
 	 * @param t Time
-	 * @param stepper Trajectory integrator used to calculate position and velocity at time t
 	 * @param B Magnetic field
 	 * @param E Electric field
 	 * @param dydt Right-hand side of particle's equation of motion, velocity and acceleration required to calculate vxE effect and Thomas precession
-	 * @param Omega Returns precession axis as 3-vector in lab frame
+	 * @param Omegax Returns x component of precession axis
+	 * @param Omegay Returns y component of precession axis
+	 * @param Omegaz Returns z component of precession axis
 	 */
 	void SpinPrecessionAxis(const double t, const double B[3], const double E[3], const state_type &dydt, double &Omegax, double &Omegay, double &Omegaz) const;
 
@@ -391,7 +427,8 @@ public:
 	 * @param dydx Calculated time derivative of spin vector
 	 * @param x Current time
 	 * @param stepper Trajectory integrator used to calculate spin-precession axis
-	 * @param omega Vector of three splines used to interpolate spin-precession axis (can be empty)
+	 * @param field TFieldManager used to calculate magnetic and electric fields
+	 * @param omega_int Vector of three splines used to interpolate spin-precession axis (can be empty)
 	 */
 	void SpinDerivs(const state_type &y, state_type &dydx, const value_type x,
 			const dense_stepper_type &stepper, const TFieldManager *field, const std::vector<alglib::spline1dinterpolant> &omega_int) const;

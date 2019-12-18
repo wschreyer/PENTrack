@@ -55,36 +55,59 @@ extern long long int jobnumber; ///< job number, read from command line paramter
 extern boost::filesystem::path configpath; ///< path to configuration file, read from command line paramters
 extern boost::filesystem::path outpath; ///< path where the log file should be saved to, read from command line parameters
 
+
+/**
+ * Class printing a progress bar when using increment operator
+ */
 class progress_display{
 private:
-    unsigned long _count;
-    unsigned long _expected_count;
-    std::ostream& _os;
-    std::string _s1;
+    unsigned long _count; ///< Current count
+    unsigned long _expected_count; ///< Total count
+    std::ostream& _os; ///< Output stream
+    std::string _s1; ///< Prefix string
 
 public:
+    /**
+     * Constructor
+     * 
+     * @param expected_count Expected total count. Printed percentage = current count/total count
+     */
     progress_display( unsigned long expected_count ): _os(std::cout){
         restart(expected_count);
     }
-    // Effects: restart(expected_count)
 
+    /**
+     * Constructor
+     * 
+     * @param expected_count Expected total count. Printed percentage = current count/total count
+     * @param os Output stream
+     * @param s1 Prefix string, defaults to line break.
+     */
     progress_display( unsigned long expected_count,
                       std::ostream& os,
                       const std::string & s1 = "\n"): _os(std::cout){
         _s1 = s1;
         restart(expected_count);
     }
-    // Effects: save copy of leading strings, restart(expected_count)
 
+    /**
+     * Reset counters
+     * 
+     * @param expected_count Total count to reset to
+     */
     void restart( unsigned long expected_count ){
         _expected_count = expected_count;
         _count = 0;
         _os << _s1 << "0%";
     }
-    //  Effects: display appropriate scale on three lines,
-    //  prefaced by stored copy of s1, s2, s3, respectively, from constructor
-    //  Postconditions: count()==0, expected_count()==expected_count
 
+    /**
+     * Increment counter by increment
+     * 
+     * @param increment Increment counter by this much
+     * 
+     * @return Returns current count
+     */
     unsigned long operator+=( unsigned long increment ){
         unsigned long acount = _count;
         _count += increment;
@@ -100,26 +123,34 @@ public:
         }
         return _count;
     }
-    //  Effects: Display appropriate progress tic if needed.
-    //  Postconditions: count()== original count() + increment
-    //  Returns: count().
 
+    /**
+     * Increment counter
+     * 
+     * @return current count
+     */
     unsigned long operator++(){
         return operator+=(1);
     }
-    //  Returns: operator+=( 1 ).
 
+    /**
+     * Get current count
+     * 
+     * @return Returns current count.
+     */
     unsigned long count() const{
         return _count;
     }
-    //  Returns: The internal count.
 
+    /**
+     * Get total count
+     * 
+     * @return total count
+     */
     unsigned long expected_count() const{
         return _expected_count;
     }
-    //  Returns: The expected_count from the constructor.
-
-}; // progress_display
+};
 
 /**
  * Rotate a vector.

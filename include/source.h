@@ -88,6 +88,13 @@ class TSurfaceSource: public TParticleSource{
 protected:
 	double Enormal; ///< Boost given to particles starting from this surface
 
+	/**
+	 * Return bounding box containing the source surface.
+	 * 
+	 * Virtual function, must be implemented by derived classes.
+	 * 
+	 * @return Bounding box
+	 */
 	virtual CCuboid GetSourceVolumeBoundingBox() const = 0;
 
 	/**
@@ -241,8 +248,20 @@ public:
  */
 class TCylindricalSurfaceSource: public TSurfaceSource{
 private:
-	double rmin, rmax, phimin, phimax, zmin, zmax;
+	double rmin; ///< inner radius of source cylinder
+	double rmax; ///< outer radius of source cylinder
+	double phimin; ///< minimum azimuth of source cylinder
+	double phimax; ///< maximum azimuth of source cylinder
+	double zmin; ///< bottom of source cylinder
+	double zmax; ///< top of source cylinder
 
+	/**
+	 * Return bounding box containing the source surface.
+	 * 
+	 * Returns bounding box of source cylinder
+	 * 
+	 * @return Bounding box
+	 */
 	CCuboid GetSourceVolumeBoundingBox() const final{
 	    return CCuboid(CPoint(-rmax, -rmax, zmin), CPoint(rmax, rmax, zmax));
 	}
@@ -263,7 +282,6 @@ public:
 	 * Selects all triangles from TGeometry whose vertices are inside the cylindrical coordinate range
 	 *
 	 * @param sourceconf Map of source options
-	 * @param geometry TGeometry in which particles will be created
 	 */
 	explicit TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf):
 			TSurfaceSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){}
@@ -313,14 +331,37 @@ public:
  */
 class TSTLSurfaceSource: public TSurfaceSource{
 private:
-	TTriangleMesh sourcevol;
+	TTriangleMesh sourcevol; ///< Triangle mesh read from StL file
+
+	/**
+	 * Check if point is contained in source volume bounded by triangle mesh
+	 * 
+	 * @param x X coordinate of point
+	 * @param y Y coordinate of point
+	 * @param z Z coordinate of point
+	 * 
+	 * @return Returns true if point is contained in source volume.
+	 */
 	bool InSourceVolume(const double x, const double y, const double z) const final{
 		return sourcevol.InSolid(x, y, z);
+
+	/**
+	 * Check if point is contained in source volume bounded by triangle mesh
+	 * 
+	 * @param p Point
+	 * 
+	 * @return Returns true if point is contained in source volume.
+	 */
 	}
 	bool InSourceVolume(const std::array<double, 3> &p) const{
 	    return sourcevol.InSolid(p[0], p[1], p[2]);
 	}
 
+	/**
+	 * Return bounding box containing the source surface.
+	 * 
+	 * @return Returns bounding box of triangle mesh
+	 */
     CCuboid GetSourceVolumeBoundingBox() const final{
         return sourcevol.GetBoundingBox();
     }
@@ -331,7 +372,6 @@ public:
 	 * Search for all triangles in geometry's mesh which are inside the STL solid given in sourcefile.
 	 *
 	 * @param sourceconf Map of source options
-	 * @param geometry TGeometry in which particles will be created
 	 */
 	explicit TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf): TSurfaceSource(sourceconf){
 	    boost::filesystem::path STLfile;

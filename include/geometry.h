@@ -51,6 +51,13 @@ struct solid{
 	 */
 	bool operator< (const solid s) const { return ID > s.ID; };
 
+	/**
+	 * Check if solid is ignored at a certain time
+	 * 
+	 * @param t Time
+	 * 
+	 * @return Returns true if solid is ignored at time t
+	 */
 	bool is_ignored(const double t) const{
 	    return std::any_of(ignoretimes.begin(), ignoretimes.end(),
 	            [&t](const std::pair<double, double> &its){ return t >= its.first && t < its.second; }

@@ -110,6 +110,14 @@ class TabField: public TField{
 				double &V, double Ei[3]) const override;
 };
 
+
+/**
+ * Instantiate a 2D field map created with OPERA
+ * 
+ * @param params Parameter string read from config file.
+ * 
+ * @return Returns created 2D field map.
+ */
 std::unique_ptr<TabField> ReadOperaField2(const std::string &params);
 
 #endif // FIELD_2D_H_

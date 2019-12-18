@@ -99,11 +99,10 @@ private:
 		 *
          * @param xyzTab Lists of x, y, and z coordinates of grid points
          * @param BTab Lists of Bx, By, and Bz magnetic field components on grid points
-         * @param Vtab List of electric potentials on grid points
+         * @param VTab List of electric potentials on grid points
 		 * @param Bscale Time-dependent scaling formula for magnetic field
 		 * @param Escale Time-dependent scaling formula for electric field
 		 * @param aBoundaryWidth Sets TabField3::BoundaryWidth
-         * @param alengthconv Factor to multiply length units in file with to convert them to meters
 		 */
         TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std::array<std::vector<double>, 3> &BTab, const std::vector<double> &VTab,
                   const std::string &Bscale, const std::string &Escale, const double aBoundaryWidth);
