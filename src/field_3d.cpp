@@ -149,8 +149,9 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
     ss >> fieldtype;
     if (fieldtype == "3Dtable"){
         ss >> ft >> Bscale >> Escale >> BoundaryWidth; // read fieldtype, tablefilename, and rest of parameters
-        std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA3D format. I'm assuming that file " << ft << " is using centimeters, Gauss, and Volts as units.\n";
+        std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA3D format. I'm assuming that file " << ft << " is using centimeters, Gauss, Volt/centimeter, and Volts as units.\n";
         Bscale = "(" + Bscale + ")*0.0001"; // scale magnetic field to Tesla
+        Escale = "(" + Escale + ")*100"; // scale electric field to Volt/meter
         lengthconv = 0.01;
     }
     else if (fieldtype == "OPERA3D"){
