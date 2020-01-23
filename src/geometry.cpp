@@ -11,18 +11,33 @@ std::istream& operator>>(std::istream &str, material &mat){
     str >> mat.FermiReal >> mat.FermiImag >> mat.DiffProb >> mat.SpinflipProb >> mat.RMSRoughness >> mat.CorrelLength;
 	if (!str)
 		throw std::runtime_error((boost::format("Could not read material %s!") % mat.name).str());
-	if (mat.DiffProb != 0 && (mat.RMSRoughness != 0 || mat.CorrelLength != 0))
-		throw std::runtime_error((boost::format("You have set both LambertReflectionProbability and RMSRoughness/CorrelationLength for material %s! "\
-												"Now I don't know if I should use Lambertian reflection or micro-roughness reflection.") % mat.name).str());
     str >> mat.InternalBField;
     if (!str){
-        std::cout << "No internal magnetic field given for material " << mat.name << ". Assuming 0T.\n";
+        std::cout << "No internal magnetic field set for material " << mat.name << ". Assuming 0T.\n";
         mat.InternalBField = 0.;
+    }
+    str >> mat.ModifiedLambertProb;
+	if (not str){
+		std::cout << "No modified-Lambert reflection set for material " << mat.name << ". Assuming 0.\n";
+	    mat.ModifiedLambertProb = 0.;
+	}
+
+    int diffmodels = 0;
+    if (mat.DiffProb != 0) ++diffmodels;
+    if (mat.RMSRoughness != 0 || mat.CorrelLength != 0) ++diffmodels;
+    if (mat.ModifiedLambertProb != 0) ++diffmodels;
+    if (diffmodels > 1){
+        throw std::runtime_error((boost::format("You have set parameters for more than one diffuse-reflection model for material %s! "\
+												"Now I don't know which to use.") % mat.name).str());
+    }
+    if (diffmodels == 0) {
+        std::cout << "No diffuse reflection set for material " << mat.name << "\n";
     }
 	return str;
 }
 std::ostream& operator<<(std::ostream &str, const material &mat){
-	str << mat.name << " " << mat.FermiReal << " " << mat.FermiImag << " " << mat.DiffProb << " " << mat.SpinflipProb << " " << mat.RMSRoughness << " " << mat.CorrelLength << "\n";
+	str << mat.name << " " << mat.FermiReal << " " << mat.FermiImag << " " << mat.DiffProb << " " << mat.SpinflipProb << " ";
+	str << mat.RMSRoughness << " " << mat.CorrelLength << " " << mat.InternalBField << " " << mat.ModifiedLambertProb << "\n";
 	if (!str)
 		throw std::runtime_error((boost::format("Could not write material %s!") % mat.name).str());
 	return str;
