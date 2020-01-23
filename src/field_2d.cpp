@@ -39,8 +39,9 @@ std::unique_ptr<TabField> ReadOperaField2(const std::string &params){
     ss >> fieldtype;
     if (fieldtype == "2Dtable"){
         ss >> ft >> Bscale >> Escale;
-        std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA2D format. I'm assuming that file " << ft << " is using centimeters, Gauss, and Volts as units.\n";
+        std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA2D format. I'm assuming that file " << ft << " is using centimeters, Gauss, Volt/centimeter, and Volts as units.\n";
         Bscale = "(" + Bscale + ")*0.0001"; // scale magnetic field to Tesla
+        Escale = "(" + Escale + ")*100"; // scale electric field to Volt/meter
         lengthconv = 0.01;
     }
     else if (fieldtype == "OPERA2D") {
@@ -246,29 +247,29 @@ TabField::TabField(const std::string &tabfile, const std::string &Bscale, const 
 		cout << "Er ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[0], 1, Erc);
-		VTab.setlength(0); // ignore potential if electric field map found
+        VTab.setlength(0); // ignore potential if electric field map found
 		fErc = true;
 	}
 	if (ETabs[1].length() > 0){
 		cout << "Ephi ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[1], 1, Ephic);
-		VTab.setlength(0); // ignore potential if electric field map found
+        VTab.setlength(0); // ignore potential if electric field map found
 		fEphic = true;
 	}
 	if (ETabs[2].length() > 0){
 		cout << "Ez ... ";
 		cout.flush();
 		alglib::spline2dbuildbicubicv(rind, m, zind, n, ETabs[2], 1, Ezc);
-		VTab.setlength(0); // ignore potential if electric field map found
+        VTab.setlength(0); // ignore potential if electric field map found
 		fEzc = true;
 	}
-	if (VTab.length() > 0){
-		cout << "V ... ";
-		cout.flush();
-		alglib::spline2dbuildbicubicv(rind, m, zind, n, VTab, 1, Vc);
-		fVc = true;
-	}
+    if (VTab.length() > 0){
+        cout << "V ... ";
+        cout.flush();
+        alglib::spline2dbuildbicubicv(rind, m, zind, n, VTab, 1, Vc);
+        fVc = true;
+    }
 	cout << "Done\n";
 }
 
@@ -326,17 +327,7 @@ void TabField::EField(const double x, const double y, const double z, const doub
 	double r = sqrt(x*x+y*y);
 	double Escale = EScaling(t);
 	if (Escale != 0 && r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
-        if (fVc){ // prefer potential interpolation over E-field interpolation
-            double Vloc, dVdrj[3], dummy;
-            // bicubic interpolation
-            alglib::spline2ddiff(Vc, r, z, Vloc, dVdrj[0], dVdrj[2], dummy);
-			double phi = atan2(y,x);
-            V = Vloc*Escale;
-            Ei[0] = -dVdrj[0]*cos(phi)*Escale;
-            Ei[1] = -dVdrj[0]*sin(phi)*Escale;
-            Ei[2] = -dVdrj[2]*Escale;
-        }
-		else if (fErc || fEphic || fEzc){
+		if (fErc || fEphic || fEzc){ // prefer E-field interpolation over potential interpolation
 			double phi = atan2(y,x);
 //			if (dEidxj == nullptr){
 				alglib::real_1d_array Er("[0]"), Ephi("[0]"), Ez("[0]");
@@ -381,5 +372,18 @@ void TabField::EField(const double x, const double y, const double z, const doub
 			}*/
 		}
 
-	}
+        else if (fVc){
+            double dVdrj[3], dummy;
+            // bicubic interpolation
+            alglib::spline2ddiff(Vc, r, z, V, dVdrj[0], dVdrj[2], dummy);
+            V *= Escale;
+            double phi = atan2(y,x);
+            Ei[0] = -dVdrj[0]*cos(phi)*Escale;
+            Ei[1] = -dVdrj[0]*sin(phi)*Escale;
+            Ei[2] = -dVdrj[2]*Escale;
+        }
+
+
+
+    }
 }

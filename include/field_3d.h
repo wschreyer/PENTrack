@@ -91,6 +91,21 @@ private:
 		 * @return Returns derivative of SmthrStp at parameter x
 		 */
 		double SmthrStpDer(const double x) const;
+
+		/**
+		 * Interpolate field component at a specific point.
+		 *
+		 * Uses a binary search to find the grid cell that contains the point (x,y,z) and and calculates the tricubic interpolation using the coefficients belonging to the grid cell.
+		 *
+		 * @param x X coordinate where the field shall be evaluated
+		 * @param y Y coordinate where the field shall be evaluated
+		 * @param z Z coordinate where the field shall be evaluated
+		 * @param coeffs 3D array of tricubic interpolation coefficients
+		 * @param F Returns interpolated field component
+		 * @param dFdxi Returns spatial derivatives of field component (can be null)
+		 */
+		void Interpolate(const double x, const double y, const double z,
+                            const field_type& coeffs, double &F, double dFdxi[3]) const;
 	public:
 		/**
 		 * Constructor.
