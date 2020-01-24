@@ -225,6 +225,17 @@ TROOTLogger::TROOTLogger(TConfig& aconfig){
     ROOTfile = new TFile(outfile.c_str(), "RECREATE");
     if (not ROOTfile->IsOpen())
         throw std::runtime_error("Could not open " + outfile.native());
+
+    TDirectory *rootdir = ROOTfile->mkdir("config", "config");
+    for (auto &section: aconfig){
+        TDirectory *dir = rootdir->mkdir(section.first.c_str(), section.first.c_str());
+        dir->cd();
+        for (auto &var: section.second){
+            TObjString s(var.second.c_str());
+            dir->WriteTObject(&s, var.first.c_str());
+        }
+    }
+    ROOTfile->cd();
 }
 
 void TROOTLogger::Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars){
