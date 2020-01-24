@@ -243,7 +243,7 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 			}
 		}
 		else{ // total reflection (Enormal < Estep)
-			double absprob = 1 - reflprob; // absorption probability
+			double absprob = 1 - reflprob + mat.LossPerBounce; // absorption probability during total reflection, add loss per bounce
 
 			if (UseMRModel){
 				double kc = sqrt(2*m_n*Estep)*ele_e/hbar;

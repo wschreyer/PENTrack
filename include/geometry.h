@@ -27,6 +27,7 @@ struct material{
 	double CorrelLength; ///< Correlation length of surface roughness, for MicroRoughness model reflections
     double InternalBField; ///< Internal magnetic field, for magnetized materials
     double ModifiedLambertProb; ///< Probability of diffuse reflection according to Modified Lambert model
+    double LossPerBounce; ///< Probability of loss when hitting the wall (independent of neutron energy)
 };
 
 ///Read material properties, except name, from input stream
