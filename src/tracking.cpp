@@ -93,6 +93,9 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
         }
 
         while (x1 < x){ // split integration step in pieces (x1,y1->x2,y2) to reduce chord length, go through all pieces
+            if (quit.load())
+                return;
+
             double l2 = pow(y[8] - y1[8], 2); // actual length of step squared
             double d2 = pow(y[0] - y1[0], 2) + pow(y[1] - y1[1], 2) + pow(y[2] - y1[2], 2); // length of straight line between start and end point of step squared
             double dev2 = 0.25*(l2 - d2); // max. possible squared deviation of real path from straight line
@@ -422,6 +425,9 @@ void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &sp
         logger->PrintSpin(p, x1, spinstepper, stepper, field);
         unsigned int steps = 0;
         while (true){
+            if (quit.load())
+                return;
+
             // take an integration step, SpinDerivs contains right-hand side of equation of motion
             spinstepper.do_step(std::bind(&TParticle::SpinDerivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, stepper, &field, omega_int));
             steps++;

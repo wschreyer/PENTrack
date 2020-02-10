@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include <atomic>
 
 #include <boost/filesystem.hpp>
 
@@ -28,6 +29,8 @@ enum simType {	PARTICLE = 1, ///< set simtype in configuration to this value to 
 				MR_THETA_OUT_ANGLE = 8, ///< set simtype in configuration to this value to output a 3d histogram of the MR model's diffuse reflection probability for every solid angle
 				MR_THETA_I_ENERGY = 9 ///< set simtype in configuration to this value to output a 3d histogram of the MR models' diffuse reflection probability for theta_i vs neutron energy
 };
+
+extern std::atomic<bool> quit;    // flag indicating that program was aborted by signal
 
 // physical constants
 extern const long double pi; ///< Pi
