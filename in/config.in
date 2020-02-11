@@ -193,7 +193,7 @@ lmax 9e99			# max trajectory length [m]
 
 ######### Logging options. You can add any combination of the listed variables to the *logvars lists by defining a formula in the FORMULAS section #######
 endlog 1			# print initial and final state to file [0/1]
-endlogvars vabs jobnumber particle tstart xstart ystart zstart vxstart vystart vzstart polstart Sxstart Systart Szstart Hstart Estart Bstart Ustart solidstart tend xend yend zend vxend vyend vzend polend Sxend Syend Szend Hend Eend Bend Uend solidend stopID Nspinflip spinflipprob Nhit Nstep trajlength Hmax wL
+endlogvars jobnumber particle tstart xstart ystart zstart vxstart vystart vzstart polstart Sxstart Systart Szstart Hstart Estart Bstart Ustart solidstart tend xend yend zend vxend vyend vzend polend Sxend Syend Szend Hend Eend Bend Uend solidend stopID Nspinflip spinflipprob Nhit Nstep trajlength Hmax wL
 
 tracklog 0			# print complete trajectory to file [0/1]
 tracklogvars jobnumber particle polarisation t x y z vx vy vz H E Bx dBxdx dBxdy dBxdz By dBydx dBydy dBydz Bz dBzdx dBzdy dBzdz Ex Ey Ez V
