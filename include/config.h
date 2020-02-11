@@ -61,7 +61,10 @@ public:
 	 * @return Returns map<string, string> of variables and parameters
 	 */
     std::map<std::string, std::string>& operator[](const std::string &section){
-        return _map.at(section);
+		auto it = _map.lower_bound(section);
+		if (it == _map.end() or it->first != section)
+			throw std::runtime_error("Section " + section + " not found in config file");
+		return it->second;
     }
 
 	/**

@@ -44,6 +44,7 @@ void merge_all(const char *filematch = "[0-9]+[A-Za-z]+.out", const char *path =
 				if (!tree) { // if tree does not yet exist
 					TString bdescriptor;
 					bdescriptor.ReadLine(infile); // read branch descriptor from file header
+					bdescriptor = bdescriptor.Strip();
 					bdescriptor.ReplaceAll(" ",":"); // format branch descriptor for root ("x y z" -> "x:y:z")
 
 					tree = new TNtupleD(logtype, logtype, bdescriptor.Data()); // create new tree with name logtype from filename 

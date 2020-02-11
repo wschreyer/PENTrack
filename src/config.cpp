@@ -193,8 +193,8 @@ std::ostream& operator<<(std::ostream &str, const TConfig &conf){
 }
 
 double EvalFormula(TConfig &config, const std::string formulaname, const std::map<std::string, double> &variables){
-    auto formula = config["FORMULAS"].find(formulaname);
-    if (formula == config["FORMULAS"].end())
+    auto formula = config["FORMULAS"].lower_bound(formulaname);
+    if (formula == config["FORMULAS"].end() or formula->first != formulaname)
         throw std::runtime_error("Formula " + formulaname + " not found in config file");
     exprtk::symbol_table<double> symbols;
     for (auto var: variables){
