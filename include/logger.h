@@ -22,6 +22,8 @@ class TLogger {
 protected:
     TConfig config; ///< configuration parameters read from config files
 
+    void Log(const std::string &particlename, const std::string &suffix, const std::map<std::string, double> &variables);
+
     /**
      * Virtual function actually doing the logging. Must be implemented in all derived classes
      * 
@@ -30,7 +32,7 @@ protected:
      * @param titles List of names for each variable
      * @param vars List of variables to be logged
      */
-    virtual void Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars) = 0;
+    virtual void DoLog(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) = 0;
 public:
     virtual ~TLogger(){ }; ///< Virtual desctructor (empty)
     /**
@@ -133,7 +135,7 @@ private:
      * @param titles List of variable names
      * @param vars List of variables to be logged
      */
-    void Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars) final;
+    void DoLog(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) override;
 public:
     /**
      * Constructor, reads relevant configuration parameters
@@ -164,7 +166,7 @@ private:
      * @param titles List of variable names
      * @param vars List of variables to be logged
      */
-    void Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars) final;
+    void DoLog(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) override;
 public:
     /**
      * Constructor, reads relevant configuration parameters from config and opens ROOT file

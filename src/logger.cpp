@@ -28,19 +28,6 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, con
     if (not log)
         return;
 
-    vector<string> titles = {"jobnumber", "particle",
-                             "tstart", "xstart", "ystart", "zstart",
-                             "vxstart", "vystart", "vzstart", "polstart",
-                             "Sxstart", "Systart", "Szstart",
-                             "Hstart", "Estart", "Bstart",
-                             "Ustart", "solidstart",
-                             "tend", "xend", "yend", "zend",
-                             "vxend", "vyend", "vzend", "polend",
-                             "Sxend", "Syend", "Szend",
-                             "Hend", "Eend", "Bend", "Uend", "solidend",
-                             "stopID", "Nspinflip", "spinflipprob",
-                             "Nhit", "Nstep", "trajlength", "Hmax", "wL"};
-
     value_type E = p->GetKineticEnergy(&y[3]);
     double Bstart[3], Eistart[3], Vstart;
 
@@ -62,20 +49,55 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, con
     if (spin[3] > 0)
         wL = spin[4]/spin[3];
 
-    vector<double> vars = {static_cast<double>(jobnumber), static_cast<double>(p->GetParticleNumber()),
-                           tstart, ystart[0], ystart[1], ystart[2],
-                           ystart[3], ystart[4], ystart[5], ystart[7],
-                           spinstart[0], spinstart[1], spinstart[2],
-                           p->GetInitialTotalEnergy(geom, field), p->GetInitialKineticEnergy(),
-                           sqrt(Bstart[0]*Bstart[0] + Bstart[1]*Bstart[1] + Bstart[2]*Bstart[2]), Vstart, static_cast<double>(p->GetInitialSolid().ID),
-                           x, y[0], y[1], y[2],
-                           y[3], y[4], y[5], y[7],
-                           spin[0], spin[1], spin[2], H, E,
-                           sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]), V, static_cast<double>(sld.ID),
-                           static_cast<double>(p->GetStopID()), static_cast<double>(p->GetNumberOfSpinflips()), 1 - p->GetNoSpinFlipProbability(),
-                           static_cast<double>(p->GetNumberOfHits()), static_cast<double>(p->GetNumberOfSteps()), y[8], p->GetMaxTotalEnergy(), wL};
+    map<string, double> variables = {{"jobnumber", static_cast<double>(jobnumber)},
+                                     {"particle", static_cast<double>(p->GetParticleNumber())},
+                                     {"m", p->GetMass()},
+                                     {"q", p->GetCharge()},
+                                     {"mu", p->GetMagneticMoment()},
+                                     {"tstart", tstart},
+                                     {"xstart", ystart[0]},
+                                     {"ystart", ystart[1]},
+                                     {"zstart", ystart[2]},
+                                     {"vxstart", ystart[3]},
+                                     {"vystart", ystart[4]},
+                                     {"vzstart", ystart[5]},
+                                     {"polstart", ystart[7]},
+                                     {"Sxstart", spinstart[0]},
+                                     {"Systart", spinstart[1]},
+                                     {"Szstart", spinstart[2]},
+                                     {"Hstart", p->GetInitialTotalEnergy(geom, field)},
+                                     {"Estart", p->GetInitialKineticEnergy()},
+                                     {"Bstart", sqrt(Bstart[0]*Bstart[0] + Bstart[1]*Bstart[1] + Bstart[2]*Bstart[2])},
+                                     {"Ustart", Vstart},
+                                     {"solidstart", static_cast<double>(p->GetInitialSolid().ID)},
+                                     {"tend", x},
+                                     {"xend", y[0]},
+                                     {"yend", y[1]},
+                                     {"zend", y[2]},
+                                     {"vxend", y[3]},
+                                     {"vyend", y[4]},
+                                     {"vzend", y[5]},
+                                     {"polend", y[7]},
+                                     {"Sxend", spin[0]},
+                                     {"Syend", spin[1]},
+                                     {"Szend", spin[2]},
+                                     {"Hend", H},
+                                     {"Eend", E},
+                                     {"Bend", sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2])},
+                                     {"Uend", V},
+                                     {"solidend", static_cast<double>(sld.ID)},
+                                     {"stopID", static_cast<double>(p->GetStopID())},
+                                     {"Nspinflip", static_cast<double>(p->GetNumberOfSpinflips())},
+                                     {"spinflipprob", 1 - p->GetNoSpinFlipProbability()},
+                                     {"Nhit", static_cast<double>(p->GetNumberOfHits())},
+                                     {"Nstep", static_cast<double>(p->GetNumberOfSteps())},
+                                     {"propert", y[6]},
+                                     {"trajlength", y[8]},
+                                     {"Hmax", p->GetMaxTotalEnergy()},
+                                     {"wL", wL}
+                                    };
 
-    Log(p->GetName(), suffix, titles, vars);
+    Log(p->GetName(), suffix, variables);
 }
 
 void TLogger::PrintSnapshot(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, const value_type x2, const state_type &y2,
@@ -85,6 +107,9 @@ void TLogger::PrintSnapshot(const std::unique_ptr<TParticle>& p, const value_typ
     if (not log)
         return;
     istringstream snapshottimes(config[p->GetName()]["snapshots"]);
+    if (config[p->GetName()]["snapshotlogvars"] == ""){
+        config[p->GetName()]["snapshotlogvars"] = config[p->GetName()]["endlogvars"];
+    }
     auto tsnap = find_if(istream_iterator<double>(snapshottimes), istream_iterator<double>(), [&](const double& tsnapshot){ return x1 <= tsnapshot and tsnapshot < x2; });
     if (tsnap != istream_iterator<double>()){
         state_type ysnap(STATE_VARIABLES);
@@ -105,11 +130,6 @@ void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x
     if (y[8] > 0 and int(y1[8]/interval) == int(y[8]/interval)) // if this is the first point or tracklength did cross an integer multiple of trackloginterval
         return;
 
-    vector<string> titles = {"jobnumber", "particle", "polarisation",
-                             "t", "x", "y", "z", "vx", "vy", "vz",
-                             "H", "E", "Bx", "dBxdx", "dBxdy", "dBxdz", "By", "dBydx",
-                             "dBydy", "dBydz", "Bz", "dBzdx", "dBzdy", "dBzdz", "Ex", "Ey", "Ez", "V"};
-
     double B[3] = {0,0,0};
     double dBidxj[3][3] = {{0,0,0},{0,0,0},{0,0,0}};
     double E[3] = {0,0,0};
@@ -119,19 +139,37 @@ void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x
     value_type Ek = p->GetKineticEnergy(&y[3]);
     value_type H = Ek + p->GetPotentialEnergy(x, y, field, sld);
 
-    vector<double> vars = {static_cast<double>(jobnumber), static_cast<double>(p->GetParticleNumber()), y[7],
-                           x, y[0], y[1], y[2], y[3], y[4], y[5],
-                           H, Ek};
-    for (int i = 0; i < 3; i++){
-        vars.push_back(B[i]);
-        for (int j = 0; j < 3; j++)
-            vars.push_back(dBidxj[i][j]);
-    }
-    for (int i = 0; i < 3; ++i)
-        vars.push_back(E[i]);
-    vars.push_back(V);
+    map<string, double> variables = {{"jobnumber", static_cast<double>(jobnumber)},
+                                     {"particle", static_cast<double>(p->GetParticleNumber())},
+                                     {"polarisation", y[7]},
+                                     {"t", x},
+                                     {"x", y[0]},
+                                     {"y", y[1]},
+                                     {"z", y[2]},
+                                     {"vx", y[3]},
+                                     {"vy", y[4]},
+                                     {"vz", y[5]},
+                                     {"H", H},
+                                     {"E", Ek},
+                                     {"Bx", B[0]},
+                                     {"dBxdx", dBidxj[0][0]},
+                                     {"dBxdy", dBidxj[0][1]},
+                                     {"dBxdz", dBidxj[0][2]},
+                                     {"By", B[1]},
+                                     {"dBydx", dBidxj[1][0]},
+                                     {"dBydy", dBidxj[1][1]},
+                                     {"dBydz", dBidxj[1][2]},
+                                     {"Bz", B[2]},
+                                     {"dBzdx", dBidxj[2][0]},
+                                     {"dBzdy", dBidxj[2][1]},
+                                     {"dBzdz", dBidxj[2][2]},
+                                     {"Ex", E[0]},
+                                     {"Ey", E[1]},
+                                     {"Ez", E[2]},
+                                     {"V", V}
+                                    };
 
-    Log(p->GetName(), "track", titles, vars);
+    Log(p->GetName(), "track", variables);
 }
 
 void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering){
@@ -140,17 +178,28 @@ void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, 
     if (not log)
         return;
 
-    vector<string> titles = {"jobnumber", "particle",
-                             "t", "x", "y", "z", "v1x", "v1y", "v1z", "pol1",
-                             "v2x", "v2y", "v2z", "pol2",
-                             "nx", "ny", "nz", "solid1", "solid2"};
+    map<string, double> variables = {{"jobnumber", static_cast<double>(jobnumber)},
+                                     {"particle", static_cast<double>(p->GetParticleNumber())},
+                                     {"t", x},
+                                     {"x", y1[0]},
+                                     {"y", y1[1]},
+                                     {"z", y1[2]},
+                                     {"v1x", y1[3]},
+                                     {"v1y", y1[4]},
+                                     {"v1z", y1[5]},
+                                     {"pol1", y1[7]},
+                                     {"v2x", y2[3]},
+                                     {"v2y", y2[4]},
+                                     {"v2z", y2[5]},
+                                     {"pol2", y2[7]},
+                                     {"nx", normal[0]},
+                                     {"ny", normal[1]},
+                                     {"nz", normal[2]},
+                                     {"solid1", static_cast<double>(leaving.ID)},
+                                     {"solid2", static_cast<double>(entering.ID)}
+                                    };
 
-    vector<double> vars = {static_cast<double>(jobnumber), static_cast<double>(p->GetParticleNumber()),
-                           x, y1[0], y1[1], y1[2], y1[3], y1[4], y1[5], y1[7],
-                           y2[3], y2[4], y2[5], y2[7],
-                           normal[0], normal[1], normal[2], static_cast<double>(leaving.ID), static_cast<double>(entering.ID)};
-
-    Log(p->GetName(), "hit", titles, vars);
+    Log(p->GetName(), "hit", variables);
 }
 
 void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x, const dense_stepper_type& spinstepper,
@@ -166,12 +215,6 @@ void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x,
     if (x > x1 and int(x1 / interval) == int(x / interval)) // if time crossed an integer multiple of spinloginterval
         return;
 
-    vector<string> titles = {"jobnumber", "particle",
-                             "t", "x", "y", "z",
-                             "Sx", "Sy", "Sz",
-                             "Wx", "Wy", "Wz",
-                             "Bx", "By", "Bz"};
-
     double B[3] = {0,0,0};
     state_type y(STATE_VARIABLES);
     trajectory_stepper.calc_state(x, y);
@@ -182,19 +225,43 @@ void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x,
     state_type spin(SPIN_STATE_VARIABLES);
     spinstepper.calc_state(x, spin);
 
-    vector<double> vars = {static_cast<double>(jobnumber), static_cast<double>(p->GetParticleNumber()),
-                           x, y[0], y[1], y[2],
-                           spin[0], spin[1], spin[2],
-                           Omega[0], Omega[1], Omega[2],
-                           B[0], B[1], B[2]};
+    map<string, double> variables = {{"jobnumber", static_cast<double>(jobnumber)},
+                                     {"particle", static_cast<double>(p->GetParticleNumber())},
+                                     {"t", x},
+                                     {"x", y[0]},
+                                     {"y", y[1]},
+                                     {"z", y[2]},
+                                     {"Sx", spin[0]},
+                                     {"Sy", spin[1]},
+                                     {"Sz", spin[2]},
+                                     {"Wx", Omega[0]},
+                                     {"Wy", Omega[1]},
+                                     {"Wz", Omega[2]},
+                                     {"Bx", B[0]},
+                                     {"By", B[1]},
+                                     {"Bz", B[2]}
+                                    };
 
-    Log(p->GetName(), "spin", titles, vars);
+    Log(p->GetName(), "spin", variables);
+}
+
+void TLogger::Log(const std::string &particlename, const std::string &suffix, const std::map<std::string, double> &variables){
+    vector<string> titles;
+    vector<double> vars;
+    istringstream varstr(config[particlename][suffix + "logvars"]);
+    for (istream_iterator<string> var(varstr); var != istream_iterator<string>(); ++var){
+        titles.push_back(*var);
+        auto val = variables.find(*var);
+        if (val != variables.end())
+            vars.push_back(val->second);
+        else
+            vars.push_back(EvalFormula(config, *var, variables));
+    }
+    DoLog(particlename, suffix, titles, vars);
 }
 
 
-
-
-void TTextLogger::Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars){
+void TTextLogger::DoLog(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars){
     ofstream &file = logstreams[particlename + suffix];
     if (!file.is_open()){
         std::ostringstream filename;
@@ -238,7 +305,7 @@ TROOTLogger::TROOTLogger(TConfig& aconfig){
     ROOTfile->cd();
 }
 
-void TROOTLogger::Log(std::string particlename, std::string suffix, std::vector<std::string> titles, std::vector<double> vars){
+void TROOTLogger::DoLog(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars){
     string name = particlename + suffix;
     TNtupleD* tree = static_cast<TNtupleD*>(ROOTfile->Get(name.c_str()));
     if (not tree){

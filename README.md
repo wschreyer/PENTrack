@@ -144,13 +144,15 @@ You can modify the simulation on four different levels:
 Output
 -------
 
-Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be individually configured for each particle type by adding corresponding variables in the particle-specific sections in the configuration file. All output files are tables with space-separated columns; the first line contains the column name.
+Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be individually configured for each particle type by adding corresponding variables in the particle-specific sections in the configuration file.
+
+Text output files are tables with space-separated columns; the first line contains the column name. If you compile PENTrack with [ROOT](https://root.cern.ch) support, data can be directly printed to ROOT trees. In that case, a single ROOT file containing a tree for each particle and output type will be created, similar to the output of the merge scripts described in the Helper Scripts section. The created ROOT file will also contain a copy of all configuration variables.
 
 Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 
 ### Endlog
 
-The endlog keeps track of the starting and end parameters of the simulated particles. In the endlog, you get the following variables:
+The endlog keeps track of the starting and end parameters of the simulated particles. The data to be output can be defined with the endlogvars option in the config file. By default, you get the following variables. Any combination of these variables can be defined in the FORMULAS section and added to the endlog if needed.
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
@@ -195,11 +197,11 @@ The endlog keeps track of the starting and end parameters of the simulated parti
 
 ### Snapshotlog
 
-Switching on snapshotlog in the PARTICLES section or the particle-specific sections will output the particle parameters at additional snapshot times in the snapshotlog. It contains the same data fields as the endlog.
+Switching on snapshotlog in the PARTICLES section or the particle-specific sections will output the particle parameters at additional snapshot times in the snapshotlog. The data to be output can be defined with the snapshotlogvars option in the config file. By default, it contains the same data fields as the endlog.
 
 ### Tracklog
 
-The tracklog contains the complete trajectory of the particle, with following parameters:
+The tracklog contains the complete trajectory of the particle. The data to be output can be defined with the tracklogvars option in the config file. By default, you get the following variables. Any combination of these variables can be defined in the FORMULAS section and added to the tracklog if needed.
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
@@ -222,7 +224,7 @@ The tracklog contains the complete trajectory of the particle, with following pa
 
 This log contains all the points at which particle hits a surface of the experiment geometry. This includes both reflections and transmissions.
 
-In the hitlog, you get the following parameters:
+The data to be output can be defined with the hitlogvars option in the config file. By default, you get the following variables. Any combination of these variables can be defined in the FORMULAS section and added to the hitlog if needed.
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
@@ -238,7 +240,7 @@ In the hitlog, you get the following parameters:
 
 ### Spinlog
 
-If the spinlog parameter is enabled in the configuration file and the particle spin is tracked, it will be logged into the spinlog. In the spinlog, you get the following parameters:
+If the spinlog parameter is enabled in the configuration file and the particle spin is tracked, it will be logged into the spinlog. The data to be output can be defined with the spinlogvars option in the config file. By default, you get the following variables. Any combination of these variables can be defined in the FORMULAS section and added to the spinlog if needed.
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated

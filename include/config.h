@@ -13,6 +13,8 @@
 #include <map>
 #include <iosfwd>
 
+#include "exprtk.hpp"
+
 /**
  * TConfig class is read from in file with structure
  *
@@ -99,6 +101,7 @@ public:
 	friend std::ostream& operator<<(std::ostream &str, const TConfig &conf);
 };
 
+double EvalFormula(TConfig &config, const std::string formulaname, const std::map<std::string, double> &variables);
 
 
 #endif /* CONFIG_H_ */
