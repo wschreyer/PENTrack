@@ -101,6 +101,15 @@ public:
 	friend std::ostream& operator<<(std::ostream &str, const TConfig &conf);
 };
 
+/**
+ * Find and evaluate formulate with given name using the list of variables
+ * 
+ * @param config TConfig containing configuration variables
+ * @param formulaname Name of the formula to be evaluated
+ * @param variables Map of variables names and values used to evaluate formula
+ * 
+ * @return Returns value of formula
+ */
 double EvalFormula(TConfig &config, const std::string formulaname, const std::map<std::string, double> &variables);
 
 

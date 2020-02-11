@@ -107,9 +107,6 @@ void TLogger::PrintSnapshot(const std::unique_ptr<TParticle>& p, const value_typ
     if (not log)
         return;
     istringstream snapshottimes(config[p->GetName()]["snapshots"]);
-    if (config[p->GetName()]["snapshotlogvars"] == ""){
-        config[p->GetName()]["snapshotlogvars"] = config[p->GetName()]["endlogvars"];
-    }
     auto tsnap = find_if(istream_iterator<double>(snapshottimes), istream_iterator<double>(), [&](const double& tsnapshot){ return x1 <= tsnapshot and tsnapshot < x2; });
     if (tsnap != istream_iterator<double>()){
         state_type ysnap(STATE_VARIABLES);
@@ -248,6 +245,11 @@ void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x,
 void TLogger::Log(const std::string &particlename, const std::string &suffix, const std::map<std::string, double> &variables){
     vector<string> titles;
     vector<double> vars;
+    string filter;
+    istringstream(config[particlename][suffix + "logfilter"]) >> filter;
+    if (filter != "" and not EvalFormula(config, filter, variables)){
+        return;
+    }
     istringstream varstr(config[particlename][suffix + "logvars"]);
     for (istream_iterator<string> var(varstr); var != istream_iterator<string>(); ++var){
         titles.push_back(*var);
@@ -257,6 +259,8 @@ void TLogger::Log(const std::string &particlename, const std::string &suffix, co
         else
             vars.push_back(EvalFormula(config, *var, variables));
     }
+    if (titles.empty())
+        throw std::runtime_error(suffix + "log for " + particlename + " is enabled but " + suffix + "logvars is empty! See example config on how to use it.");
     DoLog(particlename, suffix, titles, vars);
 }
 

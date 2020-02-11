@@ -191,23 +191,30 @@ tau 0				# exponential decay lifetime [s], 0: no decay
 tmax 9e99			# max simulation time [s]
 lmax 9e99			# max trajectory length [m]
 
-######### Logging options. You can add any combination of the listed variables to the *logvars lists by defining a formula in the FORMULAS section #######
+######### Logging options. You can add or remove any of the listed variables in the *logvars lists, or any combination defined in a formula in the FORMULAS section #######
+######### If the *logfilter option is set to a formula in the FORMULAS section, the particle will only be logged if the result of the formula returns true          #######
 endlog 1			# print initial and final state to file [0/1]
 endlogvars jobnumber particle tstart xstart ystart zstart vxstart vystart vzstart polstart Sxstart Systart Szstart Hstart Estart Bstart Ustart solidstart tend xend yend zend vxend vyend vzend polend Sxend Syend Szend Hend Eend Bend Uend solidend stopID Nspinflip spinflipprob Nhit Nstep trajlength Hmax wL
+endlogfilter
 
 tracklog 0			# print complete trajectory to file [0/1]
 tracklogvars jobnumber particle polarisation t x y z vx vy vz H E Bx dBxdx dBxdy dBxdz By dBydx dBydy dBydz Bz dBzdx dBzdy dBzdz Ex Ey Ez V
 trackloginterval 5e-3	# min. distance interval [m] between track points in tracklog file
+tracklogfilter
 
 hitlog 0			# print geometry hits to file [0/1]
 hitlogvars jobnumber particle t x y z v1x v1y v1z pol1 v2x v2y v2z pol2 nx ny nz solid1 solid2
+hitlogfilter
 
 snapshotlog 1		# print initial state and state at certain times to file [0/1]
 snapshots 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310 320 330 340 350 360 370 380 390 400 410 420 430 440 450 460 470 480 490 500 510 520 530 540 550 560 570 580 590 600 610 620 630 640 650 660 670 680 690 700 710 720 730 740 750 760 770 780 790 800 810 820 830 840 850 860 870 880 890 900 910 920 930 940 950 960 970 980 990 1000 # times [s] at which to take snapshots
+snapshotlogvars jobnumber particle tstart xstart ystart zstart vxstart vystart vzstart polstart Sxstart Systart Szstart Hstart Estart Bstart Ustart solidstart tend xend yend zend vxend vyend vzend polend Sxend Syend Szend Hend Eend Bend Uend solidend stopID Nspinflip spinflipprob Nhit Nstep trajlength Hmax wL
+snapshotfilter
 
 spinlog 0			# print spin trajectory to file [0/1]
 spinlogvars jobnumber particle t x y z Sx Sy Sz Wx Wy Wz Bx By Bz
 spinloginterval 5e-7# min. time interval [s] between track points in spinlog file
+spinlogfilter
 spintimes	500 700	# do spin tracking between these points in time [s]
 Bmax 0.1			# do spin tracking when absolute magnetic field is below this value [T]
 flipspin 0			# do Monte Carlo spin flips when magnetic field surpasses Bmax [0/1]
@@ -231,7 +238,7 @@ tmax 1e-5
 
 ############ define formulas used for output to log files
 [FORMULAS]
-vabs sqrt(vxstart^2 + vystart^2 + vzstart^2) # for example, you could now add "vabs" to the list of endlogvars to print the absolute velocity to the endlog
-
+vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2) # for example, you could now add "vabs" to the list of endlogvars to print the absolute velocity to the endlog
+detected    solidend == 14 # for example, you could set this as an endlogfilter to only log particles that are absorbed in the detector
 
 

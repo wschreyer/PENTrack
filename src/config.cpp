@@ -198,12 +198,14 @@ double EvalFormula(TConfig &config, const std::string formulaname, const std::ma
         throw std::runtime_error("Formula " + formulaname + " not found in config file");
     exprtk::symbol_table<double> symbols;
     for (auto var: variables){
-        symbols.add_constant(var.first, var.second);
+        if (not symbols.add_constant(var.first, var.second)){
+			throw std::runtime_error("Error parsing variable " + var.first);
+		}
     }
     exprtk::parser<double> parser;
     exprtk::expression<double> expr;
     expr.register_symbol_table(symbols);
-    if (parser.compile(formula->second, expr) == false)
-        throw std::runtime_error("Could not evaluate formula " + formula->first + ": " + formula->second);
+    if (not parser.compile(formula->second, expr))
+        throw std::runtime_error("Could not evaluate formula " + formula->first + ": " + parser.error());
     return expr.value();
 }

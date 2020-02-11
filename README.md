@@ -146,7 +146,9 @@ Output
 
 Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be individually configured for each particle type by adding corresponding variables in the particle-specific sections in the configuration file.
 
-Text output files are tables with space-separated columns; the first line contains the column name. If you compile PENTrack with [ROOT](https://root.cern.ch) support, data can be directly printed to ROOT trees. In that case, a single ROOT file containing a tree for each particle and output type will be created, similar to the output of the merge scripts described in the Helper Scripts section. The created ROOT file will also contain a copy of all configuration variables.
+Text output files are tables with space-separated columns; the first line contains the column name. If you compile PENTrack with [ROOT](https://root.cern.ch) support, data can be directly printed to ROOT trees by enablign the ROOTlog option. In that case, a single ROOT file containing a tree for each particle and output type will be created, similar to the output of the merge scripts described in the Helper Scripts section. The created ROOT file will also contain a copy of all configuration variables.
+
+Output can be filtered so only particles fulfilling certain conditions are printed.
 
 Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 

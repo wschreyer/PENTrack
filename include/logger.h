@@ -22,6 +22,13 @@ class TLogger {
 protected:
     TConfig config; ///< configuration parameters read from config files
 
+    /**
+     * Evaluates the logvars and corresponding filters and formulas set in the config file and calls DoLog
+     * 
+     * @param particlename Name of particle being logged
+     * @param suffix Indicates logging type (e.g. "end", "snapshot", "track", "spin")
+     * @param variables Maps of variable names and their values used to evaluate logvars
+     */
     void Log(const std::string &particlename, const std::string &suffix, const std::map<std::string, double> &variables);
 
     /**
