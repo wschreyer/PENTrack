@@ -97,7 +97,14 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, con
                                      {"wL", wL}
                                     };
 
-    Log(p->GetName(), suffix, variables);
+    vector<string> default_titles = {"jobnumber", "particle",
+                                     "tstart", "xstart", "ystart", "zstart", "vxstart", "vystart", "vzstart", "polstart",
+                                     "Sxstart", "Systart", "Szstart", "Hstart", "Estart", "Bstart", "Ustart", "solidstart",
+                                     "tend", "xend", "yend", "zend", "vxend", "vyend", "vzend", "polend",
+                                     "Sxend", "Syend", "Szend", "Hend", "Eend", "Bend", "Uend", 
+                                     "solidend", "stopID", "Nspinflip", "spinflipprob", "Nhit", "Nstep", "propert", "trajlength", "Hmax", "wL"};
+
+    Log(p->GetName(), suffix, variables, default_titles);
 }
 
 void TLogger::PrintSnapshot(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, const value_type x2, const state_type &y2,
@@ -166,7 +173,12 @@ void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x
                                      {"V", V}
                                     };
 
-    Log(p->GetName(), "track", variables);
+    vector<string> default_titles = {"jobnumber", "particle",
+                                     "polarisation", "t", "x", "y", "z", "vx", "vy", "vz", "H", "E",
+                                     "Bx", "dBxdx", "dBxdy", "dBxdz", "By", "dBydx", "dBydy", "dBydz", "Bz", "dBzdx", "dBzdy", "dBzdz",
+                                     "Ex", "Ey", "Ez", "V"};
+
+    Log(p->GetName(), "track", variables, default_titles);
 }
 
 void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering){
@@ -196,7 +208,12 @@ void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, 
                                      {"solid2", static_cast<double>(entering.ID)}
                                     };
 
-    Log(p->GetName(), "hit", variables);
+    vector<string> default_titles = {"jobnumber", "particle",
+                                     "t", "x", "y", "z",
+                                     "v1x", "v1y", "v1z", "pol1", "v2x", "v2y", "v2z", "pol2",
+                                     "nx", "ny", "nz", "solid1", "solid2"};
+
+    Log(p->GetName(), "hit", variables, default_titles);
 }
 
 void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x, const dense_stepper_type& spinstepper,
@@ -239,16 +256,26 @@ void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x,
                                      {"Bz", B[2]}
                                     };
 
-    Log(p->GetName(), "spin", variables);
+    vector<string> default_titles = {"jobnumber", "particle",
+                                     "t", "x", "y", "z",
+                                     "Sx", "Sy", "Sz", "Wx", "Wy", "Wz", "Bx", "By", "Bz"};
+
+    Log(p->GetName(), "spin", variables, default_titles);
 }
 
-void TLogger::Log(const std::string &particlename, const std::string &suffix, const std::map<std::string, double> &variables){
+void TLogger::Log(const std::string &particlename, const std::string &suffix, const std::map<std::string, double> &variables, const std::vector<std::string> &default_titles){
     vector<string> titles;
     vector<double> vars;
     string filter;
     istringstream(config[particlename][suffix + "logfilter"]) >> filter;
     if (filter != "" and not EvalFormula(config, filter, variables)){
         return;
+    }
+    if (config[particlename][suffix + "logvars"] == ""){
+        cout << suffix << "log for " << particlename << " is enabled but " << suffix << "logvars is empty. I will default to backward compatible output.\nSee example config on how to use the new logvars and logfilter options.\n";
+        ostringstream os;
+        copy(default_titles.begin(), default_titles.end(), ostream_iterator<string>(os, " "));
+        config[particlename][suffix + "logvars"] = os.str();
     }
     istringstream varstr(config[particlename][suffix + "logvars"]);
     for (istream_iterator<string> var(varstr); var != istream_iterator<string>(); ++var){
@@ -259,8 +286,7 @@ void TLogger::Log(const std::string &particlename, const std::string &suffix, co
         else
             vars.push_back(EvalFormula(config, *var, variables));
     }
-    if (titles.empty())
-        throw std::runtime_error(suffix + "log for " + particlename + " is enabled but " + suffix + "logvars is empty! See example config on how to use it.");
+
     DoLog(particlename, suffix, titles, vars);
 }
 

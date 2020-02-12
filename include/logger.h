@@ -28,8 +28,9 @@ protected:
      * @param particlename Name of particle being logged
      * @param suffix Indicates logging type (e.g. "end", "snapshot", "track", "spin")
      * @param variables Maps of variable names and their values used to evaluate logvars
+     * @param default_titles Optional parameter containing default variables to be logged in case none are given in the config
      */
-    void Log(const std::string &particlename, const std::string &suffix, const std::map<std::string, double> &variables);
+    void Log(const std::string &particlename, const std::string &suffix, const std::map<std::string, double> &variables, const std::vector<std::string> &default_titles = {});
 
     /**
      * Virtual function actually doing the logging. Must be implemented in all derived classes
