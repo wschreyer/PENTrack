@@ -89,7 +89,9 @@ public:
 		symbol_table.add_constants();
 		Bscaler.register_symbol_table(symbol_table);
 		exprtk::parser<double> parser;
-		parser.compile(Bscale, Bscaler);
+		if (not parser.compile(Bscale, Bscaler)){
+            throw std::runtime_error(exprtk::parser_error::to_str(parser.get_error(0).mode) + " while parsing formula '" + Bscale + "': " + parser.get_error(0).diagnostic);
+        }
 
 		Escaler.register_symbol_table(symbol_table);
 		parser.compile(Escale, Escaler);
