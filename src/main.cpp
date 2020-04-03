@@ -17,6 +17,7 @@
 #include <memory>
 #include <boost/format.hpp>
 
+#include "tracking.h"
 #include "particle.h"
 #include "config.h"
 #include "fields.h"
@@ -52,8 +53,7 @@ uint64_t seed = 0; ///< random seed used for random-number generator (generated 
  * 				e.g: "SIGFPE" is connected to number 8
  */
 void catch_alarm (int sig){
-	printf("Program was terminated, because Signal %i occured\n", sig);
-	exit(1);
+    quit.store(true);
 }
 
 
@@ -78,7 +78,9 @@ int main(int argc, char **argv){
 	" #######################################################################\n";
 
 	//Initialize signal-analizing
+	quit.store(false);
 	signal (SIGINT, catch_alarm);
+	signal (SIGTERM, catch_alarm);
 	signal (SIGUSR1, catch_alarm);
 	signal (SIGUSR2, catch_alarm);
 	signal (SIGXCPU, catch_alarm);
@@ -131,8 +133,6 @@ int main(int argc, char **argv){
 	std::cout << "Random Seed: " << seed << "\n\n";
 	mc.seed(seed);
 
-
-	
 	cout << "Loading source...\n";
 	// load source configuration from geometry.in
 	unique_ptr<TParticleSource> source(CreateParticleSource(configin, geom));
@@ -149,23 +149,28 @@ int main(int argc, char **argv){
 	if (simtype == PARTICLE){ // if proton or neutron shall be simulated
 	    cout << "Simulating " << simcount << " " << source->GetParticleName() << "s...\n";
         progress_display progress(simcount);
+		TTracker t(configin);
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
-			TParticle *p = source->CreateParticle(mc, geom, field);
-			p->Integrate(SimTime, configin[p->GetName()], mc, geom, field); // integrate particle
+            if (quit.load())
+                break;
+
+            unique_ptr<TParticle> p(source->CreateParticle(mc, geom, field));
+			t.IntegrateParticle(p, SimTime, configin[p->GetName()], mc, geom, field); // integrate particle
 			ID_counter[p->GetName()][p->GetStopID()]++; // increment counters
 			ntotalsteps += p->GetNumberOfSteps();
 
 			if (secondaries == 1){
-				std::vector<TParticle*> secondaries = p->GetSecondaryParticles();
-				for (auto i = secondaries.begin(); i != secondaries.end(); i++){
-					(*i)->Integrate(SimTime, configin[(*i)->GetName()], mc, geom, field); // integrate secondary particles
-					ID_counter[(*i)->GetName()][(*i)->GetStopID()]++;
-					ntotalsteps += (*i)->GetNumberOfSteps();
+				for (auto& i: p->GetSecondaryParticles()){
+                    if (quit.load())
+                        break;
+
+                    t.IntegrateParticle(i, SimTime, configin[i->GetName()], mc, geom, field); // integrate secondary particles
+					ID_counter[i->GetName()][i->GetStopID()]++;
+					ntotalsteps += i->GetNumberOfSteps();
 				}
 			}
 
-			delete p;
             ++progress;
 		}
 	}
@@ -183,12 +188,11 @@ int main(int argc, char **argv){
 	float SimulationTime = chrono::duration_cast<chrono::milliseconds>(simend - simstart).count()/1000.;
 	printf("Init: %.2fs, Simulation: %.2fs\n",
 			InitTime, SimulationTime);
-	printf("That's it... Have a nice day!\n");
+	if (quit.load())
+	    cout << "Simulation killed by signal!\n";
+	else
+    	cout << "That's it... Have a nice day!\n";
 	
-
-	ostringstream fileprefix;
-	fileprefix << outpath << "/" << setw(8) << setfill('0') << jobnumber << setw(0);
-
 	return 0;
 }
 

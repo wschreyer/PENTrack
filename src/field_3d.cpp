@@ -18,7 +18,18 @@
 #include "tricubic.h"
 #include "globals.h"
 
-// A faster implementation of the tricubic_eval function from libtricubic.
+/**
+ * A faster implementation of the tricubic_eval function from libtricubic.
+ * 
+ * Uses Horner's scheme.
+ * 
+ * @param a Interpolation parameters (64 doubles)
+ * @param x X coordinate of point field should be evaluated at
+ * @param y Y coordinate
+ * @param z Z coordinate
+ * 
+ * @return Interpolated value at point
+ */
 inline double tricubic_eval_fast(double a[64], double x, double y, double z) {
 /*	double result = 0.0;
 	for (int i = 0; i < 4; ++i) {
@@ -49,6 +60,22 @@ inline double tricubic_eval_fast(double a[64], double x, double y, double z) {
 	return rx;
 }
 
+
+/**
+ * A faster implementation of the tricubic_eval function from libtricubic.
+ * 
+ * Uses Horner's scheme.
+ * 
+ * @param a Interpolation parameters (64 doubles)
+ * @param x X coordinate of point field should be evaluated at
+ * @param y Y coordinate
+ * @param z Z coordinate
+ * @param derx Return derx-th derivative with respect to x
+ * @param dery Return dery-th derivative with respect to y
+ * @param derz Return derz-th derivative with respect to z
+ * 
+ * @return Interpolated value at point
+ */
 inline double tricubic_eval_fast(double a[64], double x, double y, double z, int derx, int dery, int derz) {
 	// fact[i][n] is the coefficient in front of the nth derivative of x^i.
 	// For instance, d2/dx2 x^3 = 6 x, so fact[3][2] = 6.

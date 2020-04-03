@@ -9,12 +9,6 @@
 
 const char* NAME_XENON = "xenon";
 
-std::ofstream TXenon::endout; ///< endlog file stream
-std::ofstream TXenon::snapshotout; ///< snapshot file stream
-std::ofstream TXenon::trackout; ///< tracklog file stream
-std::ofstream TXenon::hitout; ///< hitlog file stream
-std::ofstream TXenon::spinout; ///< spinlog file stream
-
 TXenon::TXenon(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
 		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
 			: TParticle(NAME_XENON, 0,  m_xe, mu_xeSI, gamma_xe, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){

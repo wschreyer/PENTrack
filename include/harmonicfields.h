@@ -53,19 +53,10 @@ public:
 	 *
 	 * Constructor requires:
 	 *
-	 * @param xoff the x-coordinate offset from the origin
-	 * @param yoff the y-coordinate offset from the origin
-	 * @param zoff the z-coordinate offset from the origin
-	 * @param AC A boolean to toggle between AC or DC field
-	 * @param frq the frequency of the AC field
-	 * @param tstart1 the start time of AC
-	 * @param tend1 the end time of AC
-	 * @param pshift the phase shift for the AC field
+	 * @param _xoff the x-coordinate offset from the origin
+	 * @param _yoff the y-coordinate offset from the origin
+	 * @param _zoff the z-coordinate offset from the origin
 	 * @param bW Distance from the edges where folding begins
-	 * @param axis_x the x-component of rotational axis
-	 * @param axis_y the y-component of rotational axis
-	 * @param axis_z the z-component of rotational axis
-	 * double angle the angle through which to rotate
 	 * @param _xmax maximum x value for the field to permiate
 	 * @param _xmin minimum x value for the field to permiate
 	 * @param _ymax maximum y value for the field to permiate
@@ -73,6 +64,10 @@ public:
 	 * @param _zmax maximum z value for the field to permiate
 	 * @param _zmin minimum z value for the field to permiate
 	 * @param Bscale Formula to scale magnetic field
+	 * @param _axis_x the x-component of rotational axis
+	 * @param _axis_y the y-component of rotational axis
+	 * @param _axis_z the z-component of rotational axis
+	 * @param _angle the angle through which to rotate
 	 * @param G parameters; coefficients of the harmonic expansion
 	 */
 
@@ -106,7 +101,6 @@ public:
 	 * @param t Time
 	 * @param V Electric potential
 	 * @param Ei Electric field components
-	 * @param dEidxj Spatial derivatives of electric field components
 	 **/
 	void EField(const double x, const double y, const double z, const double t, double &V, double Ei[3]) const override {};
 

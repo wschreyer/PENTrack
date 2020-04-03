@@ -57,7 +57,6 @@ public:
 	 * @param t Time
 	 * @param V Return electric potential (!=0 only if a map with potential was loaded)
 	 * @param Ei Returns electric field vector
-	 * @param dEidxj Returns spatial derivatives of electric field components (optional)
 	 */
 	void EField(const double x, const double y, const double z, const double t,
 			double &V, double Ei[3]) const;

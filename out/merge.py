@@ -15,6 +15,7 @@ def ReadOutFile(fn):
     data = []
     print('Reading ' + fn)
     for line in fileinput.input(fn):
+      line = line.strip()
       if fileinput.isfirstline():
         descriptor = line.replace(' ', ':')
       else:

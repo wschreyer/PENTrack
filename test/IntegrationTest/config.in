@@ -49,8 +49,10 @@ tmax 9e99
 lmax 9e99
 
 endlog 1
+endlogvars xstart ystart zstart xend yend zend vxstart vystart vzstart vxend vyend vzend
+endlogfilter
 tracklog 0
-hitlog 1
+hitlog 0
 snapshotlog 0
 spinlog 0
 snapshots 0
@@ -73,3 +75,5 @@ tmax 1e-5
 [mercury]
 
 [xenon]
+
+[FORMULAS]

@@ -92,19 +92,17 @@ std::ostream& operator<<(std::ostream &str, const solid &sld){
 TGeometry::TGeometry(TConfig &geometryin){
 	boost::filesystem::path matpath;
 	istringstream(geometryin["GLOBAL"]["materials_file"]) >> matpath; // check if there is a materials file linked in the config file
-	TConfig matconf;
 	if (matpath.empty()){ // if there is no materials file given load materials from config file
-		matconf = geometryin;
 		cout << "Loading materials from " << configpath << "\n";
 	}
 	else{
 		matpath = boost::filesystem::absolute(matpath, configpath.parent_path()); // make path absolute, relative paths are assumed to be relative to the config file's path
 		cout << "Loading materials from " << matpath << "\n";
-		matconf.ReadFromFile(matpath.native());
+		geometryin.ReadFromFile(matpath.native());
 	}
 	
 	vector<material> materials;
-	std::transform(matconf["MATERIALS"].begin(), matconf["MATERIALS"].end(), back_inserter(materials), 
+	std::transform(geometryin["MATERIALS"].begin(), geometryin["MATERIALS"].end(), back_inserter(materials),
 					[](const std::pair<std::string, std::string> &i){
 						material mat;
 						mat.name = i.first;

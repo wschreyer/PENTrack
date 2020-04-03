@@ -46,14 +46,21 @@ endif()
 
 include_directories("exprtk")
 include_directories("include")
-add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/edmfields.cpp 
+add_executable(PENTrack src/main.cpp src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/edmfields.cpp src/tracking.cpp src/logger.cpp
                         src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/harmonicfields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
                         src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp src/analyticFields.cpp
                         $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
+
+find_package(ROOT)
+if (ROOT_FOUND)
+	message(STATUS "Found ROOT, you can use the ROOTlog option")
+    include(${ROOT_USE_FILE})
+	target_compile_definitions(PENTrack PUBLIC USEROOT=1)
+endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 	target_compile_options(PENTrack PUBLIC -Wall)
 endif()
 	
 				
-target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
+target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBRARIES})

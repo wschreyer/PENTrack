@@ -9,12 +9,6 @@
 
 const char* NAME_PROTON = "proton";
 
-std::ofstream TProton::endout; ///< endlog file stream
-std::ofstream TProton::snapshotout; ///< snapshot file stream
-std::ofstream TProton::trackout; ///< tracklog file stream
-std::ofstream TProton::hitout; ///< hitlog file stream
-std::ofstream TProton::spinout; ///< spinlog file stream
-
 TProton::TProton(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
 		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
 		: TParticle(NAME_PROTON, ele_e, m_p, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){

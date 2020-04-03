@@ -8,6 +8,7 @@
 
 #include <boost/format.hpp>
 
+std::atomic<bool> quit(false);
 
 const long double pi = 3.1415926535897932384626L; ///< Pi
 const long double ele_e = 1.602176487E-19L; ///< elementary charge [C]
