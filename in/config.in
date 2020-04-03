@@ -31,7 +31,7 @@ MRSolidAngleDRP 220 200 1E-9 25E-9 0.1
 #starting neutron energy [neV], ending neutron energy [neV]
 MRThetaIEnergy 54 2.5E-9 20E-9 0 1.570796327 0 1000
 
-#Write output to ROOT trees instead of text files
+#Write output to ROOT trees instead of text files, ROOT files will also contain all config variables
 ROOTlog 0
 
 
