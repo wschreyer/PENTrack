@@ -11,8 +11,11 @@
 
 /**
  * B field described by:
+  *
   * B_x = a1 * exp(- a2* x + a3) + c1
+  *
   * B_y = y * a1 * a2 / 2 * exp(- a2* x + a3) + c2
+  *
   * B_z = z * a1 * a2 / 2 * exp(- a2* x + a3) + c2
  *
  */
@@ -79,8 +82,9 @@ private:
 
 /**
  * B field described by:
-  * B_z = a1*x + a2
- 	*
+ *  
+ * B_z = a1*x + a2
+ *
  */
 class TLinearFieldZ: public TField{
 private:
@@ -141,7 +145,9 @@ private:
 
 /**
  * B field with quadratic gradient described by:
+  *
   * B_z = a_1 z^2 + a_2 z + z0
+  *
   * dBdz =  a_1 z + a_2
   *
   * where Bx, By, and derivatives satisfy Maxwell's equation
@@ -206,7 +212,9 @@ private:
 
 /**
  * B field with cubic gradient dependent on x described by:
+  *
   * B_z = (a_1 x^2 + a_2 x + a3) z + z0
+  *
   * dBdz = a_1 x^2 + a_2 x + a3
   *
   * where Bx, By, and derivatives satisfy Maxwell's equation
@@ -272,7 +280,9 @@ private:
 
 /**
  * B field with quadratic gradient described by:
+  *
   * B_z = a_1 xyz + a_2 z + z0
+  *
   * dBdz =  a_1 xy + a_2
   *
   * where Bx, By, and derivatives satisfy Maxwell's equation
@@ -337,8 +347,11 @@ private:
 
 /**
  * B0 field with a component dependent on XY:
+  *
   * B_z = a_1 xy + z0
+  *
   * B_y = a_1 xz
+  *
   * B_x = a_1 yz
   *
   * where Bx, By, and derivatives satisfy Maxwell's equation
