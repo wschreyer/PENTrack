@@ -25,8 +25,9 @@ std::istream& operator>>(std::istream &str, material &mat){
 		std::cout << "No modified-Lambert reflection set for material " << mat.name << ". Assuming 0.\n";
 	    mat.ModifiedLambertProb = 0.;
 	}
-    if (mat.SpinflipProb < 0 or mat.SpinflipProb > 1)
+    if (mat.SpinflipProb < 0 or mat.SpinflipProb > 1){
         throw std::range_error("You set a modified-Lambert probability outside range 0..1 for material " + mat.name +"!");
+    }
 
 	str >> mat.LossPerBounce;
 	if (not str){
@@ -100,7 +101,7 @@ TGeometry::TGeometry(TConfig &geometryin){
 		cout << "Loading materials from " << matpath << "\n";
 		geometryin.ReadFromFile(matpath.native());
 	}
-	
+
 	vector<material> materials;
 	std::transform(geometryin["MATERIALS"].begin(), geometryin["MATERIALS"].end(), back_inserter(materials),
 					[](const std::pair<std::string, std::string> &i){
@@ -110,17 +111,17 @@ TGeometry::TGeometry(TConfig &geometryin){
 						return mat;
 					}
 	); // Read materials from config and add them to list
-	
+
 	for (auto sldparams : geometryin["GEOMETRY"]){
 		solid sld;
 		istringstream(sldparams.first) >> sld.ID;
 		istringstream(sldparams.second) >> sld;
-		
+
 		auto mat = std::find_if(materials.begin(), materials.end(), [&sld](const material &m){ return sld.mat.name == m.name; });
 		if (mat == materials.end())
 			throw std::runtime_error((boost::format("Material %s used but not defined!") % sld.mat.name).str());
 		sld.mat = *mat;
-		
+
 		if (sld.ID == 1){
 			sld.name = "default solid";
 			defaultsolid = sld;
@@ -130,7 +131,7 @@ TGeometry::TGeometry(TConfig &geometryin){
 			solids.push_back(sld);
 		}
 	}
-	
+
 	if (std::unique(solids.begin(), solids.end(), [](const solid s1, const solid s2){ return s1.ID == s2.ID; }) != solids.end()) // check if IDs of each solid are unique
 		throw std::runtime_error("You defined solids with identical ID! IDs have to be unique!");
 }
