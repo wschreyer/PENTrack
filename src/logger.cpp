@@ -236,8 +236,10 @@ void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x,
     double Omega[3];
     p->SpinPrecessionAxis(x, trajectory_stepper, field, Omega[0], Omega[1], Omega[2]);
 
-    state_type spin(SPIN_STATE_VARIABLES);
-    spinstepper.calc_state(x, spin);
+    state_type spin(spinstepper.current_state());
+    if (x < spinstepper.current_time()){
+        spinstepper.calc_state(x, spin);
+    }
 
     map<string, double> variables = {{"jobnumber", static_cast<double>(jobnumber)},
                                      {"particle", static_cast<double>(p->GetParticleNumber())},
