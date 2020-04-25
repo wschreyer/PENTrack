@@ -155,10 +155,7 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #
 # Analytically calculated fields:
 # Conductor: simulate a current flowing from one point to another along an arbitrary straight line
-# EDMStaticEField: simulate a uniform electric field along an arbitrary direction
-# EDMStaticB0GradZField: simulate a magnetic field along the z-axis with a uniform gradient
-# ExponentialFieldX: simulate magnetic field B = (a1 exp(-a2 x + a3) + c1, 1/2 y a1 a2 exp(-a2 x + a3) + c2, 1/2 z a1 a2 exp(-a2 x + a3) + c2) in a box
-# LinearFieldZ: simulate magnetic field along z and linear in x: B = (0, 0, a1*x + a2) in a box
+# For more information on the other analytically calculated fields, see test/analyticalFieldTest/config.in
 # All coordinates are defined in meters, currents in ampere, fields in Tesla
 #
 # Each line is preceded by a unique identifier. Entries with duplicate identifiers will overwrite each other
@@ -172,7 +169,7 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #3 OPERA3D	3Dtable.tab	1		1		0		1
 #4 COMSOL	comsol.txt	1		1		0		1
 
-#FiniteWire		I		x1		y1		z1		x2		y2		z2		scale
+#Conductor		I		x1		y1		z1		x2		y2		z2		scale
 5 Conductor		12500	0		0		-1		0		0		2		1
 
 ### See PENTrack/test/analyticalFieldTest/ or doxygen documentation for more info on analytical field parameters ###
@@ -200,6 +197,8 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #HarmonicExpandedBField     edmB0xoff   edmB0yoff   edmB0zoff   BoundaryWidth   xmax 	xmin 	ymax 	ymin 	zmax 	zmin    scale   axis_x  axis_y  axis_z  angle   G(0,-1) G(0,0)  G(0,1)  G(1,-2) G(1,-1) G(1,0)  G(1,1)  G(1,2)  G(2,-3) G(2,-2) G(2,-1) G(2,0)  G(2,1)  G(2,2)  G(2,3)  G(3,-4) G(3,-3) G(3,-2) G(3,-1) G(3,0)  G(3,1)  G(3,2)  G(3,3)  G(3,4)
 #13 HarmonicExpandedBField 	0	        0        0	        0.01        1    -1  	  1 	    -1	    1	    -1	    1       1       1       1       1.9     0       0       0       0       0       30      0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0
 
+#EDMStaticEField    Ex  Ey  Ez  scale
+#14 EDMStaticEField 0   0   1e6 1
 
 ######### default values for particle-specific settings ############
 [PARTICLES]
