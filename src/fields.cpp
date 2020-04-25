@@ -49,22 +49,45 @@ TFieldManager::TFieldManager(TConfig &conf){
 		else if (type == "HarmonicExpandedBField" and
 			ss >> p1 >> p2 >> p3 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale >> axis_x >> axis_y >> axis_z >> angle and
 			ss >> G0 >> G1 >> G2 >> G3 >> G4 >> G5 >> G6 >> G7 >> G8 >> G9 >> G10 >> G11 >> G12 >> G13 >> G14 >> G15 >> G16 >> G17 >> G18 >> G19 >> G20 >> G21 >> G22 >> G23){
-			
+
 			//conversion to radians
 			p4*=pi/180;
 			p5*=pi/180;
-			
+
 			fields.push_back(std::unique_ptr<TField>(new HarmonicExpandedBField(p1, p2, p3, bW, xma, xmi, yma, ymi, zma, zmi, Bscale, axis_x, axis_y, axis_z, angle,
 			        G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20, G21, G22, G23)));
 		}
-        else if ((type == "ExponentialFieldX") && (ss >> p1 >> p2 >> p3 >> p4 >> p5 >> xma >> xmi >> yma >> ymi >> zma >> zmi)){
-            fields.push_back(std::unique_ptr<TField>(new TExponentialFieldX(p1, p2, p3, p4, p5, xma, xmi, yma, ymi, zma, zmi)));
-		}
-        else if ((type == "LinearFieldZ") && (ss >> p1 >> p2 >> xma >> xmi >> yma >> ymi >> zma >> zmi)){
-            fields.push_back(std::unique_ptr<TField>(new TLinearFieldZ(p1, p2, xma, xmi, yma, ymi, zma, zmi)));
-		}
         else if ((type == "EDMStaticEField") && (ss >> p1 >> p2 >> p3 >> Bscale)){
             fields.push_back(std::unique_ptr<TField>(new TEDMStaticEField (p1, p2, p3, Bscale)));
+		}
+		else if (type == "ExponentialFieldX") {
+			ss >> p1 >> p2 >> p3 >> p4 >> p5 >> xma >> xmi >> yma >> ymi >> zma >> zmi  >> Bscale;
+			fields.push_back(std::unique_ptr<TField>( new TExponentialFieldX(p1, p2, p3, p4, p5, xma, xmi, yma, ymi, zma, zmi, Bscale) )) ;
+		}
+
+		else if (type == "LinearFieldZ") {
+			ss >> p1 >> p2 >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
+			fields.push_back(std::unique_ptr<TField>( new TLinearFieldZ(p1, p2, xma, xmi, yma, ymi, zma, zmi, Bscale) ));
+		}
+
+		else if (type == "B0GradZ") {
+			ss >> p1 >> p2 >> p3 >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
+			fields.push_back(std::unique_ptr<TField>( new TB0GradZ(p1, p2, p3, xma, xmi, yma, ymi, zma, zmi, Bscale) ));
+		}
+
+		else if (type == "B0GradX2") {
+			ss >> p1 >> p2 >> p3 >> p4 >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
+			fields.push_back(std::unique_ptr<TField>( new TB0GradX2(p1, p2, p3, p4, xma, xmi, yma, ymi, zma, zmi, Bscale) ));
+		}
+
+		else if (type == "B0GradXY") {
+			ss >> p1 >> p2 >> p3 >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
+			fields.push_back(std::unique_ptr<TField>( new TB0GradXY(p1, p2, p3, xma, xmi, yma, ymi, zma, zmi, Bscale) ));
+		}
+
+		else if (type == "B0_XY") {
+			ss >> p1 >> p2 >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale;
+			fields.push_back(std::unique_ptr<TField>( new TB0_XY(p1, p2, xma, xmi, yma, ymi, zma, zmi, Bscale) ));
 		}
 		else{
             throw std::runtime_error("Could not load field """ + type + """! Check config file for invalid field type or parameters.");

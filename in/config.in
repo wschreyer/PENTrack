@@ -22,12 +22,12 @@ secondaries 1
 #define cut plane by three points and number of sample points in direction 1->2/1->3
 BCutPlane	0.161 0 0.015	0.501 0 0.015	0.161 0 0.85	340	835
 
-#parameters to be used for generating a 2d histogram for the mr diffuse reflection probability into a solid angle 
+#parameters to be used for generating a 2d histogram for the mr diffuse reflection probability into a solid angle
 #Param order: Fermi pot. [neV], Neut energy [neV], RMS roughness [nm], correlation length [nm], theta_i [0..pi/2]
 MRSolidAngleDRP 220 200 1E-9 25E-9 0.1
 
-#parameters to be used for generating a 2d histogram of the integrated diffuse reflection probabilitites of the incident angle vs energy of a neutron 
-#Parameter order: Fermi potential of the material, RMS roughness [nm], Correlation length [nm], starting angle [0..pi/2], ending angle [0..pi/2], 
+#parameters to be used for generating a 2d histogram of the integrated diffuse reflection probabilitites of the incident angle vs energy of a neutron
+#Parameter order: Fermi potential of the material, RMS roughness [nm], Correlation length [nm], starting angle [0..pi/2], ending angle [0..pi/2],
 #starting neutron energy [neV], ending neutron energy [neV]
 MRThetaIEnergy 54 2.5E-9 20E-9 0 1.570796327 0 1000
 
@@ -173,16 +173,32 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #4 COMSOL	comsol.txt	1		1		0		1
 
 #FiniteWire		I		x1		y1		z1		x2		y2		z2		scale
-5 Conductor		12500	0		0		-1		0		0		2		1		
+5 Conductor		12500	0		0		-1		0		0		2		1
 
-#EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax 	xmin 	ymax 	ymin 	zmax 	zmin scale
-#6 EDMStaticB0GradZField 	0	0	0	0	0	1E-6	1E-9		0.01	1	-1	1 	-1	1	-1	1
-#EDMStaticEField          MagnitudeAlongX (V/m)    MagnitudeAlongY (V/m)   MagnitudeAlongZ (V/m)	scale
-#7 EDMStaticEField			0			0			1E6		1
+### See PENTrack/test/analyticalFieldTest/ or doxygen documentation for more info on analytical field parameters ###
+# ExponentialFieldX a1  a2  a3  c1  c2  xmax  xmin  ymax  ymin  zmax  zmin scale
+#6 ExponentialFieldX 5E-5 1  -4 0   0   3     -3     1     -1     1     -1  1
+
+## LinearFieldZ a1      a2     xmax  xmin  ymax  ymin  zmax  zmin scale
+#7 LinearFieldZ  2E-6   1E-6   0     -1     1     -1     1     -1   1
+
+### EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
+#8 EDMStaticB0GradZField     0         0          0       0       0       1E-6    0          0             3       0      1       -1      1       -1      1
+
+## B0GradZ    a1      a2     z0  xmax  xmin  ymax  ymin  zmax  zmin scale
+#9 B0GradZ       0    0     1E-6     1     -1     1   -1     1  -1    1
+
+## B0GradX2    a1      a2   a3     z0  xmax  xmin  ymax  ymin  zmax  zmin scale
+#10 B0GradX2  1E-8    0      0       1E-6     1     -1     1     -1     1  -1   1
+
+## B0GradXY    a1      a2     z0       xmax  xmin  ymax  ymin  zmax  zmin scale
+#11 B0GradXY  1E-8       0     1E-6     1     -1     1     -1     1  -1   1
+
+## B0_XY    a1    z0       xmax  xmin  ymax  ymin  zmax  zmin scale
+#12 B0_XY   1E-7  1E-6        1     -1     1     -1     1  -1   1
+
 #HarmonicExpandedBField     edmB0xoff   edmB0yoff   edmB0zoff   BoundaryWidth   xmax 	xmin 	ymax 	ymin 	zmax 	zmin    scale   axis_x  axis_y  axis_z  angle   G(0,-1) G(0,0)  G(0,1)  G(1,-2) G(1,-1) G(1,0)  G(1,1)  G(1,2)  G(2,-3) G(2,-2) G(2,-1) G(2,0)  G(2,1)  G(2,2)  G(2,3)  G(3,-4) G(3,-3) G(3,-2) G(3,-1) G(3,0)  G(3,1)  G(3,2)  G(3,3)  G(3,4)
-#8 HarmonicExpandedBField 	0	        0        0	        0.01        1    -1  	  1 	    -1	    1	    -1	    1       1       1       1       1.9     0       0       0       0       0       30      0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0
-#9 ExponentialFieldX a1 a2 a3 c1 c2 xmin xmax ymin ymax zmin zmax
-#10 LinearFieldZ a1 a2 xmin xmax ymin ymax zmin zmax
+#13 HarmonicExpandedBField 	0	        0        0	        0.01        1    -1  	  1 	    -1	    1	    -1	    1       1       1       1       1.9     0       0       0       0       0       30      0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0
 
 
 ######### default values for particle-specific settings ############
@@ -240,5 +256,3 @@ tmax 1e-5
 [FORMULAS]
 vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2) # for example, you could now add "vabs" to the list of endlogvars to print the absolute velocity to the endlog
 detected    solidend == 14 # for example, you could set this as an endlogfilter to only log particles that are absorbed in the detector
-
-
