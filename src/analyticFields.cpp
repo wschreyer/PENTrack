@@ -170,7 +170,7 @@ void TB0GradX2::BField(const double x, const double y, const double z, const dou
 	double Bscale = BScaling(t);	// Time dependent scaling
 
 	if (withinBounds(x, y, z) && (Bscale != 0)) {
-		B[0] = Bscale * ( -a3/6*x*x*x - a2/4*x*x -a3/2*x ); //Bx contribution
+		B[0] = Bscale * ( -a1/6*x*x*x - a2/4*x*x -a3/2*x ); //Bx contribution
 		B[1] = Bscale * ( -( a1*x*x + a2*x + a3 ) / 2 * y ); //By contribution
 		B[2] = Bscale * ((a1*x*x + a2*x + a3) * z + z0); //Bz contribution
 		if (dBidxj != NULL){
