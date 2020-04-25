@@ -32,6 +32,10 @@ BCutPlane -1 0.5 0  -1 0.5 0  1 0.5 0  1 150
 ## LinearFieldZ a1      a2     xmax  xmin  ymax  ymin  zmax  zmin scale
 #1 LinearFieldZ  2E-6   1E-6   0     -1     1     -1     1     -1   1
 
+# EDMStaticB0GradZField defines a z-oriented field of strength edmB0z0 with a small gradient edmB0z0dz along z, leading to small x and y components.
+# The origin and orientation of the z-axis can be adjusted with the edmB0[xyz]off parameters and a polar and azimuthal angle.
+# The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero outside these boundaries.
+
 ### EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
 #1 EDMStaticB0GradZField     0         0          0       0       0       1E-6    0          0             3       0      1       -1      1       -1      1
 
@@ -70,5 +74,18 @@ BCutPlane -1 0.5 0  -1 0.5 0  1 0.5 0  1 150
 
 ## B0_XY    a1    z0       xmax  xmin  ymax  ymin  zmax  zmin scale
 1 B0_XY   1E-7  1E-6        1     -1     1     -1     1  -1   1
+
+# HarmonicExpandedBField defines a field composed of Legendre polynomials up to third order with coefficients G(l,m), see https://arxiv.org/abs/1811.06085.
+# The origin can be adjusted with the edmB0[xyz]off parameters. The orientation can be rotated by a given angle around an axis.
+# The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero outside these boundaries.
+
+#HarmonicExpandedBField     edmB0xoff   edmB0yoff   edmB0zoff   BoundaryWidth   xmax 	xmin 	ymax 	ymin 	zmax 	zmin    scale   axis_x  axis_y  axis_z  angle   G(0,-1) G(0,0)  G(0,1)  G(1,-2) G(1,-1) G(1,0)  G(1,1)  G(1,2)  G(2,-3) G(2,-2) G(2,-1) G(2,0)  G(2,1)  G(2,2)  G(2,3)  G(3,-4) G(3,-3) G(3,-2) G(3,-1) G(3,0)  G(3,1)  G(3,2)  G(3,3)  G(3,4)
+#1 HarmonicExpandedBField 	0	        0        0	        0.01        1    -1  	  1 	    -1	    1	    -1	    1       1       1       1       1.9     0       0       0       0       0       30      0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0
+
+# EDMStaticEField defines an homogeneous electric field, simply set all three components of the electric-field vector.
+
+#EDMStaticEField   Ex  Ey  Ez  scale
+#1 EDMStaticEField 0   0   1e6 1
+
 
 [PARTICLES]
