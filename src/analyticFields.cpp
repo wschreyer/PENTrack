@@ -33,10 +33,10 @@ void TExponentialFieldX::BField(const double x, const double y, const double z, 
 			dBidxj[0][0] = Bscale * (-a2 * a1 * exp(- a2* x + a3)); // dBxdx
 			dBidxj[0][1] = 0; //dBxdy
 			dBidxj[0][2] = 0; //dBxdz
-			dBidxj[1][0] = Bscale * (-a2 * x * y * a1 * a2 / 2 * exp(- a2* x + a3) + c2); //dBydx
+			dBidxj[1][0] = Bscale * (-a2 * y * a1 * a2 / 2 * exp(- a2* x + a3)); //dBydx
 			dBidxj[1][1] = Bscale * (a1 * a2 / 2 * exp(- a2* x + a3)); //dBydy
 			dBidxj[1][2] = 0; //dBydz
-			dBidxj[2][0] = Bscale * (-a2 * x * z * a1 * a2 / 2 * exp(- a2* x + a3) + c2); //dBzdx
+			dBidxj[2][0] = Bscale * (-a2 * z * a1 * a2 / 2 * exp(- a2* x + a3)); //dBzdx
 			dBidxj[2][1] = 0; //dBzdy
 			dBidxj[2][2] = Bscale * (a1 * a2 / 2 * exp(- a2* x + a3)); //dBzdz
 		}
