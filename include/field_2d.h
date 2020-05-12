@@ -71,11 +71,9 @@ class TabField: public TField{
 		 * Calls TabField::ReadTabFile, TabField::CheckTab and for each column TabField::PreInterpol
 		 *
 		 * @param tabfile Path of table file
-		 * @param Bscale Time-dependent scaling formula for magnetic field
-		 * @param Escale Time-dependent scaling formula for electric field
 		 * @param alengthconv Factor to convert length units in file to PENTrack units (default: expect cm (cgs), convert to m)
 		 */
-		TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale, const double alengthconv);
+		TabField(const std::string &tabfile, const double alengthconv);
 
 		/**
 		 * Get magnetic field at a specific point.
@@ -118,6 +116,6 @@ class TabField: public TField{
  * 
  * @return Returns created 2D field map.
  */
-std::unique_ptr<TabField> ReadOperaField2(const std::string &params);
+TFieldContainer ReadOperaField2(const std::string &params);
 
 #endif // FIELD_2D_H_

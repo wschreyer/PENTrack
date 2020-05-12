@@ -27,8 +27,6 @@ private:
         typedef boost::multi_array<tricubic_coeff, 3> field_type; ///< interpolation coefficients for all grid cells
         std::array<field_type, 3> Bc; ///< interpolation coefficients for magnetix x,y, and z components
         field_type Vc; ///< interpolation coefficients for electric potential
-		double BoundaryWidth; ///< if this is larger 0, the field will be smoothly reduced to 0 in this boundary around the tabulated field cuboid
-
 private:
 		/**
 		 * Print some information for each table column
@@ -61,38 +59,6 @@ private:
 
 
 		/**
-		 * Smoothly reduce the field at the edges of the tabulated region
-		 *
-		 * If coordinates are within BoundaryWidth of the edges of the tabulated field,
-		 * the field and its derivatives are scaled by the SmthrStp and SmthrStpDer functions.
-		 *
-		 * @param x x coordinate
-		 * @param y y coordinate
-		 * @param z z coordinate
-		 * @param F Field value at (x,y,z)
-		 * @param dFdxi Field derivatives at (x,y,z)
-		 */
-		void FieldSmthr(const double x, const double y, const double z, double &F, double dFdxi[3]) const;
-
-		/**
-		 * Smooth function used to scale the field at the edges
-		 *
-		 * @param x function parameter (x = 0..1)
-		 *
-		 * @return Returns number between 0 and 1, smoothly rising with x
-		 */
-		double SmthrStp(const double x) const;
-
-		/**
-		 * Derivative of SmthStpDer
-		 *
-		 * @param x function parameter (x = 0..1)
-		 *
-		 * @return Returns derivative of SmthrStp at parameter x
-		 */
-		double SmthrStpDer(const double x) const;
-
-		/**
 		 * Interpolate field component at a specific point.
 		 *
 		 * Uses a binary search to find the grid cell that contains the point (x,y,z) and and calculates the tricubic interpolation using the coefficients belonging to the grid cell.
@@ -115,12 +81,8 @@ private:
          * @param xyzTab Lists of x, y, and z coordinates of grid points
          * @param BTab Lists of Bx, By, and Bz magnetic field components on grid points
          * @param VTab List of electric potentials on grid points
-		 * @param Bscale Time-dependent scaling formula for magnetic field
-		 * @param Escale Time-dependent scaling formula for electric field
-		 * @param aBoundaryWidth Sets TabField3::BoundaryWidth
 		 */
-        TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std::array<std::vector<double>, 3> &BTab, const std::vector<double> &VTab,
-                  const std::string &Bscale, const std::string &Escale, const double aBoundaryWidth);
+        TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std::array<std::vector<double>, 3> &BTab, const std::vector<double> &VTab);
 
 
 		/**
@@ -161,13 +123,13 @@ private:
  * @param params String containing parameters defined in config.in. Should contain field type "3Dtable", file name, magnetic field scaling formula, electric field scaling formula, and boundary width
  * @return Pointer to created class, derived from TField
  */
-std::unique_ptr<TabField3> ReadOperaField3(const std::string &params);
+TFieldContainer ReadOperaField3(const std::string &params);
 
 /**
 * Read generic file containing table of magnetic field mapped on list of points, e.g. exported from COMSOL
 * @param params String containing parameters defined in config.in. Should contain field type "COMSOL", file name, magnetic field scaling formula, and boundary width
 * @return Pointer to created class, derived from TField
 */
-std::unique_ptr<TabField3> ReadComsolField(const std::string &params);
+TFieldContainer ReadComsolField(const std::string &params);
 
 #endif // FIELD_3D_H_

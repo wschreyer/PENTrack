@@ -5,7 +5,7 @@ simtype 4
 #cut through B-field (simtype == 4) (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2)
 #define cut plane by three points and number of sample points in direction 1->2 and 1->3
 
-BCutPlane -1 0.5 0  -1 0.5 0  1 0.5 0  1 150
+BCutPlane -1 -1 0  1 -1 0  -1 1 0  1000 1000
 
 [MATERIALS]
 
@@ -34,13 +34,13 @@ BCutPlane -1 0.5 0  -1 0.5 0  1 0.5 0  1 150
 
 # EDMStaticB0GradZField defines a z-oriented field of strength edmB0z0 with a small gradient edmB0z0dz along z, leading to small x and y components.
 # The origin and orientation of the z-axis can be adjusted with the edmB0[xyz]off parameters and a polar and azimuthal angle.
-# The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero outside these boundaries.
+# The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero at these boundaries.
 
 ### EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
 #1 EDMStaticB0GradZField     0         0          0       0       0       1E-6    0          0             3       0      1       -1      1       -1      1
 
 # B0GradZ is described by:
-# B_z = a1 * z^2 + a2 z + z0
+# B_z = a1/2 * z^2 + a2 z + z0
 # dBdz = a1 * z + a2
 # a1 = [T/m^2]; a2 = [T/m]; z0 = [T]
 # Field is turned off outside of the xyz min/max boundaries specified [meters]
@@ -75,6 +75,11 @@ BCutPlane -1 0.5 0  -1 0.5 0  1 0.5 0  1 150
 ## B0_XY    a1    z0       xmax  xmin  ymax  ymin  zmax  zmin scale
 1 B0_XY   1E-7  1E-6        1     -1     1     -1     1  -1   1
 
+## CustomBField calculates the three field components from formulas defined in the FORMULAS section. Field derivatives are approximated numerically using a five-point stencil method.
+# The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero at these boundaries.
+# CustomBFieod Bx-formula By-formula Bz-formula xmax xmin ymax ymin zmax zmin BoundaryWidth scale
+# 2 CustomBField Bx By Bz 0 0 0 0 0 0 0 1
+
 # HarmonicExpandedBField defines a field composed of Legendre polynomials up to third order with coefficients G(l,m), see https://arxiv.org/abs/1811.06085.
 # The origin can be adjusted with the edmB0[xyz]off parameters. The orientation can be rotated by a given angle around an axis.
 # The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero outside these boundaries.
@@ -89,3 +94,11 @@ BCutPlane -1 0.5 0  -1 0.5 0  1 0.5 0  1 150
 
 
 [PARTICLES]
+
+
+[FORMULAS]
+# These are the components for the CustomBField defined in the FIELDS section, valid variables are coordinates x, y, z and time t
+# They should exactly compensate the B0GradX2 field defined there
+Bx -1e-8/6 * x^3
+By -1e-8 * x^2/2 * y
+Bz 1e-8 * x^2 * z + 1e-6

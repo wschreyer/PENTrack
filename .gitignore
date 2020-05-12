@@ -11,9 +11,12 @@ CMakeScripts
 Makefile
 cmake_install.cmake
 install_manifest.txt
+Testing
+CTestTestfile.cmake
 
 # ignore binaries
 PENTrack
+runTests
 
 # ignore output files
 *.out
@@ -29,3 +32,7 @@ doc/
 *.creator.user
 *.files
 *.includes
+
+#ignore VS Code files
+.vscode/
+compile_commands.json

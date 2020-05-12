@@ -1,6 +1,6 @@
 /**
  * \file
- * Several optimized routines to calculate magnetic fields produced by (in)finite straight wires.
+ * Several optimized routines to calculate magnetic fields produced by finite straight wires.
  */
 
 #include "conductor.h"
@@ -8,14 +8,14 @@
 #include "globals.h"
 
 TConductorField::TConductorField(const double SW1xx, const double SW1yy, const double SW1zz,
-		const double SW2xx, const double SW2yy, double SW2zz, double aI, const std::string &Bscale)
-			: TField(Bscale, "0"), I(aI), SW1x(SW1xx), SW1y(SW1yy), SW1z(SW1zz), SW2x(SW2xx), SW2y(SW2yy), SW2z(SW2zz){
+		const double SW2xx, const double SW2yy, double SW2zz, double aI)
+			: I(aI), SW1x(SW1xx), SW1y(SW1yy), SW1z(SW1zz), SW2x(SW2xx), SW2y(SW2yy), SW2z(SW2zz){
 
 };
 
 void TConductorField::BField(const double x, const double y, const double z, const double t,
 		double B[3], double dBidxj[3][3]) const{
-	double vorfaktor = mu0 * I / (4 * pi)*BScaling(t);
+	double vorfaktor = mu0 * I / (4 * pi);
 
 	double t1 = SW2z * SW2z;
 	double t2 = z * z;

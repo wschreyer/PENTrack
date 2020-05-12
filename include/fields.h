@@ -15,9 +15,9 @@
 /**
  * Contains list of all fields (2D/3D-maps, conductors, ...).
  */
-struct TFieldManager{
+class TFieldManager{
 private:
-    std::vector<std::unique_ptr<TField> > fields; ///< list of fields
+    std::vector< TFieldContainer > fields; ///< list of fields
 		
 public:
 	TFieldManager(const TFieldManager &f) = delete; ///< TFieldManager is not copyable

@@ -105,7 +105,7 @@ Every field type can be scaled with a user-defined time-dependent formula to sim
 
 ### Particle sources
 
-Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the configuration file.
+Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conveniently defined in the configuration file.
 
 
 Limitations
@@ -119,7 +119,7 @@ The description of geometry through triangle meshes incurs certain limitations:
 Run the simulation
 ------------------
 
-Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the configuration file.
+Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable `PENTrack`. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the configuration file.
 
 Four optional command-line parameters can be passed to the executable: a job number (default: 0) which is prepended to all log-file names, a path from where the configuration file should be read (default: in/), a path where the output files will be written (default: out/), and a fixed random seed (default: 0 - random seed is determined from high-resolution clock at program start).
 
@@ -143,6 +143,8 @@ You can modify the simulation on four different levels:
 2. Modify the code in main.c and combine TParticle, TGeometry, TField, TSource classes etc. into your own simulation (you can generate a Doxygen documentation by typing `doxygen doxygen.config`)
 3. Implement your own particles, sources or fields by inheriting from the corresponding base classes and fill the virtual routines with the corresponding physics
 4. Make low level changes to the existing classes
+
+Code tests can be compiled by adding the BUILD_TESTS option to cmake: `cmake -DBUILD_TESTS=ON .`. `make` will then compile an additional executable `runTests` that will report any failed code tests. The Boost Unit Test Framework from version 1.59.0 or newer will be required to build the tests.
 
 
 Output
