@@ -7,7 +7,7 @@
 using namespace std;
 
 std::unique_ptr<TLogger> CreateLogger(TConfig& config){
-    bool ROOTlog;
+    bool ROOTlog = false;
     istringstream(config["GLOBAL"]["ROOTlog"]) >> ROOTlog;
     if (ROOTlog){
         #ifdef USEROOT
