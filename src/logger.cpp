@@ -23,7 +23,7 @@ std::unique_ptr<TLogger> CreateLogger(TConfig& config){
 
 void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, const state_type &y, const state_type &spin,
         const TGeometry &geom, const TFieldManager &field, const std::string suffix){
-    bool log;
+    bool log = false;
     istringstream(config[p->GetName()][suffix + "log"]) >> log;
     if (not log)
         return;
@@ -109,7 +109,7 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, con
 
 void TLogger::PrintSnapshot(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, const value_type x2, const state_type &y2,
                    const state_type &spin, const dense_stepper_type& stepper, const TGeometry &geom, const TFieldManager &field){
-    bool log;
+    bool log = false;
     istringstream(config[p->GetName()]["snapshotlog"]) >> log;
     if (not log)
         return;
@@ -124,8 +124,8 @@ void TLogger::PrintSnapshot(const std::unique_ptr<TParticle>& p, const value_typ
 
 void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, const value_type x, const state_type& y,
                 const state_type &spin, const solid &sld, const TFieldManager &field){
-    bool log;
-    double interval;
+    bool log = false;
+    double interval = 0.;
     istringstream(config[p->GetName()]["tracklog"]) >> log;
     istringstream(config[p->GetName()]["trackloginterval"]) >> interval;
     if (not log or interval <= 0)
@@ -182,7 +182,7 @@ void TLogger::PrintTrack(const std::unique_ptr<TParticle>& p, const value_type x
 }
 
 void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, const state_type &y1, const state_type &y2, const double *normal, const solid &leaving, const solid &entering){
-    bool log;
+    bool log = false;
     istringstream(config[p->GetName()]["hitlog"]) >> log;
     if (not log)
         return;
@@ -218,8 +218,8 @@ void TLogger::PrintHit(const std::unique_ptr<TParticle>& p, const value_type x, 
 
 void TLogger::PrintSpin(const std::unique_ptr<TParticle>& p, const value_type x, const dense_stepper_type& spinstepper,
                const dense_stepper_type &trajectory_stepper, const TFieldManager &field) {
-    bool log;
-    double interval;
+    bool log = false;
+    double interval = 0.;
     istringstream(config[p->GetName()]["spinlog"]) >> log;
     istringstream(config[p->GetName()]["spinloginterval"]) >> interval;
     if (not log or interval <= 0)

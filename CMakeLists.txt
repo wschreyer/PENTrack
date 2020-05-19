@@ -54,6 +54,8 @@ find_package(ROOT)
 if (ROOT_FOUND)
 	message(STATUS "Found ROOT, you can use the ROOTlog option")
     include(${ROOT_USE_FILE})
+else()
+	message(STATUS "Cound not find ROOT, you won't be able to use the ROOTlog option")
 endif()
 
 				
