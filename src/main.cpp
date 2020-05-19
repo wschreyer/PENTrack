@@ -53,8 +53,7 @@ uint64_t seed = 0; ///< random seed used for random-number generator (generated 
  * 				e.g: "SIGFPE" is connected to number 8
  */
 void catch_alarm (int sig){
-	printf("Program was terminated, because Signal %i occured\n", sig);
-	exit(1);
+    quit.store(true);
 }
 
 
@@ -79,7 +78,9 @@ int main(int argc, char **argv){
 	" #######################################################################\n";
 
 	//Initialize signal-analizing
+	quit.store(false);
 	signal (SIGINT, catch_alarm);
+	signal (SIGTERM, catch_alarm);
 	signal (SIGUSR1, catch_alarm);
 	signal (SIGUSR2, catch_alarm);
 	signal (SIGXCPU, catch_alarm);
@@ -151,14 +152,20 @@ int main(int argc, char **argv){
 		TTracker t(configin);
 		for (int iMC = 1; iMC <= simcount; iMC++)
 		{
-			unique_ptr<TParticle> p(source->CreateParticle(mc, geom, field));
+            if (quit.load())
+                break;
+
+            unique_ptr<TParticle> p(source->CreateParticle(mc, geom, field));
 			t.IntegrateParticle(p, SimTime, configin[p->GetName()], mc, geom, field); // integrate particle
 			ID_counter[p->GetName()][p->GetStopID()]++; // increment counters
 			ntotalsteps += p->GetNumberOfSteps();
 
 			if (secondaries == 1){
 				for (auto& i: p->GetSecondaryParticles()){
-					t.IntegrateParticle(i, SimTime, configin[i->GetName()], mc, geom, field); // integrate secondary particles
+                    if (quit.load())
+                        break;
+
+                    t.IntegrateParticle(i, SimTime, configin[i->GetName()], mc, geom, field); // integrate secondary particles
 					ID_counter[i->GetName()][i->GetStopID()]++;
 					ntotalsteps += i->GetNumberOfSteps();
 				}
@@ -181,7 +188,10 @@ int main(int argc, char **argv){
 	float SimulationTime = chrono::duration_cast<chrono::milliseconds>(simend - simstart).count()/1000.;
 	printf("Init: %.2fs, Simulation: %.2fs\n",
 			InitTime, SimulationTime);
-	printf("That's it... Have a nice day!\n");
+	if (quit.load())
+	    cout << "Simulation killed by signal!\n";
+	else
+    	cout << "That's it... Have a nice day!\n";
 	
 	return 0;
 }

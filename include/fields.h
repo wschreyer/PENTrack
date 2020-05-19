@@ -15,9 +15,9 @@
 /**
  * Contains list of all fields (2D/3D-maps, conductors, ...).
  */
-struct TFieldManager{
+class TFieldManager{
 private:
-    std::vector<std::unique_ptr<TField> > fields; ///< list of fields
+    std::vector< TFieldContainer > fields; ///< list of fields
 		
 public:
 	TFieldManager(const TFieldManager &f) = delete; ///< TFieldManager is not copyable
@@ -57,7 +57,6 @@ public:
 	 * @param t Time
 	 * @param V Return electric potential (!=0 only if a map with potential was loaded)
 	 * @param Ei Returns electric field vector
-	 * @param dEidxj Returns spatial derivatives of electric field components (optional)
 	 */
 	void EField(const double x, const double y, const double z, const double t,
 			double &V, double Ei[3]) const;

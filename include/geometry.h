@@ -26,6 +26,8 @@ struct material{
 	double RMSRoughness; ///< RMS roughness of surface, for MicroRoughness model reflections
 	double CorrelLength; ///< Correlation length of surface roughness, for MicroRoughness model reflections
     double InternalBField; ///< Internal magnetic field, for magnetized materials
+    double ModifiedLambertProb; ///< Probability of diffuse reflection according to Modified Lambert model
+    double LossPerBounce; ///< Probability of loss when hitting the wall (independent of neutron energy)
 };
 
 ///Read material properties, except name, from input stream
@@ -51,6 +53,13 @@ struct solid{
 	 */
 	bool operator< (const solid s) const { return ID > s.ID; };
 
+	/**
+	 * Check if solid is ignored at a certain time
+	 * 
+	 * @param t Time
+	 * 
+	 * @return Returns true if solid is ignored at time t
+	 */
 	bool is_ignored(const double t) const{
 	    return std::any_of(ignoretimes.begin(), ignoretimes.end(),
 	            [&t](const std::pair<double, double> &its){ return t >= its.first && t < its.second; }

@@ -206,7 +206,9 @@ std::piecewise_linear_distribution<double> parse_distribution(const std::string 
 	expression.register_symbol_table(symbol_table);
 
 	exprtk::parser<double> parser;
-	parser.compile(func, expression);
+	if (not parser.compile(func, expression)){
+	    throw std::runtime_error(exprtk::parser_error::to_str(parser.get_error(0).mode) + " while parsing formula '" + func + "': " + parser.get_error(0).diagnostic);
+	}
 	return parse_distribution(
 			[&x, &expression](const double px){
 				x = px;

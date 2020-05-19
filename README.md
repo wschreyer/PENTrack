@@ -93,15 +93,19 @@ If you want to export several parts of a Solidworks assembly you can do the foll
 
 Magnetic and electric fields (2D and 3D) can be included from text-based field maps.
 2D maps are assumed to be rotationally symmetric around the z axis. They can contain columns for r, z, Bx, By, Bz, Ex, Ey, Ez, and V exported from "[Vectorfields OPERA](http://www.operafea.com)" on a regular grid (each field column is optional).
+
 3D maps can contain generic columns for x, y, z, Bx, By, Bz on a rectilinear grid. Lines beginning with % or # will be skipped, columns may be delineated by space, comma, or tab.
 3D maps can also be exported from OPERA with columns x, y, z, Bx, By, Bz, V on a rectilinear grid (each field column is optional).
-Units for field maps are assumed to be in meters, Tesla, and Volts, but each can be scaled individually.
-You can also define a variety of analytically calculated fields. See default config file for more information.
+
+Units of field maps are assumed to be in meters, Tesla, and Volts, but each can be scaled individually.
+
+You can also define a variety of analytically calculated fields. See default config file and test/analyticalFieldTest/config.in for more information.
+
 Every field type can be scaled with a user-defined time-dependent formula to simulate oscillating fields or magnets that are ramped up and down.
 
 ### Particle sources
 
-Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conviniently defined in the configuration file.
+Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conveniently defined in the configuration file.
 
 
 Limitations
@@ -115,7 +119,7 @@ The description of geometry through triangle meshes incurs certain limitations:
 Run the simulation
 ------------------
 
-Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the configuration file.
+Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable `PENTrack`. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the configuration file.
 
 Four optional command-line parameters can be passed to the executable: a job number (default: 0) which is prepended to all log-file names, a path from where the configuration file should be read (default: in/), a path where the output files will be written (default: out/), and a fixed random seed (default: 0 - random seed is determined from high-resolution clock at program start).
 
@@ -125,7 +129,7 @@ Physics
 
 All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment.
 
-Interaction of UCN with matter is described with the Fermi-potential formalism and the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) or the MicroRoughness model (see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)) for diffuse reflection, and includes spin flips on wall bounce. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall.
+Interaction of UCN with matter is described with the Fermi-potential formalism. Diffuse scattering is described with the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) (scattering angle cosine-distributed around surface normal), a modified Lambert model (scattering angle cosine-distributed around specular scattering vector), or the MicroRoughness model (see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)). Spin flips on wall bounce can also be included. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall.
 
 A particle's spin can be tracked by integrating the [Bargmann-Michel-Telegdi](https://doi.org/10.1007/s10701-011-9579-7) equation along a particle's trajectory. To reduce computation time a magnetic-field threshold can be defined to limit spin tracking to regions where the adiabatic condition is not fulfilled.
 
@@ -140,17 +144,23 @@ You can modify the simulation on four different levels:
 3. Implement your own particles, sources or fields by inheriting from the corresponding base classes and fill the virtual routines with the corresponding physics
 4. Make low level changes to the existing classes
 
+Code tests can be compiled by adding the BUILD_TESTS option to cmake: `cmake -DBUILD_TESTS=ON .`. `make` will then compile an additional executable `runTests` that will report any failed code tests. The Boost Unit Test Framework from version 1.59.0 or newer will be required to build the tests.
+
 
 Output
 -------
 
-Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be individually configured for each particle type by adding corresponding variables in the particle-specific sections in the configuration file. All output files are tables with space-separated columns; the first line contains the column name.
+Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be individually configured for each particle type by adding corresponding variables in the particle-specific sections in the configuration file.
+
+Text output files are tables with space-separated columns; the first line contains the column name. If you compile PENTrack with [ROOT](https://root.cern.ch) support, data can be directly printed to ROOT trees by enablign the ROOTlog option. In that case, a single ROOT file containing a tree for each particle and output type will be created, similar to the output of the merge scripts described in the Helper Scripts section. The created ROOT file will also contain a copy of all configuration variables.
+
+Output can be filtered so only particles fulfilling certain conditions are printed.
 
 Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 
 ### Endlog
 
-The endlog keeps track of the starting and end parameters of the simulated particles. In the endlog, you get the following variables:
+The endlog keeps track of the starting and end parameters of the simulated particles. The data to be output can be defined with the endlogvars option in the config file. By default, you get the following variables. Any combination of these variables can be defined in the FORMULAS section and added to the endlog if needed.
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
@@ -195,11 +205,11 @@ The endlog keeps track of the starting and end parameters of the simulated parti
 
 ### Snapshotlog
 
-Switching on snapshotlog in the PARTICLES section or the particle-specific sections will output the particle parameters at additional snapshot times in the snapshotlog. It contains the same data fields as the endlog.
+Switching on snapshotlog in the PARTICLES section or the particle-specific sections will output the particle parameters at additional snapshot times in the snapshotlog. The data to be output can be defined with the snapshotlogvars option in the config file. By default, it contains the same data fields as the endlog.
 
 ### Tracklog
 
-The tracklog contains the complete trajectory of the particle, with following parameters:
+The tracklog contains the complete trajectory of the particle. The data to be output can be defined with the tracklogvars option in the config file. By default, you get the following variables. Any combination of these variables can be defined in the FORMULAS section and added to the tracklog if needed.
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
@@ -222,7 +232,7 @@ The tracklog contains the complete trajectory of the particle, with following pa
 
 This log contains all the points at which particle hits a surface of the experiment geometry. This includes both reflections and transmissions.
 
-In the hitlog, you get the following parameters:
+The data to be output can be defined with the hitlogvars option in the config file. By default, you get the following variables. Any combination of these variables can be defined in the FORMULAS section and added to the hitlog if needed.
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated
@@ -238,7 +248,7 @@ In the hitlog, you get the following parameters:
 
 ### Spinlog
 
-If the spinlog parameter is enabled in the configuration file and the particle spin is tracked, it will be logged into the spinlog. In the spinlog, you get the following parameters:
+If the spinlog parameter is enabled in the configuration file and the particle spin is tracked, it will be logged into the spinlog. The data to be output can be defined with the spinlogvars option in the config file. By default, you get the following variables. Any combination of these variables can be defined in the FORMULAS section and added to the spinlog if needed.
 
 - jobnumber: job number of the PENTrack run (passed per command line parameter)
 - particle: number of particle being simulated

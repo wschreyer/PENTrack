@@ -11,20 +11,32 @@
 #include "logger.h"
 #include "stepper.h"
 
+/**
+ * Class used to interpolate particle trajectories and track their path through the experiment geometry.
+ */
 class TTracker {
 private:
     std::vector<std::pair<solid, bool> > currentsolids; ///< solids in which particle is currently inside
-    std::unique_ptr<TLogger> logger;
+    std::unique_ptr<TLogger> logger; ///< class to log particle states
 public:
+    /**
+     * Constructor.
+     * 
+     * Reads relevant configuration parameters
+     * 
+     * @param config List of configuration parameters read from config files.
+     */
     TTracker(TConfig& config);
+
     /**
      * Integrate particle trajectory.
      *
      * Takes state vector yend and integrates the trajectory step by step.
      * If a step is longer than MAX_SAMPLE_DIST, the step is split by interpolating intermediate points.
      * On each step it checks for interaction with solids, prints snapshots and track into files and calls TParticle::OnStep.
-     * TParticle::StopIntegration is called if TParticle::tau or tmax are reached; or if something happens to the particle (absorption, error, ...)
+     * Integration is stopped and ID set if TParticle::tau or tmax are reached; or if something happens to the particle (absorption, error, ...)
      *
+     * @param p Particle to integrate
      * @param tmax Max. absolute time at which integration will be stopped
      * @param particleconf Option map containing particle specific options from particle.in
      * @param mc Random-number generator
@@ -39,6 +51,7 @@ private:
      *
      * Check if trajectory has been altered by physics processes, return true if it was.
      *
+     * @param p Particle
      * @param x1 Start time of line segment
      * @param y1 Start point of line segment
      * @param x2 End time of line segment
@@ -52,10 +65,11 @@ private:
     void DoStep(const std::unique_ptr<TParticle>& p, TStep &stepper, const solid &currentsolid, TMCGenerator &mc, const TFieldManager &field);
 
     /**
-     * Call OnHit to check if particle should cross material boundary.
+     * Call particle's OnHit function to check if particle should cross material boundary.
      *
      * Update list of solids the particle is in, check for geometry-tracking errors.
      *
+     * @param p Particle
      * @param x1 Start time of line segment
      * @param y1 Start point of line segment
      * @param x2 End time of line segment

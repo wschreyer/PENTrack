@@ -18,7 +18,18 @@
 #include "tricubic.h"
 #include "globals.h"
 
-// A faster implementation of the tricubic_eval function from libtricubic.
+/**
+ * A faster implementation of the tricubic_eval function from libtricubic.
+ * 
+ * Uses Horner's scheme.
+ * 
+ * @param a Interpolation parameters (64 doubles)
+ * @param x X coordinate of point field should be evaluated at
+ * @param y Y coordinate
+ * @param z Z coordinate
+ * 
+ * @return Interpolated value at point
+ */
 inline double tricubic_eval_fast(double a[64], double x, double y, double z) {
 /*	double result = 0.0;
 	for (int i = 0; i < 4; ++i) {
@@ -49,6 +60,22 @@ inline double tricubic_eval_fast(double a[64], double x, double y, double z) {
 	return rx;
 }
 
+
+/**
+ * A faster implementation of the tricubic_eval function from libtricubic.
+ * 
+ * Uses Horner's scheme.
+ * 
+ * @param a Interpolation parameters (64 doubles)
+ * @param x X coordinate of point field should be evaluated at
+ * @param y Y coordinate
+ * @param z Z coordinate
+ * @param derx Return derx-th derivative with respect to x
+ * @param dery Return dery-th derivative with respect to y
+ * @param derz Return derz-th derivative with respect to z
+ * 
+ * @return Interpolated value at point
+ */
 inline double tricubic_eval_fast(double a[64], double x, double y, double z, int derx, int dery, int derz) {
 	// fact[i][n] is the coefficient in front of the nth derivative of x^i.
 	// For instance, d2/dx2 x^3 = 6 x, so fact[3][2] = 6.
@@ -91,7 +118,7 @@ inline double tricubic_eval_fast(double a[64], double x, double y, double z, int
 }
 
 
-std::unique_ptr<TabField3> ReadComsolField(const std::string &params){
+TFieldContainer ReadComsolField(const std::string &params){
   std::istringstream ss(params);
   boost::filesystem::path ft;
   std::string fieldtype, Bscale;
@@ -137,11 +164,13 @@ std::unique_ptr<TabField3> ReadComsolField(const std::string &params){
     throw std::runtime_error("No data read from " + ft.string());
   }
 
-  return std::unique_ptr<TabField3>(new TabField3({x,y,z}, {bx,by,bz}, std::vector<double>(), Bscale, "0", BoundaryWidth));
+  auto xminmax = std::minmax_element(x.begin(), x.end());
+  auto yminmax = std::minmax_element(y.begin(), y.end());
+  auto zminmax = std::minmax_element(z.begin(), z.end());
+  return TFieldContainer(std::unique_ptr<TabField3>(new TabField3({x,y,z}, {bx,by,bz}, std::vector<double>())), Bscale, "0", *xminmax.second, *xminmax.first, *yminmax.second, *yminmax.first, *zminmax.second, *zminmax.first, BoundaryWidth);
 }
 
-
-std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
+TFieldContainer ReadOperaField3(const std::string &params){
     std::istringstream ss(params);
     boost::filesystem::path ft;
     std::string fieldtype, Bscale, Escale;
@@ -149,8 +178,9 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
     ss >> fieldtype;
     if (fieldtype == "3Dtable"){
         ss >> ft >> Bscale >> Escale >> BoundaryWidth; // read fieldtype, tablefilename, and rest of parameters
-        std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA3D format. I'm assuming that file " << ft << " is using centimeters, Gauss, and Volts as units.\n";
+        std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA3D format. I'm assuming that file " << ft << " is using centimeters, Gauss, Volt/centimeter, and Volts as units.\n";
         Bscale = "(" + Bscale + ")*0.0001"; // scale magnetic field to Tesla
+        Escale = "(" + Escale + ")*100"; // scale electric field to Volt/meter
         lengthconv = 0.01;
     }
     else if (fieldtype == "OPERA3D"){
@@ -250,7 +280,10 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
 	}
 	FIN.close();
 
-    return std::unique_ptr<TabField3>(new TabField3(xyzTab, BTab, VTab, Bscale, Escale, BoundaryWidth));
+    auto xminmax = std::minmax_element(xyzTab[0].begin(), xyzTab[0].end());
+    auto yminmax = std::minmax_element(xyzTab[1].begin(), xyzTab[1].end());
+    auto zminmax = std::minmax_element(xyzTab[2].begin(), xyzTab[2].end());
+    return TFieldContainer(std::unique_ptr<TabField3>(new TabField3(xyzTab, BTab, VTab)), Bscale, Escale, *xminmax.second, *xminmax.first, *yminmax.second, *yminmax.first, *zminmax.second, *zminmax.first, BoundaryWidth);
 }
 
 
@@ -266,8 +299,6 @@ void TabField3::CheckTab(const std::array<std::vector<double>, 3> &B, const std:
     std::transform( boost::make_zip_iterator(boost::make_tuple(B[0].begin(), B[1].begin(), B[2].begin())),
                     boost::make_zip_iterator(boost::make_tuple(B[0].end(), B[1].end(), B[2].end())), std::back_inserter(Babs),
                     [](const boost::tuple<double,double,double> &Bs){ return std::sqrt(std::pow(Bs.get<0>(), 2) + std::pow(Bs.get<1>(), 2) + std::pow(Bs.get<2>(), 2)); });
-    std::copy(V.begin(), V.end(), std::ostream_iterator<double>(std::cout, " "));
-    std::cout.flush();
     std::cout << "The input table file has values of magnetic field |B| from " << *std::min_element(Babs.begin(), Babs.end()) << " to " << *std::max_element(Babs.begin(), Babs.end());
     if (not V.empty())
         std::cout << " and values of electric potential from " << *std::min_element(V.begin(), V.end()) << " to " << *std::max_element(V.begin(), V.end());
@@ -360,10 +391,7 @@ void TabField3::PreInterpol(const array3D &Tab, field_type &coeff) const{
 }
 
 
-TabField3::TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std::array<std::vector<double>, 3> &BTab, const std::vector<double> &VTab,
-                     const std::string &Bscale, const std::string &Escale, const double aBoundaryWidth)
-	: TField(Bscale, Escale){
-	BoundaryWidth = aBoundaryWidth;
+TabField3::TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std::array<std::vector<double>, 3> &BTab, const std::vector<double> &VTab){
 
     for (unsigned i = 0; i < 3; ++i){
         std::unique_copy(xyzTab[i].begin(), xyzTab[i].end(), std::back_inserter(xyz[i])); // get list of unique x, y, and z coordinates
@@ -433,11 +461,8 @@ TabField3::TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std
 }
 
 
-void TabField3::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
-	double Bscale = BScaling(t);
-    if (Bscale == 0)
-        return;
-
+void TabField3::Interpolate(const double x, const double y, const double z,
+                            const field_type& coeffs, double &F, double dFdxi[3]) const {
     std::array<double, 3> r = {x, y, z}, dist;
 	// get coordinate index
     std::array<long, 3> index;
@@ -453,131 +478,29 @@ void TabField3::BField(const double x, const double y, const double z, const dou
     }
 
     // tricubic interpolation
-    for (unsigned i = 0; i < 3; ++i){
-        if (not Bc[i].empty()){
-            double *coeff = const_cast<double*>(&Bc[i](index)[0]);
-            B[i] = Bscale*tricubic_eval_fast(coeff, r[0], r[1], r[2]);
-            if (dBidxj != nullptr){
-                dBidxj[i][0] = Bscale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 0)/dist[0];
-                dBidxj[i][1] = Bscale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 0)/dist[1];
-                dBidxj[i][2] = Bscale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 0, 1)/dist[2];
-            }
-		}
+    if (not coeffs.empty()){
+        double *coeff = const_cast<double*>(&coeffs(index)[0]);
+        F = tricubic_eval_fast(coeff, r[0], r[1], r[2]);
+        if (dFdxi != nullptr){
+            dFdxi[0] = tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 0)/dist[0];
+            dFdxi[1] = tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 0)/dist[1];
+            dFdxi[2] = tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 0, 1)/dist[2];
+        }
     }
-    for (int i = 0; i < 3; i++){
-        if (dBidxj != nullptr)
-				FieldSmthr(x, y, z, B[i], dBidxj[i]); // apply field smoothing to each component
-			else
-            FieldSmthr(x, y, z, B[i], nullptr);
-	}
 }
 
-void TabField3::FieldSmthr(const double x, const double y, const double z, double &F, double dFdxi[3]) const{
-	if (BoundaryWidth != 0 && F != 0){ // skip, if BoundaryWidth is set to zero
-        double dxlo = (x - xyz[0].front())/BoundaryWidth; // calculate distance to edges in units of BoundaryWidth
-        double dxhi = (xyz[0].back() - x)/BoundaryWidth;
-        double dylo = (y - xyz[1].front())/BoundaryWidth;
-        double dyhi = (xyz[1].back() - y)/BoundaryWidth;
-        double dzlo = (z - xyz[2].front())/BoundaryWidth;
-        double dzhi = (xyz[2].back() - z)/BoundaryWidth;
 
-		// F'(x,y,z) = F(x,y,z)*f(x)*f(y)*f(z)
-		// dF'/dx = dF/dx*f(x)*f(y)*f(z) + F*df(x)/dx*f(y)*f(z) --> similar for dF'/dy and dF'/dz
-
-		double Fscale = 1; // f(x)*f(y)*f(z)
-		double dFadd[3] = {0, 0, 0}; // F*df(x_i)/dx_i / f(x_i)
-
-		if (dxhi < 1) { // if point in upper x boundary (distance smaller than BoundaryWidth)
-			Fscale *= SmthrStp(dxhi); // scale field by value of smoother function
-            if (dFdxi != nullptr)
-				dFadd[0] = -F*SmthrStpDer(dxhi)/BoundaryWidth/SmthrStp(dxhi); // add derivative of smoother function according to product rule
-		}
-		if (dyhi < 1){ // if point in upper y boundary
-			Fscale *= SmthrStp(dyhi);
-            if (dFdxi != nullptr)
-				dFadd[1] = -F*SmthrStpDer(dyhi)/BoundaryWidth/SmthrStp(dyhi);
-		}
-		if (dzhi < 1){ // if point in upper z boundary
-			Fscale *= SmthrStp(dzhi);
-            if (dFdxi != nullptr)
-				dFadd[2] = -F*SmthrStpDer(dzhi)/BoundaryWidth/SmthrStp(dzhi);
-		}
-
-		if (dxlo < 1){ // if point in lower x boundary
-			Fscale *= SmthrStp(dxlo);
-            if (dFdxi != nullptr)
-				dFadd[0] = F*SmthrStpDer(dxlo)/BoundaryWidth/SmthrStp(dxlo);
-		}
-		if (dylo < 1){ // if point in lower y boundary
-			Fscale *= SmthrStp(dylo);
-            if (dFdxi != nullptr)
-				dFadd[1] = F*SmthrStpDer(dylo)/BoundaryWidth/SmthrStp(dylo);
-		}
-		if (dzlo < 1){ // if point in lower z boundary
-			Fscale *= SmthrStp(dzlo);
-            if (dFdxi != nullptr)
-				dFadd[2] = F*SmthrStpDer(dzlo)/BoundaryWidth/SmthrStp(dzlo);
-		}
-
-		if (Fscale != 1){
-			F *= Fscale; // scale field value
-            if (dFdxi != nullptr){
-				for (int i = 0; i < 3; i++){
-					dFdxi[i] = dFdxi[i]*Fscale + dFadd[i]*Fscale; // scale derivatives according to product rule
-				}
-			}
-		}
-
-	}
-}
-
-double TabField3::SmthrStp(const double x) const{
-    return 6*std::pow(x, 5) - 15*std::pow(x, 4) + 10*std::pow(x, 3);
-}
-
-double TabField3::SmthrStpDer(const double x) const{
-    return 30*std::pow(x, 4) - 60*std::pow(x, 3) + 30*std::pow(x,2);
+void TabField3::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
+    for (unsigned i = 0; i < 3; ++i){
+        Interpolate(x, y, z, Bc[i], B[i], dBidxj == nullptr ? nullptr : dBidxj[i]);
+    }
 }
 
 void TabField3::EField(const double x, const double y, const double z, const double t,
 		double &V, double Ei[3]) const{
-	double Escale = EScaling(t);
-    if (Escale != 0 && not Vc.empty()){
-        std::array<double, 3> r = {x, y, z}, dist;
-		// get coordinate index
-        std::array<int, 3> index;
-        for (int i = 0; i < 3; ++i){
-          auto it = std::upper_bound(xyz[i].begin(), xyz[i].end(), r[i]); // find first coordinate larger than x/y/z
-          if (it == xyz[i].end() || it == xyz[i].begin()) // if x,y,z are outside bounds of field
-              return;
-          auto low = it - 1;
-          index[i] = std::distance(low, xyz[i].begin());
-          dist[i] = *it - *low;
-          r[i] = (r[i] - *low)/dist[i]; // scale coordinates to unit cube
-        }
-
-        double *coeff = const_cast<double*>(&Vc[index[0]][index[1]][index[2]][0]);
-        V = tricubic_eval_fast(coeff, r[0], r[1], r[2]);
-        Ei[0] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 0)/dist[0];
-        Ei[1] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 0)/dist[1];
-        Ei[2] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 0, 1)/dist[2];
-/*        if (dEidxj != nullptr){ // calculate higher derivatives
-            dEidxj[0][0] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 2, 0, 0)/dist[0]/dist[0];
-            dEidxj[0][1] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 1, 0)/dist[0]/dist[1];
-            dEidxj[0][2] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 1)/dist[0]/dist[2];
-            dEidxj[1][0] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 1, 0)/dist[1]/dist[0];
-            dEidxj[1][1] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 2, 0)/dist[1]/dist[1];
-            dEidxj[1][2] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 1)/dist[1]/dist[2];
-            dEidxj[2][0] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 1, 0, 1)/dist[2]/dist[0];
-            dEidxj[2][1] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 1, 1)/dist[2]/dist[1];
-            dEidxj[2][2] = -Escale*tricubic_eval_fast(coeff, r[0], r[1], r[2], 0, 0, 2)/dist[2]/dist[2];
-		}*/
-
-        for (int i = 0; i < 3; i++){
-/*            if (dEidxj != nullptr)
-			FieldSmthr(x, y, z, Ei[i], dEidxj[i]); // apply field smoothing to each component
-            else*/
-                FieldSmthr(x, y, z, Ei[i], nullptr);
-        }
-	}
+    double dVdxi[3];
+    Interpolate(x, y, z, Vc, V, dVdxi);
+    for (int i = 0; i < 3; i++){
+        Ei[i] = -dVdxi[i]; // Ei = -dV/dxi
+    }
 }

@@ -13,6 +13,8 @@
 #include <map>
 #include <iosfwd>
 
+#include "exprtk.hpp"
+
 /**
  * TConfig class is read from in file with structure
  *
@@ -59,7 +61,10 @@ public:
 	 * @return Returns map<string, string> of variables and parameters
 	 */
     std::map<std::string, std::string>& operator[](const std::string &section){
-        return _map.at(section);
+		auto it = _map.lower_bound(section);
+		if (it == _map.end() or it->first != section)
+			throw std::runtime_error("Section " + section + " not found in config file");
+		return it->second;
     }
 
 	/**
@@ -99,6 +104,16 @@ public:
 	friend std::ostream& operator<<(std::ostream &str, const TConfig &conf);
 };
 
+/**
+ * Find and evaluate formulate with given name using the list of variables
+ * 
+ * @param config TConfig containing configuration variables
+ * @param formulaname Name of the formula to be evaluated
+ * @param variables Map of variables names and values used to evaluate formula
+ * 
+ * @return Returns value of formula
+ */
+double EvalFormula(TConfig &config, const std::string formulaname, const std::map<std::string, double> &variables);
 
 
 #endif /* CONFIG_H_ */

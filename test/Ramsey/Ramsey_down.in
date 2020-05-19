@@ -59,6 +59,8 @@ tmax 9e99
 lmax 9e99
 
 endlog 1
+endlogvars jobnumber particle tstart xstart ystart zstart vxstart vystart vzstart polstart Sxstart Systart Szstart Hstart Estart Bstart Ustart solidstart tend xend yend zend vxend vyend vzend polend Sxend Syend Szend Hend Eend Bend Uend solidend stopID Nspinflip spinflipprob Nhit Nstep trajlength Hmax wL
+endlogfilter
 tracklog 0
 hitlog 0
 snapshotlog 0
@@ -85,3 +87,5 @@ tmax 1e-5
 [mercury]
 
 [xenon]
+
+[FORMULAS]

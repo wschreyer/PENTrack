@@ -16,28 +16,16 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/math/constants/constants.hpp>
 
-HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff, const double bW,
-		const double _xmax, const double _xmin, const double _ymax, const double _ymin, const double _zmax, const double _zmin, const std::string &Bscale, 
+HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff, 
 		const double _axis_x, const double _axis_y, const double _axis_z, const double _angle, 
 		const double G0, const double G1, const double G2, const double G3, const double G4, const double G5, const double G6, const double G7, const double G8, 
 		const double G9, const double G10, const double G11, const double G12, const double G13, const double G14, const double G15, const double G16, const double G17, 
-		const double G18, const double G19, const double G20, const double G21, const double G22, const double G23)
-			: TField(Bscale, "0") {
-
-	BoundaryWidth = bW;
+		const double G18, const double G19, const double G20, const double G21, const double G22, const double G23){
 
 	// the offset values
 	xoff = _xoff;
 	yoff = _yoff;
 	zoff = _zoff;
-
-	// ranges for the field
-	xmax = _xmax;
-	xmin = _xmin;
-	ymax = _ymax;
-	ymin = _ymin;
-	zmax = _zmax;
-	zmin = _zmin;
 
 	// parameters defining the axis-angle quaternion rotation
 	axis_x = _axis_x;
@@ -336,132 +324,6 @@ void HarmonicExpandedBField::BField(const double _x, const double _y, const doub
 
     }
 
-	// the field can be scaled by the given linear scaling factor. The code 
-	// below is largely copied from its original implementation in the
-	// edmfields.cpp class
-
-	double Bscale = BScaling(t);
-	B[0] = B[0]*Bscale;
-	B[1] = B[1]*Bscale;
-	B[2] = B[2]*Bscale;
-
-	if (dBidxj != NULL){
-		//set BField gradient to EDM component
-		dBidxj[0][0] = dBidxj[0][0] * Bscale;
-		dBidxj[1][0] = dBidxj[1][0] * Bscale;
-		dBidxj[2][0] = dBidxj[2][0] * Bscale;
-		dBidxj[0][1] = dBidxj[0][1] * Bscale;
-		dBidxj[1][1] = dBidxj[1][1] * Bscale;
-		dBidxj[2][1] = dBidxj[2][1] * Bscale;
-		dBidxj[0][2] = dBidxj[0][2] * Bscale;
-		dBidxj[1][2] = dBidxj[1][2] * Bscale;
-		dBidxj[2][2] = dBidxj[2][2] * Bscale;
-	}
 	// }
 }
 
-// All the below function implementations are copied unchanged from the
-// edmfields class
-
-void HarmonicExpandedBField::FieldSmthr(const double x, const double y, const double z, double Bxi[3], double dBScaled[9], const int xi) const{
-	
-		// Fscale = P(x')*P(y')*P(z') in the boundary where P(xi') = SmthrStp(xi-xi_min / BoundaryWidth) for the lower boundary and SmthrStp(xi-xi_max / BoundaryWidth) for the upper boundary
-		double compressionArray[6] = {1,1,1,0,0,0};
-		double Fscale = 1; 
-		double dBadd[3] = {0, 0, 0};
-		
-		// Throw an error if two edges to be scaled overlap, otherwise compute how far into each boundary (x,y,z) is
-		try{
-			CompressionFactor(x,y,z,compressionArray);
-		}
-		catch (const std::invalid_argument& e){
-			std::cout << "max-min distance has to be at least twice the BoundaryWidth!" << "\n";
-			exit(-1);
-		}
-			
-		// compute the dBadd (d(Fscale)/dxi) term for all three directions
-		for (int i = 0; i < 3; i++){
-			if (compressionArray[i] != 1){
-				Fscale *=SmthrStp(compressionArray[i]);
-				if(compressionArray[i] == 0)
-					dBadd[i] = 0;
-				else if(compressionArray[i+3] == 1)
-					dBadd[i] = -Bxi[xi]*SmthrStpDer(compressionArray[i])/(SmthrStp(compressionArray[i])*BoundaryWidth);
-				else if(compressionArray[i+3] == 0)
-					dBadd[i] = Bxi[xi]*SmthrStpDer(compressionArray[i])/(SmthrStp(compressionArray[i])*BoundaryWidth);
-
-			}
-		}
-
-		// If one or more of the components was scaled, scale the Bfield its relevant directional components
-		// Bxi' (Scaled) = Bxi (unscaled) * P(x')*P(y')*P(z')
-		// dBxidxj' (Scaled) = P(x')*P(y')*P(z') * dBxixj (Unscaled) + Bxi * (d/dxj P(x')*P(y')*P(z'))
-		// Note that for the supper boundary d/dxj P(xj') = -P'(xj')/BoundaryWidth and for the lower boundary d/dxj P(xj') = P'(xj')/BoundaryWidth
-		if (Fscale != 1){
-			Bxi[xi] *= Fscale; // scale field value
-			int j = 0;
-				for (int i = 0; i < 7; i = i + 3){
-					dBScaled[xi + i] = dBScaled[xi + i]*Fscale + dBadd[j]*Fscale; // scale derivatives according to product rule
-					j++;
-			}
-		}
-	}
-	
-// Compute the percentage into the boundary widthy the coordinate is in the x,y,z directions
-void HarmonicExpandedBField::CompressionFactor(const double x, const double y, const double z, double *compFactors) const{
-	
-	// Do nothing if BoundaryWidth is set to zero
-	if (BoundaryWidth != 0){
-	
-		// throw error if the min/max distances are insufficient (min > max or not twice BoundaryWidth apart)
-		if ((xmax - xmin) < 2*BoundaryWidth || (ymax - ymin) < 2*BoundaryWidth || (zmax - zmin) < 2*BoundaryWidth){
-			throw std::invalid_argument( "max - min has to be at least twice the BoundaryWidth!" );
-		}
-
-		// Scale x,y,z if they are within BoundaryWidth of max or min
-		if ((x < xmax) && (x >= (xmax - BoundaryWidth))){
-			compFactors[0] = (xmax - x)/BoundaryWidth;
-			compFactors[3] = 1;
-		}
-
-		if ((x > xmin) && (x <= (xmin + BoundaryWidth)))
-			compFactors[0] = (x - xmin)/BoundaryWidth;
-
-
-		if ((y < ymax) && (y >= (ymax - BoundaryWidth))){
-			compFactors[1] = (ymax - y)/BoundaryWidth;
-			compFactors[4] = 1;
-			}
-
-		if ((y > ymin) && (y <= (ymin + BoundaryWidth)))
-			compFactors[1] = (y - ymin)/BoundaryWidth;
-
-
-		if ((z < zmax) && (z >= (zmax - BoundaryWidth))){
-			compFactors[2] = (zmax - z)/BoundaryWidth;
-			compFactors[5] = 1;
-			}
-
-		if ((z > zmin) && (z <= (zmin + BoundaryWidth)))
-			compFactors[2] = (z - zmin)/BoundaryWidth;
-
-
-		// Nullify the field outside of the min/max
-		if (x >= xmax || x <= xmin)
-			compFactors[0] = 0;
-
-		if (y >= ymax || y <= ymin)
-			compFactors[1] = 0;
-
-		if (z >= zmax || z <= zmin)
-			compFactors[2] = 0;
-	}
-}
-
-double HarmonicExpandedBField::SmthrStp(const double x) const{
-	return 6*pow(x, 5) - 15*pow(x, 4) + 10*pow(x, 3);
-}
-
-double HarmonicExpandedBField::SmthrStpDer(const double x) const{
-	return 30*pow(x, 4) - 60*pow(x, 3) + 30*pow(x,2);
-}

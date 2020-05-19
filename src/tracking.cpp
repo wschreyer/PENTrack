@@ -59,6 +59,8 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
     p->SetStopID(ID_UNKNOWN);
 
     while (p->GetStopID() == ID_UNKNOWN){ // integrate as long as nothing happened to particle
+        if (quit.load())
+            return;
         stopID ID = stepper.next(
             [&](const double &t, const array<double, 3>& pos, const array<double, 3>& v, const double& polarization){
                 return p->EquationOfMotion(t, pos, v, polarization, field);

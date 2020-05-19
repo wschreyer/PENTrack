@@ -26,8 +26,7 @@ public:
 	 *
 	 * Sets current through wire TConductorField::I and field scaling formula
 	 */
-	TConductorField(const double SW1xx, const double SW1yy, const double SW1zz, const double SW2xx, const double SW2yy, const double SW2zz,
-			const double aI, const std::string &Bscale);
+	TConductorField(const double SW1xx, const double SW1yy, const double SW1zz, const double SW2xx, const double SW2yy, const double SW2zz, const double aI);
 
 	/**
 	 * Compute magnetic field of a straight, finite conductor.
