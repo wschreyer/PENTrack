@@ -31,7 +31,7 @@ void CylToCart(const double v_r, const double v_phi, const double phi, double &v
 }
 
 
-std::unique_ptr<TabField> ReadOperaField2(const std::string &params){
+TFieldContainer ReadOperaField2(const std::string &params){
     std::istringstream ss(params);
     boost::filesystem::path ft;
     std::string fieldtype, Bscale, Escale;
@@ -54,7 +54,7 @@ std::unique_ptr<TabField> ReadOperaField2(const std::string &params){
         throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
     }
 
-    return std::unique_ptr<TabField>(new TabField(boost::filesystem::absolute(ft, configpath.parent_path()).string(), Bscale, Escale, lengthconv));
+    return TFieldContainer(std::unique_ptr<TabField>(new TabField(boost::filesystem::absolute(ft, configpath.parent_path()).string(), lengthconv)), Bscale, Escale);
 }
 
 
@@ -216,7 +216,7 @@ void TabField::CheckTab(const alglib::real_1d_array &rind, const alglib::real_1d
 	std::cout << "The input table file has values of magnetic field |B| from " << Babsmin << " to " << Babsmax << " and values of electric potential from " << Vmin << " to " << Vmax << "\n";
 }
 
-TabField::TabField(const std::string &tabfile, const std::string &Bscale, const std::string &Escale, const double alengthconv): TField(Bscale, Escale){
+TabField::TabField(const std::string &tabfile, const double alengthconv){
 	alglib::real_1d_array rind, zind, BTabs[3], ETabs[3], VTab;
 
 	ReadTabFile(tabfile, alengthconv, rind, zind, BTabs, ETabs, VTab); // open tabfile and read values into arrays
@@ -275,8 +275,7 @@ TabField::TabField(const std::string &tabfile, const std::string &Bscale, const 
 
 void TabField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double r = sqrt(x*x+y*y);
-	double Bscale = BScaling(t);
-	if (Bscale != 0 && r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
+	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
 		// bicubic interpolation
 		double Br = 0, Bphi = 0;
 		double Bx = 0, By = 0, Bz = 0;
@@ -291,19 +290,19 @@ void TabField::BField(const double x, const double y, const double z, const doub
 				alglib::spline2ddiff(Bphic, r, z, Bphi, dBphidr, dBphidz, dummy);
 			}
 			if (r > 0){
-				dBidxj[0][0] = Bscale*(dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r);
-				dBidxj[0][1] = Bscale*(dBrdr*cos(phi)*sin(phi) - dBphidr*sin(phi)*sin(phi) - (Br*cos(phi)*sin(phi) + Bphi*cos(phi)*cos(phi))/r);
-				dBidxj[1][0] = Bscale*(dBrdr*cos(phi)*sin(phi) + dBphidr*cos(phi)*cos(phi) - (Br*cos(phi)*sin(phi) - Bphi*sin(phi)*sin(phi))/r);
-				dBidxj[1][1] = Bscale*(dBrdr*sin(phi)*sin(phi) + dBphidr*cos(phi)*sin(phi) + (Br*cos(phi)*cos(phi) - Bphi*cos(phi)*sin(phi))/r);
+				dBidxj[0][0] = dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r;
+				dBidxj[0][1] = dBrdr*cos(phi)*sin(phi) - dBphidr*sin(phi)*sin(phi) - (Br*cos(phi)*sin(phi) + Bphi*cos(phi)*cos(phi))/r;
+				dBidxj[1][0] = dBrdr*cos(phi)*sin(phi) + dBphidr*cos(phi)*cos(phi) - (Br*cos(phi)*sin(phi) - Bphi*sin(phi)*sin(phi))/r;
+				dBidxj[1][1] = dBrdr*sin(phi)*sin(phi) + dBphidr*cos(phi)*sin(phi) + (Br*cos(phi)*cos(phi) - Bphi*cos(phi)*sin(phi))/r;
 			}
 			CylToCart(dBrdz,dBphidz,phi,dBxdz,dBydz);
-			dBidxj[0][2] = dBxdz*Bscale;
-			dBidxj[1][2] = dBydz*Bscale;
+			dBidxj[0][2] = dBxdz;
+			dBidxj[1][2] = dBydz;
 			if (fBzc){
 				alglib::spline2ddiff(Bzc, r, z, Bz, dBzdr, dBzdz, dummy);
-				dBidxj[2][0] = dBzdr*cos(phi)*Bscale;
-				dBidxj[2][1] = dBzdr*sin(phi)*Bscale;
-				dBidxj[2][2] = dBzdz*Bscale;
+				dBidxj[2][0] = dBzdr*cos(phi);
+				dBidxj[2][1] = dBzdr*sin(phi);
+				dBidxj[2][2] = dBzdz;
 			}
 		}
 		else{
@@ -315,9 +314,9 @@ void TabField::BField(const double x, const double y, const double z, const doub
 				Bz = alglib::spline2dcalc(Bzc, r, z);
 		}
 		CylToCart(Br,Bphi,phi,Bx,By);
-		B[0] = Bx*Bscale;
-		B[1] = By*Bscale;
-		B[2] = Bz*Bscale;
+		B[0] = Bx;
+		B[1] = By;
+		B[2] = Bz;
 	}
 }
 
@@ -325,8 +324,7 @@ void TabField::BField(const double x, const double y, const double z, const doub
 void TabField::EField(const double x, const double y, const double z, const double t,
 		double &V, double Ei[3]) const{
 	double r = sqrt(x*x+y*y);
-	double Escale = EScaling(t);
-	if (Escale != 0 && r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
+	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
 		if (fErc || fEphic || fEzc){ // prefer E-field interpolation over potential interpolation
 			double phi = atan2(y,x);
 //			if (dEidxj == nullptr){
@@ -339,9 +337,9 @@ void TabField::EField(const double x, const double y, const double z, const doub
 				if (fEzc)
 					alglib::spline2dcalcvbuf(Ezc, r, z, Ez);
 				CylToCart(Er[0], Ephi[0], phi, Ex, Ey); // convert r,phi components to x,y components
-				Ei[0] = Ex*Escale; // set electric field
-				Ei[1] = Ey*Escale;
-				Ei[2] = Ez[0]*Escale;
+				Ei[0] = Ex; // set electric field
+				Ei[1] = Ey;
+				Ei[2] = Ez[0];
 /*			}
 			else{
 				double Er = 0, Ephi = 0, Ex = 0, Ey = 0, Ez = 0, dummy;
@@ -376,11 +374,10 @@ void TabField::EField(const double x, const double y, const double z, const doub
             double dVdrj[3], dummy;
             // bicubic interpolation
             alglib::spline2ddiff(Vc, r, z, V, dVdrj[0], dVdrj[2], dummy);
-            V *= Escale;
             double phi = atan2(y,x);
-            Ei[0] = -dVdrj[0]*cos(phi)*Escale;
-            Ei[1] = -dVdrj[0]*sin(phi)*Escale;
-            Ei[2] = -dVdrj[2]*Escale;
+            Ei[0] = -dVdrj[0]*cos(phi);
+            Ei[1] = -dVdrj[0]*sin(phi);
+            Ei[2] = -dVdrj[2];
         }
 
 

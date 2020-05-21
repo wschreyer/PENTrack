@@ -118,7 +118,7 @@ inline double tricubic_eval_fast(double a[64], double x, double y, double z, int
 }
 
 
-std::unique_ptr<TabField3> ReadComsolField(const std::string &params){
+TFieldContainer ReadComsolField(const std::string &params){
   std::istringstream ss(params);
   boost::filesystem::path ft;
   std::string fieldtype, Bscale;
@@ -164,11 +164,13 @@ std::unique_ptr<TabField3> ReadComsolField(const std::string &params){
     throw std::runtime_error("No data read from " + ft.string());
   }
 
-  return std::unique_ptr<TabField3>(new TabField3({x,y,z}, {bx,by,bz}, std::vector<double>(), Bscale, "0", BoundaryWidth));
+  auto xminmax = std::minmax_element(x.begin(), x.end());
+  auto yminmax = std::minmax_element(y.begin(), y.end());
+  auto zminmax = std::minmax_element(z.begin(), z.end());
+  return TFieldContainer(std::unique_ptr<TabField3>(new TabField3({x,y,z}, {bx,by,bz}, std::vector<double>())), Bscale, "0", *xminmax.second, *xminmax.first, *yminmax.second, *yminmax.first, *zminmax.second, *zminmax.first, BoundaryWidth);
 }
 
-
-std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
+TFieldContainer ReadOperaField3(const std::string &params){
     std::istringstream ss(params);
     boost::filesystem::path ft;
     std::string fieldtype, Bscale, Escale;
@@ -278,7 +280,10 @@ std::unique_ptr<TabField3> ReadOperaField3(const std::string &params){
 	}
 	FIN.close();
 
-    return std::unique_ptr<TabField3>(new TabField3(xyzTab, BTab, VTab, Bscale, Escale, BoundaryWidth));
+    auto xminmax = std::minmax_element(xyzTab[0].begin(), xyzTab[0].end());
+    auto yminmax = std::minmax_element(xyzTab[1].begin(), xyzTab[1].end());
+    auto zminmax = std::minmax_element(xyzTab[2].begin(), xyzTab[2].end());
+    return TFieldContainer(std::unique_ptr<TabField3>(new TabField3(xyzTab, BTab, VTab)), Bscale, Escale, *xminmax.second, *xminmax.first, *yminmax.second, *yminmax.first, *zminmax.second, *zminmax.first, BoundaryWidth);
 }
 
 
@@ -386,10 +391,7 @@ void TabField3::PreInterpol(const array3D &Tab, field_type &coeff) const{
 }
 
 
-TabField3::TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std::array<std::vector<double>, 3> &BTab, const std::vector<double> &VTab,
-                     const std::string &Bscale, const std::string &Escale, const double aBoundaryWidth)
-	: TField(Bscale, Escale){
-	BoundaryWidth = aBoundaryWidth;
+TabField3::TabField3(const std::array<std::vector<double>, 3> &xyzTab, const std::array<std::vector<double>, 3> &BTab, const std::vector<double> &VTab){
 
     for (unsigned i = 0; i < 3; ++i){
         std::unique_copy(xyzTab[i].begin(), xyzTab[i].end(), std::back_inserter(xyz[i])); // get list of unique x, y, and z coordinates
@@ -489,106 +491,16 @@ void TabField3::Interpolate(const double x, const double y, const double z,
 
 
 void TabField3::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
-	double Bscale = BScaling(t);
-    if (Bscale == 0)
-        return;
-
     for (unsigned i = 0; i < 3; ++i){
         Interpolate(x, y, z, Bc[i], B[i], dBidxj == nullptr ? nullptr : dBidxj[i]);
-        B[i] *= Bscale;
-        if (dBidxj != nullptr){
-            for (unsigned j = 0; j < 3; ++j){
-                dBidxj[i][j] *= Bscale;
-            }
-            FieldSmthr(x, y, z, B[i], dBidxj[i]); // apply field smoothing to each component
-        }
-        else
-            FieldSmthr(x, y, z, B[i], nullptr);
     }
 }
 
 void TabField3::EField(const double x, const double y, const double z, const double t,
 		double &V, double Ei[3]) const{
-	double Escale = EScaling(t);
-    if (Escale == 0 or Vc.empty())
-        return;
-
     double dVdxi[3];
     Interpolate(x, y, z, Vc, V, dVdxi);
-    V *= Escale;
-    FieldSmthr(x, y, z, V, nullptr);
-
     for (int i = 0; i < 3; i++){
-        Ei[i] = -Escale*dVdxi[i]; // Ei = -dV/dxi
-        FieldSmthr(x, y, z, Ei[i], nullptr);
+        Ei[i] = -dVdxi[i]; // Ei = -dV/dxi
     }
 }
-
-
-void TabField3::FieldSmthr(const double x, const double y, const double z, double &F, double dFdxi[3]) const{
-	if (BoundaryWidth != 0 && F != 0){ // skip, if BoundaryWidth is set to zero
-        double dxlo = (x - xyz[0].front())/BoundaryWidth; // calculate distance to edges in units of BoundaryWidth
-        double dxhi = (xyz[0].back() - x)/BoundaryWidth;
-        double dylo = (y - xyz[1].front())/BoundaryWidth;
-        double dyhi = (xyz[1].back() - y)/BoundaryWidth;
-        double dzlo = (z - xyz[2].front())/BoundaryWidth;
-        double dzhi = (xyz[2].back() - z)/BoundaryWidth;
-
-		// F'(x,y,z) = F(x,y,z)*f(x)*f(y)*f(z)
-		// dF'/dx = dF/dx*f(x)*f(y)*f(z) + F*df(x)/dx*f(y)*f(z) --> similar for dF'/dy and dF'/dz
-
-		double Fscale = 1; // f(x)*f(y)*f(z)
-		double dFadd[3] = {0, 0, 0}; // F*df(x_i)/dx_i / f(x_i)
-
-		if (dxhi < 1) { // if point in upper x boundary (distance smaller than BoundaryWidth)
-			Fscale *= SmthrStp(dxhi); // scale field by value of smoother function
-            if (dFdxi != nullptr)
-				dFadd[0] = -F*SmthrStpDer(dxhi)/BoundaryWidth/SmthrStp(dxhi); // add derivative of smoother function according to product rule
-		}
-		if (dyhi < 1){ // if point in upper y boundary
-			Fscale *= SmthrStp(dyhi);
-            if (dFdxi != nullptr)
-				dFadd[1] = -F*SmthrStpDer(dyhi)/BoundaryWidth/SmthrStp(dyhi);
-		}
-		if (dzhi < 1){ // if point in upper z boundary
-			Fscale *= SmthrStp(dzhi);
-            if (dFdxi != nullptr)
-				dFadd[2] = -F*SmthrStpDer(dzhi)/BoundaryWidth/SmthrStp(dzhi);
-		}
-
-		if (dxlo < 1){ // if point in lower x boundary
-			Fscale *= SmthrStp(dxlo);
-            if (dFdxi != nullptr)
-				dFadd[0] = F*SmthrStpDer(dxlo)/BoundaryWidth/SmthrStp(dxlo);
-		}
-		if (dylo < 1){ // if point in lower y boundary
-			Fscale *= SmthrStp(dylo);
-            if (dFdxi != nullptr)
-				dFadd[1] = F*SmthrStpDer(dylo)/BoundaryWidth/SmthrStp(dylo);
-		}
-		if (dzlo < 1){ // if point in lower z boundary
-			Fscale *= SmthrStp(dzlo);
-            if (dFdxi != nullptr)
-				dFadd[2] = F*SmthrStpDer(dzlo)/BoundaryWidth/SmthrStp(dzlo);
-		}
-
-		if (Fscale != 1){
-			F *= Fscale; // scale field value
-            if (dFdxi != nullptr){
-				for (int i = 0; i < 3; i++){
-					dFdxi[i] = dFdxi[i]*Fscale + dFadd[i]*Fscale; // scale derivatives according to product rule
-				}
-			}
-		}
-
-	}
-}
-
-double TabField3::SmthrStp(const double x) const{
-    return 6*std::pow(x, 5) - 15*std::pow(x, 4) + 10*std::pow(x, 3);
-}
-
-double TabField3::SmthrStpDer(const double x) const{
-    return 30*std::pow(x, 4) - 60*std::pow(x, 3) + 30*std::pow(x,2);
-}
-

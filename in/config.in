@@ -200,6 +200,9 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #EDMStaticEField    Ex  Ey  Ez  scale
 #14 EDMStaticEField 0   0   1e6 1
 
+# CustomBField Bx By Bz xmax xmin ymax ymin zmax zmin boundaryWidth scale
+#15 CustomBField Bx By Bz 0 0 0 0 0 0 0 1
+
 ######### default values for particle-specific settings ############
 [PARTICLES]
 tau 0				# exponential decay lifetime [s], 0: no decay
@@ -253,5 +256,9 @@ tmax 1e-5
 
 ############ define formulas used for output to log files
 [FORMULAS]
-vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2) # for example, you could now add "vabs" to the list of endlogvars to print the absolute velocity to the endlog
-detected    solidend == 14 # for example, you could set this as an endlogfilter to only log particles that are absorbed in the detector
+vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2)     # for example, you could now add "vabs" to the list of endlogvars to print the absolute velocity to the endlog
+detected    solidend == 14                              # for example, you could set this as an endlogfilter to only log particles that are absorbed in the detector
+
+Bx 1e-7*x                                               # These are the field components used for the CustomBField defined in the FIELDS section
+By 0.
+Bz 1e-6*x
