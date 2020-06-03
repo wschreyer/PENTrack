@@ -315,6 +315,7 @@ void TTextLogger::DoLog(const std::string &particlename, const std::string &suff
     file << '\n';
 }
 
+#ifdef USEROOT
 
 TROOTLogger::TROOTLogger(TConfig& aconfig){
     config = aconfig;
@@ -354,3 +355,5 @@ TROOTLogger::~TROOTLogger(){
     ROOTfile->Write();
     delete ROOTfile;
 }
+
+#endif
