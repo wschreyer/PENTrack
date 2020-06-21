@@ -148,11 +148,15 @@ void TB0_XY::BField(const double x, const double y, const double z, const double
 
 
 TCustomBField::TCustomBField(const std::string &_Bx, const std::string &_By, const std::string &_Bz){
+	tvar = unique_ptr<double>(new double(0.0));
+	xvar = unique_ptr<double>(new double(0.0));
+	yvar = unique_ptr<double>(new double(0.0));
+	zvar = unique_ptr<double>(new double(0.0));
 	exprtk::symbol_table<double> symbol_table;
-	symbol_table.add_variable("t",tvar);
-	symbol_table.add_variable("x",xvar);
-	symbol_table.add_variable("y",yvar);
-	symbol_table.add_variable("z",zvar);
+	symbol_table.add_variable("t",*tvar);
+	symbol_table.add_variable("x",*xvar);
+	symbol_table.add_variable("y",*yvar);
+	symbol_table.add_variable("z",*zvar);
 	symbol_table.add_constants();
 	exprtk::parser<double> parser;
 
@@ -166,25 +170,25 @@ TCustomBField::TCustomBField(const std::string &_Bx, const std::string &_By, con
 }
 
 void TCustomBField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
-	xvar = x;
-	yvar = y;
-	zvar = z;
-	tvar = t;
+	*xvar = x;
+	*yvar = y;
+	*zvar = z;
+	*tvar = t;
 	B[0] = Bexpr[0].value();
 	B[1] = Bexpr[1].value();
 	B[2] = Bexpr[2].value();
 //	std::cout << B[0] << " " << B[1] << " " << B[2] << " ";
 	
 	if (dBidxj != nullptr){
-		dBidxj[0][0] = exprtk::derivative(Bexpr[0], xvar);
-		dBidxj[0][1] = exprtk::derivative(Bexpr[0], yvar);
-		dBidxj[0][2] = exprtk::derivative(Bexpr[0], zvar);
-		dBidxj[1][0] = exprtk::derivative(Bexpr[1], xvar);
-		dBidxj[1][1] = exprtk::derivative(Bexpr[1], yvar);
-		dBidxj[1][2] = exprtk::derivative(Bexpr[1], zvar);
-		dBidxj[2][0] = exprtk::derivative(Bexpr[2], xvar);
-		dBidxj[2][1] = exprtk::derivative(Bexpr[2], yvar);
-		dBidxj[2][2] = exprtk::derivative(Bexpr[2], zvar);
+		dBidxj[0][0] = exprtk::derivative(Bexpr[0], *xvar);
+		dBidxj[0][1] = exprtk::derivative(Bexpr[0], *yvar);
+		dBidxj[0][2] = exprtk::derivative(Bexpr[0], *zvar);
+		dBidxj[1][0] = exprtk::derivative(Bexpr[1], *xvar);
+		dBidxj[1][1] = exprtk::derivative(Bexpr[1], *yvar);
+		dBidxj[1][2] = exprtk::derivative(Bexpr[1], *zvar);
+		dBidxj[2][0] = exprtk::derivative(Bexpr[2], *xvar);
+		dBidxj[2][1] = exprtk::derivative(Bexpr[2], *yvar);
+		dBidxj[2][2] = exprtk::derivative(Bexpr[2], *zvar);
 //		std::cout << dBidxj[0][0] << " " << dBidxj[0][1] << " " << dBidxj[0][2] << std::endl;
 	}
 //	std::cout << std::endl;

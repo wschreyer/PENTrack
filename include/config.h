@@ -38,6 +38,11 @@ public:
 	TConfig(){};
 
 	/**
+	 * Create config from section/variable map
+	 */
+	explicit TConfig(const std::map<std::string, std::map<std::string, std::string> > &map): _map(map){};
+
+	/**
 	 * Create TConfig and read sections and variables from file
 	 *
 	 * @param inpath Path of file to read from

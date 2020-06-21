@@ -1,7 +1,11 @@
+#include <cmath>
+
 #include "field.h"
 
+using namespace std;
+
 double TFieldScaler::scalingFactor(const double t) const{
-    tvar = t;
+    *tvar = t;
     return scaler.value();
 }
 
@@ -29,9 +33,9 @@ void TFieldScaler::scaleVectorField(const double t, double F[3], double dFidxj[3
 
 
 TFieldScaler::TFieldScaler(const std::string &scalingFormula){
-    tvar = 0;
+    tvar = unique_ptr<double>(new double(0.0));
     exprtk::symbol_table<double> symbol_table;
-    symbol_table.add_variable("t",tvar);
+    symbol_table.add_variable("t",*tvar);
     symbol_table.add_constants();
     scaler.register_symbol_table(symbol_table);
     exprtk::parser<double> parser;
