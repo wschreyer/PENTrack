@@ -312,7 +312,7 @@ public:
  */
 class TCustomBField: public TField{
 private:
-	mutable double tvar, xvar, yvar, zvar; ///< Variables used to evaluate formulas
+	std::unique_ptr<double> tvar, xvar, yvar, zvar; ///< Variables used to evaluate formulas, they need to be pointers to make sure references stored in the exprtk expression do not get invalidated when copying
 	std::array<exprtk::expression<double>, 3> Bexpr; ///< Formula interpreters, one for each field component
 public:
 	/**

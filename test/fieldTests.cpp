@@ -11,6 +11,8 @@
 #include "conductor.h"
 #include "globals.h"
 #include "edmfields.h"
+#include "fields.h"
+#include "config.h"
 
 #include <iostream>
 
@@ -276,6 +278,11 @@ BOOST_AUTO_TEST_CASE(TFieldContainerTest){
         BOOST_TEST_CONTEXT("Parameters: x = " << x << ", y = " << y << ", z = " << z << ", t = " << t){
             compareMagneticFields(smoothed, c, x, y, z, t);
             checkElectricFieldZero(c, x, y, z);
+            double B[3];
+            c.BField(0., 0., 0., t, B, nullptr);
+            BOOST_CHECK_EQUAL(sin(t), B[0]);
+            BOOST_CHECK_EQUAL(sin(t), B[1]);
+            BOOST_CHECK_EQUAL(sin(t), B[2]);
         }
     }
 
@@ -341,6 +348,28 @@ BOOST_AUTO_TEST_CASE(TEDMStaticEFieldTest){
         BOOST_CHECK_EQUAL(Ei[1], Ey);
         BOOST_CHECK_EQUAL(Ei[2], Ez);
         checkMagneticFieldZero(f1, x, y, z);
+    }
+}
+
+// integration test checking that TFieldManager properly handles scaling and boundaries
+BOOST_AUTO_TEST_CASE(TFieldManagerTest){
+    TConfig config({{"FIELDS", {{"0", "LinearFieldZ 0 1 1 -1 1 -1 1 -1 sin(t)"}}}}); // homogeneous, oscillating field with hard boundaries at +/-1
+    TFieldManager m(config);
+    int nTests = 100;
+    for (int n = 0; n < nTests; ++n){
+        double x = uni(rng), y = uni(rng), z = uni(rng), t = uni(rng);
+        double B[3];
+        m.BField(x, y, z, t, B, nullptr);
+        BOOST_TEST_CONTEXT("Parameters: x = " << x << ", y = " << y << ", z = " << z << ", t = " << t){
+            BOOST_CHECK_EQUAL(B[0], 0.);
+            BOOST_CHECK_EQUAL(B[1], 0.);
+            if (abs(x) >= 1 or abs(y) >= 1 or abs(z) >= 1){
+                BOOST_CHECK_EQUAL(B[2], 0.);
+            }
+            else{
+                BOOST_CHECK_EQUAL(B[2], sin(t));
+            }
+        }
     }
 }
 

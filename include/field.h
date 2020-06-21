@@ -57,8 +57,7 @@ public:
 class TFieldScaler{
 private:
 	exprtk::expression<double> scaler; ///< formula interpreter for field scaling
-	mutable double tvar; ///< time variable for use in scaling-formula parsers
-
+	std::unique_ptr<double> tvar; ///< time variable for use in scaling-formula parsers. It needs to be a pointer to make sure the reference in the exprtk expression will not be invalidated when copying
 public:
 	/**
 	 * Calculate time-dependent scaling factor from parsed formula
