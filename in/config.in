@@ -153,9 +153,7 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 # For 3D tables a BoundaryWidth [m] can be specified within which the field is smoothly brought to zero.
 # Paths of table files are assumed to be relative to this config file's path
 #
-# Analytically calculated fields:
-# Conductor: simulate a current flowing from one point to another along an arbitrary straight line
-# For more information on the other analytically calculated fields, see test/analyticalFieldTest/config.in
+# Several analytically calculated fields are available, see description for each field type below.
 # All coordinates are defined in meters, currents in ampere, fields in Tesla
 #
 # Each line is preceded by a unique identifier. Entries with duplicate identifiers will overwrite each other
@@ -169,38 +167,95 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #3 OPERA3D	3Dtable.tab	1		1		0		1
 #4 COMSOL	comsol.txt	1		1		0		1
 
+
+# Simulate magnetic field from a current I flowing from point (x1, y1, z1) to (x2, y2, z2)
 #Conductor		I		x1		y1		z1		x2		y2		z2		scale
 5 Conductor		12500	0		0		-1		0		0		2		1
 
-### See PENTrack/test/analyticalFieldTest/ or doxygen documentation for more info on analytical field parameters ###
+
+# ExponentialFieldX is described by:
+# B_x = a1 * exp(- a2* x + a3) + c1
+# B_y = y * a1 * a2 / 2 * exp(- a2* x + a3) + c2
+# B_z = z * a1 * a2 / 2 * exp(- a2* x + a3) + c2
+# Parameters a1, c1, and c2 should be units [Tesla]
+# Field is turned off outside of the xyz min/max boundaries specified [meters]
+
 # ExponentialFieldX a1  a2  a3  c1  c2  xmax  xmin  ymax  ymin  zmax  zmin scale
 #6 ExponentialFieldX 5E-5 1  -4 0   0   3     -3     1     -1     1     -1  1
+
+
+# LinearFieldZ is described by:
+# B_z = a1*x + a2
+# a1 = [T/m] and a2 = [T]
+# Field is turned off outside of the xyz min/max boundaries specified [meters]
 
 ## LinearFieldZ a1      a2     xmax  xmin  ymax  ymin  zmax  zmin scale
 #7 LinearFieldZ  2E-6   1E-6   0     -1     1     -1     1     -1   1
 
+
+# EDMStaticB0GradZField defines a z-oriented field of strength edmB0z0 with a small gradient edmB0z0dz along z, leading to small x and y components.
+# The origin and orientation of the z-axis can be adjusted with the edmB0[xyz]off parameters and a polar and azimuthal angle.
+# The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero at these boundaries.
+
 ### EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
 #8 EDMStaticB0GradZField     0         0          0       0       0       1E-6    0          0             3       0      1       -1      1       -1      1
+
+
+# B0GradZ is described by:
+# B_z = a1/2 * z^2 + a2 z + z0
+# dBdz = a1 * z + a2
+# a1 = [T/m^2]; a2 = [T/m]; z0 = [T]
+# Field is turned off outside of the xyz min/max boundaries specified [meters]
 
 ## B0GradZ    a1      a2     z0  xmax  xmin  ymax  ymin  zmax  zmin scale
 #9 B0GradZ       0    0     1E-6     1     -1     1   -1     1  -1    1
 
+
+# B0GradX2 is described by:
+# B_z = (a_1 x^2 + a_2 x + a3) z + z0
+# dBdz = a_1 x^2 + a_2 x + a3
+
 ## B0GradX2    a1      a2   a3     z0  xmax  xmin  ymax  ymin  zmax  zmin scale
 #10 B0GradX2  1E-8    0      0       1E-6     1     -1     1     -1     1  -1   1
+
+
+# B0GradXY is described by:
+# B_z = a_1 xyz + a_2 z + z0
+# dBdz =  a_1 xy + a_2
+# Field is turned off outside of the xyz min/max boundaries specified [meters]
 
 ## B0GradXY    a1      a2     z0       xmax  xmin  ymax  ymin  zmax  zmin scale
 #11 B0GradXY  1E-8       0     1E-6     1     -1     1     -1     1  -1   1
 
+
+# B0_XY is described by:
+# B_z = a_1 xy + z0
+# B_y = a_1 xz
+# B_x = a_1 yz
+# Field is turned off outside of the xyz min/max boundaries specified [meters]
+
 ## B0_XY    a1    z0       xmax  xmin  ymax  ymin  zmax  zmin scale
 #12 B0_XY   1E-7  1E-6        1     -1     1     -1     1  -1   1
+
+
+# HarmonicExpandedBField defines a field composed of Legendre polynomials up to third order with coefficients G(l,m), see https://arxiv.org/abs/1811.06085.
+# The origin can be adjusted with the edmB0[xyz]off parameters. The orientation can be rotated by a given angle around an axis.
+# The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero outside these boundaries.
 
 #HarmonicExpandedBField     edmB0xoff   edmB0yoff   edmB0zoff   BoundaryWidth   xmax 	xmin 	ymax 	ymin 	zmax 	zmin    scale   axis_x  axis_y  axis_z  angle   G(0,-1) G(0,0)  G(0,1)  G(1,-2) G(1,-1) G(1,0)  G(1,1)  G(1,2)  G(2,-3) G(2,-2) G(2,-1) G(2,0)  G(2,1)  G(2,2)  G(2,3)  G(3,-4) G(3,-3) G(3,-2) G(3,-1) G(3,0)  G(3,1)  G(3,2)  G(3,3)  G(3,4)
 #13 HarmonicExpandedBField 	0	        0        0	        0.01        1    -1  	  1 	    -1	    1	    -1	    1       1       1       1       1.9     0       0       0       0       0       30      0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0
 
+
+# EDMStaticEField defines an homogeneous electric field, simply set all three components of the electric-field vector.
+
 #EDMStaticEField    Ex  Ey  Ez  scale
 #14 EDMStaticEField 0   0   1e6 1
 
-# CustomBField Bx By Bz xmax xmin ymax ymin zmax zmin boundaryWidth scale
+
+## CustomBField calculates the three field components from formulas defined in the FORMULAS section. Field derivatives are approximated numerically using a five-point stencil method.
+# The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero at these boundaries.
+
+# CustomBField Bx-formula By-formula Bz-formula xmax xmin ymax ymin zmax zmin BoundaryWidth scale
 #15 CustomBField Bx By Bz 0 0 0 0 0 0 0 1
 
 ######### default values for particle-specific settings ############
@@ -254,9 +309,9 @@ tmax 1e-5
 [xenon]
 
 
-############ define formulas used for output to log files
+############ define formulas used for CustomBField or output to log files
 [FORMULAS]
-vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2)     # for example, you could now add "vabs" to the list of endlogvars to print the absolute velocity to the endlog
+vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2)     # for example, you could now add "vabs" to the list of endlogvars to print the absolute inital velocity to the endlog
 detected    solidend == 14                              # for example, you could set this as an endlogfilter to only log particles that are absorbed in the detector
 
 Bx 1e-7*x                                               # These are the field components used for the CustomBField defined in the FIELDS section
