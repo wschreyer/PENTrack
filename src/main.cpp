@@ -407,10 +407,15 @@ void PrintBFieldCut(TConfig &config, const boost::filesystem::path &outfile, con
 	double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 	int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
 	int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
-	istringstream(config["GLOBAL"]["BCutPlane"])	>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2]
-													>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
-													>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
-													>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
+	double BCutTime;
+	istringstream str(config["GLOBAL"]["BCutPlane"]);
+	str	>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2]
+		>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
+		>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
+		>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2 >> BCutTime;
+	if (not str){
+		throw std::runtime_error("Missing config parameters for BCutPlane. 12 are expected");
+	}
 
 	// get directional vectors from points on plane by u = p2-p1, v = p3-p1
 	double u[3] = {BCutPlanePoint[3] - BCutPlanePoint[0], BCutPlanePoint[4] - BCutPlanePoint[1], BCutPlanePoint[5] - BCutPlanePoint[2]};
@@ -434,16 +439,16 @@ void PrintBFieldCut(TConfig &config, const boost::filesystem::path &outfile, con
 			for (int k = 0; k < 3; k++)
 				Pp[k] = BCutPlanePoint[k] + i*u[k]/BCutPlaneSampleCount1 + j*v[k]/BCutPlaneSampleCount2;
 			// print B-/E-Field to file
-            cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << " ";
+         			cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << " ";
 			
-			field.BField(Pp[0], Pp[1], Pp[2], 0, B, dBidxj);
+			field.BField(Pp[0], Pp[1], Pp[2], BCutTime, B, dBidxj);
 			for (int k = 0; k < 3; k++){
 				cutfile << B[k] << " ";
 				for (int l = 0; l < 3; l++)
 					cutfile << dBidxj[k][l] << " ";
 			}
 
-			field.EField(Pp[0], Pp[1], Pp[2], 0, V, Ei);
+			field.EField(Pp[0], Pp[1], Pp[2], BCutTime, V, Ei);
 			cutfile << Ei[0] << " " << Ei[1] << " " << Ei[2] << " " << V << "\n";
 		}
 	}

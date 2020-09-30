@@ -317,6 +317,8 @@ void TTextLogger::DoLog(const std::string &particlename, const std::string &suff
 
 #ifdef USEROOT
 
+#include "TObjString.h"
+
 TROOTLogger::TROOTLogger(TConfig& aconfig){
     config = aconfig;
     ostringstream filename;
