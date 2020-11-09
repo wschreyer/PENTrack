@@ -14,6 +14,9 @@
 #include "boost/format.hpp"
 #include <boost/iterator/zip_iterator.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 #include "tricubic.h"
 #include "globals.h"
@@ -127,14 +130,23 @@ TFieldContainer ReadComsolField(const std::string &params){
   if (!ss){
       throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
   }
+  ft = boost::filesystem::absolute(ft, configpath.parent_path());
 
   std::string line;
   std::vector<std::string> line_parts;
   std::vector<double> x, y, z;
   std::vector<double> bx, by, bz;
 
-  std::ifstream FIN(boost::filesystem::absolute(ft, configpath.parent_path()).string(), std::ifstream::in);
-	if (!FIN.is_open()){
+  std::ifstream FINstream(ft.string(), std::ifstream::in);
+  boost::iostreams::filtering_istream FIN;
+  if (boost::filesystem::extension(ft) == ".bz2"){
+  	FIN.push(boost::iostreams::bzip2_decompressor());
+  }
+  else if (boost::filesystem::extension(ft) == ".gz"){
+  	FIN.push(boost::iostreams::gzip_decompressor());
+  }
+  FIN.push(FINstream);
+  if (!FINstream.is_open() or !FIN.is_complete()){
     throw std::runtime_error("Could not open " + ft.string());
   }
   std::cout << "\nReading " << ft << "\n";
@@ -159,7 +171,6 @@ TFieldContainer ReadComsolField(const std::string &params){
     bz.push_back( std::stod(line_parts[5], nullptr));
   }
 
-  FIN.close();
   if (x.empty() || y.empty() || z.empty() || bx.empty() || by.empty()|| bz.empty() ) {
     throw std::runtime_error("No data read from " + ft.string());
   }
@@ -193,9 +204,20 @@ TFieldContainer ReadOperaField3(const std::string &params){
         throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
     }
 
-    std::ifstream FIN(boost::filesystem::absolute(ft, configpath.parent_path()).string(), std::ifstream::in);
-    if (!FIN.is_open())
-        throw std::runtime_error((boost::format("\nCould not open %1%!\n") % ft).str());
+    ft = boost::filesystem::absolute(ft, configpath.parent_path());
+    std::ifstream FINstream(ft.string(), std::ifstream::in);
+    boost::iostreams::filtering_istream FIN;
+    if (boost::filesystem::extension(ft) == ".bz2"){
+        FIN.push(boost::iostreams::bzip2_decompressor());
+    }
+    else if (boost::filesystem::extension(ft) == ".gz"){
+        FIN.push(boost::iostreams::gzip_decompressor());
+    }
+    FIN.push(FINstream);
+    if (!FINstream.is_open() or !FIN.is_complete()){
+        throw std::runtime_error("Could not open " + ft.string());
+    }
+
     std::cout << "\nReading " << ft << " ";
 	std::string line;
     int xl, yl, zl;
@@ -278,7 +300,6 @@ TFieldContainer ReadOperaField3(const std::string &params){
     if (i != xl*yl*zl){
         throw std::runtime_error((boost::format("The header says the size is %1%, actually it is %2%! Exiting...\n") % (xl*yl*zl) % i).str());
 	}
-	FIN.close();
 
     auto xminmax = std::minmax_element(xyzTab[0].begin(), xyzTab[0].end());
     auto yminmax = std::minmax_element(xyzTab[1].begin(), xyzTab[1].end());

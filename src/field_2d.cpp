@@ -10,6 +10,9 @@
 #include <fstream>
 
 #include "boost/format.hpp"
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 #include "globals.h"
 
@@ -60,12 +63,22 @@ TFieldContainer ReadOperaField2(const std::string &params){
 
 void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
 		alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab){
-	ifstream FIN(tabfile, ifstream::in);
-	if (!FIN.is_open()){
-		cout << "\nCould not open " << tabfile << "!\n";
-		exit(-1);
+	
+	boost::filesystem::path filepath = boost::filesystem::absolute(tabfile, configpath.parent_path());
+	std::ifstream FINstream(filepath.string(), std::ifstream::in | std::ifstream::binary);
+	boost::iostreams::filtering_istream FIN;
+	if (boost::filesystem::extension(filepath) == ".bz2"){
+		FIN.push(boost::iostreams::bzip2_decompressor());
 	}
-	cout << "\nReading " << tabfile << "!\n";
+	else if (boost::filesystem::extension(filepath) == ".gz"){
+		FIN.push(boost::iostreams::gzip_decompressor());
+	}
+	FIN.push(FINstream);
+	if (!FINstream.is_open() or !FIN.is_complete()){
+		throw std::runtime_error("Could not open " + filepath.string());
+	}
+
+	cout << "\nReading " << filepath << "!\n";
 	int intval;
 	string line;
 	FIN >> m >> intval >> n;
@@ -112,7 +125,7 @@ void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, 
 	}
 
 	if (!FIN || line.substr(0,2) != " 0"){
-		std::cout << tabfile << " not found or corrupt! Exiting...\n";
+		std::cout << filepath << " not found or corrupt! Exiting...\n";
 		exit(-1);
 	}
 
@@ -175,7 +188,6 @@ void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, 
 		std::cout << "The header says the size is " << m << " by " << n << ", actually it is " << ri+1 << " by " << zi+1 << "! Exiting...\n";
 		exit(-1);
 	}
-	FIN.close();
 }
 
 
