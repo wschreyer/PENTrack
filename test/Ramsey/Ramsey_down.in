@@ -1,6 +1,6 @@
 [GLOBAL]
 simtype 1
-simcount 10
+simcount 1
 simtime 54
 
 secondaries 0
@@ -26,21 +26,21 @@ parameters 0	0.199	0	360	-0.05  	0.05
 particle neutron
 
 ActiveTime 0
-PhaseSpaceWeighting 1
+PhaseSpaceWeighting 0
 
 Emin 0e-9
 Emax 500e-9
 spectrum 1
 
 phi_v_min 0			# min. azimuth angle of velocity
-phi_v_max 6.2831854		# max. azimuth angle of velocity
+phi_v_max 360			# max. azimuth angle of velocity
 phi_v 1				# differential initial distribution of azimuth angle of velocity - volume source only!
 
 theta_v_min 0		# min. polar angle of velocity
-theta_v_max 3.14159265	# max. polar angle of velocity
+theta_v_max 180		# max. polar angle of velocity
 theta_v sin(x)		# differential initial distribution of polar angle of velocity - volume source only!
 
-polarization 0		# 1: low-field-seeker, -1: high-field-seeker, 0: random
+polarization 1		# 1: low-field-seeker, -1: high-field-seeker, 0: random
 
 
 [FIELDS]
@@ -50,7 +50,7 @@ polarization 0		# 1: low-field-seeker, -1: high-field-seeker, 0: random
 2 EDMStaticEField                      0                       0                    -1E6                  1
 
 #EDMStaticB0GradZField   edmB0xoff edmB0yoff edmB0zoff pol_ang azm_ang edmB0z0 edmdB0z0dz BoundaryWidth xmax    xmin    ymax    ymin    zmax    zmin scale
-3 EDMStaticB0GradZField 0 0 0 90 0 1E-8 0 0 1 -1 1 -1 1 -1 t<(2-1.7144)?0:(t<2?sin(183.019*t):(t<52?0:(t<53.7144?sin(183.019*t):0)))
+3 EDMStaticB0GradZField 0 0 0 90 0 1E-8 0 0 1 -1 1 -1 1 -1 t<(2-1.7144)?0:(t<2?sin(WPFREQ/1000*t):(t<52?0:(t<53.7144?sin(WPFREQ/1000*t):0)))
 
 
 [PARTICLES]
