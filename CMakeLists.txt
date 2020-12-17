@@ -78,7 +78,7 @@ target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBR
 
 if (BUILD_TESTS)
 	enable_testing()
-	add_executable(runTests test/test.cpp test/fieldTests.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
+	add_executable(runTests test/test.cpp test/fieldTests.cpp test/microroughnessTests.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
 	target_link_libraries(runTests ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBRARIES})
 	target_compile_definitions(runTests PRIVATE "BOOST_TEST_DYN_LINK=1")
 	add_test(COMMAND runTests)

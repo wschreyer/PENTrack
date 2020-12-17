@@ -27,15 +27,15 @@ bool MRValid(const double v[3], const double normal[3], const solid &leaving, co
 	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
 	if (Estep >= 0){
 		double kc = sqrt(2*m_n*Estep)*ele_e/hbar; // critical wave number of potential wall
-		if (2*mat.RMSRoughness*ki < 1 && 2*mat.RMSRoughness*kc < 1)
+		if (2*mat.RMSRoughness*ki < 2 && 2*mat.RMSRoughness*kc < 2)
 			return true;
 	}
 	else{
 		double kt = sqrt(2*m_n*(E - Estep))*ele_e/hbar; // wave number in second solid
-		if (2*mat.RMSRoughness*ki < 1 && 2*mat.RMSRoughness*kt < 1)
+		if (2*mat.RMSRoughness*ki < 2 && 2*mat.RMSRoughness*kt < 2)
 			return true;
 	}
-	std::cout << "MR model not applicable on material " << mat.name << ". Falling back to Lambert model!\n";
+	std::cout << "MR model not applicable on material " << mat.name << ". Falling back to specular reflection!\n";
 	return false;
 }
 
