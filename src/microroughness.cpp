@@ -12,40 +12,32 @@ using namespace std;
 
 namespace MR{
 
-bool MRValid(const double v[3], const double normal[3], const solid &leaving, const solid &entering){
-	double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity projected onto surface normal
-	material mat;
-	if (vnormal > 0)
-		mat = leaving.mat;
-	else
-		mat = entering.mat;
-	if (mat.RMSRoughness == 0 || mat.CorrelLength == 0)
+bool MRValid(const double v[3], const double normal[3], const double Estep, const double RMSroughness, const double correlationLength){
+	if (RMSroughness == 0 || correlationLength == 0)
 		return false;
 	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
 	double E = 0.5*m_n*v2; // kinetic energy
-	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9;
 	double ki = sqrt(2*m_n*E)*ele_e/hbar; // wave number in first solid
 	if (Estep >= 0){
 		double kc = sqrt(2*m_n*Estep)*ele_e/hbar; // critical wave number of potential wall
-		if (2*mat.RMSRoughness*ki < 2 && 2*mat.RMSRoughness*kc < 2)
+		if (2*RMSroughness*ki < 2 && 2*RMSroughness*kc < 2)
 			return true;
 	}
 	else{
 		double kt = sqrt(2*m_n*(E - Estep))*ele_e/hbar; // wave number in second solid
-		if (2*mat.RMSRoughness*ki < 2 && 2*mat.RMSRoughness*kt < 2)
+		if (2*RMSroughness*ki < 2 && 2*RMSroughness*kt < 2)
 			return true;
 	}
-	std::cout << "MR model not applicable on material " << mat.name << ". Falling back to specular reflection!\n";
+	std::cout << "MR model not applicable. Falling back to specular reflection!\n";
 	return false;
 }
 
-double MRDist(const bool transmit, const bool integral, const double v[3], const double normal[3], const solid &leaving, const solid &entering, const double theta, const double phi){
+double MRDist(const bool transmit, const bool integral, const double v[3], const double normal[3], const double Estep, const double RMSroughness, const double correlationLength, const double theta, const double phi){
 	if (theta < 0 || theta > pi/2)
 		return 0;
 	double v2 = v[0]*v[0] + v[1]*v[1] + v[2]*v[2]; // velocity squared
 	double vnormal = v[0]*normal[0] + v[1]*normal[1] + v[2]*normal[2]; // velocity projected onto surface normal
 	double E = 0.5*m_n*v2; // kinetic energy
-	double Estep = entering.mat.FermiReal*1e-9 - leaving.mat.FermiReal*1e-9; // potential wall
 	if (transmit && E <= Estep) // if particle is transmitted: check if energy is higher than potential wall
 		return 0;
 
@@ -65,15 +57,7 @@ double MRDist(const bool transmit, const bool integral, const double v[3], const
 	else
 		So = 2*cos(theta)/(cos(theta) + sqrt(cos(theta)*cos(theta) - kc*kc/ki/ki)); // diffusely reflected amplitude
 
-	double b, w;
-	if (vnormal > 0){
-		b = leaving.mat.RMSRoughness;
-		w = leaving.mat.CorrelLength;
-	}
-	else{
-		b = entering.mat.RMSRoughness;
-		w = entering.mat.CorrelLength;
-	}
+	double b = RMSroughness, w = correlationLength;
 
 	double theta_i = acos(costheta_i);
 	double Fmu = 0; // fourier transform of roughness correlation function
@@ -103,14 +87,15 @@ struct TMRParams{
 	const bool integral; ///< True, if the phi-integrated scattering distribution should be returned
 	const double *v; ///< Icident velocity vector
 	const double *normal; ///< Normal vector
-	const solid &leaving; ///< Material that the partice currently is in
-	const solid &entering; ///< Material that the particle is entering
+	const double Estep; ///< Potential step
+	const double RMSroughness; ///< RMS roughness of surface
+	const double correlationLength; ///< Correlation length of surface
 };
 
-double MRProb(const bool transmit, const double v[3], const double normal[3], const solid &leaving, const solid &entering){
+double MRProb(const bool transmit, const double v[3], const double normal[3], const double Estep, const double RMSroughness, const double correlationLength){
 	vector<double> total(1, 0);
-	auto integrand = [transmit, v, normal, leaving, entering](const vector<double> &dummy, std::vector<double> &result, const double theta){ // use lambda expression to define local function that has the proper parameters for odeint
-		result[0] = MRDist(transmit, true, v, normal, leaving, entering, theta, 0);
+	auto integrand = [transmit, v, normal, Estep, RMSroughness, correlationLength](const vector<double> &dummy, std::vector<double> &result, const double theta){ // use lambda expression to define local function that has the proper parameters for odeint
+		result[0] = MRDist(transmit, true, v, normal, Estep, RMSroughness, correlationLength, theta, 0);
 	};
 	boost::numeric::odeint::integrate(integrand, total, 0.0, (double)pi/2, 0.01); // integrate "differential equation" dP/dtheta = MRdist(theta) from 0 to pi/2
 	return total[0];
@@ -125,15 +110,16 @@ double MRProb(const bool transmit, const double v[3], const double normal[3], co
  */
 void NegMRDist(const alglib::real_1d_array &x, double &y, void *ptr){
 	TMRParams *p = static_cast<TMRParams*>(ptr);
-	y = -MRDist(p->transmit, p->integral, p->v, p->normal, p->leaving, p->entering, x[0], 0);
+	y = -MRDist(p->transmit, p->integral, p->v, p->normal, p->Estep, p->RMSroughness, p->correlationLength, x[0], 0);
 }
 
-double MRDistMax(const bool transmit, const double v[3], const double normal[3], const solid &leaving, const solid &entering){
+
+double MRDistMax(const bool transmit, const double v[3], const double normal[3], const double Estep, const double RMSroughness, const double correlationLength){
 	alglib::mincgstate s;
 	alglib::real_1d_array theta = "[0.7853981635]";
 	alglib::mincgcreatef(1, theta, 1e-10, s);
 	alglib::mincgsetcond(s, 0, 0, 0, 0);
-	TMRParams p = {transmit, false, v, normal, leaving, entering};
+	TMRParams p = {transmit, false, v, normal, Estep, RMSroughness, correlationLength};
 	alglib::mincgoptimize(s, NegMRDist, NULL, &p);
 	alglib::mincgreport r;
 	alglib::mincgresults(s, theta, r);
@@ -142,7 +128,7 @@ double MRDistMax(const bool transmit, const double v[3], const double normal[3],
 //		throw std::runtime_error("theta out of bounds");
 //	if (r.terminationtype < 0)
 //		throw std::runtime_error("microroughness maximization did not converge properly");
-	return MRDist(transmit, false, v, normal, leaving, entering, theta[0], 0);
+	return MRDist(transmit, false, v, normal, Estep, RMSroughness, correlationLength, theta[0], 0);
 }
 
 }

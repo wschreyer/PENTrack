@@ -250,6 +250,7 @@ TConfig ConfigInit(int argc, char **argv){
 	return config;
 }
 
+
 /**
  * 
  * Output a table containing the MR diffuse reflection probability for the specified range of solid angles from the config.in file
@@ -265,14 +266,6 @@ void PrintMROutAngle(TConfig &config, const boost::filesystem::path &outpath) {
 	copy(istream_iterator<double>(ss), istream_iterator<double>(), back_inserter(MRSolidAngleDRPParams));
 	if (MRSolidAngleDRPParams.size() != 5)
 		throw std::runtime_error("Incorrect number of parameters to print micro-roughness distribution!");
-	
-	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
-	material matEnter = { "reflection surface material" , MRSolidAngleDRPParams[0], 0, 0, 0, MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3] };
-	material matLeav = { "vacuum material", 0, 0, 0, 0, 0, 0 };
-	
-	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
-	solid solEnter = { "path", "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
-	solid solLeav = { "path", "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
 	
 	ostringstream oss;
 	oss << "MR-SldAngDRP" << "-F" << MRSolidAngleDRPParams[0] << "-En" << MRSolidAngleDRPParams[1] << "-b" << MRSolidAngleDRPParams[2] << "-w" << MRSolidAngleDRPParams[3] << "-th" << MRSolidAngleDRPParams[4] << ".out"; 
@@ -298,16 +291,17 @@ void PrintMROutAngle(TConfig &config, const boost::filesystem::path &outpath) {
 		
 		for (double theta=0; theta<pi/2; theta+=(pi/2)/100) {
 			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
-			double mrprob = MR::MRDist(false, false, v, norm, solLeav, solEnter, theta, phi)*sin(theta);
+			double mrprob = MR::MRDist(false, false, v, norm, MRSolidAngleDRPParams[0], MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3], theta, phi)*sin(theta);
 			mrproboutfile << phi << ' ' << theta << ' ' << mrprob << '\n';
 		}
 		for (double theta=0; theta<pi/2; theta+=(pi/2)/100) {
 			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
-			double mrprob = MR::MRDist(true, false, v, norm, solLeav, solEnter, theta, phi)*sin(theta);
+			double mrprob = MR::MRDist(true, false, v, norm, MRSolidAngleDRPParams[0], MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3], theta, phi)*sin(theta);
 			mrproboutfile << phi << ' ' << pi - theta << ' ' << mrprob << '\n';
 		}
 	}
 } // end PrintMRThetaIEnergy
+
 
 /**
  * 
@@ -324,14 +318,6 @@ void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpath
 		throw std::runtime_error("Incorrect number of parameters to print total micro-roughness-scattering probability!");
 
 
-	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
-	material matEnter = { "reflection surface material", MRThetaIEnergyParams[0], 0, 0, 0, MRThetaIEnergyParams[1], MRThetaIEnergyParams[2] };
-	material matLeav = { "reflection surface material", 0, 0, 0, 0, 0, 0  };
-
-	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
-	solid solEnter = { "path", "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
-	solid solLeav = { "path", "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
-	
 	ostringstream oss;
 	oss << "MR-Tot-DRP" << "-F" << MRThetaIEnergyParams[0] << "-b" << MRThetaIEnergyParams[1] << "-w" << MRThetaIEnergyParams[2] << ".out"; 
  	boost::filesystem::path fileName = outpath / oss.str();	
@@ -361,7 +347,7 @@ void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpath
 			double vabs = sqrt(2*energy*1e-9/m_n);
 			double v[3] = {0, vabs*sin(theta), -vabs*cos(theta)};
 			//the sin(theta) factor is needed to noramlize for different sizes of surface elements in spherical coordinates
-			double totmrprob = MR::MRProb(false, v, norm, solLeav, solEnter);
+			double totmrprob = MR::MRProb(false, v, norm, MRThetaIEnergyParams[0], MRThetaIEnergyParams[1], MRThetaIEnergyParams[2]);
 			mroutfile << theta << ' ' << energy << ' ' << totmrprob << '\n';
 		}
 	}
