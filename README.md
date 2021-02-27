@@ -267,7 +267,11 @@ merge_all.c: A [ROOT](http://root.cern.ch) script that writes all out-files (or 
 
 merge.py: Python script merging all files given as parameters into a ROOT tree, similar to merge_all.c.
 
-### preRunCheck.sh
+### Submitting PENTrack jobs to a computing cluster
+
+slurm.sh: An example script showing how to submit PENTrack simulations as an array of jobs running in parallel to a computing cluster using the [SLURM scheduler](https://slurm.schedmd.com/documentation.html).
+
+### preRunCheck.sh (DEPRECATED --- needs update)
 
 This script performs some preliminary checks before launching a large batch PENTrack job. The checks performed are:
 
@@ -286,7 +290,7 @@ The script also generates a batch.pbs that can be submitted to a TORQUE queueing
 6. pbsfileName - the name of the batch file being generated (default name is batch.pbs)
 7. wallTime - the walltime requested from the queueing system, it must be entered in the following format: 1d4h30m which means the time requested is: 1 day + 4 hours + 30 minutes (you can only specify days or hours or minutes but they order must remain: day, hours, minutes). You can also specify 120m and the batch file will correctly set the time to 2 hours. A warning will be given 
 
-### postRunCheck.sh
+### postRunCheck.sh (DEPRECATED --- neds update)
 
 This script performs some basic error checks after a batch run of PENTrack has finished execution. The two required inputs are: 
 
@@ -301,7 +305,7 @@ The checks performed by the script are:
 4. Creates a directory named ErrorJobs in the outDirName directory and moves all the files related to a job number with a non-empty error file, file without an exit code and files without an exit code of 0 to the ErrorJobs directory. 
 5. Generates a table listing the average, minimum and maximum values of the following simulation parameters: Simulation time, Particle Stop IDS (neutron absorbed on a surface, Neutrons absorbed in a material, Neutrons not categorized etc...). The job numbers corresponding to the jobs with the maximum and minimum values for each parameter are given. This table is useful in making sure there are not too many neutrons encountering geometry errors or hitting the outer boundaries or identifying a job number that had particularly large numbers of neutrons encounter an error etc. 
 
-### genGeomList.sh 
+### genGeomList.sh (DEPRECATED --- neds update)
 
 This script generates a list of STL files in the format required by PENTrack, priority and material type defined. This is useful when running a simulation with a large number of STL files required. However, to function the STL files must be named according to a specific naming convention for regular files the convention is: 
 
