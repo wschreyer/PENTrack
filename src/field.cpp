@@ -63,7 +63,7 @@ bool TFieldBoundaryBox::inBounds(const double x, const double y, const double z)
         return true;
     }
     else{
-        return x >= xmin and x <= xmax and y >= ymin and y <= ymax and z >= zmin and z <= zmax;
+        return x >= xmin and x < xmax and y >= ymin and y < ymax and z >= zmin and z < zmax;
     }
 }
 

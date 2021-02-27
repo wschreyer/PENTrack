@@ -287,7 +287,7 @@ TabField::TabField(const std::string &tabfile, const double alengthconv){
 
 void TabField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double r = sqrt(x*x+y*y);
-	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
+	if (r >= r_mi && r < r_mi + rdist*(m - 1) && z >= z_mi && z < z_mi + zdist*(n - 1)){
 		// bicubic interpolation
 		double Br = 0, Bphi = 0;
 		double Bx = 0, By = 0, Bz = 0;
@@ -336,7 +336,7 @@ void TabField::BField(const double x, const double y, const double z, const doub
 void TabField::EField(const double x, const double y, const double z, const double t,
 		double &V, double Ei[3]) const{
 	double r = sqrt(x*x+y*y);
-	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
+	if (r >= r_mi && r < r_mi + rdist*(m - 1) && z >= z_mi && z < z_mi + zdist*(n - 1)){
 		if (fErc || fEphic || fEzc){ // prefer E-field interpolation over potential interpolation
 			double phi = atan2(y,x);
 //			if (dEidxj == nullptr){
