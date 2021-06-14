@@ -66,7 +66,7 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
 
     if (not PMP::is_polygon_soup_a_polygon_mesh(faces))
         //throw(std::runtime_error("Triangles do not form a mesh"));
-        std::cerr << "Triangles do not form a mesh\n";
+        std::cerr << "Triangles in " << filename << " do not form a mesh\n";
     PMP::polygon_soup_to_polygon_mesh(vertices, faces, *mesh);
 //    CGAL::Polygon_mesh_processing::duplicate_non_manifold_vertices(*mesh);
     double A = PMP::area(*mesh)*1e4;
@@ -105,7 +105,8 @@ std::string TTriangleMesh::ReadFile(const std::string &filename, const int ID){
         }
     }
     if (affected_components > 0) {
-        std::cerr << "\nWarning: " << affected_components << " of " << num << " components have holes with total circumference "
+        std::cerr << "\nWarning: " << affected_components << " of " << num << " components in "
+                  << filename << " have holes with total circumference "
                   << border_length * 1e2 << "cm and " << self_intersecting_area * 1e4
                   << "cm2 of their area is self-intersecting!\n\n";
     }
