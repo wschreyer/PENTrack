@@ -108,3 +108,13 @@ double MaxwellBoltzSpectrum (const double T, const double E) {
 	return 2*sqrt(E/pi)/sqrt(kT*kT*kT)*exp(-E/kT) / (2*sqrt(0.5/pi)/kT*exp(-0.5)); // return distribution divided by its maximum at E/kt = 0.5
 }
 
+
+std::string ResolveFormula(const std::string &formulaName, const std::map<std::string, std::string> &formulas){
+	auto i = formulas.find(formulaName);
+	if (i == formulas.end()){
+		return formulaName;
+	}
+	else{
+		return i->second;
+	}
+}

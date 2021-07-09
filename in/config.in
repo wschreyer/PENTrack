@@ -157,11 +157,11 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 # All coordinates are defined in meters, currents in ampere, fields in Tesla
 #
 # Each line is preceded by a unique identifier. Entries with duplicate identifiers will overwrite each other
-# For each field a time-dependent scaling factor can be added (does not allow spaces yet!).
+# For each field a time-dependent scaling factor (can be defined in the FORMULAS section) can be added.
 # Note that rapidly changing fields might be missed by the trajectory integrator making too large time steps
 ##################################################
 #2Dfield 	table-file	BFieldScale	EFieldScale	CoordinateScale
-1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab	t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))*0.0001	1   0.01  ### this table file has cm/Gauss/Volt units
+1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab	magnetRamp	1   0.01  ### this table file has cm/Gauss/Volt units, the magnetic field is scaled with the 'magnetRamp' formula defined in the FORMULAS section below.
 
 #3Dfield 	table-file	BFieldScale	EFieldScale	BoundaryWidth	CoordinateScale
 #3 OPERA3D	3Dtable.tab	1		1		0		1
@@ -252,7 +252,8 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #14 EDMStaticEField 0   0   1e6 1
 
 
-## CustomBField calculates the three field components from formulas defined in the FORMULAS section. Field derivatives are approximated numerically using a five-point stencil method.
+## CustomBField calculates the three field components from formulas defined in the FORMULAS section.
+# Each component can depend on the spatial coordinates x, y, z and a time variable t. Field derivatives are approximated numerically using a five-point stencil method.
 # The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero at these boundaries.
 
 # CustomBField Bx-formula By-formula Bz-formula xmax xmin ymax ymin zmax zmin BoundaryWidth scale
@@ -311,6 +312,8 @@ tmax 1e-5
 
 ############ define formulas used for CustomBField or output to log files
 [FORMULAS]
+magnetRamp  t < 400 ? 0 : (t < 500 ? 0.01*(t-400) : (t < 700 ? 1 : (t<800?0.01*(800-t) : 0)))*0.0001    # ramp magnetic field from 0% to 100% between t=400s and t=500s, then ramp back down between t=700s and t=800s
+
 vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2)     # for example, you could now add "vabs" to the list of endlogvars to print the absolute inital velocity to the endlog
 detected    solidend == 14                              # for example, you could set this as an endlogfilter to only log particles that are absorbed in the detector
 

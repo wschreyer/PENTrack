@@ -34,21 +34,22 @@ void CylToCart(const double v_r, const double v_phi, const double phi, double &v
 }
 
 
-TFieldContainer ReadOperaField2(const std::string &params){
+TFieldContainer ReadOperaField2(const std::string &params, const std::map<std::string, std::string> &formulas){
     std::istringstream ss(params);
     boost::filesystem::path ft;
     std::string fieldtype, Bscale, Escale;
     double lengthconv;
-    ss >> fieldtype;
+    ss >> fieldtype >> ft >> Bscale >> Escale;
+	Bscale = ResolveFormula(Bscale, formulas);
+	Escale = ResolveFormula(Escale, formulas);
     if (fieldtype == "2Dtable"){
-        ss >> ft >> Bscale >> Escale;
         std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA2D format. I'm assuming that file " << ft << " is using centimeters, Gauss, Volt/centimeter, and Volts as units.\n";
         Bscale = "(" + Bscale + ")*0.0001"; // scale magnetic field to Tesla
         Escale = "(" + Escale + ")*100"; // scale electric field to Volt/meter
         lengthconv = 0.01;
     }
     else if (fieldtype == "OPERA2D") {
-        ss >> ft >> Bscale >> Escale >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
+        ss >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
     }
     else{
         throw std::runtime_error("Tried to load 2D table file for unknown field type " + fieldtype + "!\n");

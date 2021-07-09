@@ -17,3 +17,5 @@ BCutPlane 0 0 0  1 0 0  0 1 1  100 100  0
 9 HarmonicExpandedBField    0	   0	  1  	0	            1	    0       1        0	    1	    0	    1 	    0	   0	    0	    0       0       1       0       0       0       1       0       0       0       0      0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0       0                    
 
 [PARTICLES]
+
+[FORMULAS]

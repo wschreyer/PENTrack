@@ -123,13 +123,13 @@ private:
  * @param params String containing parameters defined in config.in. Should contain field type "3Dtable", file name, magnetic field scaling formula, electric field scaling formula, and boundary width
  * @return Pointer to created class, derived from TField
  */
-TFieldContainer ReadOperaField3(const std::string &params);
+TFieldContainer ReadOperaField3(const std::string &params, const std::map<std::string, std::string> &formulas);
 
 /**
 * Read generic file containing table of magnetic field mapped on list of points, e.g. exported from COMSOL
 * @param params String containing parameters defined in config.in. Should contain field type "COMSOL", file name, magnetic field scaling formula, and boundary width
 * @return Pointer to created class, derived from TField
 */
-TFieldContainer ReadComsolField(const std::string &params);
+TFieldContainer ReadComsolField(const std::string &params, const std::map<std::string, std::string> &formulas);
 
 #endif // FIELD_3D_H_

@@ -121,12 +121,13 @@ inline double tricubic_eval_fast(double a[64], double x, double y, double z, int
 }
 
 
-TFieldContainer ReadComsolField(const std::string &params){
+TFieldContainer ReadComsolField(const std::string &params, const std::map<std::string, std::string> &formulas){
   std::istringstream ss(params);
   boost::filesystem::path ft;
   std::string fieldtype, Bscale;
   double BoundaryWidth, lengthconv;
   ss >> fieldtype >> ft >> Bscale >> BoundaryWidth >> lengthconv;; // read fieldtype, tablefilename, and rest of parameters
+  Bscale = ResolveFormula(Bscale, formulas);
   if (!ss){
       throw std::runtime_error((boost::format("Could not read all required parameters for field %1%!") % fieldtype).str());
   }
@@ -181,21 +182,22 @@ TFieldContainer ReadComsolField(const std::string &params){
   return TFieldContainer(std::unique_ptr<TabField3>(new TabField3({x,y,z}, {bx,by,bz}, std::vector<double>())), Bscale, "0", *xminmax.second, *xminmax.first, *yminmax.second, *yminmax.first, *zminmax.second, *zminmax.first, BoundaryWidth);
 }
 
-TFieldContainer ReadOperaField3(const std::string &params){
+TFieldContainer ReadOperaField3(const std::string &params, const std::map<std::string, std::string> &formulas){
     std::istringstream ss(params);
     boost::filesystem::path ft;
     std::string fieldtype, Bscale, Escale;
     double BoundaryWidth, lengthconv;
-    ss >> fieldtype;
+    ss >> fieldtype >> ft >> Bscale >> Escale >> BoundaryWidth;
+	Bscale = ResolveFormula(Bscale, formulas);
+	Escale = ResolveFormula(Escale, formulas);
     if (fieldtype == "3Dtable"){
-        ss >> ft >> Bscale >> Escale >> BoundaryWidth; // read fieldtype, tablefilename, and rest of parameters
         std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA3D format. I'm assuming that file " << ft << " is using centimeters, Gauss, Volt/centimeter, and Volts as units.\n";
         Bscale = "(" + Bscale + ")*0.0001"; // scale magnetic field to Tesla
         Escale = "(" + Escale + ")*100"; // scale electric field to Volt/meter
         lengthconv = 0.01;
     }
     else if (fieldtype == "OPERA3D"){
-        ss >> ft >> Bscale >> Escale >> BoundaryWidth >> lengthconv;
+        ss >> lengthconv;
 	}
     else{
         throw std::runtime_error("Tried to load 3D table file for unknown field type " + fieldtype + "!\n");

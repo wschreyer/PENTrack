@@ -116,6 +116,6 @@ class TabField: public TField{
  * 
  * @return Returns created 2D field map.
  */
-TFieldContainer ReadOperaField2(const std::string &params);
+TFieldContainer ReadOperaField2(const std::string &params, const std::map<std::string, std::string> &formulas);
 
 #endif // FIELD_2D_H_

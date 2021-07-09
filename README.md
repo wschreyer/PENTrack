@@ -61,11 +61,11 @@ Defining your experiment
 
 ### Configuration files
 
-Simulation parameters are defined the configuration file config.in. By default, it is located in the `in` directory.
+Simulation parameters are defined the configuration file config.in. By default, it is located in the `in` directory. The config files are separated into sections with their headers indicated in square brackets. Each line consists of a variable name followed by an arbitrary number of vales separated by whitespace characters.
 
-General simulation parameters are defined in the GLOBAL section. Materials and geometry are defined in the MATERIALS and GEOMETRY sections. The former can optionally be moved into a different file, e.g. a central materials database. Electromagnetic fields and particle sources are defined in the FIELDS, and SOURCE sections. Particle-specific parameters - lifetime, output options, etc. - are either defined for all particle types in the PARTICLES section or in the specific particle sections.
+General simulation parameters are defined in the GLOBAL section. Materials and geometry are defined in the MATERIALS and GEOMETRY sections. The former can optionally be moved into a different file, e.g. a central materials database. Electromagnetic fields and particle sources are defined in the FIELDS, and SOURCE sections. Particle-specific parameters - lifetime, output options, etc. - are either defined for all particle types in the PARTICLES section or in the specific particle sections. Some parameters require user-defined formulas that can be defined in the FORMULAS section.
 
-More information can be found in the provided default configuration file config.in.
+More information can be found in the provided default configuration file `in/config.in`.
 
 The default configuration simulates a full cycle of the neutron-lifetime experiment [PENeLOPE](http://www.e18.ph.tum.de/research/measuring-the-neutron-lifetime-penelope/). It is filled with UCN from a source in the guide below the storage volume for 200s and higher-energy UCN are removed by absorbers for 200s. Then, PENeLOPE's superconducting magnets are ramped up and UCN are stored for 200s. Afterwards, the magnet is ramped down again and remaining UCN are counted in a detector below the storage volume. During magnetic storage, spins of the UCNs are simulated to estimate their probability to flip.
 
@@ -82,11 +82,11 @@ Do not choose a too high resolution. Spatial tolerances of 1mm to 3mm and angle 
 
 PENTrack will warn you of potential issues in triangle meshes (holes, self-intersections). If you get such warnings, check if the summary at the end of the simulation lists particles that encountered geometry errors. If it does, you might want to fix the affected meshes by simplifying parts, re-exporting with different resolution, or repairing them in e.g. [MeshLab](http://meshlab.sourceforge.net/).
 
-If you want to export several parts of a Solidworks assembly you can do the following:
+If you want to export parts of a Solidworks assembly you can do the following:
 
 1. Select the part(s) to be exported and right-click.
 2. Select "Invert selection" and hide all other parts.
-3. Now you can save the remaining parts in a single STL file. Make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together. For resolution, the "Fine" preset is usually a good choice.
+3. Now you can save the remaining parts in either a single STL file or each part in a separate file. Make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together. For resolution, the "Fine" preset is usually a good choice.
 4. You can check the positioning of the parts with e.g. [MeshLab](http://meshlab.sourceforge.net/), SolidView, Minimagics, Solidworks...
 
 ### Fields
@@ -101,7 +101,7 @@ Units of field maps are assumed to be in meters, Tesla, and Volts, but each can 
 
 You can also define a variety of analytically calculated fields. See default config file and test/analyticalFieldTest/config.in for more information.
 
-Every field type can be scaled with a user-defined time-dependent formula to simulate oscillating fields or magnets that are ramped up and down.
+Every field type can be scaled with a user-defined time-dependent formula to simulate oscillating fields or magnets that are ramped up and down. The formula can be defined in the FORMULAS section.
 
 ### Particle sources
 
