@@ -311,6 +311,7 @@ tmax 1e-5
 
 
 ############ define formulas used for CustomBField or output to log files
+## see the supported syntax in the ExprTk documentation at http://partow.net/programming/exprtk/index.html
 [FORMULAS]
 magnetRamp  t < 400 ? 0 : (t < 500 ? 0.01*(t-400) : (t < 700 ? 1 : (t<800?0.01*(800-t) : 0)))*0.0001    # ramp magnetic field from 0% to 100% between t=400s and t=500s, then ramp back down between t=700s and t=800s
 

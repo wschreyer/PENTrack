@@ -61,7 +61,7 @@ Defining your experiment
 
 ### Configuration files
 
-Simulation parameters are defined the configuration file config.in. By default, it is located in the `in` directory. The config files are separated into sections with their headers indicated in square brackets. Each line consists of a variable name followed by an arbitrary number of vales separated by whitespace characters.
+Simulation parameters are defined the configuration file config.in. By default, it is located in the `in` directory. The config files are separated into sections with their headers indicated in square brackets. Each line consists of a variable name followed by an arbitrary number of values separated by whitespace characters.
 
 General simulation parameters are defined in the GLOBAL section. Materials and geometry are defined in the MATERIALS and GEOMETRY sections. The former can optionally be moved into a different file, e.g. a central materials database. Electromagnetic fields and particle sources are defined in the FIELDS, and SOURCE sections. Particle-specific parameters - lifetime, output options, etc. - are either defined for all particle types in the PARTICLES section or in the specific particle sections. Some parameters require user-defined formulas that can be defined in the FORMULAS section.
 
