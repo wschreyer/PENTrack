@@ -283,7 +283,7 @@ hitlogfilter
 snapshotlog 1		# print initial state and state at certain times to file [0/1]
 snapshots 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310 320 330 340 350 360 370 380 390 400 410 420 430 440 450 460 470 480 490 500 510 520 530 540 550 560 570 580 590 600 610 620 630 640 650 660 670 680 690 700 710 720 730 740 750 760 770 780 790 800 810 820 830 840 850 860 870 880 890 900 910 920 930 940 950 960 970 980 990 1000 # times [s] at which to take snapshots
 snapshotlogvars jobnumber particle tstart xstart ystart zstart vxstart vystart vzstart polstart Sxstart Systart Szstart Hstart Estart Bstart Ustart solidstart tend xend yend zend vxend vyend vzend polend Sxend Syend Szend Hend Eend Bend Uend solidend stopID Nspinflip spinflipprob Nhit Nstep trajlength Hmax wL
-snapshotfilter
+snapshotlogfilter
 
 spinlog 0			# print spin trajectory to file [0/1]
 spinlogvars jobnumber particle t x y z Sx Sy Sz Wx Wy Wz Bx By Bz
