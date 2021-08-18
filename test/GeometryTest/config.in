@@ -1,8 +1,8 @@
 [GLOBAL]
 simtype 1
 
-simcount 1000000
-simtime 0.001
+simcount 10000
+simtime 10
 
 secondaries 0
 
@@ -10,20 +10,25 @@ secondaries 0
 [MATERIALS]
 #name		FermiReal [neV]		FermiImag [neV]		DiffuseReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]
 default		0			0			0				0	0	0
-#Al		54.1			0.00756			0				1e-5	3.5e-9	25e-9
-Al		54.1			0.00756			0.1				1e-5	0	0
+Steel		183			0.1			0.03				0	0	0
+UCNdet		0			0.1			0				0	0	0
 
 
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	../HollowUnitCube.STL		Al
+2	../UnitCubeCenteredOn(0,0,0).STL	default		5-10
+3	../UnitCubeCenteredOn(1,0,0).STL	default		5-10
+4	../HollowUnitCube.STL		Steel
+5	../UnitCubeCenteredOn(0,0,0).STL	UCNdet		0-5
+6	../UnitCubeCenteredOn(1,0,0).STL	UCNdet		0-5
+
 
 
 [SOURCE]
 sourcemode boxvolume
-#			x_min	x_max	y_min	y_max	z_min	z_max	(boxvolume)
-parameters 0.5	0.5	0.001	0.001		0.5	0.5
+#		x_min	x_max	y_min	y_max	z_min	z_max	(boxvolume)
+parameters 	0	1	0	1	0	1
 
 particle neutron
 ActiveTime 0
@@ -31,17 +36,17 @@ ActiveTime 0
 Enormal 0
 PhaseSpaceWeighting 0
 
-Emin 110e-9
-Emax 110e-9
+Emin 0e-9
+Emax 300e-9
 spectrum 1
 
-phi_v_min 270
-phi_v_max 270
+phi_v_min 0
+phi_v_max 360
 phi_v 1
 
-theta_v_min 45
-theta_v_max 45
-theta_v 1
+theta_v_min 0
+theta_v_max 180
+theta_v sin(x)
 
 polarization 0
 
@@ -56,7 +61,7 @@ lmax 9e99
 
 endlog 0
 tracklog 0
-hitlog 1
+hitlog 0
 hitlogvars v1x v1y v1z v2x v2y v2z nx ny nz
 hitlogfilter
 snapshotlog 0

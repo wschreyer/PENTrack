@@ -207,4 +207,14 @@ double ElectronBetaSpectrum(const double E);
  */
 double MaxwellBoltzSpectrum (const double T, const double E);
 
+/**
+ * Find given formula name in list of formulas
+ * 
+ * @param formulaName Name of formula
+ * @param formulas List of formulas
+ * 
+ * @return Returns formula with given name, if name is not in list return formulaname
+ */
+std::string ResolveFormula(const std::string &formulaName, const std::map<std::string, std::string> &formulas);
+
 #endif /*GLOBALS_H_*/

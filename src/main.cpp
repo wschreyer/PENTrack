@@ -250,6 +250,7 @@ TConfig ConfigInit(int argc, char **argv){
 	return config;
 }
 
+
 /**
  * 
  * Output a table containing the MR diffuse reflection probability for the specified range of solid angles from the config.in file
@@ -265,14 +266,6 @@ void PrintMROutAngle(TConfig &config, const boost::filesystem::path &outpath) {
 	copy(istream_iterator<double>(ss), istream_iterator<double>(), back_inserter(MRSolidAngleDRPParams));
 	if (MRSolidAngleDRPParams.size() != 5)
 		throw std::runtime_error("Incorrect number of parameters to print micro-roughness distribution!");
-	
-	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
-	material matEnter = { "reflection surface material" , MRSolidAngleDRPParams[0], 0, 0, 0, MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3] };
-	material matLeav = { "vacuum material", 0, 0, 0, 0, 0, 0 };
-	
-	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
-	solid solEnter = { "path", "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
-	solid solLeav = { "path", "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
 	
 	ostringstream oss;
 	oss << "MR-SldAngDRP" << "-F" << MRSolidAngleDRPParams[0] << "-En" << MRSolidAngleDRPParams[1] << "-b" << MRSolidAngleDRPParams[2] << "-w" << MRSolidAngleDRPParams[3] << "-th" << MRSolidAngleDRPParams[4] << ".out"; 
@@ -298,16 +291,17 @@ void PrintMROutAngle(TConfig &config, const boost::filesystem::path &outpath) {
 		
 		for (double theta=0; theta<pi/2; theta+=(pi/2)/100) {
 			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
-			double mrprob = MR::MRDist(false, false, v, norm, solLeav, solEnter, theta, phi)*sin(theta);
+			double mrprob = MR::MRDist(false, false, v, norm, MRSolidAngleDRPParams[0], MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3], theta, phi)*sin(theta);
 			mrproboutfile << phi << ' ' << theta << ' ' << mrprob << '\n';
 		}
 		for (double theta=0; theta<pi/2; theta+=(pi/2)/100) {
 			//the sin(theta) factor is needed to normalize for different size of surface elements in spherical coordinates
-			double mrprob = MR::MRDist(true, false, v, norm, solLeav, solEnter, theta, phi)*sin(theta);
+			double mrprob = MR::MRDist(true, false, v, norm, MRSolidAngleDRPParams[0], MRSolidAngleDRPParams[2], MRSolidAngleDRPParams[3], theta, phi)*sin(theta);
 			mrproboutfile << phi << ' ' << pi - theta << ' ' << mrprob << '\n';
 		}
 	}
 } // end PrintMRThetaIEnergy
+
 
 /**
  * 
@@ -324,14 +318,6 @@ void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpath
 		throw std::runtime_error("Incorrect number of parameters to print total micro-roughness-scattering probability!");
 
 
-	/** Create a material struct that defines vacuum (the leaving material) and the material the neutron is being reflected from (the entering material **/
-	material matEnter = { "reflection surface material", MRThetaIEnergyParams[0], 0, 0, 0, MRThetaIEnergyParams[1], MRThetaIEnergyParams[2] };
-	material matLeav = { "reflection surface material", 0, 0, 0, 0, 0, 0  };
-
-	/** Create a solid object that the neutron is leaving and entering based on the materials created in the previous step **/
-	solid solEnter = { "path", "reflection solid", matEnter, 2 }; // no ignore times (priority = 2) 
-	solid solLeav = { "path", "vacuum solid", matLeav, 1 }; //no ignore times (priority = 1 )
-	
 	ostringstream oss;
 	oss << "MR-Tot-DRP" << "-F" << MRThetaIEnergyParams[0] << "-b" << MRThetaIEnergyParams[1] << "-w" << MRThetaIEnergyParams[2] << ".out"; 
  	boost::filesystem::path fileName = outpath / oss.str();	
@@ -361,7 +347,7 @@ void PrintMRThetaIEnergy(TConfig &config, const boost::filesystem::path &outpath
 			double vabs = sqrt(2*energy*1e-9/m_n);
 			double v[3] = {0, vabs*sin(theta), -vabs*cos(theta)};
 			//the sin(theta) factor is needed to noramlize for different sizes of surface elements in spherical coordinates
-			double totmrprob = MR::MRProb(false, v, norm, solLeav, solEnter);
+			double totmrprob = MR::MRProb(false, v, norm, MRThetaIEnergyParams[0], MRThetaIEnergyParams[1], MRThetaIEnergyParams[2]);
 			mroutfile << theta << ' ' << energy << ' ' << totmrprob << '\n';
 		}
 	}
@@ -407,10 +393,15 @@ void PrintBFieldCut(TConfig &config, const boost::filesystem::path &outfile, con
 	double BCutPlanePoint[9]; ///< 3 points on plane for field slice (read from config)
 	int BCutPlaneSampleCount1; ///< number of field samples in BCutPlanePoint[3..5]-BCutPlanePoint[0..2] direction (read from config)
 	int BCutPlaneSampleCount2; ///< number of field samples in BCutPlanePoint[6..8]-BCutPlanePoint[0..2] direction (read from config)
-	istringstream(config["GLOBAL"]["BCutPlane"])	>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2]
-													>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
-													>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
-													>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2;
+	double BCutTime;
+	istringstream str(config["GLOBAL"]["BCutPlane"]);
+	str	>> BCutPlanePoint[0] >> BCutPlanePoint[1] >> BCutPlanePoint[2]
+		>> BCutPlanePoint[3] >> BCutPlanePoint[4] >> BCutPlanePoint[5]
+		>> BCutPlanePoint[6] >> BCutPlanePoint[7] >> BCutPlanePoint[8]
+		>> BCutPlaneSampleCount1 >> BCutPlaneSampleCount2 >> BCutTime;
+	if (not str){
+		throw std::runtime_error("Missing config parameters for BCutPlane. 12 are expected");
+	}
 
 	// get directional vectors from points on plane by u = p2-p1, v = p3-p1
 	double u[3] = {BCutPlanePoint[3] - BCutPlanePoint[0], BCutPlanePoint[4] - BCutPlanePoint[1], BCutPlanePoint[5] - BCutPlanePoint[2]};
@@ -434,16 +425,16 @@ void PrintBFieldCut(TConfig &config, const boost::filesystem::path &outfile, con
 			for (int k = 0; k < 3; k++)
 				Pp[k] = BCutPlanePoint[k] + i*u[k]/BCutPlaneSampleCount1 + j*v[k]/BCutPlaneSampleCount2;
 			// print B-/E-Field to file
-            cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << " ";
+         			cutfile << Pp[0] << " " << Pp[1] << " " << Pp[2] << " ";
 			
-			field.BField(Pp[0], Pp[1], Pp[2], 0, B, dBidxj);
+			field.BField(Pp[0], Pp[1], Pp[2], BCutTime, B, dBidxj);
 			for (int k = 0; k < 3; k++){
 				cutfile << B[k] << " ";
 				for (int l = 0; l < 3; l++)
 					cutfile << dBidxj[k][l] << " ";
 			}
 
-			field.EField(Pp[0], Pp[1], Pp[2], 0, V, Ei);
+			field.EField(Pp[0], Pp[1], Pp[2], BCutTime, V, Ei);
 			cutfile << Ei[0] << " " << Ei[1] << " " << Ei[2] << " " << V << "\n";
 		}
 	}

@@ -85,7 +85,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void Transmit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering) const;
+			const double normal[3], const double Estep) const;
 
 	/**
 	 * Transmit neutron through surface.
@@ -94,7 +94,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void TransmitMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
+			const double normal[3], const double Estep, const material &mat, TMCGenerator &mc) const;
 
 	/**
 	 * Transmit neutron through surface.
@@ -103,7 +103,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void TransmitLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
+			const double normal[3], const double Estep, const material &mat, TMCGenerator &mc) const;
 
 	/**
 	 * Reflect neutron from surface.
@@ -112,7 +112,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void Reflect(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering) const;
+			const double normal[3]) const;
 
 	/**
 	 * Reflect neutron from surface.
@@ -121,7 +121,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void ReflectMR(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
+			const double normal[3], const double Estep, const material &mat, TMCGenerator &mc) const;
 
 	/**
 	 * Reflect neutron from surface.
@@ -130,7 +130,7 @@ protected:
 	 * For parameter documentation see TNeutron::OnHit.
 	 */
 	void ReflectLambert(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-			const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc) const;
+			const double normal[3], const material &mat, TMCGenerator &mc) const;
 
 	/**
 	 * Checks for absorption in solids using Fermi-potential formalism and does some additional calculations for neutrons

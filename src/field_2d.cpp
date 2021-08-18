@@ -10,6 +10,9 @@
 #include <fstream>
 
 #include "boost/format.hpp"
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 #include "globals.h"
 
@@ -31,21 +34,22 @@ void CylToCart(const double v_r, const double v_phi, const double phi, double &v
 }
 
 
-TFieldContainer ReadOperaField2(const std::string &params){
+TFieldContainer ReadOperaField2(const std::string &params, const std::map<std::string, std::string> &formulas){
     std::istringstream ss(params);
     boost::filesystem::path ft;
     std::string fieldtype, Bscale, Escale;
     double lengthconv;
-    ss >> fieldtype;
+    ss >> fieldtype >> ft >> Bscale >> Escale;
+	Bscale = ResolveFormula(Bscale, formulas);
+	Escale = ResolveFormula(Escale, formulas);
     if (fieldtype == "2Dtable"){
-        ss >> ft >> Bscale >> Escale;
         std::cout << "Field type " << fieldtype << " is deprecated. Consider using the new OPERA2D format. I'm assuming that file " << ft << " is using centimeters, Gauss, Volt/centimeter, and Volts as units.\n";
         Bscale = "(" + Bscale + ")*0.0001"; // scale magnetic field to Tesla
         Escale = "(" + Escale + ")*100"; // scale electric field to Volt/meter
         lengthconv = 0.01;
     }
     else if (fieldtype == "OPERA2D") {
-        ss >> ft >> Bscale >> Escale >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
+        ss >> lengthconv; // read fieldtype, tablefilename, and rest of parameters
     }
     else{
         throw std::runtime_error("Tried to load 2D table file for unknown field type " + fieldtype + "!\n");
@@ -60,12 +64,22 @@ TFieldContainer ReadOperaField2(const std::string &params){
 
 void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, alglib::real_1d_array &rind, alglib::real_1d_array &zind,
 		alglib::real_1d_array BTabs[3], alglib::real_1d_array ETabs[3], alglib::real_1d_array &VTab){
-	ifstream FIN(tabfile, ifstream::in);
-	if (!FIN.is_open()){
-		cout << "\nCould not open " << tabfile << "!\n";
-		exit(-1);
+	
+	boost::filesystem::path filepath = boost::filesystem::absolute(tabfile, configpath.parent_path());
+	std::ifstream FINstream(filepath.string(), std::ifstream::in | std::ifstream::binary);
+	boost::iostreams::filtering_istream FIN;
+	if (boost::filesystem::extension(filepath) == ".bz2"){
+		FIN.push(boost::iostreams::bzip2_decompressor());
 	}
-	cout << "\nReading " << tabfile << "!\n";
+	else if (boost::filesystem::extension(filepath) == ".gz"){
+		FIN.push(boost::iostreams::gzip_decompressor());
+	}
+	FIN.push(FINstream);
+	if (!FINstream.is_open() or !FIN.is_complete()){
+		throw std::runtime_error("Could not open " + filepath.string());
+	}
+
+	cout << "\nReading " << filepath << "!\n";
 	int intval;
 	string line;
 	FIN >> m >> intval >> n;
@@ -112,7 +126,7 @@ void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, 
 	}
 
 	if (!FIN || line.substr(0,2) != " 0"){
-		std::cout << tabfile << " not found or corrupt! Exiting...\n";
+		std::cout << filepath << " not found or corrupt! Exiting...\n";
 		exit(-1);
 	}
 
@@ -175,7 +189,6 @@ void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, 
 		std::cout << "The header says the size is " << m << " by " << n << ", actually it is " << ri+1 << " by " << zi+1 << "! Exiting...\n";
 		exit(-1);
 	}
-	FIN.close();
 }
 
 
@@ -275,7 +288,7 @@ TabField::TabField(const std::string &tabfile, const double alengthconv){
 
 void TabField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double r = sqrt(x*x+y*y);
-	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
+	if (r >= r_mi && r < r_mi + rdist*(m - 1) && z >= z_mi && z < z_mi + zdist*(n - 1)){
 		// bicubic interpolation
 		double Br = 0, Bphi = 0;
 		double Bx = 0, By = 0, Bz = 0;
@@ -324,7 +337,7 @@ void TabField::BField(const double x, const double y, const double z, const doub
 void TabField::EField(const double x, const double y, const double z, const double t,
 		double &V, double Ei[3]) const{
 	double r = sqrt(x*x+y*y);
-	if (r >= r_mi && r <= r_mi + rdist*(m - 1) && z >= z_mi && z <= z_mi + zdist*(n - 1)){
+	if (r >= r_mi && r < r_mi + rdist*(m - 1) && z >= z_mi && z < z_mi + zdist*(n - 1)){
 		if (fErc || fEphic || fEzc){ // prefer E-field interpolation over potential interpolation
 			double phi = atan2(y,x);
 //			if (dEidxj == nullptr){

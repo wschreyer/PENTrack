@@ -18,9 +18,9 @@ materials_file materials.in
 # secondaries: set to 1 to also simulate secondary particles (e.g. decay protons/electrons) [0/1]
 secondaries 1
 
-#cut through B-field (simtype == 4) (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2)
+#cut through B-field at time t (simtype == 4) (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2 t)
 #define cut plane by three points and number of sample points in direction 1->2/1->3
-BCutPlane	0.161 0 0.015	0.501 0 0.015	0.161 0 0.85	340	835
+BCutPlane	0.161 0 0.015	0.501 0 0.015	0.161 0 0.85	340	835  500
 
 #parameters to be used for generating a 2d histogram for the mr diffuse reflection probability into a solid angle
 #Param order: Fermi pot. [neV], Neut energy [neV], RMS roughness [nm], correlation length [nm], theta_i [0..pi/2]
@@ -157,11 +157,11 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 # All coordinates are defined in meters, currents in ampere, fields in Tesla
 #
 # Each line is preceded by a unique identifier. Entries with duplicate identifiers will overwrite each other
-# For each field a time-dependent scaling factor can be added (does not allow spaces yet!).
+# For each field a time-dependent scaling factor (can be defined in the FORMULAS section) can be added.
 # Note that rapidly changing fields might be missed by the trajectory integrator making too large time steps
 ##################################################
 #2Dfield 	table-file	BFieldScale	EFieldScale	CoordinateScale
-1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab	t<400?0:(t<500?0.01*(t-400):(t<700?1:(t<800?0.01*(800-t):0)))*0.0001	1   0.01  ### this table file has cm/Gauss/Volt units
+1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab	magnetRamp	1   0.01  ### this table file has cm/Gauss/Volt units, the magnetic field is scaled with the 'magnetRamp' formula defined in the FORMULAS section below.
 
 #3Dfield 	table-file	BFieldScale	EFieldScale	BoundaryWidth	CoordinateScale
 #3 OPERA3D	3Dtable.tab	1		1		0		1
@@ -252,7 +252,8 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 #14 EDMStaticEField 0   0   1e6 1
 
 
-## CustomBField calculates the three field components from formulas defined in the FORMULAS section. Field derivatives are approximated numerically using a five-point stencil method.
+## CustomBField calculates the three field components from formulas defined in the FORMULAS section.
+# Each component can depend on the spatial coordinates x, y, z and a time variable t. Field derivatives are approximated numerically using a five-point stencil method.
 # The field is only evaluated within x/y/z min/max boundaries. If a BoundaryWidth is defined, the field will be brought smoothly to zero at these boundaries.
 
 # CustomBField Bx-formula By-formula Bz-formula xmax xmin ymax ymin zmax zmin BoundaryWidth scale
@@ -282,7 +283,7 @@ hitlogfilter
 snapshotlog 1		# print initial state and state at certain times to file [0/1]
 snapshots 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300 310 320 330 340 350 360 370 380 390 400 410 420 430 440 450 460 470 480 490 500 510 520 530 540 550 560 570 580 590 600 610 620 630 640 650 660 670 680 690 700 710 720 730 740 750 760 770 780 790 800 810 820 830 840 850 860 870 880 890 900 910 920 930 940 950 960 970 980 990 1000 # times [s] at which to take snapshots
 snapshotlogvars jobnumber particle tstart xstart ystart zstart vxstart vystart vzstart polstart Sxstart Systart Szstart Hstart Estart Bstart Ustart solidstart tend xend yend zend vxend vyend vzend polend Sxend Syend Szend Hend Eend Bend Uend solidend stopID Nspinflip spinflipprob Nhit Nstep trajlength Hmax wL
-snapshotfilter
+snapshotlogfilter
 
 spinlog 0			# print spin trajectory to file [0/1]
 spinlogvars jobnumber particle t x y z Sx Sy Sz Wx Wy Wz Bx By Bz
@@ -291,7 +292,7 @@ spinlogfilter
 spintimes	500 700	# do spin tracking between these points in time [s]
 Bmax 0.1			# do spin tracking when absolute magnetic field is below this value [T]
 flipspin 0			# do Monte Carlo spin flips when magnetic field surpasses Bmax [0/1]
-interpolatefields 1	# Interpolate magnetic and electric fields for spin tracking between trajectory step points [0/1]. This will speed up spin tracking in high magnetic fields, but might break spin tracking in weak, quickly oscillating fields!
+interpolatefields 0	# Interpolate magnetic and electric fields for spin tracking between trajectory step points [0/1]. This will speed up spin tracking in high magnetic fields, but might break spin tracking in weak, quickly oscillating fields!
 
 
 ############# set options for individual particle types, overwrites above settings ###############
@@ -310,7 +311,10 @@ tmax 1e-5
 
 
 ############ define formulas used for CustomBField or output to log files
+## see the supported syntax in the ExprTk documentation at http://partow.net/programming/exprtk/index.html
 [FORMULAS]
+magnetRamp  t < 400 ? 0 : (t < 500 ? 0.01*(t-400) : (t < 700 ? 1 : (t<800?0.01*(800-t) : 0)))*0.0001    # ramp magnetic field from 0% to 100% between t=400s and t=500s, then ramp back down between t=700s and t=800s
+
 vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2)     # for example, you could now add "vabs" to the list of endlogvars to print the absolute inital velocity to the endlog
 detected    solidend == 14                              # for example, you could set this as an endlogfilter to only log particles that are absorbed in the detector
 

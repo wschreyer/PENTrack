@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <random>
+#include <boost/format.hpp>
 
 #include "tracking.h"
 
@@ -317,9 +318,9 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
     }
 //  cout << "Leaving " << leaving.name << ", entering " << entering.name << '\n';
     if (leaving.ID != entering.ID){ // if the particle actually traversed a material interface
-        auto coll = find_if(colls.begin(), colls.end(), [&leaving, &entering](const pair<TCollision, bool> &c){ return !c.second && (c.first.ID == leaving.ID || c.first.ID == entering.ID); });
+        auto coll = find_if(colls.begin(), colls.end(), [&leaving, &entering](const pair<TCollision, bool> &c){ return c.first.ID == leaving.ID or (c.first.ID == entering.ID and not c.second); });
         if (coll == colls.end())
-            throw std::runtime_error("Did not find collision corresponding to entering/leaving solid!");
+            throw std::runtime_error((boost::format("Did not find collision going from %5% to %6%! t=%1%s, x=%2%, y=%3%, z=%4%") % x1 % y1[0] % y1[1] % y1[2] % leaving.ID % entering.ID).str());
         value_type x2temp = x2;
         state_type y2temp = y2;
         p->DoHit(x1, y1, x2, y2, coll->first.normal, leaving, entering, mc); // do particle specific things

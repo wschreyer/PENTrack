@@ -2,7 +2,7 @@
 # simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry
 simtype 4
 
-BCutPlane 0 0 0  0 0 1  0.707107 0.707107 0  100 100
+BCutPlane 0 0 0  0 0 1  0.707107 0.707107 0  100 100  0
 
 [MATERIALS]
 
@@ -19,3 +19,5 @@ BCutPlane 0 0 0  0 0 1  0.707107 0.707107 0  100 100
 3 OPERA3D	../VerticalLinearGradientField3D.tab	-0.0001		-1	    0		0.01
 
 [PARTICLES]
+
+[FORMULAS]

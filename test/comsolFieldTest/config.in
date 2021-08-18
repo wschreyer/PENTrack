@@ -9,7 +9,7 @@ secondaries 0
 #cut through B-field (simtype == 4) (x1 y1 z1  x2 y2 z2  x3 y3 z3 num1 num2)
 #define cut plane by three points and number of sample points in direction 1->2 and 1->3
 
-BCutPlane 0 1.0 -1.75  0 1.0 1.75  0 -1.5 -1.75  100 100
+BCutPlane 0 1.0 -1.75  0 1.0 1.75  0 -1.5 -1.75  100 100  0
 
 [MATERIALS]
 #name		FermiReal [neV]		FermiImag [neV]		DiffuseReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]	UseMRmodel
@@ -83,3 +83,5 @@ tmax 1e-5
 [mercury]
 
 [xenon]
+
+[FORMULAS]
