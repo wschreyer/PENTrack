@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.1)
 project (PENTrack CXX)
 
-if (NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
