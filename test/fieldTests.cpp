@@ -353,7 +353,7 @@ BOOST_AUTO_TEST_CASE(TEDMStaticEFieldTest){
 
 // integration test checking that TFieldManager properly handles scaling and boundaries
 BOOST_AUTO_TEST_CASE(TFieldManagerTest){
-    TConfig config({{"FIELDS", {{"0", "LinearFieldZ 0 1 1 -1 1 -1 1 -1 sin(t)"}}}}); // homogeneous, oscillating field with hard boundaries at +/-1
+    TConfig config({{"FIELDS", {{"0", "LinearFieldZ 0 1 1 -1 1 -1 1 -1 sin(t)"}}} , {"FORMULAS",{} }}); // homogeneous, oscillating field with hard boundaries at +/-1
     TFieldManager m(config);
     int nTests = 100;
     for (int n = 0; n < nTests; ++n){
