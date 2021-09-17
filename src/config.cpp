@@ -102,7 +102,7 @@ void TConfig::convert(const std::string &configpath){
 	_map["SOURCE"]["parameters"] = p[0] + ' ' + p[1] + ' ' + p[2] + ' ' + p[3] + ' ' + p[4] + ' ' + p[5];
 
 	std::vector<std::string> sourcevars = { "Emin", "Emax", "spectrum", "phi_v_min", "phi_v_max", "phi_v",
-											"theta_v_min", "theta_v_max", "theta_v", "polarization" };
+											"theta_v_min", "theta_v_max", "theta_v", "polarization" , "pulseWidth", "pulseGap"};
 	std::vector<std::string> anglevars = { "phi_v_min", "phi_v_max", "theta_v_min", "theta_v_max" };
 	for (auto var : sourcevars){
 		if (pconf[particle].count(var) > 0)

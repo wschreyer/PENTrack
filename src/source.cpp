@@ -35,6 +35,36 @@ TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf)
 	istringstream(sourceconf["theta_v_min"]) >> rmin;
 	istringstream(sourceconf["theta_v_max"]) >> rmax;
 	theta_v = parse_distribution(sourceconf["theta_v"], rmin*conv, rmax*conv);
+
+	if (sourceconf.count("pulseWidth") && sourceconf.count("pulseGap")) // Check for optional source pulsing params
+	{
+		istringstream(sourceconf["pulseWidth"]) >> pulseWidth;
+		istringstream(sourceconf["pulseGap"]) >> pulseGap;
+	} else {
+		pulseWidth = 0;
+		pulseGap = 0;
+	}
+	
+
+	std::vector<double> interval, weight;
+	if (pulseGap > 0 && pulseWidth > 0)
+	{
+		cout << "Pulsed source enabled\npulseWidth: " << pulseWidth << " pulseGap: " << pulseGap << "\n";
+		for (float i = 0; i < fActiveTime; i += (pulseWidth+pulseGap))
+		{
+			interval.push_back(i);
+			interval.push_back(i + pulseWidth);
+			weight.push_back(1);
+			weight.push_back(0);
+		}
+		weight.pop_back();
+	} else {
+		interval = {0, fActiveTime};
+		weight = {1};
+	}
+
+	timedist = std::piecewise_constant_distribution<double> (interval.begin(), interval.end(), weight.begin());
+	// timedist = std::uniform_real_distribution<double> (0., fActiveTime);
 }
 
 
@@ -86,7 +116,6 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
 	phi = atan2(v[1],v[0]);
 	theta = acos(v[2]);
 
-	std::uniform_real_distribution<double> timedist(0., fActiveTime);
 	return TParticleSource::CreateParticle(timedist(mc), p[0], p[1], p[2], Ekin, phi, theta, polarization, mc, geometry, field);
 }
 
@@ -97,7 +126,6 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 	progress_display progress(N);
 	for (int i = 0; i < N; i++){
 	    ++progress;
-		std::uniform_real_distribution<double> timedist(0, fActiveTime);
 		double t = timedist(mc);
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z, mc); // dice point in source volume
@@ -112,7 +140,6 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 }
 
 TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field){
-	std::uniform_real_distribution<double> timedist(0, fActiveTime);
 	if (fPhaseSpaceWeighting){ // if particle density should be weighted by available phase space
 		if (MinPot == numeric_limits<double>::infinity()){ // if minimum potential energy has not yet been determined
 			FindPotentialMinimum(mc, geometry, field); // find minimum potential energy
