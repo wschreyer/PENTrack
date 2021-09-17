@@ -29,7 +29,6 @@ protected:
 	std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
 	std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
 	std::piecewise_constant_distribution<double> timedist; ///< Particle start time probability distribution
-	// std::uniform_real_distribution<double> timedist; ///< Particle start time probability distribution
 
 	double polarization; ///< Initial polarization of created particles
 public:

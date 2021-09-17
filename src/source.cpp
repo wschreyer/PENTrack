@@ -64,7 +64,6 @@ TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf)
 	}
 
 	timedist = std::piecewise_constant_distribution<double> (interval.begin(), interval.end(), weight.begin());
-	// timedist = std::uniform_real_distribution<double> (0., fActiveTime);
 }
 
 
