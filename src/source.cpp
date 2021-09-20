@@ -50,32 +50,27 @@ TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf)
 
 double TParticleSource::GetParticleStartTime( TMCGenerator &mc )
 {
-	if (fActiveTime == 0){ // All particles start at t = 0
+	if (fActiveTime == 0){ // All particles start at t = 0 if source active time is 0
 		return 0;
-	} else if (pulseGap > 0 && pulseWidth > 0) { // Pulsed source
-		std::vector<double> interval, weight;
-		if (pulseGap > 0 && pulseWidth > 0)
-		{
-			for (float i = 0; i < fActiveTime; i += (pulseWidth+pulseGap))
-			{
-				interval.push_back(i);
-				if ( (i + pulseWidth) > fActiveTime){
-					interval.push_back(fActiveTime);
-					weight.push_back( (fActiveTime - i)/pulseWidth );
-				} else {
-					interval.push_back(i + pulseWidth);
-					weight.push_back(1);
-				}
-				weight.push_back(0);
-			}
-			weight.pop_back();
-		} else {
-			interval = {0, fActiveTime};
-			weight = {1};
-		}
 
+	} else if (pulseGap > 0 && pulseWidth > 0) { // If pulsed source enabled
+		std::vector<double> interval, weight;
+	    for (float i = 0; i < fActiveTime; i += (pulseWidth+pulseGap)) // Add intervals with source on or source off
+		{
+			interval.push_back(i);
+			if ( (i + pulseWidth) > fActiveTime){
+				interval.push_back(fActiveTime); // If last pulse extends over active time specification, shorten
+				weight.push_back( (fActiveTime - i)/pulseWidth ); // adjust probability weighting accordingly
+			} else {
+				interval.push_back(i + pulseWidth);
+				weight.push_back(1);
+			}
+			weight.push_back(0);
+		}
+		weight.pop_back();
 		std::piecewise_constant_distribution<double> timedist(interval.begin(), interval.end(), weight.begin());
 		return timedist(mc);
+
 	} else { // Uniform time distribution of particle start time
 		std::uniform_real_distribution<double> timedist(0, fActiveTime);
 		return timedist(mc);
