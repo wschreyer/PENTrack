@@ -40,30 +40,46 @@ TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf)
 	{
 		istringstream(sourceconf["pulseWidth"]) >> pulseWidth;
 		istringstream(sourceconf["pulseGap"]) >> pulseGap;
+		if (pulseGap > 0 && pulseWidth > 0) cout << "Pulsed source enabled\npulseWidth: " << pulseWidth << " pulseGap: " << pulseGap << "\n";
 	} else {
 		pulseWidth = 0;
 		pulseGap = 0;
 	}
 	
+}
 
-	std::vector<double> interval, weight;
-	if (pulseGap > 0 && pulseWidth > 0)
-	{
-		cout << "Pulsed source enabled\npulseWidth: " << pulseWidth << " pulseGap: " << pulseGap << "\n";
-		for (float i = 0; i < fActiveTime; i += (pulseWidth+pulseGap))
+double TParticleSource::GetParticleStartTime( TMCGenerator &mc )
+{
+	if (fActiveTime == 0){ // All particles start at t = 0
+		return 0;
+	} else if (pulseGap > 0 && pulseWidth > 0) { // Pulsed source
+		std::vector<double> interval, weight;
+		if (pulseGap > 0 && pulseWidth > 0)
 		{
-			interval.push_back(i);
-			interval.push_back(i + pulseWidth);
-			weight.push_back(1);
-			weight.push_back(0);
+			for (float i = 0; i < fActiveTime; i += (pulseWidth+pulseGap))
+			{
+				interval.push_back(i);
+				if ( (i + pulseWidth) > fActiveTime){
+					interval.push_back(fActiveTime);
+					weight.push_back( (fActiveTime - i)/pulseWidth );
+				} else {
+					interval.push_back(i + pulseWidth);
+					weight.push_back(1);
+				}
+				weight.push_back(0);
+			}
+			weight.pop_back();
+		} else {
+			interval = {0, fActiveTime};
+			weight = {1};
 		}
-		weight.pop_back();
-	} else {
-		interval = {0, fActiveTime};
-		weight = {1};
-	}
 
-	timedist = std::piecewise_constant_distribution<double> (interval.begin(), interval.end(), weight.begin());
+		std::piecewise_constant_distribution<double> timedist(interval.begin(), interval.end(), weight.begin());
+		return timedist(mc);
+	} else { // Uniform time distribution of particle start time
+		std::uniform_real_distribution<double> timedist(0, fActiveTime);
+		return timedist(mc);
+	}
 }
 
 
@@ -115,7 +131,7 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
 	phi = atan2(v[1],v[0]);
 	theta = acos(v[2]);
 
-	return TParticleSource::CreateParticle(timedist(mc), p[0], p[1], p[2], Ekin, phi, theta, polarization, mc, geometry, field);
+	return TParticleSource::CreateParticle( GetParticleStartTime(mc), p[0], p[1], p[2], Ekin, phi, theta, polarization, mc, geometry, field);
 }
 
 
@@ -125,7 +141,7 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 	progress_display progress(N);
 	for (int i = 0; i < N; i++){
 	    ++progress;
-		double t = timedist(mc);
+		double t = GetParticleStartTime(mc);
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z, mc); // dice point in source volume
 		TParticle *p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarization, mc, geometry, field); // create dummy particle with Ekin = 0
@@ -156,7 +172,7 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 
 //		cout << "Trying to find starting point for particle with total energy " << H << "eV ...";
 		for (int i = 0; true; i++){
-			double t = timedist(mc); // dice start time
+			double t = GetParticleStartTime(mc); // dice start time
 			double x, y, z;
 			RandomPointInSourceVolume(x, y, z, mc); // dice point in source volume
 			TParticle *proposed_p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarization, mc, geometry, field); // create new particle with Ekin = 0
@@ -175,7 +191,7 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 		assert(false); // this will never be reached
 	}
 	else{ // create particles uniformly distributed in volume
-		double t = timedist(mc);
+		double t = GetParticleStartTime(mc);
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z, mc);
 		return TParticleSource::CreateParticle(t, x, y, z, spectrum(mc), phi_v(mc), theta_v(mc), polarization, mc, geometry, field);
