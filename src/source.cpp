@@ -55,7 +55,7 @@ double TParticleSource::GetParticleStartTime( TMCGenerator &mc )
 
 	} else if (pulseGap > 0 && pulseWidth > 0) { // If pulsed source enabled
 		std::vector<double> interval, weight;
-	    for (float i = 0; i < fActiveTime; i += (pulseWidth+pulseGap)) // Add intervals with source on or source off
+	    for (float i = 0; i < fActiveTime; i += pulseGap) // Add intervals with source on or source off
 		{
 			interval.push_back(i);
 			if ( (i + pulseWidth) > fActiveTime){
