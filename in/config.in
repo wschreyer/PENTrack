@@ -166,8 +166,10 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab	magnetRamp	1   0.01  ### this table file has cm/Gauss/Volt units, the magnetic field is scaled with the 'magnetRamp' formula defined in the FORMULAS section below.
 
 #3Dfield 	table-file	BFieldScale	EFieldScale	BoundaryWidth	CoordinateScale
-#3 OPERA3D	3Dtable.tab	1		1		0		1
-#4 COMSOL	comsol.txt	1		1		0		1
+#3 OPERA3D	3Dtable.tab	1		    1		    0		        1
+
+#3Dfield 	table-file	BFieldScale	BoundaryWidth	CoordinateScale
+#4 COMSOL	comsol.txt	1		    0		        1
 
 
 # Simulate magnetic field from a current I flowing from point (x1, y1, z1) to (x2, y2, z2)
