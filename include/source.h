@@ -11,6 +11,7 @@
 #include <limits>
 #include <random>
 #include <vector>
+#include <limits>
 
 #include "particle.h"
 #include "mc.h"
@@ -28,6 +29,7 @@ protected:
 	std::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
 	std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
 	std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
+	std::piecewise_constant_distribution<double> timedist; ///< Particle start time probability distribution
 
 	double polarization; ///< Initial polarization of created particles
 public:
@@ -49,16 +51,9 @@ public:
 	/**
 	 * Return name of particle to be created
 	 */
-	std::string GetParticleName() const{
-	    return fParticleName;
-	}
-
-	/** 
-	 * Generates particle start time
-	 * @param mc Random-number generator
-	 * @return particle start time
-	 */
-	double GetParticleStartTime(TMCGenerator &mc);
+	 std::string GetParticleName() const{
+	     return fParticleName;
+	 }
 
 	/**
 	 * Basic creation of a new particle. Maps particle name to the corresponding class

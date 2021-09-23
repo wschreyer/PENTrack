@@ -97,8 +97,11 @@ STLfile		sourcevolume.STL	# STL volume used for STLvolume/STLsurface source, pat
 
 particle	neutron		# type of particle the source should create
 ActiveTime	200			# time source is active for
-pulseWidth  0           # [s] Duration of a source pulse. Allows a pulsed source if specified (must be > 0). This parameter is optional
-pulseGap 0              # [s] Number of seconds between each pulse start (must be > 0). This parameter is optional
+
+### Optional params for a pulsed particle source. Requires ActiveTime > 0 and pulseGap > 0
+pulseGap 0              # [s] Number of seconds between each pulse start
+pulseWidth  0           # [s] Duration of a source pulse. If set to 0, each pulse becomes a delta function
+
 
 Enormal		0					# give particles an energy boost normal to surface (surface sources only! see above)
 PhaseSpaceWeighting	0			# weight initial particle density by available phase space (volume source only! see above)
