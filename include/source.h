@@ -10,6 +10,8 @@
 #include <string>
 #include <limits>
 #include <random>
+#include <vector>
+#include <limits>
 
 #include "particle.h"
 #include "mc.h"
@@ -20,11 +22,15 @@
 class TParticleSource{
 protected:
 	double fActiveTime; ///< Duration for which the source will be active
+	double pulseWidth; ///< [s] Duration of a source pulse (must be > 0)
+	double pulseGap;   ///< [s] Number of seconds between each pulse (must be > 0)
 	std::string fParticleName; ///< Name of particle that the source should create
 
 	std::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
 	std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
 	std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
+	std::piecewise_constant_distribution<double> timedist; ///< Particle start time probability distribution
+
 	double polarization; ///< Initial polarization of created particles
 public:
 	int ParticleCounter; ///< Count number of particles created by source

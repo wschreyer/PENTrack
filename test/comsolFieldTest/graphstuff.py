@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 def main():
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
@@ -32,9 +32,11 @@ def main():
                 bx.append(float( text[3]) )
                 by.append(float( text[7]) )
                 bz.append(float( text[11]) )
+        fig2 = plt.figure(2)
+        plt.quiver(z[::5], y[::5], bz[::5], by[::5], units='x')
+        plt.title('Vector Field zy plane')
     except IOError:
-        print("Error reading BFCut.out")
-        return
+        print("Can't find BFCut.out... skipping plot")
 
     try:
         with open ('comsolField.txt',"r") as f1:
@@ -47,9 +49,11 @@ def main():
                 bx0.append(float( text[3]) )
                 by0.append(float( text[4]) )
                 bz0.append(float( text[5]) )
+        fig3 = plt.figure(3)
+        plt.quiver(z0, y0, bz0, by0, units='x')
+        plt.title('Vector Field zy plane (Original COMSOL)')
     except IOError:
-        print("Error reading comsolField.txt")
-        return
+        print("Can't find comsolField.txt... skipping plot")
 
     try:
         with open ('000000000000neutronspin.out',"r") as f1:
@@ -59,35 +63,19 @@ def main():
                 sx.append(float( line.split(' ')[6]) )
                 sy.append(float( line.split(' ')[7]) )
                 sz.append(float( line.split(' ')[8]) )
+        fig1 = plt.figure(1)
+        ax1 = fig1.add_subplot(111, projection='3d')
+        plt.title('Neutron spin')
+        ax1.scatter(sx, sy, sz)
+        ax1.set_xlim3d(-1,1)
+        ax1.set_ylim3d(-1,1)
+        ax1.set_zlim3d(-1,1)
+        ax1.set_xlabel('P(x)')
+        ax1.set_ylabel('P(y)')
+        ax1.set_zlabel('P(z)')
+        ax1.view_init(30,220)
     except IOError:
-        print("Error reading neutron spin file")
-        return
-
-    if (len(x) != len(bx)):
-        print("Error: not an equal number of xyz coords and b field values")
-        return
-
-    fig1 = plt.figure(1)
-    ax1 = fig1.add_subplot(111, projection='3d')
-    plt.title('Neutron spin')
-    ax1.scatter(sx, sy, sz)
-    ax1.set_xlim3d(-1,1)
-    ax1.set_ylim3d(-1,1)
-    ax1.set_zlim3d(-1,1)
-    ax1.set_xlabel('P(x)')
-    ax1.set_ylabel('P(y)')
-    ax1.set_zlabel('P(z)')
-    ax1.view_init(30,220)
-
-    fig2 = plt.figure(2)
-    plt.quiver(z[::5], y[::5], bz[::5], by[::5], units='x')
-    plt.title('Vector Field zy plane')
-
-    fig3 = plt.figure(3)
-    plt.quiver(z0, y0, bz0, by0, units='x')
-    plt.title('Vector Field zy plane (Original COMSOL)')
-
-
+        print("Can't neutronspin.out (did you run config.in w/ sim type 1 yet?)... skipping plot")
 
 
     plt.show()

@@ -35,6 +35,47 @@ TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf)
 	istringstream(sourceconf["theta_v_min"]) >> rmin;
 	istringstream(sourceconf["theta_v_max"]) >> rmax;
 	theta_v = parse_distribution(sourceconf["theta_v"], rmin*conv, rmax*conv);
+
+	if (sourceconf.count("pulseWidth") && sourceconf.count("pulseGap")) // Check for optional source pulsing params
+	{
+		istringstream(sourceconf["pulseWidth"]) >> pulseWidth;
+		istringstream(sourceconf["pulseGap"]) >> pulseGap;
+	} else {
+		pulseWidth = 0;
+		pulseGap = 0;
+	}
+	
+	// Generate probability time start distribution for particle source
+	std::vector<double> interval, weight;
+
+	if (fActiveTime == 0){ // If all particles start at t = 0
+		interval = {0, std::nextafter(0, std::numeric_limits<double>::max())};
+		weight = {1};
+
+	} else if (pulseGap > 0 && fActiveTime > 0) { // Pulsed particle source
+		cout << "Pulsed particle source enabled\npulseWidth: " << pulseWidth << " pulseGap: " << pulseGap << "\n";
+		for (double i = 0; i < fActiveTime; i += pulseGap) // Add intervals with source on and source off
+		{
+			interval.push_back(i);
+			if (pulseWidth == 0) { // If user wants delta function pulses
+				interval.push_back( std::nextafter(i, std::numeric_limits<double>::max()) );
+				weight.push_back(1);
+			} else if ( (i + pulseWidth) > fActiveTime){ // If last pulse extends over active time specification, shorten the pulse width
+				interval.push_back(fActiveTime); 
+				weight.push_back( (fActiveTime - i)/pulseWidth ); // adjust probability weighting accordingly
+			} else {
+				interval.push_back(i + pulseWidth);
+				weight.push_back(1);
+			}
+			weight.push_back(0);
+		}
+		weight.pop_back();
+	} else {	// Continuous source for duration of active time
+		interval = {0, fActiveTime};
+		weight = {1};
+	}
+
+	timedist = std::piecewise_constant_distribution<double> (interval.begin(), interval.end(), weight.begin());
 }
 
 
@@ -86,7 +127,6 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
 	phi = atan2(v[1],v[0]);
 	theta = acos(v[2]);
 
-	std::uniform_real_distribution<double> timedist(0., fActiveTime);
 	return TParticleSource::CreateParticle(timedist(mc), p[0], p[1], p[2], Ekin, phi, theta, polarization, mc, geometry, field);
 }
 
@@ -97,7 +137,6 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 	progress_display progress(N);
 	for (int i = 0; i < N; i++){
 	    ++progress;
-		std::uniform_real_distribution<double> timedist(0, fActiveTime);
 		double t = timedist(mc);
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z, mc); // dice point in source volume
@@ -112,7 +151,6 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 }
 
 TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field){
-	std::uniform_real_distribution<double> timedist(0, fActiveTime);
 	if (fPhaseSpaceWeighting){ // if particle density should be weighted by available phase space
 		if (MinPot == numeric_limits<double>::infinity()){ // if minimum potential energy has not yet been determined
 			FindPotentialMinimum(mc, geometry, field); // find minimum potential energy
