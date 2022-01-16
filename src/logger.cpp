@@ -7,17 +7,35 @@
 using namespace std;
 
 std::unique_ptr<TLogger> CreateLogger(TConfig& config){
-    bool ROOTlog = false;
-    istringstream(config["GLOBAL"]["ROOTlog"]) >> ROOTlog;
-    if (ROOTlog){
+    string logtype = "txt";
+    auto ROOTlogvar = config["GLOBAL"].find("ROOTlog"); // check for old ROOTlog variable to stay backwards compatible
+    if (ROOTlogvar != config["GLOBAL"].end()){
+        bool ROOTlog;
+        istringstream(ROOTlogvar->second) >> ROOTlog;
+        if (ROOTlog) logtype = "ROOT";
+    }
+    istringstream(config["GLOBAL"]["logtype"]) >> logtype;
+
+    if (logtype == "txt"){
+        return std::unique_ptr<TLogger>(new TTextLogger(config));
+    }
+    else if (logtype == "ROOT"){
         #ifdef USEROOT
             return std::unique_ptr<TLogger>(new TROOTLogger(config));
         #else
-            throw runtime_error("ROOTlog is set but PENTrack was compiled without ROOT support!");
+            throw runtime_error("logtype ROOT is set but PENTrack was compiled without ROOT support!");
+        #endif
+    }
+    else if (logtype == "HDF5"){
+        #ifdef USEHDF5
+            return std::unique_ptr<THDF5Logger>(new THDF5Logger(config));
+        #else
+            throw runtime_error("logtype HDF5 is set but PENTrack was compiled without HDF5 support!");
         #endif
     }
     else
-	    return std::unique_ptr<TLogger>(new TTextLogger(config));
+        throw runtime_error("No valid logtype defined in config");
+	    
 }
 
 
@@ -356,6 +374,80 @@ void TROOTLogger::DoLog(const std::string &particlename, const std::string &suff
 TROOTLogger::~TROOTLogger(){
     ROOTfile->Write();
     delete ROOTfile;
+}
+
+#endif
+
+
+#ifdef USEHDF5
+
+THDF5Logger::THDF5Logger(TConfig& aconfig){
+    config = aconfig;
+    ostringstream filename;
+    filename << setw(12) << std::setfill('0') << jobnumber << ".h5";
+    boost::filesystem::path outfile = outpath / filename.str();
+    HDF5file = H5Fcreate(outfile.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    if (HDF5file < 0) throw std::runtime_error("Could not create output file " + filename.str());
+
+    std::string configGroupName = "config";
+    #if H5Gcreate_vers == 1
+        auto ret = H5Gcreate1(HDF5file, configGroupName.c_str());
+        if (ret == H5I_INVALID_HID) throw std::runtime_error("Could not create group in output file " + filename.str());
+    #elif H5Gcreate_vers == 2
+        auto ret = H5Gcreate(HDF5file, configGroupName.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        if (ret < 0) throw std::runtime_error("Could not create group in output file " + filename.str());
+    #else
+        throw std::runtime_error("HDF5 library version not supported");
+    #endif
+    
+    const char *field_names[] = {"Variable", "Value"};
+    struct configVariable{
+        const char *variable;
+        const char *value;
+    };
+    size_t offsets[2] = {HOFFSET(configVariable, variable), HOFFSET(configVariable, value)};
+    hid_t string_type = H5Tcopy(H5T_C_S1);
+    H5Tset_size(string_type, H5T_VARIABLE);
+    hid_t field_types[2] = {string_type, string_type};
+    for (auto &section: aconfig){
+        auto N = section.second.size();
+        configVariable data[N];
+        int i = 0;
+        for (auto &var: section.second){
+            data[i++] = configVariable{var.first.c_str(), var.second.c_str()};
+        }
+        auto ret = H5TBmake_table(section.first.c_str(), HDF5file, (configGroupName + "/" + section.first).c_str(), 2, N, sizeof(configVariable), field_names, offsets, field_types, 10, nullptr, 0, data);
+        if (ret < 0) throw std::runtime_error("Could not create table in output file " + filename.str());
+    }
+    H5Tclose(string_type);
+}
+
+void THDF5Logger::DoLog(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars){
+    string name = particlename + suffix;
+    size_t Nfields = titles.size();
+    size_t offsets[Nfields];
+    for (size_t i = 0; i < Nfields; ++i) offsets[i] = i * sizeof(double);
+
+    if (H5Lexists(HDF5file, name.c_str(), H5P_DEFAULT) <= 0){
+        const char *field_names[Nfields];
+        hid_t field_types[Nfields];
+        for (size_t i = 0; i < Nfields; ++i){
+            field_names[i] = titles[i].c_str();
+            field_types[i] = H5T_NATIVE_DOUBLE;
+        }
+        auto ret = H5TBmake_table(name.c_str(), HDF5file, name.c_str(), Nfields, 1, Nfields*sizeof(double), field_names, offsets, field_types, 10, nullptr, 1, vars.data());
+        if (ret < 0) throw std::runtime_error("Could not create table " + name);
+    }
+    else{
+        size_t sizes[Nfields];
+        for (size_t i = 0; i < Nfields; ++i) sizes[i] = sizeof(double);
+        auto ret = H5TBappend_records(HDF5file, name.c_str(), 1, Nfields*sizeof(double), offsets, sizes, vars.data());
+        if (ret < 0) throw std::runtime_error("Could not write data to table " + name);
+    }
+}
+
+THDF5Logger::~THDF5Logger(){
+    H5Fclose(HDF5file);
 }
 
 #endif

@@ -14,6 +14,10 @@
 #include "TNtupleD.h"
 #endif
 
+#ifdef USEHDF5
+#include "hdf5_hl.h"
+#endif
+
 
 /**
  * Virtual base class printing particle states, track, spin
@@ -190,8 +194,37 @@ public:
 };
 #endif
 
+#ifdef USEHDF5
+class THDF5Logger: public TLogger {
+private:
+    hid_t HDF5file;
+
+    /**
+     * Logs given variables to selected HDF5 table
+     * 
+     * @param particlename Name of particle to be printed
+     * @param suffix Select file to log to (e.g. "end", "snapshot", "track", "spin")
+     * @param titles List of variable names
+     * @param vars List of variables to be logged
+     */
+    void DoLog(const std::string &particlename, const std::string &suffix, const std::vector<std::string> &titles, const std::vector<double> &vars) override;
+public:
+    /**
+     * Constructor, reads relevant configuration parameters from config and opens HDF5 file
+     * 
+     * @param config List of configuration parameters read from config file
+     */
+    THDF5Logger(TConfig &aconfig);
+
+    /**
+     * Destructor, closes HDF5 file
+     */
+    ~THDF5Logger() final;
+};
+#endif
+
 /**
- * Instantiates on of the classes derived from TLogger, depending on configuration variables
+ * Instantiates one of the classes derived from TLogger, depending on configuration variables
  * 
  * @param config List of configuration variables
  * 

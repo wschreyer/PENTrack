@@ -55,7 +55,14 @@ if (ROOT_FOUND)
 	message(STATUS "Found ROOT, you can use the ROOTlog option")
     include(${ROOT_USE_FILE})
 else()
-	message(STATUS "Cound not find ROOT, you won't be able to use the ROOTlog option")
+	message(STATUS "Could not find ROOT, you won't be able to use the ROOTlog option")
+endif()
+
+find_package(HDF5 COMPONENTS HL)
+if (HDF5_FOUND)
+	include_directories(${HDF5_INCLUDE_DIRS})
+else()
+	message(STATUS "Could not find HDF5 library, you won't be able to log to HDF5 files")
 endif()
 
 				
@@ -67,19 +74,23 @@ if (ROOT_FOUND)
 	target_compile_definitions(PENTrack_src PUBLIC USEROOT=1)
 endif()
 
+if (HDF5_FOUND)
+	target_compile_definitions(PENTrack_src PUBLIC USEHDF5=1)
+endif()
+
 if (CMAKE_COMPILER_IS_GNUCXX)
 	target_compile_options(PENTrack_src PUBLIC -Wall)
 endif()
 
 
 add_executable(PENTrack src/main.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
-target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBRARIES})
+target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 
 
 if (BUILD_TESTS)
 	enable_testing()
 	add_executable(runTests test/test.cpp test/fieldTests.cpp test/microroughnessTests.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
-	target_link_libraries(runTests ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBRARIES})
+	target_link_libraries(runTests ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBRARIES} ${HDF5_LIBRARIES}  ${HDF5_HL_LIBRARIES})
 	target_compile_definitions(runTests PRIVATE "BOOST_TEST_DYN_LINK=1")
 	add_test(COMMAND runTests)
 endif()

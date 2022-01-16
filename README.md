@@ -74,9 +74,9 @@ The default configuration simulates a full cycle of the neutron-lifetime experim
 Geometry can be imported using [binary STL files](http://en.wikipedia.org/wiki/STL_%28file_format%29).
 STL files use a list of triangles to describe 3D-surfaces. They can be created with most CAD software, e.g. Solidworks via "File - Save As..." using the STL file type. Note the "Options..." button in the Save dialog, there you can change format (only binary supported), resolution, coordinate system etc.
 
-PENTrack expects the STL files to be in unit Meters.
+**PENTrack expects the STL files to be in unit Meters.**
 
-Gravity acts in negative z-direction, so choose your coordinate system accordingly.
+**Gravity acts in negative z-direction, so choose your coordinate system accordingly.**
 
 Do not choose a too high resolution. Spatial tolerances of 1mm to 3mm and angle tolerances of 10 degrees are usually good enough. Low tolerances quickly increase triangle count. Unless you have very complicated parts, the resulting STL files typically have file sizes of less than 1 MB.
 
@@ -150,11 +150,11 @@ Code tests can be compiled by adding the BUILD_TESTS option to cmake: `cmake -DB
 Output
 -------
 
-Output files are separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be individually configured for each particle type by adding corresponding variables in the particle-specific sections in the configuration file.
+The output is separated by particle type, (e.g. electron, neutron and proton) and type of output (endlog, tracklog, ...). Output files are only created if particles of the specific type are simulated and can also be individually configured for each particle type by adding corresponding variables in the particle-specific sections in the configuration file.
 
-Text output files are tables with space-separated columns; the first line contains the column name. If you compile PENTrack with [ROOT](https://root.cern.ch) support, data can be directly printed to ROOT trees by enablign the ROOTlog option. In that case, a single ROOT file containing a tree for each particle and output type will be created, similar to the output of the merge scripts described in the Helper Scripts section. The created ROOT file will also contain a copy of all configuration variables.
+The format of output files can be selected with the logtype variable in the config. If you select text output (the default) one file with space-separated columns is created for each particle and output type; the first line contains the column name. If you compile PENTrack with [ROOT](https://root.cern.ch) support, data can be directly printed to ROOT trees. If you compile PENTrack with [HDF5](https://www.hdfgroup.org/solutions/hdf5/) support, data can be logged to HDF5 files. In each case, a single file containing datasets for each particle and output type will be created. The file will also contain a copy of all configuration variables.
 
-Output can be filtered so only particles fulfilling certain conditions are printed.
+Output can be filtered so only particles fulfilling certain conditions are printed, see the logvars and logfilter variables in the config.
 
 Types of output: endlog, tracklog, hitlog, snapshotlog, spinlog.
 
