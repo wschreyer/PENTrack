@@ -5,8 +5,8 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories("alglib-3.15.0/cpp/src")
 add_library(alglib OBJECT alglib-3.15.0/cpp/src/alglibinternal.cpp
@@ -35,7 +35,7 @@ if (CGAL_FOUND)
 	include_directories(${CGAL_INCLUDE_DIRS})
 	include(${CGAL_USE_FILE})
 else()
-	message(SEND_ERROR "CGAL library not found! For installation instructions see README.md.")
+	message(SEND_ERROR "CGAL library not found!")
 endif()
 
 set(Boost_REALPATH ON)
@@ -50,32 +50,32 @@ if (Boost_FOUND)
 	link_directories(${Boost_LIBRARY_DIRS})
 endif()
 
-find_package(ROOT)
-if (ROOT_FOUND)
-	message(STATUS "Found ROOT, you can use the ROOTlog option")
-    include(${ROOT_USE_FILE})
-else()
-	message(STATUS "Could not find ROOT, you won't be able to use the ROOTlog option")
-endif()
-
-find_package(HDF5 COMPONENTS HL)
-if (HDF5_FOUND)
-	include_directories(${HDF5_INCLUDE_DIRS})
-else()
-	message(STATUS "Could not find HDF5 library, you won't be able to log to HDF5 files")
-endif()
-
 				
 add_library(PENTrack_src OBJECT src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/field.cpp src/edmfields.cpp src/tracking.cpp src/logger.cpp
                         		src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/harmonicfields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
                         		src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp src/analyticFields.cpp)
 
+add_executable(PENTrack src/main.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
+
+
+target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
+
+find_package(ROOT)
 if (ROOT_FOUND)
+	include(${ROOT_USE_FILE})
 	target_compile_definitions(PENTrack_src PUBLIC USEROOT=1)
+	target_link_libraries (PENTrack ${ROOT_LIBRARIES})
+else()
+	message(STATUS "Could not find ROOT, you won't be able to log to ROOT files")
 endif()
 
+find_package(HDF5 COMPONENTS HL)
 if (HDF5_FOUND)
+	include_directories(${HDF5_INCLUDE_DIRS})
 	target_compile_definitions(PENTrack_src PUBLIC USEHDF5=1)
+	target_link_libraries (PENTrack ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+else()
+	message(STATUS "Could not find HDF5 library, you won't be able to log to HDF5 files")
 endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX)
@@ -83,14 +83,17 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 
-add_executable(PENTrack src/main.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
-target_link_libraries (PENTrack ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
-
 
 if (BUILD_TESTS)
 	enable_testing()
 	add_executable(runTests test/test.cpp test/fieldTests.cpp test/microroughnessTests.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
-	target_link_libraries(runTests ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${ROOT_LIBRARIES} ${HDF5_LIBRARIES}  ${HDF5_HL_LIBRARIES})
+	target_link_libraries(runTests ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
+	if (ROOT_FOUND)
+		target_link_libraries(runTests ${ROOT_LIBRARIES})
+	endif()
+	if (HDF5_FOUND)
+		target_link_libraries(runTests ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+	endif()
 	target_compile_definitions(runTests PRIVATE "BOOST_TEST_DYN_LINK=1")
 	add_test(COMMAND runTests)
 endif()
