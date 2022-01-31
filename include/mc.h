@@ -46,6 +46,44 @@ public:
 };
 
 /**
+ * Generate random numbers between 0 and pi/2 following the Beckmann distribution with width << 1
+ * 
+ * See B. Walter, S.R. Marschner, H. Li, K.E. Torrance: "Microfacet Models for Refraction through Rough Surfaces", Eurographics Symposium on Rendering (2007)
+ * https://www.graphics.cornell.edu/~bjw/microfacetbsdf.pdf
+ * Satisfies the concept RandomNumberDistribution of STL
+ */
+template<typename T>
+class beckmann_distribution{
+public:
+	typedef T result_type; ///< type returned by operator()
+	typedef T param_type; ///< type of parameter (width of the distribution)
+private:
+	param_type _p; ///< member containing parameter
+public:
+	beckmann_distribution(){ reset(); } ///< empty constructor, calls reset()
+	beckmann_distribution(const param_type &p){ param(p); } ///< construct with specific width parameter
+	void reset(){ _p = static_cast<param_type>(0); } ///< reset to default state (0 width)
+	param_type param() const { return _p; } ///< returns stored parameter
+	void param(const param_type &p){ _p = p; } ///< set stored parameter
+
+	/**
+	 * Return random numbers distributed according to Beckmann distribution with width p << 1
+	 * 
+	 * See B. Walter, S.R. Marschner, H. Li, K.E. Torrance: "Microfacet Models for Refraction through Rough Surfaces", Eurographics Symposium on Rendering (2007)
+	 * https://www.graphics.cornell.edu/~bjw/microfacetbsdf.pdf
+	 */
+	template<class Random> result_type operator()(Random &r, const param_type &p) const{
+		std::uniform_real_distribution<param_type> d;
+		return std::atan(std::sqrt(-_p*_p * std::log(1 - d()))); // x = atan(sqrt(-p^2 log(1 - u)))
+	}
+	template<class Random> result_type operator()(Random &r) const {return operator()(r, _p); } ///< Return random numbers distributed according to Beckmann distribution with previously set width
+	result_type min() const { return static_cast<result_type>(0); } ///< return min random value (0)
+	result_type max() const { return static_cast<result_type>(std::asin(1)); } ///< return max random value (pi/2)
+	bool operator==(const polarization_distribution<T> &rhs) const { return _p == rhs._p; } ///< equality operator (compares internal parameters)
+	bool operator!=(const polarization_distribution<T> &rhs) const { return !(operator==(rhs)); } ///< inequality operator (compares internal parameters)
+};
+
+/**
  * Generate random numbers between two values using inverse transform sampling.
  *
  * Template parameter func expects function result_type(result_type x, result_type min, result_type max) returning the inverse of the cumulative distribution function.
