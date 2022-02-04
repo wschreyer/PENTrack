@@ -105,7 +105,7 @@ Every field type can be scaled with a user-defined time-dependent formula to sim
 
 ### Particle sources
 
-Particle source randomly generate the initial conditions of simulated particles according to several user-defined distributions:
+Particle sources randomly generate the initial conditions of simulated particles according to several user-defined distributions:
 
 #### Energy distribution
 
