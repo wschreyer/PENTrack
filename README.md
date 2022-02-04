@@ -105,7 +105,29 @@ Every field type can be scaled with a user-defined time-dependent formula to sim
 
 ### Particle sources
 
-Particle sources can be defined using STL files or manual parameter ranges. Particle spectra and velocity distributions can also be conveniently defined in the configuration file.
+Particle source randomly generate the initial conditions of simulated particles according to several user-defined distributions:
+
+#### Energy distribution
+
+In a first step, the spectrum defined in the config file is randomly sampled to define the particle's initial kinetic energy.
+
+#### Time distribution
+
+Second, the starting time is unformly sampled from the periods during which the source is active (can be a continuous or pulsed source).
+
+#### Spatial distribution
+
+Third, the starting coordinates are randomly selected from a volume defined either by coordinate ranges or by an STL file. When using a volume source the starting positions are uniformly distributed within the volume. When using a surface source the starting positions are selected on the surfaces of the simulated geometry that are contained within the volume.
+
+#### Phase space weighting (only available for volume sources)
+
+Following the previous steps, the energy, time, and spatial distributions are uncorrelated. However, if an ensemble of particles is in thermodynamic equilibrium with a non-uniform and time-dependent potential the phase space available to a particle with total energy H shrinks as the potential V increases, leading to a spatial distribution that is correlated with energy and time. To replicate such a situation when simulating a volume source, phase space weighting can be enabled in the config. If phase space weighting is enabled the user-defined spectrum is sampled to select the initial **total energy**. Then, a starting time t and position x are sampled as described above but only accepted with the probability sqrt( (H - V(x, t)) / (H - Vmin) ). If the starting point is rejected these steps are repeated until a starting point is eventually accepted (rejection sampling).
+
+For this scheme, the potential minimum Vmin in the source volume is needed. Hence, if phase space weighting is enabled the source volume is randomly sampled many times when starting the simulation to approximately determine the potential minimum.
+
+#### Velocity distribution
+
+In a final step, the azimuth and polar angle (with respect to the z axis) of the particle's initial velocity are randomly sampled. For a volume source the angles are sampled from the distributions defined in the config file. Note that the solid angle scales as dΩ = sin(θ) dθ dφ, e.g. for an isotropic distribution the polar angle θ needs to follow a sin(θ) distribution. For a surface source the angles follow [Lambert's cosine law](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law). In addition, surface sources can add a velocity boost normal to the surface, replicating a situation where the particle gains energy when crossing the surface. This additional energy will be added on top of the initial energy sampled from the spectrum.
 
 
 Limitations
