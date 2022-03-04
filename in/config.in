@@ -156,7 +156,7 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 # 2D and 3D tables allow to scale coordinates with a given factor. Scaled coordinates are assumed to be in meters.
 # Scaled magnetic fields are assumed to be in Tesla, scaled electric potentials in V.
 # For 3D tables a BoundaryWidth [m] can be specified within which the field is smoothly brought to zero.
-# Paths of table files are assumed to be relative to this config file's path
+# Paths of table files are assumed to be relative to this config file's path. Table files can be gzip or bzip compressed.
 #
 # Several analytically calculated fields are available, see description for each field type below.
 # All coordinates are defined in meters, currents in ampere, fields in Tesla
@@ -166,7 +166,7 @@ polarization 0	# initial polarization is randomly chosen, weighted by this varia
 # Note that rapidly changing fields might be missed by the trajectory integrator making too large time steps
 ##################################################
 #2Dfield 	table-file	BFieldScale	EFieldScale	CoordinateScale
-1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalCGS.tab	magnetRamp	1   0.01  ### this table file has cm/Gauss/Volt units, the magnetic field is scaled with the 'magnetRamp' formula defined in the FORMULAS section below.
+1 OPERA2D 	42_0063_PF80-24Coils-SameCoilDist-WP3fieldvalSI.tab.bz2	magnetRamp	1   1  ### this table file has SI units, the magnetic field is scaled with the 'magnetRamp' formula defined in the FORMULAS section below.
 
 #3Dfield 	table-file	BFieldScale	EFieldScale	BoundaryWidth	CoordinateScale
 #3 OPERA3D	3Dtable.tab	1		    1		    0		        1
@@ -320,7 +320,7 @@ tmax 1e-5
 ############ define formulas used for CustomBField or output to log files
 ## see the supported syntax in the ExprTk documentation at http://partow.net/programming/exprtk/index.html
 [FORMULAS]
-magnetRamp  t < 400 ? 0 : (t < 500 ? 0.01*(t-400) : (t < 700 ? 1 : (t<800?0.01*(800-t) : 0)))*0.0001    # ramp magnetic field from 0% to 100% between t=400s and t=500s, then ramp back down between t=700s and t=800s
+magnetRamp  t < 400 ? 0 : (t < 500 ? 0.01*(t-400) : (t < 700 ? 1 : (t<800?0.01*(800-t) : 0)))    # ramp magnetic field from 0% to 100% between t=400s and t=500s, then ramp back down between t=700s and t=800s
 
 vabs        sqrt(vxstart^2 + vystart^2 + vzstart^2)     # for example, you could now add "vabs" to the list of endlogvars to print the absolute inital velocity to the endlog
 detected    solidend == 14                              # for example, you could set this as an endlogfilter to only log particles that are absorbed in the detector
