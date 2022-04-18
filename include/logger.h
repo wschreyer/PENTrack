@@ -15,6 +15,7 @@
 #endif
 
 #ifdef USEHDF5
+#include "hdf5.h"
 #include "hdf5_hl.h"
 #endif
 
