@@ -9,9 +9,9 @@
 
 const char* NAME_MERCURY = "mercury";
 
-TMercury::TMercury(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+TMercury::TMercury(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation, const double spinprojection,
 		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
-			: TParticle(NAME_MERCURY, 0, m_hg, mu_hgSI, gamma_hg, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
+			: TParticle(NAME_MERCURY, 0, m_hg, mu_hgSI, gamma_hg, number, t, x, y, z, E, phi, theta, polarisation, spinprojection, amc, geometry, afield){
 
 }
 

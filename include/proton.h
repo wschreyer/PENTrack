@@ -32,11 +32,12 @@ public:
 	 * @param phi Initial azimuth of velocity vector
 	 * @param theta Initial polar angle of velocity vector
 	 * @param polarisation polarisation of particle (+/-1)
+	 * @param spinprojection component of semi-classical (Bloch) spin vector parallel to magnetic field
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
 	 * @param afield Optional fields (can be NULL)
 	 */
-	TProton(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+	TProton(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation, const double spinprojection,
 			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
 
 protected:

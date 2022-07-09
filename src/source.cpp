@@ -79,22 +79,21 @@ TParticleSource::TParticleSource(std::map<std::string, std::string> &sourceconf)
 }
 
 
-TParticle* TParticleSource::CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, double polarisation,
+TParticle* TParticleSource::CreateParticle(const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation, const double spinprojection,
 		TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field){
 	TParticle *p;
 	if (fParticleName == NAME_NEUTRON)
-		p = new TNeutron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
+		p = new TNeutron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, spinprojection, mc, geometry, field);
 	else if (fParticleName == NAME_PROTON)
-		p = new TProton(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
+		p = new TProton(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, spinprojection, mc, geometry, field);
 	else if (fParticleName == NAME_ELECTRON)
-		p = new TElectron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
+		p = new TElectron(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, spinprojection, mc, geometry, field);
 	else if (fParticleName == NAME_MERCURY)
-		p = new TMercury(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
+		p = new TMercury(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, spinprojection, mc, geometry, field);
 	else if (fParticleName == NAME_XENON) 
-		p = new TXenon(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, mc, geometry, field);
+		p = new TXenon(++ParticleCounter, t, x, y, z, E, phi, theta, polarisation, spinprojection, mc, geometry, field);
 	else{
-		cout << "Could not create particle " << fParticleName << '\n';
-		exit(-1);
+		throw std::runtime_error("Could not create particle " + fParticleName);
 	}
 	return p;
 }
@@ -127,7 +126,10 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
 	phi = atan2(v[1],v[0]);
 	theta = acos(v[2]);
 
-	return TParticleSource::CreateParticle(timedist(mc), p[0], p[1], p[2], Ekin, phi, theta, polarization, mc, geometry, field);
+	std::polarization_distribution<double> pdist(polarization);
+	int pol = pdist(mc); // randomly choose polarisation used for trajectory tracking
+
+	return TParticleSource::CreateParticle(timedist(mc), p[0], p[1], p[2], Ekin, phi, theta, pol, polarization, mc, geometry, field);
 }
 
 
@@ -135,12 +137,14 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 	cout << "Sampling phase space ";
 	const int N = 100000;
 	progress_display progress(N);
+	std::polarization_distribution<double> pdist(polarization);
 	for (int i = 0; i < N; i++){
 	    ++progress;
 		double t = timedist(mc);
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z, mc); // dice point in source volume
-		TParticle *p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarization, mc, geometry, field); // create dummy particle with Ekin = 0
+	    int pol = pdist(mc); // randomly choose polarisation used for trajectory tracking
+		TParticle *p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, pol, polarization, mc, geometry, field); // create dummy particle with Ekin = 0
 		double V = p->GetInitialTotalEnergy(geometry, field); // potential at particle position equals its total energy
 		if (V < MinPot)
 			MinPot = V; // remember minimal potential
@@ -151,6 +155,7 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 }
 
 TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field){
+	std::polarization_distribution<double> pdist(polarization);
 	if (fPhaseSpaceWeighting){ // if particle density should be weighted by available phase space
 		if (MinPot == numeric_limits<double>::infinity()){ // if minimum potential energy has not yet been determined
 			FindPotentialMinimum(mc, geometry, field); // find minimum potential energy
@@ -171,7 +176,8 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 			double t = timedist(mc); // dice start time
 			double x, y, z;
 			RandomPointInSourceVolume(x, y, z, mc); // dice point in source volume
-			TParticle *proposed_p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, polarization, mc, geometry, field); // create new particle with Ekin = 0
+			int pol = pdist(mc);
+			TParticle *proposed_p = TParticleSource::CreateParticle(t, x, y, z, 0, 0, 0, pol, polarization, mc, geometry, field); // create new particle with Ekin = 0
 			double V = proposed_p->GetInitialTotalEnergy(geometry, field); // potential at particle position equals its total energy
 			delete proposed_p;
 			ParticleCounter--; // delete particle and decrement particle counter
@@ -181,7 +187,7 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 			std::uniform_real_distribution<double> Hdist(0, sqrt(H - MinPot));
 			if (sqrt(H - V) > Hdist(mc)){ // accept particle with probability sqrt(H-V)/sqrt(H-Vmin) (phase space weighting according to Golub)
 //				cout << " found after " << i+1 << " tries\n";
-				return TParticleSource::CreateParticle(t, x, y, z, H - V, phi_v(mc), theta_v(mc), polarization, mc, geometry, field); // if accepted, return new particle with correct Ekin
+				return TParticleSource::CreateParticle(t, x, y, z, H - V, phi_v(mc), theta_v(mc), pol, polarization, mc, geometry, field); // if accepted, return new particle with correct Ekin
 			}
 		}
 		assert(false); // this will never be reached
@@ -190,7 +196,8 @@ TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, 
 		double t = timedist(mc);
 		double x, y, z;
 		RandomPointInSourceVolume(x, y, z, mc);
-		return TParticleSource::CreateParticle(t, x, y, z, spectrum(mc), phi_v(mc), theta_v(mc), polarization, mc, geometry, field);
+		int pol = pdist(mc);
+		return TParticleSource::CreateParticle(t, x, y, z, spectrum(mc), phi_v(mc), theta_v(mc), pol, polarization, mc, geometry, field);
 	}
 }
 

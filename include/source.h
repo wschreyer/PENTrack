@@ -65,14 +65,15 @@ public:
 	 * @param E Initial kinetic energy
 	 * @param phi Azimuthal angle of initial velocity vector
 	 * @param theta Polar angle of initial velocity vector
-	 * @param polarisation Initial polarisation of particle (-1, 0, 1)
+	 * @param polarisation Initial polarisation of particle (-1/+1)
+	 * @param spinprojection component of semi-classical (Bloch) spin vector parallel to magnetic field
 	 * @param mc Random-number generator
 	 * @param geometry Geometry of the simulation
 	 * @param field TFieldManager containing all electromagnetic fields
 	 *
 	 * @return Returns newly created particle, memory has to be freed by user
 	 */
-	TParticle* CreateParticle(double t, double x, double y, double z, double E, double phi, double theta, double polarisation,
+	TParticle* CreateParticle(const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation, const double spinprojection,
 			TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
 
 

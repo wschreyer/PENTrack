@@ -279,14 +279,15 @@ public:
 	 * @param E Initial kinetic energy
 	 * @param phi Azimuth of initial velocity vector
 	 * @param theta Polar angle of initial velocity vector
-	 * @param polarisation polarisation of particle (-1..1)
+	 * @param polarisation polarisation of particle (-1 or 1) used for trajectory tracking in magnetic field
+	 * @param spinprojection component of semi-classical (Bloch) spin vector parallel to magnetic field
 	 * @param amc Random number generator
 	 * @param geometry Experiment geometry
 	 * @param afield TFieldManager containing all electromagnetic fields
 	 */
 	TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
-			const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
-			TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
+			const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation,
+			const double spinprojection, TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield);
 
 	TParticle(const TParticle &p) = delete; ///< TParticle is not copyable
 	TParticle& operator=(const TParticle &p) = delete; ///< TParticle is not copyable

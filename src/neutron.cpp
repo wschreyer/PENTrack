@@ -15,9 +15,9 @@ using namespace std;
 const char* NAME_NEUTRON = "neutron";
 
 
-TNeutron::TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+TNeutron::TNeutron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation, const double spinprojection,
 		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
-		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
+		: TParticle(NAME_NEUTRON, 0, m_n, mu_nSI, gamma_n, number, t, x, y, z, E, phi, theta, polarisation, spinprojection, amc, geometry, afield){
 
 }
 
@@ -370,8 +370,8 @@ void TNeutron::Decay(const double t, const state_type &y, TMCGenerator &mc, cons
 	pol_p = uni_dist(mc) < 0.5 ? 1 : -1;
 	pol_e = uni_dist(mc) < 0.5 ? 1 : -1;
 
-	secondaries.push_back(new TProton(GetParticleNumber(), t, y[0], y[1], y[2], E_p, phi_p, theta_p, pol_p, mc, geom, field));
-	secondaries.push_back(new TElectron(GetParticleNumber(), t, y[0], y[1], y[2], E_e, phi_e, theta_e, pol_e, mc, geom, field));
+	secondaries.push_back(new TProton(GetParticleNumber(), t, y[0], y[1], y[2], E_p, phi_p, theta_p, pol_p, pol_p, mc, geom, field));
+	secondaries.push_back(new TElectron(GetParticleNumber(), t, y[0], y[1], y[2], E_e, phi_e, theta_e, pol_e, pol_e, mc, geom, field));
 }
 
 

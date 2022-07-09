@@ -34,8 +34,8 @@ double TParticle::GetFinalKineticEnergy() const{
 }
 
 TParticle::TParticle(const char *aname, const  double qq, const long double mm, const long double mumu, const long double agamma, const int number,
-		const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
-		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
+		const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation,
+		const double spinprojection, TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
 		: name(aname), q(qq), m(mm), mu(mumu), gamma(agamma), particlenumber(number), ID(ID_UNKNOWN),
 		  tstart(t), tend(t), Hmax(0), Nhit(0), Nspinflip(0), noflipprob(1), Nstep(0){
 
@@ -62,8 +62,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	ystart[4] = vstart*sin(phi)*sin(theta);
 	ystart[5] = vstart*cos(theta);
 	ystart[6] = 0; // proper time
-	std::polarization_distribution<double> pdist(polarisation);
-	ystart[7] = pdist(amc); // choose initial polarisation randomly, weighted by spin projection onto magnetic field
+	ystart[7] = polarisation; // spin polarization used for trajectory tracking in magnetic field
 	ystart[8] = 0;
 	yend = ystart;
 
@@ -75,9 +74,9 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 	if (Babs > 0){
 		std::uniform_real_distribution<double> phidist(0., 2.*pi);
 		double spinaz = phidist(amc); // random azimuth angle of spin
-		spinstart[0] = sqrt(1 - polarisation*polarisation)*sin(spinaz); // set initial spin vector
-		spinstart[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
-		spinstart[2] = polarisation;
+		spinstart[0] = sqrt(1 - spinprojection*spinprojection)*sin(spinaz); // set initial spin vector
+		spinstart[1] = sqrt(1 - spinprojection*spinprojection)*cos(spinaz);
+		spinstart[2] = spinprojection;
 		RotateVector(&spinstart[0], B); // rotate initial spin vector such that its z-component is parallel to magnetic field
 
 		spinstart[3] = 0; // initial integration time is zero

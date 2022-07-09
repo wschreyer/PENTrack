@@ -9,9 +9,9 @@
 
 const char* NAME_ELECTRON = "electron";
 
-TElectron::TElectron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const double polarisation,
+TElectron::TElectron(const int number, const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation, const double spinprojection,
 		TMCGenerator &amc, const TGeometry &geometry, const TFieldManager &afield)
-			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, amc, geometry, afield){
+			: TParticle(NAME_ELECTRON, -ele_e, m_e, 0, 0, number, t, x, y, z, E, phi, theta, polarisation, spinprojection, amc, geometry, afield){
 
 }
 
