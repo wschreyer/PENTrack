@@ -34,7 +34,7 @@ HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double 
 	angle  = _angle;
 
 	// G parameters
-    G[0]  = G0;
+	G[0]  = G0;
 	G[1]  = G1;
 	G[2]  = G2;
 	G[3]  = G3;
@@ -98,18 +98,18 @@ void HarmonicExpandedBField::BField(const double _x, const double _y, const doub
 			+ G[9]  * (2 * y * z) \
 			+ G[10] * (-x * y / 2) \
 			+ G[11] * (-x * z) \
-			+ G[12] * (-(3 * pow(x,2) + pow(y,2) - 4 * pow(z,2)) / 4) \
+			+ G[12] * (-(3 * std::pow(x,2) + std::pow(y,2) - 4 * std::pow(z,2)) / 4) \
 			+ G[13] * (2 * x * z) \
-			+ G[14] * ((pow(x,2) - pow(y,2))) \
-			+ G[15] * ((3 * pow(x,2) * y - pow(y,3))) \
+			+ G[14] * ((std::pow(x,2) - std::pow(y,2))) \
+			+ G[15] * ((3 * std::pow(x,2) * y - std::pow(y,3))) \
 			+ G[16] * (6 * x * y * z) \
-			+ G[17] * (-(3 * pow(x,2) * y + pow(y,3) - 6 * y * pow(z,2)) / 2) \
+			+ G[17] * (-(3 * std::pow(x,2) * y + std::pow(y,3) - 6 * y * std::pow(z,2)) / 2) \
 			+ G[18] * (-(3 / 2) * (x * y * z)) \
-			+ G[19] * ((3 / 8) * (pow(x,3) + x * pow(y,2) - 4 * x * pow(z,2))) \
-			+ G[20] * ((-1 / 4) * (9 * pow(x,2) * z + 3 * pow(y,2) * z - 4 * pow(z,3))) \
-			+ G[21] * (-pow(x,3) + 3 * x * pow(z,2)) \
-			+ G[22] * (3 * (pow(x,2) * z - pow(y,2) * z)) \
-			+ G[23] * (pow(x,3) - 3 * x * pow(y,2));
+			+ G[19] * ((3 / 8) * (std::pow(x,3) + x * std::pow(y,2) - 4 * x * std::pow(z,2))) \
+			+ G[20] * ((-1 / 4) * (9 * std::pow(x,2) * z + 3 * std::pow(y,2) * z - 4 * std::pow(z,3))) \
+			+ G[21] * (-std::pow(x,3) + 3 * x * std::pow(z,2)) \
+			+ G[22] * (3 * (std::pow(x,2) * z - std::pow(y,2) * z)) \
+			+ G[23] * (std::pow(x,3) - 3 * x * std::pow(y,2));
 	
 	// Calculating B_y
 	B[1] =	  G[0] 	\
@@ -117,22 +117,22 @@ void HarmonicExpandedBField::BField(const double _x, const double _y, const doub
 			+ G[4]  * (z) \
 			+ G[5]  * (-y / 2) \
 			+ G[7]  * (-y) \
-			+ G[8]  * (pow(x,2) - pow(y,2)) \
+			+ G[8]  * (std::pow(x,2) - std::pow(y,2)) \
 			+ G[9]  * (2 * x * z) \
-			+ G[10] * ((pow(x,2) + 3 * pow(y,2) - 4 * pow(z,2)) / 4) \
+			+ G[10] * ((std::pow(x,2) + 3 * std::pow(y,2) - 4 * std::pow(z,2)) / 4) \
 			+ G[11] * (-y * z) \
 			+ G[12] * (-x * y / 2) \
 			+ G[13] * (-2 * y * z) \
 			+ G[14] * (-2 * x * y) \
-			+ G[15] * (pow(x,3) - 3 * x * pow(y,2)) \
-			+ G[16] * (3 * (pow(x,2) * z - pow(y,2) * z)) \
-			+ G[17] * (-(pow(x,3) + 3 * x * pow(y,2) - 6 * x * pow(z,2)) / 2) \
-			+ G[18] * ( (-1 / 4) * (3 * pow(x,2) * z + 9 * pow(y,2) * z - 4 * pow(z,3))) \
-			+ G[19] * ((3 / 8) * (pow(x,2) * y + pow(y,3) - 4 * y * pow(z,2))) \
+			+ G[15] * (std::pow(x,3) - 3 * x * std::pow(y,2)) \
+			+ G[16] * (3 * (std::pow(x,2) * z - std::pow(y,2) * z)) \
+			+ G[17] * (-(std::pow(x,3) + 3 * x * std::pow(y,2) - 6 * x * std::pow(z,2)) / 2) \
+			+ G[18] * ( (-1 / 4) * (3 * std::pow(x,2) * z + 9 * std::pow(y,2) * z - 4 * std::pow(z,3))) \
+			+ G[19] * ((3 / 8) * (std::pow(x,2) * y + std::pow(y,3) - 4 * y * std::pow(z,2))) \
 			+ G[20] * ((-3 / 2) * x * y * z) \
-			+ G[21] * (-3 * y * pow(z,2) + pow(y,3)) \
+			+ G[21] * (-3 * y * std::pow(z,2) + std::pow(y,3)) \
 			+ G[22] * (-6 * x * y * z) \
-			+ G[23] * (-3 * pow(x,2) * y + pow(y,3));
+			+ G[23] * (-3 * std::pow(x,2) * y + std::pow(y,3));
 
 	// Calculating B_z
 	B[2] =	  G[1] 	\
@@ -141,75 +141,79 @@ void HarmonicExpandedBField::BField(const double _x, const double _y, const doub
 			+ G[6]  * (x) \
 			+ G[9]  * (2 * x * y) \
 			+ G[10] * (2 * y * z) \
-			+ G[11] * (pow(z,2) - (1 / 2) * (pow(x,2) + pow(y,2))) \
+			+ G[11] * (std::pow(z,2) - (1 / 2) * (std::pow(x,2) + std::pow(y,2))) \
 			+ G[12] * (2 * x * z) \
-			+ G[13] * (pow(x,2) - pow(y,2)) \
-			+ G[16] * (3 * pow(x,2) * y - pow(y,3))\
+			+ G[13] * (std::pow(x,2) - std::pow(y,2)) \
+			+ G[16] * (3 * std::pow(x,2) * y - std::pow(y,3))\
 			+ G[17] * (6 * x * y * z)  \
-			+ G[18] * (3 * y * pow(z,2) - (3/4) * (pow(x,2) * y + pow(y,3))) \
-			+ G[19] * (pow(z,3) - (3 / 2) * z * (pow(x,2) + pow(y,2))) \
-			+ G[20] * (3 * x * pow(z,2) - (3/4) * (pow(x,3) + x * pow(y,2))) \
-			+ G[21] * (3 * (pow(x,2) * z - pow(y,2) * z)) \
-			+ G[22] * (pow(x,3) - 3 * x * pow(y,2));
+			+ G[18] * (3 * y * std::pow(z,2) - (3/4) * (std::pow(x,2) * y + std::pow(y,3))) \
+			+ G[19] * (std::pow(z,3) - (3 / 2) * z * (std::pow(x,2) + std::pow(y,2))) \
+			+ G[20] * (3 * x * std::pow(z,2) - (3/4) * (std::pow(x,3) + x * std::pow(y,2))) \
+			+ G[21] * (3 * (std::pow(x,2) * z - std::pow(y,2) * z)) \
+			+ G[22] * (std::pow(x,3) - 3 * x * std::pow(y,2));
 
-	// Calculating dBxdx
-	dBidxj[0][0] = -G[5]/2 + G[7] + 2*G[8]*y - G[10]*y/2 - G[11]*z - \
+
+	if (dBidxj != nullptr){
+
+		// Calculating dBxdx
+		dBidxj[0][0] = -G[5]/2 + G[7] + 2*G[8]*y - G[10]*y/2 - G[11]*z - \
 					3*G[12]*x/2 + 2*G[13]*z + 2*G[14]*x + 6*G[15]*x*y + \
 					6*G[16]*y*z - 3*G[17]*x*y - 1.5*G[18]*y*z + \
-					G[19]*(1.125*pow(x,2) + 0.375*pow(y,2) - 1.5*pow(z,2)) - \
-					4.5*G[20]*x*z + G[21]*(-3*pow(x,2) + 3*pow(z,2)) + \
-					6*G[22]*x*z + G[23]*(3*pow(x,2) - 3*pow(y,2));
+					G[19]*(1.125*std::pow(x,2) + 0.375*std::pow(y,2) - 1.5*std::pow(z,2)) - \
+					4.5*G[20]*x*z + G[21]*(-3*std::pow(x,2) + 3*std::pow(z,2)) + \
+					6*G[22]*x*z + G[23]*(3*std::pow(x,2) - 3*std::pow(y,2));
 
-	// Calculating dBxdy
-	dBidxj[0][1] = G[3] + 2*G[8]*x + 2*G[9]*z - G[10]*x/2 - G[12]*y/2 - \
-					2*G[14]*y + G[15]*(3*pow(x,2) - 3*pow(y,2)) + 6*G[16]*x*z+\
-					G[17]*(-3*pow(x,2)/2 - 3*pow(y,2)/2 + 3*pow(z,2)) - \
+		// Calculating dBxdy
+		dBidxj[0][1] = G[3] + 2*G[8]*x + 2*G[9]*z - G[10]*x/2 - G[12]*y/2 - \
+					2*G[14]*y + G[15]*(3*std::pow(x,2) - 3*std::pow(y,2)) + 6*G[16]*x*z+\
+					G[17]*(-3*std::pow(x,2)/2 - 3*std::pow(y,2)/2 + 3*std::pow(z,2)) - \
 					1.5*G[18]*x*z + 0.75*G[19]*x*y - 1.5*G[20]*y*z - \
 					6*G[22]*y*z - 6*G[23]*x*y;
 
-	// Calculating dBxdz
-	dBidxj[0][2] = G[6] + 2*G[9]*y - G[11]*x + 2*G[12]*z + 2*G[13]*x + \
+		// Calculating dBxdz
+		dBidxj[0][2] = G[6] + 2*G[9]*y - G[11]*x + 2*G[12]*z + 2*G[13]*x + \
 					6*G[16]*x*y + 6*G[17]*y*z - 1.5*G[18]*x*y - 3.0*G[19]*x*z+\
-					G[20]*(-2.25*pow(x,2) - 0.75*pow(y,2) + 3.0*pow(z,2)) + \
-					6*G[21]*x*z + G[22]*(3*pow(x,2) - 3*pow(y,2));
+					G[20]*(-2.25*std::pow(x,2) - 0.75*std::pow(y,2) + 3.0*std::pow(z,2)) + \
+					6*G[21]*x*z + G[22]*(3*std::pow(x,2) - 3*std::pow(y,2));
 
-	// Calculating dBydx
-	dBidxj[1][0] = G[3] + 2*G[8]*x + 2*G[9]*z + G[10]*x/2 - G[12]*y/2 - \
-					2*G[14]*y + G[15]*(3*pow(x,2) - 3*pow(y,2)) + 6*G[16]*x*z+\
-					G[17]*(-3*pow(x,2)/2 - 3*pow(y,2)/2 + 3*pow(z,2)) - \
+		// Calculating dBydx
+		dBidxj[1][0] = G[3] + 2*G[8]*x + 2*G[9]*z + G[10]*x/2 - G[12]*y/2 - \
+					2*G[14]*y + G[15]*(3*std::pow(x,2) - 3*std::pow(y,2)) + 6*G[16]*x*z+\
+					G[17]*(-3*std::pow(x,2)/2 - 3*std::pow(y,2)/2 + 3*std::pow(z,2)) - \
 					1.5*G[18]*x*z + 0.75*G[19]*x*y - 1.5*G[20]*y*z - \
 					6*G[22]*y*z - 6*G[23]*x*y;
 
-	// Calculating dBydy
-	dBidxj[1][1] = -G[5]/2 - G[7] - 2*G[8]*y + 3*G[10]*y/2 - G[11]*z - \
+		// Calculating dBydy
+		dBidxj[1][1] = -G[5]/2 - G[7] - 2*G[8]*y + 3*G[10]*y/2 - G[11]*z - \
 					G[12]*x/2 - 2*G[13]*z - 2*G[14]*x - 6*G[15]*x*y - \
 					6*G[16]*y*z - 3*G[17]*x*y - 4.5*G[18]*y*z + \
-					G[19]*(0.375*pow(x,2) + 1.125*pow(y,2) - 1.5*pow(z,2)) - \
-					1.5*G[20]*x*z + G[21]*(3*pow(y,2) - 3*pow(z,2)) - \
-					6*G[22]*x*z + G[23]*(-3*pow(x,2) + 3*pow(y,2));
+					G[19]*(0.375*std::pow(x,2) + 1.125*std::pow(y,2) - 1.5*std::pow(z,2)) - \
+					1.5*G[20]*x*z + G[21]*(3*std::pow(y,2) - 3*std::pow(z,2)) - \
+					6*G[22]*x*z + G[23]*(-3*std::pow(x,2) + 3*std::pow(y,2));
 
-	// Calculating dBydz
-	dBidxj[1][2] = G[4] + 2*G[9]*x - 2*G[10]*z - G[11]*y - 2*G[13]*y + \
-					G[16]*(3*pow(x,2) - 3*pow(y,2)) + 6*G[17]*x*z + \
-					G[18]*(-0.75*pow(x,2) - 2.25*pow(y,2) + 3.0*pow(z,2)) - \
+		// Calculating dBydz
+		dBidxj[1][2] = G[4] + 2*G[9]*x - 2*G[10]*z - G[11]*y - 2*G[13]*y + \
+					G[16]*(3*std::pow(x,2) - 3*std::pow(y,2)) + 6*G[17]*x*z + \
+					G[18]*(-0.75*std::pow(x,2) - 2.25*std::pow(y,2) + 3.0*std::pow(z,2)) - \
 					3.0*G[19]*y*z - 1.5*G[20]*x*y - 6*G[21]*y*z - 6*G[22]*x*y;
 
-	// Calculating dBzdx
-	dBidxj[2][0] = G[6] + 2*G[9]*y - 1.0*G[11]*x + 2*G[12]*z + 2*G[13]*x + \
+		// Calculating dBzdx
+		dBidxj[2][0] = G[6] + 2*G[9]*y - 1.0*G[11]*x + 2*G[12]*z + 2*G[13]*x + \
 					6*G[16]*x*y + 6*G[17]*y*z - 1.5*G[18]*x*y - 3.0*G[19]*x*z+\
-					G[20]*(-2.25*pow(x,2) - 0.75*pow(y,2) + 3*pow(z,2)) + \
-					6*G[21]*x*z + G[22]*(3*pow(x,2) - 3*pow(y,2));
+					G[20]*(-2.25*std::pow(x,2) - 0.75*std::pow(y,2) + 3*std::pow(z,2)) + \
+					6*G[21]*x*z + G[22]*(3*std::pow(x,2) - 3*std::pow(y,2));
 
-	// Calculating dBzdy
-	dBidxj[2][1] = G[4] + 2*G[9]*x + 2*G[10]*z - 1.0*G[11]*y - 2*G[13]*y + \
-					G[16]*(3*pow(x,2) - 3*pow(y,2)) + 6*G[17]*x*z + \
-					G[18]*(-0.75*pow(x,2) - 2.25*pow(y,2) + 3*pow(z,2)) - \
+		// Calculating dBzdy
+		dBidxj[2][1] = G[4] + 2*G[9]*x + 2*G[10]*z - 1.0*G[11]*y - 2*G[13]*y + \
+					G[16]*(3*std::pow(x,2) - 3*std::pow(y,2)) + 6*G[17]*x*z + \
+					G[18]*(-0.75*std::pow(x,2) - 2.25*std::pow(y,2) + 3*std::pow(z,2)) - \
 					3.0*G[19]*y*z - 1.5*G[20]*x*y - 6*G[21]*y*z - 6*G[22]*x*y;
 
-	// Calculating dBzdz
-	dBidxj[2][2] = G[5] + 2*G[10]*y + 2*G[11]*z + 2*G[12]*x + 6*G[17]*x*y + \
-					6*G[18]*y*z + G[19]*(-1.5*pow(x,2) - 1.5*pow(y,2) + \
-					3*pow(z,2)) + 6*G[20]*x*z + G[21]*(3*pow(x,2) -3*pow(y,2));
+		// Calculating dBzdz
+		dBidxj[2][2] = G[5] + 2*G[10]*y + 2*G[11]*z + 2*G[12]*x + 6*G[17]*x*y + \
+					6*G[18]*y*z + G[19]*(-1.5*std::pow(x,2) - 1.5*std::pow(y,2) + \
+					3*std::pow(z,2)) + 6*G[20]*x*z + G[21]*(3*std::pow(x,2) -3*std::pow(y,2));
+	}
 
 	/* 
 	Information about Rotations with Quaternions
@@ -268,13 +272,13 @@ void HarmonicExpandedBField::BField(const double _x, const double _y, const doub
         axis = (axis / boost::numeric::ublas::norm_2(axis));
 
         // calculate quarternion, q, whih represents the rotation
-        boost::math::quaternion<double> q(cos(angle / 2), 
-                                          sin(angle / 2) * axis(0), 
-                                          sin(angle / 2) * axis(1), 
-                                          sin(angle / 2) * axis(2));
+        boost::math::quaternion<double> q(std::cos(angle / 2), 
+                                          std::sin(angle / 2) * axis(0), 
+                                          std::sin(angle / 2) * axis(1), 
+                                          std::sin(angle / 2) * axis(2));
 
         // get the conjugate of the quaternion, q'
-        boost::math::quaternion<double> q_prime = conj(q);
+        boost::math::quaternion<double> q_prime = boost::math::conj(q);
 
         // perform multiplication to rotate
         boost::math::quaternion<double> p_prime = q * p * q_prime;
@@ -284,43 +288,44 @@ void HarmonicExpandedBField::BField(const double _x, const double _y, const doub
         B[1] = p_prime.R_component_3();
         B[2] = p_prime.R_component_4();
 
+	if (dBidxj != nullptr){
+	        // We create three quaternions, one for the gradient of each of the 
+	        // gradient vectors
 
-        // We create three quaternions, one for the gradient of each of the 
-        // gradient vectors
+      	  boost::math::quaternion<double> p_x(0, 
+      	                                      dBidxj[0][0],
+      	                                      dBidxj[0][1],
+      	                                      dBidxj[0][2]);
 
-        boost::math::quaternion<double> p_x(0, 
-                                            dBidxj[0][0],
-                                            dBidxj[0][1],
-                                            dBidxj[0][2]);
+      	  boost::math::quaternion<double> p_y(0, 
+      	                                      dBidxj[1][0], 
+      	                                      dBidxj[1][1], 
+      	                                      dBidxj[1][2]);
 
-        boost::math::quaternion<double> p_y(0, 
-                                            dBidxj[1][0], 
-                                            dBidxj[1][1], 
-                                            dBidxj[1][2]);
+      	  boost::math::quaternion<double> p_z(0, 
+      	                                      dBidxj[2][0], 
+      	                                      dBidxj[2][1], 
+      	                                      dBidxj[2][2]);
 
-        boost::math::quaternion<double> p_z(0, 
-                                            dBidxj[2][0], 
-                                            dBidxj[2][1], 
-                                            dBidxj[2][2]);
+      	  // we use the same quaternion, q, and conjugate q' for these rotations
+      	  boost::math::quaternion<double> p_x_prime = q * p_x * q_prime;
+      	  boost::math::quaternion<double> p_y_prime = q * p_y * q_prime;
+      	  boost::math::quaternion<double> p_z_prime = q * p_z * q_prime;
 
-        // we use the same quaternion, q, and conjugate q' for these rotations
-        boost::math::quaternion<double> p_x_prime = q * p_x * q_prime;
-        boost::math::quaternion<double> p_y_prime = q * p_y * q_prime;
-        boost::math::quaternion<double> p_z_prime = q * p_z * q_prime;
+      	  // extract the resulting vector components, post-rotation
+      	  // assign the components to the dBidxj matrix
+      	  dBidxj[0][0] = p_x_prime.R_component_2();
+      	  dBidxj[0][1] = p_x_prime.R_component_3();
+      	  dBidxj[0][2] = p_x_prime.R_component_4();
 
-        // extract the resulting vector components, post-rotation
-        // assign the components to the dBidxj matrix
-        dBidxj[0][0] = p_x_prime.R_component_2();
-        dBidxj[0][1] = p_x_prime.R_component_3();
-        dBidxj[0][2] = p_x_prime.R_component_4();
+      	  dBidxj[1][0] = p_y_prime.R_component_2();
+      	  dBidxj[1][1] = p_y_prime.R_component_3();
+      	  dBidxj[1][2] = p_y_prime.R_component_4();
 
-        dBidxj[1][0] = p_y_prime.R_component_2();
-        dBidxj[1][1] = p_y_prime.R_component_3();
-        dBidxj[1][2] = p_y_prime.R_component_4();
-
-        dBidxj[2][0] = p_z_prime.R_component_2();
-        dBidxj[2][1] = p_z_prime.R_component_3();
-        dBidxj[2][2] = p_z_prime.R_component_4();
+      	  dBidxj[2][0] = p_z_prime.R_component_2();
+      	  dBidxj[2][1] = p_z_prime.R_component_3();
+      	  dBidxj[2][2] = p_z_prime.R_component_4();
+	}
 
     }
 
