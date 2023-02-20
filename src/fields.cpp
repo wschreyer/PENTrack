@@ -22,7 +22,8 @@ TFieldManager::TFieldManager(TConfig &conf){
 		boost::filesystem::path ft;
 		double Ibar, p1, p2, p3, p4, p5, p6, p7;
 		double bW, xma, xmi, yma, ymi, zma, zmi;
-		double axis_x, axis_y, axis_z, angle, G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20, G21, G22, G23;
+		double axis_x, axis_y, axis_z, angle;
+		std::array<double, 24> G;
 		std::string Bscale, Escale, Bx, By, Bz;
 		std::istringstream ss(i.second);
 		ss >> type;
@@ -51,12 +52,33 @@ TFieldManager::TFieldManager(TConfig &conf){
 		}
 		else if (type == "HarmonicExpandedBField" and
 				 ss >> p1 >> p2 >> p3 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale >> axis_x >> axis_y >> axis_z >> angle and
-				 ss >> G0 >> G1 >> G2 >> G3 >> G4 >> G5 >> G6 >> G7 >> G8 >> G9 >> G10 >> G11 >> G12 >> G13 >> G14 >> G15 >> G16 >> G17 >> G18 >> G19 >> G20 >> G21 >> G22 >> G23){
+				 ss >> G[0] >> G[1] >> G[2] >> G[3] >> G[4] >> G[5] >> G[6] >> G[7] >> G[8] >> G[9] >> G[10] >> G[11] >> G[12] >> G[13] >> G[14] >> G[15] >> G[16] >> G[17] >> G[18] >> G[19] >> G[20] >> G[21] >> G[22] >> G[23]){
+			std::cout << "The HarmonicExpandedBField is deprecated. Consider using the new HarmonicExpansionBField instead, see in/config.in\n";
 
-			//conversion to radians
-			p4*=pi/180;
-			p5*=pi/180;
-			std::unique_ptr<TField> f(new HarmonicExpandedBField(p1, p2, p3, axis_x, axis_y, axis_z, angle, G0, G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20, G21, G22, G23));
+			std::vector<std::tuple<int, int, double> > Glm;
+			for (int l = 0; l <= 3; ++l){
+				for (int m = -l - 1; m <= l; ++m){
+					double g = G[l*(l + 2) + (m + l + 1)];
+					if (g != 0)
+						Glm.push_back(std::make_tuple(l, m, G[l*(l + 2) + (m + l + 1)]));
+				}
+			}
+			std::unique_ptr<TField> f(new HarmonicExpandedBField(p1, p2, p3, axis_x, axis_y, axis_z, angle, Glm));
+			Bscale = ResolveFormula(Bscale, conf["FORMULAS"]);
+			fields.emplace_back(TFieldContainer(std::move(f), Bscale, "0", xma, xmi, yma, ymi, zma, zmi, bW));
+		}
+		else if (type == "HarmonicExpansionBField" and
+				 ss >> p1 >> p2 >> p3 >> bW >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale){
+			int l, m;
+			double glm;
+			std::vector<std::tuple<int, int, double> > Glm;
+			std::cout << "\nCreating HarmonicExpansionBField with ";
+			while (ss >> l >> m >> glm){
+				Glm.push_back(std::make_tuple(l, m, glm));
+				std::cout << "G(" << l << "," << m << ") = " << glm << "; ";
+			}
+			std::cout << "\n";
+			std::unique_ptr<TField> f(new HarmonicExpandedBField(p1, p2, p3, 0., 0., 0., 0., Glm));
 			Bscale = ResolveFormula(Bscale, conf["FORMULAS"]);
 			fields.emplace_back(TFieldContainer(std::move(f), Bscale, "0", xma, xmi, yma, ymi, zma, zmi, bW));
 		}

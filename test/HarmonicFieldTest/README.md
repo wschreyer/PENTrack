@@ -1,6 +1,8 @@
 Harmonic field test
 =============
 
+**Several issues with the harmonic field implementation were found and partially fixed! These tests are now mostly deprecated.**
+
 This test uses a magnetic field generated from a harmonic polynomial expansion.
 It then runs PENTrack to print a cut through the field. There is a version of
 this directory that contains an iPython notebook for displaying and 

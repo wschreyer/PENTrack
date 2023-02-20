@@ -11,6 +11,7 @@
 #include "conductor.h"
 #include "globals.h"
 #include "edmfields.h"
+#include "harmonicfields.h"
 #include "fields.h"
 #include "config.h"
 
@@ -368,6 +369,37 @@ BOOST_AUTO_TEST_CASE(TFieldManagerTest){
             }
             else{
                 BOOST_CHECK_EQUAL(B[2], sin(t));
+            }
+        }
+    }
+}
+
+// compares two implementations of HarmonicExpandedBField, BField and BField_old, at random positions and with random coefficients G(l=0..3,m=-l-1..l+1)
+BOOST_AUTO_TEST_CASE(HarmonicExpandedBFieldTest){
+    double xoff = uni(rng), yoff = uni(rng), zoff = uni(rng);
+    double x = uni(rng), y = uni(rng), z = uni(rng), t = uni(rng);
+    double G = uni(rng);
+    BOOST_TEST_CONTEXT("Parameters: x = " << x << ", y = " << y << ", z = " << z << ", t = " << t << 
+                    ", xoff = " << xoff << ", yoff = " << yoff << ", zoff = " << zoff <<
+                    ", Glm = " << G){
+        for (int l = 0; l <= 3; ++l){
+            for (int m = -l - 1; m <= l + 1; ++m){
+                HarmonicExpandedBField f1(xoff, yoff, zoff, 0., 0., 0., 0., {{l, m, G}});
+                double B1[3], B2[3];
+                double dBidxj1[3][3], dBidxj2[3][3];
+                f1.BField(x, y, z, t, B1, dBidxj1);
+                f1.BField_old(x, y, z, t, B2, dBidxj2);
+                BOOST_TEST_CONTEXT("l = " << l << ", m = " << m){
+                    for (int i = 0; i < 3; ++i){
+                        BOOST_TEST_CONTEXT("i = " << i){
+                            BOOST_CHECK_SMALL(B1[i] - B2[i], 1e-13);
+                            for (int j = 0; j < 3; ++j){
+                                BOOST_TEST_CONTEXT("j = " << j)
+                                    BOOST_CHECK_SMALL(dBidxj1[i][j] - dBidxj2[i][j], 1e-13);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
