@@ -228,7 +228,7 @@ private:
 	 * @param z Returns z coordinate
 	 */
 	void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
-		std::linear_distribution<double> lindist(rmin, rmax);
+		linear_distribution<double> lindist(rmin, rmax);
 		double r = lindist(mc); // weighting because of the volume element and a r^2 probability outwards
 		std::uniform_real_distribution<double> unidist(0, 1);
 		double phi_r = phimin + unidist(mc)*(phimax - phimin);

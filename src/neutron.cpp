@@ -45,7 +45,7 @@ void TNeutron::TransmitMR(const value_type x1, const state_type &y1, value_type 
 	double theta_t, phi_t;
 	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &y1[3], normal, Estep, mat.RMSRoughness, mat.CorrelLength)); // scale up maximum to make sure it lies above all values of scattering distribution
 	std::uniform_real_distribution<double> phidist(0, 2.*pi);
-	std::sin_distribution<double> sindist(0, pi/2.);
+	sin_distribution<double> sindist(0, pi/2.);
 	do{
 		phi_t = phidist(mc);
 		theta_t = sindist(mc);
@@ -82,7 +82,7 @@ void TNeutron::TransmitLambert(const value_type x1, const state_type &y1, value_
 	do {
         std::uniform_real_distribution<double> unidist(0, 2.*pi);
         phi_t = unidist(mc);
-        std::sincos_distribution<double> sincosdist(0, pi/2.);
+        sincos_distribution<double> sincosdist(0, pi/2.);
         theta_t = sincosdist(mc);
         y2[3] = vabs * cos(phi_t) * sin(theta_t);    // new velocity with respect to z-axis
         y2[4] = vabs * sin(phi_t) * sin(theta_t);
@@ -125,7 +125,7 @@ void TNeutron::ReflectMR(const value_type x1, const state_type &y1, value_type &
 	std::uniform_real_distribution<double> MRprobdist(0, 1.5 * MR::MRDistMax(true, &y1[3], normal, Estep, mat.RMSRoughness, mat.CorrelLength)); // scale up maximum to make sure it lies above all values of scattering distribution
 //			cout << "max: " << MRmax << '\n';
 	std::uniform_real_distribution<double> unidist(0, 2.*pi);
-	std::sin_distribution<double> sindist(0, pi/2.);
+	sin_distribution<double> sindist(0, pi/2.);
 	do{
 		phi_r = unidist(mc);
 		theta_r = sindist(mc);
@@ -165,7 +165,7 @@ void TNeutron::ReflectLambert(const value_type x1, const state_type &y1, value_t
 	do {
         std::uniform_real_distribution<double> unidist(0, 2.*pi);
         double phi_r = unidist(mc);
-        std::sincos_distribution<double> sincosdist(0, pi/2.);
+        sincos_distribution<double> sincosdist(0, pi/2.);
         double theta_r = sincosdist(mc);
 
         y2[3] = vabs * cos(phi_r) * sin(theta_r);    // new velocity with respect to z-axis
@@ -270,7 +270,7 @@ void TNeutron::OnStep(const value_type x1, const state_type &y1, value_type &x2,
 		complex<double> E(0.5*(double)m_n*(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]), currentsolid.mat.FermiImag*1e-9); // E + i*W
 		complex<double> k = sqrt(2*(double)m_n*E)*(double)ele_e/(double)hbar; // wave vector
 		double l = sqrt(pow(y2[0] - y1[0], 2) + pow(y2[1] - y1[1], 2) + pow(y2[2] - y1[2], 2)); // travelled length
-		std::exponential_distribution<double> expdist(2*imag(k));
+		exponential_distribution<double> expdist(2*imag(k));
 		double abspath = expdist(mc);
 		if (abspath < l){
 			x2 = x1 + abspath/l*(x2 - x1); // if absorbed, interpolate stopping time and position

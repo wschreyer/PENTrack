@@ -40,7 +40,7 @@ void TXenon::OnHit(const value_type x1, const state_type &y1, value_type &x2, st
 //		std::cout << "Diffuse reflection!" << std::endl;
 		std::uniform_real_distribution<double> phidist(0., 2.*pi);
 		phi_r = phidist(mc);
-		std::sincos_distribution<double> sincosdist(0., 0.5*pi);
+		sincos_distribution<double> sincosdist(0., 0.5*pi);
 		theta_r = sincosdist(mc);
 
 		if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle

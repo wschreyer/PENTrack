@@ -111,7 +111,7 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
 	double Ekin = spectrum(mc);
 	std::uniform_real_distribution<double> unidist(0., 2.*pi);
 	double phi = unidist(mc);
-	std::sincos_distribution<double> sincosdist(0., 0.5*pi);
+	sincos_distribution<double> sincosdist(0., 0.5*pi);
 	double theta = sincosdist(mc);
 	if (Enormal > 0){
 		double vnormal = sqrt(Ekin*cos(theta)*cos(theta) + Enormal); // add E_normal to component normal to surface
@@ -126,7 +126,7 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
 	phi = atan2(v[1],v[0]);
 	theta = acos(v[2]);
 
-	std::polarization_distribution<double> pdist(polarization);
+	polarization_distribution<double> pdist(polarization);
 	int pol = pdist(mc); // randomly choose polarisation used for trajectory tracking
 
 	return TParticleSource::CreateParticle(timedist(mc), p[0], p[1], p[2], Ekin, phi, theta, pol, polarization, mc, geometry, field);
@@ -137,7 +137,7 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 	cout << "Sampling phase space ";
 	const int N = 100000;
 	progress_display progress(N);
-	std::polarization_distribution<double> pdist(polarization);
+	polarization_distribution<double> pdist(polarization);
 	for (int i = 0; i < N; i++){
 	    ++progress;
 		double t = timedist(mc);
@@ -155,7 +155,7 @@ void TVolumeSource::FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geom
 }
 
 TParticle* TVolumeSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field){
-	std::polarization_distribution<double> pdist(polarization);
+	polarization_distribution<double> pdist(polarization);
 	if (fPhaseSpaceWeighting){ // if particle density should be weighted by available phase space
 		if (MinPot == numeric_limits<double>::infinity()){ // if minimum potential energy has not yet been determined
 			FindPotentialMinimum(mc, geometry, field); // find minimum potential energy
