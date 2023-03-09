@@ -2,8 +2,8 @@
 # put comments after #
 
 [GLOBAL]
-# simtype: 1 => particles, 3 => Bfield, 4 => cut through BField, 7 => print geometry, 8 => print mr-drp for solid angle
-# 9 => print integrated mr-drp for incident theta vs energy
+# simtype: 1 => particles, 3 => deprecated, 4 => print cut through BField (see BCutPlane), 7 => print random points on surfaces to visualize geometry
+# 8 => print microroughness distribution (see MRSolidAngleDRP), 9 => print integrated integrated microroughness distribution (see MRThetaIEnergy)
 simtype 1
 
 # number of primary particles to be simulated
@@ -22,11 +22,11 @@ secondaries 1
 #define cut plane by three points and number of sample points in direction 1->2/1->3
 BCutPlane	0.161 0 0.015	0.501 0 0.015	0.161 0 0.85	340	835  500
 
-#parameters to be used for generating a 2d histogram for the mr diffuse reflection probability into a solid angle
+#parameters to be used for generating a 2d histogram for the mr diffuse reflection probability into a solid angle (simtype == 8)
 #Param order: Fermi pot. [neV], Neut energy [neV], RMS roughness [nm], correlation length [nm], theta_i [0..pi/2]
 MRSolidAngleDRP 220 200 1E-9 25E-9 0.1
 
-#parameters to be used for generating a 2d histogram of the integrated diffuse reflection probabilitites of the incident angle vs energy of a neutron
+#parameters to be used for generating a 2d histogram of the integrated diffuse reflection probabilitites of the incident angle vs energy of a neutron (simtype == 9)
 #Parameter order: Fermi potential of the material, RMS roughness [nm], Correlation length [nm], starting angle [0..pi/2], ending angle [0..pi/2],
 #starting neutron energy [neV], ending neutron energy [neV]
 MRThetaIEnergy 54 2.5E-9 20E-9 0 1.570796327 0 1000
