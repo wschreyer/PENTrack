@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <atomic>
+#include <cmath>
 
 #include <boost/filesystem.hpp>
 
@@ -155,22 +156,6 @@ public:
     }
 };
 
-/**
- * Rotate a vector.
- *
- * Rotate vector into new coordinate with basis vectors x and z (active transformation)
- */
-void RotateVector(double v[3], const double z[3], const double x[3] = NULL);
-
-/**
- * Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta.
- *
- * Copy & paste from ROOT
- *
- * @param beta Vector v/c of moving reference frame
- * @param p Four-vector
- */
-void BOOST(const std::vector<double> &beta, std::vector<double> &p);
 
 /**
  * Energy distribution of protons from free neutron beta decay (0 < E < 750 eV)

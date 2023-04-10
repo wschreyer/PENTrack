@@ -8,6 +8,8 @@
 
 #include <random>
 
+#include <boost/math/special_functions/erf.hpp>
+
 #include "exprtk.hpp"
 
 #include "globals.h"
@@ -46,6 +48,108 @@ public:
 	bool operator==(const polarization_distribution<T> &rhs) const { return _p == rhs._p; } ///< equality operator (compares internal parameters)
 	bool operator!=(const polarization_distribution<T> &rhs) const { return !(operator==(rhs)); } ///< inequality operator (compares internal parameters)
 };
+
+
+/**
+ * Sample microfacet slope in x direction from Beckmann distribution with given width,
+ * taking into account visibility of microfacet normals to incoming direction [-sin(theta), 0, cos(theta)].
+ * See E. Heitz, E. d'Eon: "Importance Sampling Microfacet-Based BSDFs using the Distribution of Visible Normals"
+ * https://dx.doi.org/10.1111/cgf.12417
+*/
+template<typename T> class beckmann_visible_x_slope_distribution{
+public:
+	typedef T result_type; ///< type returned by operator()
+	typedef std::tuple<T, T> param_type; ///< type of parameter (pair of polar angle of incoming direction and Beckmann distribution width)
+private:
+	param_type _p; ///< member containing parameter
+public:
+	beckmann_visible_x_slope_distribution(){ reset(); } ///< empty constructor, calls reset()
+
+	/**
+	 * Constructor.
+	 * 
+	 * @param p Pair of parameters: polar angle theta of incoming direction and Beckmann distribution width
+	*/
+	beckmann_visible_x_slope_distribution(const param_type &p){ param(p); }
+	beckmann_visible_x_slope_distribution(const T incomingAngle, const T beckmannWidth){ param(std::make_tuple(incomingAngle, beckmannWidth)); }
+	void reset (){ _p = std::tuple<T, T>(0, 1); } ///< Reset to default state (incoming angle 0, distribution width 1)
+	param_type param() const { return _p; } ///< Return stored parameters
+	void param(const param_type &p){ _p = p; } ///< Set stored parameters
+
+	/**
+	 * Sample microfacet slope in x direction from Beckmann distribution with given width,
+	 * taking into account visibility of microfacet normals to incoming direction [-sin(theta), 0, cos(theta)].
+	 * See E. Heitz, E. d'Eon: "Importance Sampling Microfacet-Based BSDFs using the Distribution of Visible Normals"
+	 * https://dx.doi.org/10.1111/cgf.12417
+	 * 
+	 * @param rng Random number generator
+	 * @param p Pair of parameters: polar angle theta of incoming direction and Beckmann distribution width
+	 * @return Returns slope of microfacet in x direction
+	*/
+	template<class Random> result_type operator()(Random &rng, const param_type &p) const {
+		T width = std::get<1>(p);
+		if (width == 0){
+			return 0;
+		}
+
+		T slope_x = 0;
+		T incoming_polar_angle = std::get<0>(p);
+		if (incoming_polar_angle == 0){
+			// if incoming polar angle is 0 sample from normal distribution with standard deviation 1
+			slope_x = std::normal_distribution<T>(0, M_SQRT1_2)(rng);
+		}
+		else{
+			// by rescaling the incoming polar angle by the width we can sample from a Beckmann distribution with width 1
+			incoming_polar_angle = std::atan(std::tan(incoming_polar_angle)*width);
+
+			T a = static_cast<T>(1)/std::tan(incoming_polar_angle);
+			T erf_a = std::erf(a);
+			T exp_a2 = std::exp(-a*a);
+			T G1 = static_cast<T>(2)/(1 + erf_a + exp_a2*M_2_SQRTPI/2/a);
+			T C = 1 - G1 * erf_a;
+			
+			if (std::generate_canonical<T>(rng) < C){
+				T p = exp_a2*M_2_SQRTPI/2 / (exp_a2*M_2_SQRTPI/2 + a*(1 - erf_a));
+
+				if (std::generate_canonical<T>(rng) < p){
+					slope_x = -std::sqrt(-std::log(std::generate_canonical<T>(rng)*exp_a2));
+				}
+				else{
+					slope_x = boost::math::erf_inv(std::generate_canonical<T>(rng)*(1 - erf_a) - 1);
+				}
+			}
+			else{
+				slope_x = boost::math::erf_inv((2*std::generate_canonical<T>(rng) - 1)*erf_a);
+				T p = (-slope_x/a + 1)/2;
+				if (std::generate_canonical<T>(rng) > p){
+					slope_x = -slope_x;
+				}
+			}
+		}
+		return slope_x*width; // rescale slope with width
+	}
+
+	template<class Random> result_type operator()(Random &rng, const T incomingAngle){
+		return operator()(rng, std::make_tuple(incomingAngle, std::get<1>(_p)));
+	}
+
+	/**
+	 * Sample microfacet slope in x direction from Beckmann distribution with stored width,
+	 * taking into account visibility of microfacet normals to incoming direction [-sin(theta), 0, cos(theta)].
+	 * See E. Heitz, E. d'Eon: "Importance Sampling Microfacet-Based BSDFs using the Distribution of Visible Normals"
+	 * https://dx.doi.org/10.1111/cgf.12417
+	 * 
+	 * @param rng Random number generator
+	 * @return Returns slope of microfacet in x direction
+	*/
+	template<class Random> result_type operator()(Random &rng) const { return operator()(rng, _p); }
+
+	result_type min() const { return static_cast<result_type>(0); } ///< Return minimum random value
+	result_type max() const { return std::numeric_limits<result_type>::infinity; } ///< Return maximum random value
+	bool operator==(const beckmann_visible_x_slope_distribution<T> &rhs) const { return _p == rhs._p; } ///< equality operator (compares internal parameters)
+	bool operator!=(const beckmann_visible_x_slope_distribution<T> &rhs) const { return !(operator==(rhs)); } ///< inequality operator (compares internal parameters)
+};
+
 
 /**
  * Generate distribution of polar angles theta of microfacets following (Beckmann distribution)*cos(theta), where Beckmann distribution has a width << 1
@@ -111,7 +215,7 @@ public:
 	 */
 	template<class Random> result_type operator()(Random &r, const param_type &p) const {
 		func f;
-		result_type u = std::generate_canonical<result_type, 64>(r); // generate random number between 0 and 1
+		result_type u = std::generate_canonical<T, std::numeric_limits<T>::digits>(r); // generate random number between 0 and 1
 		return f(u, p.first, p.second); // call inverse of cumulative-distribution function with random number, min and max, creating correctly distributed numbers
 	}
 	template<class Random> result_type operator()(Random &r) const { return operator()(r, _p);	} ///< Return random number using internally stored min and max values

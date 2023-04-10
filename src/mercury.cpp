@@ -6,6 +6,7 @@
 #include "mercury.h"
 
 #include "globals.h"
+#include "scattering.h"
 
 const char* NAME_MERCURY = "mercury";
 
@@ -18,45 +19,32 @@ TMercury::TMercury(const int number, const double t, const double x, const doubl
 
 void TMercury::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
 		const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
-	double vnormal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
-	//particle was neither transmitted nor absorbed, so it has to be reflected
-	std::uniform_real_distribution<double> unidist(0, 1);
-	double prob = unidist(mc);
-	material mat = vnormal < 0 ? entering.mat : leaving.mat;
-	double diffprob = mat.DiffProb;
-//	cout << "prob: " << diffprob << '\n';
-	
-	if (prob >= diffprob){
-		//************** specular reflection **************
-//				printf("Specular reflection! Erefl=%LG neV\n",Enormal*1e9);
-		x2 = x1;
-		y2 = y1;
-		y2[3] -= 2*vnormal*normal[0]; // reflect velocity
-		y2[4] -= 2*vnormal*normal[1];
-		y2[5] -= 2*vnormal*normal[2];
-	}
-	else{
-		//************** diffuse reflection no MR model ************
-		double phi_r, theta_r;	
-		
-		std::uniform_real_distribution<double> phidist(0., 2.*pi);
-		phi_r = phidist(mc);
-		sincos_distribution<double> sincosdist(0., 0.5*pi);
-		theta_r = sincosdist(mc);
-		
-		if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle
-		x2 = x1;
-		y2 = y1;
-		double vabs = sqrt(y1[3]*y1[3] + y1[4]*y1[4] + y1[5]*y1[5]);
-		y2[3] = vabs*cos(phi_r)*sin(theta_r);	// new velocity with respect to z-axis
-		y2[4] = vabs*sin(phi_r)*sin(theta_r);
-		y2[5] = vabs*cos(theta_r);
-		RotateVector(&y2[3], normal, &y1[3]); // rotate velocity into coordinate system defined by incoming velocity and plane normal
-//				printf("Diffuse reflection! Erefl=%LG neV w_e=%LG w_s=%LG\n",Enormal*1e9,phi_r/conv,theta_r/conv);
+	double v1normal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+	material mat = v1normal < 0 ? entering.mat : leaving.mat;
+
+	if (std::generate_canonical<double, std::numeric_limits<double>::digits>(mc) < mat.SpinflipProb){
+		y2[7] *= -1;
 	}
 
-	if (unidist(mc) < entering.mat.SpinflipProb){
-		y2[7] *= -1;
+	std::array<double, 3> v1{y1[3], y1[4], y1[5]};
+	std::array<double, 3> n{normal[0], normal[1], normal[2]};
+	lambert_scattering_distribution<double> scatteringDist(mat.DiffProb, 0, mat.LossPerBounce);
+	std::array<double, 3> v2 = scattered_vector(v1, n, scatteringDist, mc);
+
+	double v2normal = n[0]*v2[0] + n[1]*v2[1] + n[2]*v2[2];
+	if (v1normal * v2normal <= 0){
+		x2 = x1;
+		y2[0] = y1[0];
+		y2[1] = y1[1];
+		y2[2] = y2[2];
+		y2[3] = v2[0];
+		y2[4] = v2[1];
+		y2[5] = v2[2];
+		y2[6] = y1[6];
+		y2[8] = y1[8];
+	}
+	else{
+		ID = ID_ABSORBED_IN_MATERIAL;
 	}
 }
 

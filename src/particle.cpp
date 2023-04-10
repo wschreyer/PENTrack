@@ -10,6 +10,8 @@
 #include <boost/numeric/odeint.hpp>
 #include <boost/math/tools/roots.hpp>
 
+#include "vectormath.h"
+
 #include "particle.h"
 
 using namespace std;
@@ -68,8 +70,8 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 
 	spinstart.resize(SPIN_STATE_VARIABLES, 0);
 
-	double B[3];
-	afield.BField(x, y, z, t, B);
+	std::array<double, 3> B;
+	afield.BField(x, y, z, t, &B[0]);
 	double Babs = sqrt(B[0]*B[0] + B[1]*B[1] + B[2]*B[2]);
 	if (Babs > 0){
 		std::uniform_real_distribution<double> phidist(0., 2.*pi);
@@ -77,7 +79,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 		spinstart[0] = sqrt(1 - spinprojection*spinprojection)*sin(spinaz); // set initial spin vector
 		spinstart[1] = sqrt(1 - spinprojection*spinprojection)*cos(spinaz);
 		spinstart[2] = spinprojection;
-		RotateVector(&spinstart[0], B); // rotate initial spin vector such that its z-component is parallel to magnetic field
+		RotateVector(spinstart, B); // rotate initial spin vector such that its z-component is parallel to magnetic field
 
 		spinstart[3] = 0; // initial integration time is zero
 		spinstart[4] = 0; // initial phase is zero

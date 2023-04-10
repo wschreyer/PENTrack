@@ -6,6 +6,8 @@ simtime 0.001
 
 secondaries 0
 
+logtype ROOT
+
 
 [MATERIALS]
 #name		FermiReal [neV]		FermiImag [neV]		DiffuseReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]

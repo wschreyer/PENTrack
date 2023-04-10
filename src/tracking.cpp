@@ -8,6 +8,8 @@
 
 #include "tracking.h"
 
+#include "vectormath.h"
+
 using namespace std;
 
 TTracker::TTracker(TConfig& config){
@@ -368,9 +370,10 @@ void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &sp
         return;
 
     state_type y1 = stepper.previous_state();
-    double B1[3], B2[3], polarisation;
-    field.BField(y1[0], y1[1], y1[2], x1, B1);
-    field.BField(y2[0], y2[1], y2[2], x2, B2);
+    std::array<double, 3> B1, B2;
+    double polarisation;
+    field.BField(y1[0], y1[1], y1[2], x1, B1.data());
+    field.BField(y2[0], y2[1], y2[2], x2, B2.data());
     double Babs1 = sqrt(B1[0]*B1[0] + B1[1]*B1[1] + B1[2]*B1[2]);
     double Babs2 = sqrt(B2[0]*B2[0] + B2[1]*B2[1] + B2[2]*B2[2]);
 
@@ -461,7 +464,7 @@ void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &sp
             spin[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
         }
         spin[2] = polarisation;
-        RotateVector(&spin[0], B2); // rotate spin vector onto magnetic field vector
+        RotateVector(spin, B2); // rotate spin vector onto magnetic field vector
     }
 
 

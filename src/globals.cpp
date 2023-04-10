@@ -4,8 +4,6 @@
 #include <fstream>
 #include <cmath>
 
-#include <CGAL/Simple_cartesian.h>
-
 #include <boost/format.hpp>
 
 std::atomic<bool> quit(false);
@@ -34,49 +32,6 @@ const long double gamma_xe = -7.399707336e7L; ///< from: http://nmrwiki.org/wiki
 long long int jobnumber = 0; ///< job number, read from command line paramters, used for parallel calculations
 boost::filesystem::path configpath = boost::filesystem::current_path() / "in/config.in"; ///< path to configuration files, read from command line paramters
 boost::filesystem::path outpath = boost::filesystem::current_path() / "out/"; ///< path where the log file should be saved to, read from command line parameters
-
-
-// rotate vector into new coordinate whose z axis is parallel to n and whose x axis is defined by the projection of x onto the plane defined by n (active transformation)
-void RotateVector(double v[3], const double n[3], const double x[3])
-{
-	typedef CGAL::Simple_cartesian<double> K;
-	CGAL::Vector_3<K> vv(v[0], v[1], v[2]), xv, zv(n[0], n[1], n[2]);
-	CGAL::Plane_3<K> plane(CGAL::ORIGIN, zv);
-	if (x == NULL) // if no x is given, choose random vector on plane as x
-		xv = plane.base1();
-	else{
-		CGAL::Point_3<K> xp(x[0], x[1], x[2]);
-		xp = plane.projection(xp); // project x onto plane defined by normal n
-		xv = xp - CGAL::ORIGIN;
-		if (xv.squared_length() < 1e-30)
-			xv = plane.base1(); // if x is parallel to n choose some random vector on plane as x axis
-	}
-	xv = xv/sqrt(xv.squared_length()); // build orthonormal basis of new coordinate system
-	zv = zv/sqrt(zv.squared_length());
-	CGAL::Vector_3<K> yv = CGAL::cross_product(zv, xv); // new y-axis corresponds to cross product of normal and velocity
-	CGAL::Aff_transformation_3<K> rotmatrix(xv.x(), yv.x(), zv.x(), xv.y(), yv.y(), zv.y(), xv.z(), yv.z(), zv.z());
-//	std::cout << "(" << xv << "," << yv << "," << zv << ") + " << vv << " = ";
-	vv = vv.transform(rotmatrix); // transform v into new coordinate system
-//	std::cout << vv << std::endl;
-	v[0] = vv.x();
-	v[1] = vv.y();
-	v[2] = vv.z();
-}
-
-//======== Lorentz boost of four-vector p into frame moving in arbitrary direction with v/c = beta ======================================================
-void BOOST(const std::vector<double> &beta, std::vector<double> &p){
-   //Boost this Lorentz vector (copy&paste from ROOT)
-   double b2 = beta[0]*beta[0] + beta[1]*beta[1] + beta[2]*beta[2];
-   double gamma = 1.0 / sqrt(1.0 - b2);
-   double bp = beta[0]*p[1] + beta[1]*p[2] + beta[2]*p[3];
-   double gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
-
-   p[1] = (p[1] + gamma2*bp*beta[0] + gamma*beta[0]*p[0]);
-   p[2] = (p[2] + gamma2*bp*beta[1] + gamma*beta[1]*p[0]);
-   p[3] = (p[3] + gamma2*bp*beta[2] + gamma*beta[2]*p[0]);
-   p[0] = (gamma*(p[0] + bp));
-}
-//======== end of BOOST ====================================================================================================
 
 // energy distribution of protons (0 < E < 750 eV)
 // proton recoil spectrum from "Diplomarbeit M. Simson"

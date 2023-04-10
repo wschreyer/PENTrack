@@ -15,6 +15,8 @@
 #include "xenon.h"
 #include "geometry.h"
 #include "globals.h"
+#include "vectormath.h"
+
 
 using namespace std;
 
@@ -100,8 +102,8 @@ TParticle* TParticleSource::CreateParticle(const double t, const double x, const
 
 
 TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field){
-    CPoint p;
-    CVector nv;
+    std::array<double, 3> p;
+    std::array<double, 3> nv;
     unsigned ID;
     do{
         geometry.mesh.RandomPointOnSurface(p, nv, ID, mc, GetSourceVolumeBoundingBox());
@@ -120,9 +122,8 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
 		Ekin = vnormal*vnormal + vtangential*vtangential; // update energy
 	}
 
-	double v[3] = {cos(phi)*sin(theta), sin(phi)*sin(theta), cos(theta)};
-	double n[3] = {nv[0], nv[1], nv[2]};
-	RotateVector(v, n);
+	std::array<double, 3> v{cos(phi)*sin(theta), sin(phi)*sin(theta), cos(theta)};
+	RotateVector(v, nv);
 	phi = atan2(v[1],v[0]);
 	theta = acos(v[2]);
 
