@@ -11,6 +11,9 @@
 #include <cmath>
 #include <boost/math/quaternion.hpp>
 #include <boost/numeric/ublas/vector.hpp>
+#include <boost/math/differentiation/autodiff.hpp>
+#include <boost/math/special_functions/factorials.hpp>
+#include <boost/math/special_functions/legendre.hpp>
 
 HarmonicExpandedBField::HarmonicExpandedBField(const double _xoff, const double _yoff, const double _zoff,
 		const double _axis_x, const double _axis_y, const double _axis_z, const double _angle,
@@ -1072,48 +1075,105 @@ void HarmonicExpandedBField::BField_old(const double _x, const double _y, const 
         B[1] = p_prime.R_component_3();
         B[2] = p_prime.R_component_4();
 
-	if (dBidxj != nullptr){
+		if (dBidxj != nullptr){
 	        // We create three quaternions, one for the gradient of each of the 
 	        // gradient vectors
 
-      	  boost::math::quaternion<double> p_x(0, 
-      	                                      dBidxj[0][0],
-      	                                      dBidxj[0][1],
-      	                                      dBidxj[0][2]);
+			boost::math::quaternion<double> p_x(0, 
+												dBidxj[0][0],
+												dBidxj[0][1],
+												dBidxj[0][2]);
 
-      	  boost::math::quaternion<double> p_y(0, 
-      	                                      dBidxj[1][0], 
-      	                                      dBidxj[1][1], 
-      	                                      dBidxj[1][2]);
+			boost::math::quaternion<double> p_y(0, 
+												dBidxj[1][0], 
+												dBidxj[1][1], 
+												dBidxj[1][2]);
 
-      	  boost::math::quaternion<double> p_z(0, 
-      	                                      dBidxj[2][0], 
-      	                                      dBidxj[2][1], 
-      	                                      dBidxj[2][2]);
+			boost::math::quaternion<double> p_z(0, 
+												dBidxj[2][0], 
+												dBidxj[2][1], 
+												dBidxj[2][2]);
 
-      	  // we use the same quaternion, q, and conjugate q' for these rotations
-      	  boost::math::quaternion<double> p_x_prime = q * p_x * q_prime;
-      	  boost::math::quaternion<double> p_y_prime = q * p_y * q_prime;
-      	  boost::math::quaternion<double> p_z_prime = q * p_z * q_prime;
+			// we use the same quaternion, q, and conjugate q' for these rotations
+			boost::math::quaternion<double> p_x_prime = q * p_x * q_prime;
+			boost::math::quaternion<double> p_y_prime = q * p_y * q_prime;
+			boost::math::quaternion<double> p_z_prime = q * p_z * q_prime;
 
-      	  // extract the resulting vector components, post-rotation
-      	  // assign the components to the dBidxj matrix
-      	  dBidxj[0][0] = p_x_prime.R_component_2();
-      	  dBidxj[0][1] = p_x_prime.R_component_3();
-      	  dBidxj[0][2] = p_x_prime.R_component_4();
+			// extract the resulting vector components, post-rotation
+			// assign the components to the dBidxj matrix
+			dBidxj[0][0] = p_x_prime.R_component_2();
+			dBidxj[0][1] = p_x_prime.R_component_3();
+			dBidxj[0][2] = p_x_prime.R_component_4();
 
-      	  dBidxj[1][0] = p_y_prime.R_component_2();
-      	  dBidxj[1][1] = p_y_prime.R_component_3();
-      	  dBidxj[1][2] = p_y_prime.R_component_4();
+			dBidxj[1][0] = p_y_prime.R_component_2();
+			dBidxj[1][1] = p_y_prime.R_component_3();
+			dBidxj[1][2] = p_y_prime.R_component_4();
 
-      	  dBidxj[2][0] = p_z_prime.R_component_2();
-      	  dBidxj[2][1] = p_z_prime.R_component_3();
-      	  dBidxj[2][2] = p_z_prime.R_component_4();
+			dBidxj[2][0] = p_z_prime.R_component_2();
+			dBidxj[2][1] = p_z_prime.R_component_3();
+			dBidxj[2][2] = p_z_prime.R_component_4();
+		
+
+    	}
+
+	}
+}
+
+
+using namespace boost::math::differentiation;
+
+template<typename X, typename Y, typename Z>
+constexpr promote<X, Y, Z> harmonicPolynomial(const unsigned int l, const int m, const X &x, const Y &y, const Z &z){
+	typedef promote<X, Y, Z> Real;
+	Real Clm = boost::math::factorial<Real>(l - 1)*pow(-2, abs(m))/boost::math::factorial<Real>(l + abs(m));
+	Real phi = atan2(y, x);
+	if (m >= 0){
+		Clm = Clm * cos(m*phi);
+	}
+	else{
+		Clm = Clm * sin(-m*phi);
+	}
+	Real r = sqrt(x*x + y*y + z*z);
+	return Clm * pow(r, l) * boost::math::legendre_p(l, abs(m), z/r);
+}
+
+
+void HarmonicExpandedBField::BField_new(const double _x, const double _y, const double _z, const double t, double B[3], double dBidxj[3][3]) const{
+	double x = _x + xoff;
+	double y = _y + yoff;
+	double z = _z + zoff;
+
+	for (int i = 0; i < 3; ++i){
+		B[i] = 0;
+		for (int j = 0; j < 3 and dBidxj != nullptr; ++j){
+			dBidxj[i][j] = 0;
+		}
 	}
 
-    }
+	for (auto glm: Glm){
+		int l = std::get<0>(glm);
+		int m = std::get<1>(glm);
+		double G = std::get<2>(glm);
 
-	// }
+		if (G == 0.) continue;
+
+		auto const xyz = boost::math::differentiation::make_ftuple<double, 2, 2, 2>(x, y, z);
+		auto const Sigma = harmonicPolynomial(l + 1, m, std::get<0>(xyz), std::get<1>(xyz), std::get<2>(xyz));
+		B[0] = G*Sigma.derivative(1, 0, 0);
+		B[1] = G*Sigma.derivative(0, 1, 0);
+		B[2] = G*Sigma.derivative(0, 0, 1);
+		if (dBidxj != nullptr){
+			dBidxj[0][0] = G*Sigma.derivative(2, 0, 0);
+			dBidxj[0][1] = G*Sigma.derivative(1, 1, 0);
+			dBidxj[0][2] = G*Sigma.derivative(1, 0, 1);
+			dBidxj[1][0] = G*Sigma.derivative(1, 1, 0);
+			dBidxj[1][1] = G*Sigma.derivative(0, 2, 0);
+			dBidxj[1][2] = G*Sigma.derivative(0, 1, 1);
+			dBidxj[2][0] = G*Sigma.derivative(1, 0, 1);
+			dBidxj[2][1] = G*Sigma.derivative(0, 1, 1);
+			dBidxj[2][2] = G*Sigma.derivative(0, 0, 2);
+		}
+	}
 }
 
 
