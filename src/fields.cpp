@@ -82,10 +82,10 @@ TFieldManager::TFieldManager(TConfig &conf){
 			Bscale = ResolveFormula(Bscale, conf["FORMULAS"]);
 			fields.emplace_back(TFieldContainer(std::move(f), Bscale, "0", xma, xmi, yma, ymi, zma, zmi, bW));
 		}
-        else if ((type == "EDMStaticEField") and (ss >> p1 >> p2 >> p3 >> Bscale)){
+        else if ((type == "EDMStaticEField") and (ss >> p1 >> p2 >> p3 >> Escale)){
 			std::unique_ptr<TField> f(new TEDMStaticEField (p1, p2, p3));
-			Bscale = ResolveFormula(Bscale, conf["FORMULAS"]);
-            fields.emplace_back(TFieldContainer(std::move(f), Bscale));
+			Escale = ResolveFormula(Escale, conf["FORMULAS"]);
+            fields.emplace_back(TFieldContainer(std::move(f), "0", Escale));
 		}
 		else if (type == "ExponentialFieldX" and ss >> p1 >> p2 >> p3 >> p4 >> p5 >> xma >> xmi >> yma >> ymi >> zma >> zmi >> Bscale){
 			std::unique_ptr<TField> f( new TExponentialFieldX(p1, p2, p3, p4, p5));
