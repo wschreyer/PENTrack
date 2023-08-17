@@ -68,10 +68,10 @@ void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, 
 	boost::filesystem::path filepath = boost::filesystem::absolute(tabfile, configpath.parent_path());
 	std::ifstream FINstream(filepath.string(), std::ifstream::in | std::ifstream::binary);
 	boost::iostreams::filtering_istream FIN;
-	if (boost::filesystem::extension(filepath) == ".bz2"){
+	if (filepath.extension() == ".bz2"){
 		FIN.push(boost::iostreams::bzip2_decompressor());
 	}
-	else if (boost::filesystem::extension(filepath) == ".gz"){
+	else if (filepath.extension() == ".gz"){
 		FIN.push(boost::iostreams::gzip_decompressor());
 	}
 	FIN.push(FINstream);
@@ -295,12 +295,12 @@ void TabField::BField(const double x, const double y, const double z, const doub
 		double phi = atan2(y,x);
 		if (dBidxj != NULL){
 			double dBrdr = 0, dBrdz = 0, dBphidr = 0, dBphidz = 0, dBzdr = 0, dBxdz = 0, dBydz = 0, dBzdz = 0;
-			double dummy;
+			// double dummy;
 			if (fBrc){
-				alglib::spline2ddiff(Brc, r, z, Br, dBrdr, dBrdz, dummy);
+				alglib::spline2ddiff(Brc, r, z, Br, dBrdr, dBrdz);
 			}
 			if (fBphic){
-				alglib::spline2ddiff(Bphic, r, z, Bphi, dBphidr, dBphidz, dummy);
+				alglib::spline2ddiff(Bphic, r, z, Bphi, dBphidr, dBphidz);
 			}
 			if (r > 0){
 				dBidxj[0][0] = dBrdr*cos(phi)*cos(phi) - dBphidr*cos(phi)*sin(phi) + (Br*sin(phi)*sin(phi) + Bphi*cos(phi)*sin(phi))/r;
@@ -312,7 +312,7 @@ void TabField::BField(const double x, const double y, const double z, const doub
 			dBidxj[0][2] = dBxdz;
 			dBidxj[1][2] = dBydz;
 			if (fBzc){
-				alglib::spline2ddiff(Bzc, r, z, Bz, dBzdr, dBzdz, dummy);
+				alglib::spline2ddiff(Bzc, r, z, Bz, dBzdr, dBzdz);
 				dBidxj[2][0] = dBzdr*cos(phi);
 				dBidxj[2][1] = dBzdr*sin(phi);
 				dBidxj[2][2] = dBzdz;
@@ -384,10 +384,10 @@ void TabField::EField(const double x, const double y, const double z, const doub
 		}
 
         else if (fVc){
-            double dVdrj[3], dummy;
+	  double dVdrj[3]; //, dummy;
             // bicubic interpolation
-            alglib::spline2ddiff(Vc, r, z, V, dVdrj[0], dVdrj[2], dummy);
-            double phi = atan2(y,x);
+            alglib::spline2ddiff(Vc, r, z, V, dVdrj[0], dVdrj[2]);
+	    double phi = atan2(y,x);
             Ei[0] = -dVdrj[0]*cos(phi);
             Ei[1] = -dVdrj[0]*sin(phi);
             Ei[2] = -dVdrj[2];
