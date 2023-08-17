@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Triangulation/include/CGAL/Delaunay_triangulation.h $
-// $Id: Delaunay_triangulation.h 483f697 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Triangulation/include/CGAL/Delaunay_triangulation.h $
+// $Id: Delaunay_triangulation.h ec01356 2020-12-15T22:18:12+01:00 Marc Glisse
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)    : Samuel Hornus
 
@@ -30,6 +21,7 @@
 #include <CGAL/Dimension.h>
 #include <CGAL/Default.h>
 
+#include <boost/container/small_vector.hpp>
 #include <CGAL/boost/iterator/transform_iterator.hpp>
 
 #include <algorithm>
@@ -425,7 +417,7 @@ Delaunay_triangulation<DCTraits, TDS>
       maximal_dimension(),
       flat_orientation_ ?
       std::pair<int, const Flat_orientation_d *>(current_dimension(), flat_orientation_.get_ptr())
-      : std::pair<int, const Flat_orientation_d *>((std::numeric_limits<int>::max)(), (Flat_orientation_d*) NULL) );
+      : std::pair<int, const Flat_orientation_d *>((std::numeric_limits<int>::max)(), (Flat_orientation_d*) nullptr) );
 
     Dark_s_handle dark_s;
     Dark_v_handle dark_v;
@@ -619,16 +611,16 @@ Delaunay_triangulation<DCTraits, TDS>
             Rotor light_r(light_s, li, light_i);
             typename Dark_triangulation::Rotor dark_r(dark_s, di, dark_i);
 
-            while (simps.contains(cpp11::get<0>(light_r)->neighbor(cpp11::get<1>(light_r))))
+            while (simps.contains(std::get<0>(light_r)->neighbor(std::get<1>(light_r))))
                 light_r = rotate_rotor(light_r);
 
-            while (conflict_zone.contains(cpp11::get<0>(dark_r)->neighbor(cpp11::get<1>(dark_r))))
+            while (conflict_zone.contains(std::get<0>(dark_r)->neighbor(std::get<1>(dark_r))))
                 dark_r = dark_side.rotate_rotor(dark_r);
 
-            Dark_s_handle dark_ns = cpp11::get<0>(dark_r);
-            int dark_ni = cpp11::get<1>(dark_r);
-            Full_cell_handle light_ns = cpp11::get<0>(light_r);
-            int light_ni = cpp11::get<1>(light_r);
+            Dark_s_handle dark_ns = std::get<0>(dark_r);
+            int dark_ni = std::get<1>(dark_r);
+            Full_cell_handle light_ns = std::get<0>(light_r);
+            int light_ni = std::get<1>(light_r);
             // mark dark_r as visited:
             // TODO try by marking with Dark_v_handle (vertex)
             Dark_s_handle outside = dark_ns->neighbor(dark_ni);
@@ -738,9 +730,9 @@ Delaunay_triangulation<DCTraits, TDS>
         // consistent with the rest of the cells
         if (current_dimension() == 1)
         {
-            // Is "inf_v_cell" the right infinite cell? 
+            // Is "inf_v_cell" the right infinite cell?
             // Then inf_v_index should be 1
-            if (inf_v_cell->neighbor(inf_v_index)->index(inf_v_cell) == 0 
+            if (inf_v_cell->neighbor(inf_v_index)->index(inf_v_cell) == 0
                 && inf_v_index == 0)
             {
                 inf_v_cell->swap_vertices(
@@ -751,9 +743,9 @@ Delaunay_triangulation<DCTraits, TDS>
             {
                 inf_v_cell = inf_v_cell->neighbor((inf_v_index + 1) % 2);
                 inf_v_index = inf_v_cell->index(infinite_vertex());
-                // Is "inf_v_cell" the right infinite cell? 
+                // Is "inf_v_cell" the right infinite cell?
                 // Then inf_v_index should be 1
-                if (inf_v_cell->neighbor(inf_v_index)->index(inf_v_cell) == 0 
+                if (inf_v_cell->neighbor(inf_v_index)->index(inf_v_cell) == 0
                     && inf_v_index == 0)
                 {
                     inf_v_cell->swap_vertices(
@@ -801,7 +793,7 @@ Delaunay_triangulation<DCTraits, TDS>
 {
     CGAL_precondition_msg( ! is_infinite(s), "full cell must be finite");
     CGAL_expensive_precondition( POSITIVE == orientation(s) );
-    typedef std::vector<const Point *> Points;
+    typedef boost::container::small_vector<const Point *, 8> Points;
     Points points(current_dimension() + 2);
     int i(0);
     for( ; i <= current_dimension(); ++i )

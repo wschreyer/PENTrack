@@ -1,20 +1,11 @@
 // Copyright (c) 2014  GeometryFactory (France).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/BGL/include/CGAL/boost/parameter.h $
+// $Id: parameter.h 4b3fee8 2021-09-23T11:37:35+02:00 Jane Tournois
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/BGL/include/CGAL/boost/parameter.h $
-// $Id: parameter.h 8648a72 %aI Laurent Rineau
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Andreas Fabri
 
@@ -34,7 +25,7 @@
 
 #include <boost/parameter/name.hpp>
 
-#if defined(__clang__) || (BOOST_GCC >= 40600)
+#if defined(__clang__) || defined(BOOST_GCC)
 #  define CGAL_IGNORE_UNUSED_VARIABLES \
     _Pragma("GCC diagnostic ignored \"-Wunused-variable\"") \
     _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"")
@@ -66,7 +57,7 @@ struct Base
 private:
   T t_;
 };
-  
+
 #define CGAL_BOOLEAN_PARAMETER(Class, function_true, function_false)     \
   struct Class : public Base<bool> { Class(bool b) : Base<bool>(b){} };       \
   inline Class function_true() { return Class(true); }                        \
@@ -95,10 +86,10 @@ BOOST_PARAMETER_NAME( (time_limit, tag) time_limit_ )
 BOOST_PARAMETER_NAME( (convergence, tag) convergence_)
 BOOST_PARAMETER_NAME( (max_iteration_number, tag) max_iteration_number_ )
 BOOST_PARAMETER_NAME( (freeze_bound, tag) freeze_bound_)
-  
+
 BOOST_PARAMETER_NAME( (sliver_bound, tag) sliver_bound_)
 BOOST_PARAMETER_NAME( (sliver_criterion, tag) sliver_criterion_)
-BOOST_PARAMETER_NAME( (perturbation_vector, tag) perturbation_vector_) 
+BOOST_PARAMETER_NAME( (perturbation_vector, tag) perturbation_vector_)
 BOOST_PARAMETER_NAME( (do_freeze, tag) do_freeze_)
 
 BOOST_PARAMETER_NAME( (mesh_topology, tag) mesh_topology_)
@@ -119,6 +110,7 @@ BOOST_PARAMETER_NAME( (pointer_to_stop_atomic_boolean, tag ) pointer_to_stop_ato
 BOOST_PARAMETER_NAME( (function, tag ) function_)
 BOOST_PARAMETER_NAME( (bounding_object, tag ) bounding_object_)
 BOOST_PARAMETER_NAME( (relative_error_bound, tag ) relative_error_bound_)
+BOOST_PARAMETER_NAME( (weights, tag) weights_)
 BOOST_PARAMETER_NAME( (p_rng, tag ) p_rng_)
 BOOST_PARAMETER_NAME( (null_subdomain_index, tag ) null_subdomain_index_)
 BOOST_PARAMETER_NAME( (construct_surface_patch_index, tag ) construct_surface_patch_index_)

@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/initialize_triangulation_from_labeled_image.h $
-// $Id: initialize_triangulation_from_labeled_image.h ba3a59e %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/Mesh_3/initialize_triangulation_from_labeled_image.h $
+// $Id: initialize_triangulation_from_labeled_image.h 399945f 2023-01-05T14:20:16+01:00 Jane Tournois
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent Rineau
@@ -25,15 +16,14 @@
 #include <CGAL/license/Mesh_3.h>
 
 #include <CGAL/Mesh_3/search_for_connected_components_in_labeled_image.h>
-#include <CGAL/Mesh_3/squared_distance_Point_3_Triangle_3.h>
+#include <CGAL/Distance_3/Point_3_Triangle_3.h>
+#include <CGAL/Labeled_mesh_domain_3.h>
 #include <CGAL/make_mesh_3.h>
 
 #include <CGAL/enum.h>
 #include <CGAL/iterator.h>
 #include <CGAL/point_generators_3.h>
 #include <CGAL/Image_3.h>
-
-#include <boost/foreach.hpp>
 
 #include <iostream>
 #include <queue>
@@ -42,17 +32,36 @@ template <typename Point>
 struct Get_point
 {
   const double vx, vy, vz;
+  const double tx, ty, tz;
+  const std::size_t xdim, ydim, zdim;
   Get_point(const CGAL::Image_3* image)
     : vx(image->vx())
     , vy(image->vy())
     , vz(image->vz())
+    , tx(image->tx())
+    , ty(image->ty())
+    , tz(image->tz())
+    , xdim(image->xdim())
+    , ydim(image->ydim())
+    , zdim(image->zdim())
   {}
 
   Point operator()(const std::size_t i,
                    const std::size_t j,
                    const std::size_t k) const
   {
-    return Point(double(i) * vx, double(j) * vy, double(k) * vz);
+    double x = double(i) * vx + tx;
+    double y = double(j) * vy + ty;
+    double z = double(k) * vz + tz;
+
+    if (i == 0)              x += 1. / 6. * vx;
+    else if (i == xdim - 1)  x -= 1. / 6. * vx;
+    if (j == 0)              y += 1. / 6. * vy;
+    else if (j == ydim - 1)  y -= 1. / 6. * vy;
+    if (k == 0)              z += 1. / 6. * vz;
+    else if (k == zdim - 1)  z -= 1. / 6. * vz;
+
+    return Point(x, y, z);
   }
 };
 template<class C3T3, class MeshDomain, class MeshCriteria>
@@ -75,16 +84,16 @@ void init_tr_from_labeled_image_call_init_features(C3T3& c3t3,
             << " initial points on 1D-features" << std::endl;
 }
 
-
 template<class C3T3, class MeshDomain, class MeshCriteria,
-         typename Image_word_type>
+         typename Image_word_type,
+         typename TransformOperator = CGAL::Identity<Image_word_type> >
 void initialize_triangulation_from_labeled_image(C3T3& c3t3,
-                                                 const MeshDomain&   domain,
-                                                 const CGAL::Image_3& image,
-                                                 const MeshCriteria& criteria,
-                                                 Image_word_type,
-                                                 bool protect_features = false
-                                                 )
+      const MeshDomain&   domain,
+      const CGAL::Image_3& image,
+      const MeshCriteria& criteria,
+      Image_word_type,
+      bool protect_features = false,
+      TransformOperator transform = CGAL::Identity<Image_word_type>())
 {
   typedef typename C3T3::Triangulation       Tr;
   typedef typename Tr::Geom_traits           Gt;
@@ -118,29 +127,50 @@ void initialize_triangulation_from_labeled_image(C3T3& c3t3,
                                              image.vy()),
                                   image.vz());
 
-  typedef std::vector<std::pair<Bare_point, std::size_t> > Seeds;
+  struct Seed {
+    std::size_t i, j, k;
+    std::size_t radius;
+  };
+  using Seeds = std::vector<Seed>;
+  using Subdomain = typename Mesh_domain::Subdomain;
+
   Seeds seeds;
   Get_point<Bare_point> get_point(&image);
   std::cout << "Searching for connected components..." << std::endl;
-  CGAL::Identity<Image_word_type> no_transformation;
   search_for_connected_components_in_labeled_image(image,
                                                    std::back_inserter(seeds),
                                                    CGAL::Emptyset_iterator(),
-                                                   no_transformation,
-                                                   get_point,
+                                                   transform,
                                                    Image_word_type());
   std::cout << "  " << seeds.size() << " components were found." << std::endl;
   std::cout << "Construct initial points..." << std::endl;
-  for(typename Seeds::const_iterator it = seeds.begin(), end = seeds.end();
-      it != end; ++it)
+  for(const Seed seed : seeds)
   {
-    const double radius = double(it->second + 1)* max_v;
+    const Bare_point seed_point = get_point(seed.i, seed.j, seed.k);
+    Cell_handle seed_cell = tr.locate(cwp(seed_point));
+
+    const Subdomain seed_label
+      = domain.is_in_domain_object()(seed_point);
+    const Subdomain seed_cell_label
+      = (   tr.dimension() < 3
+         || seed_cell == Cell_handle()
+         || tr.is_infinite(seed_cell))
+        ? Subdomain()  //seed_point is OUTSIDE_AFFINE_HULL
+        : domain.is_in_domain_object()(
+            seed_cell->weighted_circumcenter(tr.geom_traits()));
+
+    if ( seed_label != boost::none
+      && seed_cell_label != boost::none
+      && *seed_label == *seed_cell_label)
+        continue; //this means the connected component has already been initialized
+
+    const double radius = double(seed.radius + 1)* max_v;
     CGAL::Random_points_on_sphere_3<Bare_point> points_on_sphere_3(radius);
     typename Mesh_domain::Construct_intersection construct_intersection =
       domain.construct_intersection_object();
 
     std::vector<Vector_3> directions;
-    if(it->second < 2) {
+    if(seed.radius < 2) {
       // shoot in six directions
       directions.push_back(Vector_3(-radius, 0, 0));
       directions.push_back(Vector_3(+radius, 0, 0));
@@ -156,14 +186,15 @@ void initialize_triangulation_from_labeled_image(C3T3& c3t3,
       }
     }
 
-    BOOST_FOREACH(const Vector_3& v, directions)
+    for(const Vector_3& v : directions)
     {
-      const Bare_point test = it->first + v;
+      const Bare_point test = seed_point + v;
+
       const typename Mesh_domain::Intersection intersect =
-        construct_intersection(Segment_3(it->first, test));
-      if (CGAL::cpp11::get<2>(intersect) != 0)
+        construct_intersection(Segment_3(seed_point, test));
+      if (std::get<2>(intersect) != 0)
       {
-        const Bare_point& bpi = CGAL::cpp11::get<0>(intersect);
+        const Bare_point& bpi = std::get<0>(intersect);
         Weighted_point pi = cwp(bpi);
 
         // This would cause trouble to optimizers
@@ -207,7 +238,7 @@ void initialize_triangulation_from_labeled_image(C3T3& c3t3,
         }
 
         bool pi_inside_protecting_sphere = false;
-        BOOST_FOREACH(Vertex_handle cv, conflict_vertices)
+        for(Vertex_handle cv : conflict_vertices)
         {
           if(tr.is_infinite(cv))
             continue;
@@ -225,7 +256,7 @@ void initialize_triangulation_from_labeled_image(C3T3& c3t3,
         }
         if (pi_inside_protecting_sphere)
           continue;
-        const typename Mesh_domain::Index index = CGAL::cpp11::get<1>(intersect);
+        const typename Mesh_domain::Index index = std::get<1>(intersect);
 
         /// The following lines show how to insert initial points in the
         /// `c3t3` object. [insert initial points]

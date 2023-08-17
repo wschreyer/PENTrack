@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/Arr_batched_point_location.h $
-// $Id: Arr_batched_point_location.h 18acb2e %aI Andreas Fabri
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Arrangement_on_surface_2/include/CGAL/Arr_batched_point_location.h $
+// $Id: Arr_batched_point_location.h 0626eb0 2020-06-11T12:32:33+03:00 Efi Fogel
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Baruch Zukerman <baruchzu@post.tau.ac.il>
 //                 Ron Wein <wein@post.tau.ac.il>
@@ -50,11 +41,9 @@ namespace Ss2 = Surface_sweep_2;
  * \param oi Output: An output iterator for the query results.
  * \pre The value-type of PointsIterator is Arrangement::Point_2,
  *      and the value-type of OutputIterator is is pair<Point_2, Result>,
- *      where Result is either
- *       (i) Object or
- *      (ii) boost::optional<boost::variant<Vertex_const_handle,
- *                                          Halfedge_const_handle,
- *                                          Face_const_handle> >.
+ *      where Result is boost::optional<boost::variant<Vertex_const_handle,
+ *                                      Halfedge_const_handle,
+ *                                      Face_const_handle> >.
  *      It represents the arrangement feature containing the point.
  */
 template <typename GeometryTraits_2, typename TopologyTraits,

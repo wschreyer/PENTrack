@@ -1,20 +1,11 @@
 // Copyright (c) 2012 GeometryFactory (France).
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/BGL/include/CGAL/boost/graph/property_maps.h $
-// $Id: property_maps.h eb8e5e5 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/BGL/include/CGAL/boost/graph/property_maps.h $
+// $Id: property_maps.h 590ddf8 2021-10-08T15:38:47+02:00 Mael Rouxel-Labbé
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Sebastien Loriot
 
@@ -38,7 +29,7 @@ struct Triangle_from_face_descriptor_map{
   VertexPointMap m_vpm;
 
   Triangle_from_face_descriptor_map()
-    : m_tm(NULL)
+    : m_tm(nullptr)
   {}
 
   Triangle_from_face_descriptor_map(TriangleMesh const* tm)
@@ -62,7 +53,7 @@ struct Triangle_from_face_descriptor_map{
 
   //get function for property map
   inline friend
-  reference
+  value_type
   get(const Triangle_from_face_descriptor_map<TriangleMesh,VertexPointMap>& pmap,
       key_type f)
   {
@@ -75,7 +66,7 @@ struct Triangle_from_face_descriptor_map{
   }
 
   inline friend
-  reference
+  value_type
   get(const Triangle_from_face_descriptor_map<TriangleMesh,VertexPointMap>& pmap,
       const std::pair<key_type, const TriangleMesh*>& f)
   {
@@ -93,7 +84,7 @@ template < class PolygonMesh,
 struct Segment_from_edge_descriptor_map{
 
   Segment_from_edge_descriptor_map()
-    : m_pm(NULL)
+    : m_pm(nullptr)
   {}
 
   Segment_from_edge_descriptor_map(PolygonMesh const * pm)
@@ -120,7 +111,7 @@ struct Segment_from_edge_descriptor_map{
 
   //get function for property map
   inline friend
-  reference
+  value_type
   get(const Segment_from_edge_descriptor_map<PolygonMesh,VertexPointMap>& pmap,
       key_type h)
   {
@@ -129,7 +120,7 @@ struct Segment_from_edge_descriptor_map{
   }
 
   inline friend
-  reference
+  value_type
   get(const Segment_from_edge_descriptor_map<PolygonMesh,VertexPointMap>& pmap,
       const std::pair<key_type, const PolygonMesh*>& h)
   {
@@ -143,7 +134,7 @@ template <class PolygonMesh,
           class VertexPointMap = typename boost::property_map<PolygonMesh,vertex_point_t>::type >
 struct One_point_from_face_descriptor_map{
   One_point_from_face_descriptor_map()
-    : m_pm(NULL)
+    : m_pm(nullptr)
   {}
 
   One_point_from_face_descriptor_map(PolygonMesh const * g)
@@ -163,7 +154,7 @@ struct One_point_from_face_descriptor_map{
   typedef typename boost::graph_traits<PolygonMesh>::face_descriptor key_type;
   typedef typename boost::property_traits< VertexPointMap >::value_type value_type;
   typedef typename boost::property_traits< VertexPointMap >::reference reference;
-  typedef boost::lvalue_property_map_tag category;
+  typedef boost::readable_property_map_tag category;
 
   //get function for property map
   inline friend
@@ -187,7 +178,7 @@ struct One_point_from_face_descriptor_map{
 template < class PolygonMesh,
            class VertexPointMap = typename boost::property_map<PolygonMesh,vertex_point_t>::type >
 struct Source_point_from_edge_descriptor_map{
-  Source_point_from_edge_descriptor_map()  : m_pm(NULL)
+  Source_point_from_edge_descriptor_map()  : m_pm(nullptr)
   {}
 
   Source_point_from_edge_descriptor_map(PolygonMesh const * g)
@@ -205,6 +196,7 @@ struct Source_point_from_edge_descriptor_map{
   typedef typename boost::property_traits< VertexPointMap >::reference reference;
   typedef typename boost::graph_traits<PolygonMesh>::edge_descriptor key_type;
   typedef boost::readable_property_map_tag category;
+
   //data
   typename boost::remove_const<PolygonMesh>::type* m_pm;
   VertexPointMap m_vpm;

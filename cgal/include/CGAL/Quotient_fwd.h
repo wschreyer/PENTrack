@@ -1,20 +1,11 @@
 // Copyright (c) 2010 GeometryFactory
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Number_types/include/CGAL/Quotient_fwd.h $
-// $Id: Quotient_fwd.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Number_types/include/CGAL/Quotient_fwd.h $
+// $Id: Quotient_fwd.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Sebastien Loriot, Laurent Rineau
@@ -26,10 +17,10 @@
 namespace CGAL{
   template < typename NT >
   struct Split_double;
-  
+
   template <class NT_>
   class Quotient;
-  
+
 } //namespace CGAL
 
 #endif //CGAL_QUOTIENT_FWD_H

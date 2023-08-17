@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesher/include/CGAL/Surface_mesher/Surface_mesher_visitor.h $
-// $Id: Surface_mesher_visitor.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Surface_mesher/include/CGAL/Surface_mesher/Surface_mesher_visitor.h $
+// $Id: Surface_mesher_visitor.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent RINEAU
@@ -50,7 +41,7 @@ namespace CGAL {
       typedef Previous_level Previous_visitor;
 
       Visitor(Surface_mesher* surface_mesher_,
-	      Previous_visitor* p)
+              Previous_visitor* p)
         : surface_mesher(surface_mesher_), previous(p) {}
 
       template <typename E, typename P>
@@ -61,12 +52,12 @@ namespace CGAL {
                             const Point& p,
                             Zone& zone)
       {
-	surface_mesher->before_insertion_impl(typename Tr::Facet (), p, zone);
+        surface_mesher->before_insertion_impl(typename Tr::Facet (), p, zone);
       }
 
       void after_insertion(const Vertex_handle& v)
       {
-	surface_mesher->restore_restricted_Delaunay(v);
+        surface_mesher->restore_restricted_Delaunay(v);
       }
 
       template <typename E, typename P, typename Z>

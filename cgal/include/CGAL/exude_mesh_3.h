@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/exude_mesh_3.h $
-// $Id: exude_mesh_3.h 7ea3a80 %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/exude_mesh_3.h $
+// $Id: exude_mesh_3.h 1c3e09f 2022-01-10T15:32:38+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Stephane Tayeb
@@ -57,7 +48,7 @@ BOOST_PARAMETER_FUNCTION(
   (required (in_out(c3t3),*) )
   (optional
     (time_limit_, *, 0 )
-    (sliver_bound_, *, parameters::default_values::exude_sliver_bound )
+    (sliver_bound_, *, parameters::default_values_for_mesh_3::exude_sliver_bound )
   )
 )
 {

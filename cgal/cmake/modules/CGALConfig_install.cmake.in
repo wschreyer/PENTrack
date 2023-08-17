@@ -4,13 +4,16 @@
 # This file is loaded by cmake via the command "find_package(CGAL)"
 #
 # This file correspond to a CGAL installation with "make install", thus the actual location
-# must be given by the cmake variable or enviroment variable CGAL_DIR.
+# must be given by the cmake variable or environment variable CGAL_DIR.
 
 set(CGAL_CONFIG_LOADED TRUE)
 
 get_filename_component(CGAL_CONFIG_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
 set(CGAL_HEADER_ONLY "@CGAL_HEADER_ONLY@" )
+
+include(CMakeFindDependencyMacro)
+find_dependency(Boost REQUIRED)
 
 # CGAL_DIR is the directory where this CGALConfig.cmake is installed
 string(REPLACE "/@CGAL_INSTALL_CMAKE_DIR@" "" CGAL_INSTALL_PREFIX "${CGAL_CONFIG_DIR}")
@@ -52,7 +55,7 @@ set(CGAL_ImageIO_USE_ZLIB                 "@CGAL_ImageIO_USE_ZLIB@" )
 set(CGAL_VERSION "${CGAL_MAJOR_VERSION}.${CGAL_MINOR_VERSION}.${CGAL_BUGFIX_VERSION}")
 
 set(CGAL_USE_FILE "${CGAL_MODULES_DIR}/UseCGAL.cmake" )
-set(CGAL_GRAPHICSVIEW_PACKAGE_DIR "${CGAL_INCLUDE_DIRS}/CGAL/" CACHE INTERNAL "Directory containing the GraphicsView package")
+set(CGAL_GRAPHICSVIEW_PACKAGE_DIR "${CGAL_INSTALL_PREFIX}" CACHE INTERNAL "Directory containing the GraphicsView package")
 
 if ( CGAL_FIND_REQUIRED )
   set( CHECK_CGAL_COMPONENT_MSG_ON_ERROR TRUE        )
@@ -176,4 +179,26 @@ if( CGAL_DEV_MODE OR RUNNING_CGAL_AUTO_TEST )
   # Nov. 2017). -- Laurent Rineau
   include(CGAL_SetupFlags)
 endif()
+
+#CGAL_DATA_DIR
+set(CGAL_DATA_DIR "@CGAL_DATA_DIR@")
+
+if(NOT TARGET CGAL::Data)
+  add_library(CGAL::Data INTERFACE IMPORTED GLOBAL)
+  if ( NOT "${CGAL_DATA_DIR}" STREQUAL "" )
+    set_target_properties(CGAL::Data PROPERTIES
+      INTERFACE_COMPILE_DEFINITIONS "CGAL_DATA_DIR=\"${CGAL_DATA_DIR}\"")
+  endif()
+endif()
+
+#
+# Define a specific target for basic viewer
+#
+if (NOT TARGET CGAL::CGAL_Basic_viewer)
+  add_library(CGAL::CGAL_Basic_viewer INTERFACE IMPORTED GLOBAL)
+    set_target_properties(CGAL::CGAL_Basic_viewer PROPERTIES
+      INTERFACE_COMPILE_DEFINITIONS "CGAL_USE_BASIC_VIEWER;QT_NO_KEYWORDS"
+      INTERFACE_LINK_LIBRARIES CGAL::CGAL_Qt5)
+endif()
+
 include("${CGAL_MODULES_DIR}/CGAL_enable_end_of_configuration_hook.cmake")

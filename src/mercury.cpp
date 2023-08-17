@@ -41,7 +41,7 @@ void TMercury::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 		
 		std::uniform_real_distribution<double> phidist(0., 2.*pi);
 		phi_r = phidist(mc);
-		sincos_distribution<double> sincosdist(0., 0.5*pi);
+		std::sincos_distribution<double> sincosdist(0., 0.5*pi);
 		theta_r = sincosdist(mc);
 		
 		if (vnormal > 0) theta_r = pi - theta_r; // if velocity points out of volume invert polar angle

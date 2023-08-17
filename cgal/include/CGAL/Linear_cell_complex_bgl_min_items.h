@@ -1,20 +1,11 @@
 // Copyright (c) 2017 CNRS and LIRIS' Establishments (France).
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Linear_cell_complex/include/CGAL/Linear_cell_complex_bgl_min_items.h $
-// $Id: Linear_cell_complex_bgl_min_items.h 7fa4b38 %aI Maxime Gimeno
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Linear_cell_complex/include/CGAL/Linear_cell_complex_bgl_min_items.h $
+// $Id: Linear_cell_complex_bgl_min_items.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Guillaume Damiand <guillaume.damiand@liris.cnrs.fr>
 //
@@ -36,10 +27,10 @@ namespace CGAL {
       typedef CGAL::Tag_true Darts_with_id;
       typedef CGAL::Cell_attribute_with_point_and_id<LCC> Vertex_attribute;
       typedef CGAL::Cell_attribute_with_id<LCC> Face_attribute;
-      typedef CGAL::cpp11::tuple<Vertex_attribute, void, Face_attribute> Attributes;
+      typedef std::tuple<Vertex_attribute, void, Face_attribute> Attributes;
     };
   };
-  
+
 } // namespace CGAL
 
 #endif // CGAL_LINEAR_CELL_COMPLEX_BGL_MIN_ITEMS_H //

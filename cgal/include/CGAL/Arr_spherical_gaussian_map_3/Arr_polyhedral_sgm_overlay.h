@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Arrangement_on_surface_2/include/CGAL/Arr_spherical_gaussian_map_3/Arr_polyhedral_sgm_overlay.h $
+// $Id: Arr_polyhedral_sgm_overlay.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/Arr_spherical_gaussian_map_3/Arr_polyhedral_sgm_overlay.h $
-// $Id: Arr_polyhedral_sgm_overlay.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 // Author(s)     : Efi Fogel          <efif@post.tau.ac.il>
 
 #ifndef CGAL_ARR_POLYHEDRAL_SGM_OVERLAY_H
@@ -36,7 +27,7 @@ class Arr_polyhedral_sgm_overlay {
 private:
   typedef typename Sgm::Point_3                         Point_3;
   typedef typename Sgm::Vector_3                        Vector_3;
-  
+
 public:
   typedef typename Sgm::Face_handle                     Face_handle;
   typedef typename Sgm::Vertex_handle                   Vertex_handle;
@@ -46,12 +37,12 @@ public:
   typedef typename Sgm::Vertex_const_handle             Vertex_const_handle;
   typedef typename Sgm::Halfedge_const_handle           Halfedge_const_handle;
 
-  typedef typename Sgm::Ccb_halfedge_const_circulator 
+  typedef typename Sgm::Ccb_halfedge_const_circulator
     Ccb_halfedge_const_circulator;
 
   typedef typename Sgm::Halfedge_around_vertex_const_circulator
     Arr_halfedge_around_vertex_const_circulator;
-  
+
   /*! 1 */
   void create_face(Face_const_handle f1, Face_const_handle f2, Face_handle f)
   {

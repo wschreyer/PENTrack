@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Convex_hull_2/include/CGAL/Convex_hull_2/ch_jarvis_impl.h $
+// $Id: ch_jarvis_impl.h 21755b1 2021-03-24T15:05:41+01:00 Laurent Rineau
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Convex_hull_2/include/CGAL/Convex_hull_2/ch_jarvis_impl.h $
-// $Id: ch_jarvis_impl.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Stefan Schirra
 
@@ -33,16 +24,15 @@
 #include <CGAL/Convex_hull_2/ch_assertions.h>
 #include <CGAL/ch_selected_extreme_points_2.h>
 #include <algorithm>
-#include <boost/bind.hpp>
 
 namespace CGAL {
 
-template <class ForwardIterator, class OutputIterator, 
+template <class ForwardIterator, class OutputIterator,
           class Point, class Traits>
 OutputIterator
 ch_jarvis_march(ForwardIterator first, ForwardIterator last,
-                const Point& start_p, 
-                const Point& stop_p, 
+                const Point& start_p,
+                const Point& stop_p,
                 OutputIterator  result,
                 const Traits& ch_traits)
 {
@@ -50,12 +40,11 @@ ch_jarvis_march(ForwardIterator first, ForwardIterator last,
 
   if (first == last) return result;
   typedef   typename Traits::Less_rotate_ccw_2     Less_rotate_ccw;
-  typedef   typename Traits::Equal_2               Equal_2; 
-  
-  Equal_2     equal_points = ch_traits.equal_2_object();     
-  
-  #if defined(CGAL_CH_NO_POSTCONDITIONS) || defined(CGAL_NO_POSTCONDITIONS) \
-    || defined(NDEBUG)
+  typedef   typename Traits::Equal_2               Equal_2;
+
+  Equal_2     equal_points = ch_traits.equal_2_object();
+
+  #if defined(CGAL_CH_NO_POSTCONDITIONS) || defined(CGAL_NO_POSTCONDITIONS)
   OutputIterator  res(result);
   #else
   typedef   typename Traits::Point_2               Point_2;
@@ -65,16 +54,17 @@ ch_jarvis_march(ForwardIterator first, ForwardIterator last,
       int count_points = 0; )
   CGAL_ch_assertion_code( \
       for (ForwardIterator fit = first; fit!= last; ++fit) ++count_points; )
-  Less_rotate_ccw  
+  Less_rotate_ccw
       rotation_predicate = ch_traits.less_rotate_ccw_2_object( );
   *res = start_p;  ++res;
   CGAL_ch_assertion_code( \
       int constructed_points = 1; )
   CGAL_ch_exactness_assertion_code( \
-      Point previous_point = start_p; ) 
+      Point previous_point = start_p; )
 
-  ForwardIterator it = std::min_element( first, last, 
-                                         boost::bind(rotation_predicate, boost::cref(start_p), _1, _2) );
+  ForwardIterator it = std::min_element( first, last,
+                                         [&start_p, &rotation_predicate](const Point& p1, const Point& p2)
+                                         {return rotation_predicate(start_p, p1, p2);} );
   while (! equal_points(*it, stop_p) )
   {
       CGAL_ch_exactness_assertion( \
@@ -88,20 +78,20 @@ ch_jarvis_march(ForwardIterator first, ForwardIterator last,
       CGAL_ch_assertion( \
           constructed_points <= count_points + 1 );
 
-      it = std::min_element( first, last, 
-                             boost::bind(rotation_predicate, *it, _1, _2) );
-  } 
+      it = std::min_element( first, last,
+                             [it, &rotation_predicate](const Point& p1, const Point& p2)
+                             {return rotation_predicate(*it, p1, p2);} );
+  }
   CGAL_ch_postcondition( \
       is_ccw_strongly_convex_2( res.output_so_far_begin(), \
                                      res.output_so_far_end(), \
                                      ch_traits));
   CGAL_ch_expensive_postcondition( \
-      ch_brute_force_check_2( 
+      ch_brute_force_check_2(
           first, last, \
           res.output_so_far_begin(), res.output_so_far_end(), \
           ch_traits));
-  #if defined(CGAL_CH_NO_POSTCONDITIONS) || defined(CGAL_NO_POSTCONDITIONS) \
-    || defined(NDEBUG)
+  #if defined(CGAL_CH_NO_POSTCONDITIONS) || defined(CGAL_NO_POSTCONDITIONS)
   return res;
   #else
   return res.to_output_iterator();
@@ -110,7 +100,7 @@ ch_jarvis_march(ForwardIterator first, ForwardIterator last,
 
 template <class ForwardIterator, class OutputIterator, class Traits>
 OutputIterator
-ch_jarvis(ForwardIterator first, ForwardIterator last, 
+ch_jarvis(ForwardIterator first, ForwardIterator last,
                OutputIterator  result,
                const Traits& ch_traits)
 {

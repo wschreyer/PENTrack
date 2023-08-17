@@ -100,6 +100,38 @@ double ElectronBetaSpectrum(const double E){
 	return 8.2*sqrt(E*1e-6*E*1e-6 + 2*E*1e-6*m_e*c_0*c_0*1e-6) * pow(Qvalue - E*1e-6, 2) * (E*1e-6 + m_e*c_0*c_0*1e-6);
 }
 
+///////////////////// Utkarsh
+
+//PSI Energy Distribution
+double CustomSpectra(const double x){
+	
+	double mu[15]  = {4.38835197e-08, 6.46920663e-08, 8.55006130e-08, 1.06309160e-07
+, 1.27117706e-07, 1.47926253e-07, 1.68734800e-07, 1.89543346e-07
+, 2.10351893e-07, 2.31160440e-07, 2.51968986e-07, 2.72777533e-07
+, 2.93586080e-07, 3.14394626e-07, 3.35203173e-07};
+
+	double sigma[15] = {2.08085467e-08, 2.08085467e-08, 2.08085467e-08, 2.08085467e-08
+, 2.08085467e-08, 2.08085467e-08, 2.08085467e-08, 2.08085467e-08
+, 2.08085467e-08, 2.08085467e-08, 2.08085467e-08, 2.08085467e-08
+, 2.08085467e-08, 2.08085467e-08, 2.08085467e-08};
+
+	double weight[15] = {-0.00382596, 0.00184277, 0.00279762, 0.05301957, 0.05951985, 0.1122543
+, 0.1988578, 0.07857912, 0.55204282, -0.28989203, 0.27335905, -0.13435213
+, 0.11429855, -0.02961705, 0.01452407};
+	
+	double s = 0;
+	int i = 0;
+
+	for ( i=0 ; i<15 ; ++i ){
+	s = s+ weight[i]*std::exp(-0.5 * std::pow((x - mu[i] ) / sigma[i], 2)); //since data is fit in neV
+	}
+	return s; //returns energy in eV
+
+}
+
+///////////////////////
+
+
 // energy distribution of comagnetometer gases using Maxwell-Boltzmann distribution
 // from en.wikipedia.org/wiki/Maxwell%E2%80%93Boltzmann_distribution
 // result always < 1!

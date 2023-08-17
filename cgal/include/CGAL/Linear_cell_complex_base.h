@@ -1,30 +1,23 @@
 // Copyright (c) 2011 CNRS and LIRIS' Establishments (France).
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Linear_cell_complex/include/CGAL/Linear_cell_complex_base.h $
-// $Id: Linear_cell_complex_base.h 542d94d %aI Guillaume Damiand
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Linear_cell_complex/include/CGAL/Linear_cell_complex_base.h $
+// $Id: Linear_cell_complex_base.h 849b477 2022-02-11T07:38:46+01:00 Guillaume Damiand
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Guillaume Damiand <guillaume.damiand@liris.cnrs.fr>
 //
 #ifndef CGAL_LINEAR_CELL_COMPLEX_BASE_H
 #define CGAL_LINEAR_CELL_COMPLEX_BASE_H 1
 
+#include <CGAL/Linear_cell_complex_fwd.h>
 #include <CGAL/Combinatorial_map_functors.h>
-#include <CGAL/internal/Combinatorial_map_internal_functors.h>
+#include <CGAL/Combinatorial_map/internal/Combinatorial_map_internal_functors.h>
 #include <CGAL/Linear_cell_complex_operations.h>
 #include <CGAL/Origin.h>
+#include <CGAL/assertions.h>
 
 #include<map>
 
@@ -51,21 +44,22 @@ namespace CGAL {
              class Alloc_,
              template<unsigned int,class,class,class,class>
              class Map,
-             class Refs,
+             class Refs_,
              class Storage_>
   class Linear_cell_complex_base:
-    public Map<d_, Refs, Items_, Alloc_, Storage_>
+    public Map<d_, Refs_, Items_, Alloc_, Storage_>
   {
   public:
     typedef Linear_cell_complex_base<d_, ambient_dim,
                                 Traits_, Items_, Alloc_, Map,
-                                Refs, Storage_>  Self;
-    typedef Map<d_, Refs, Items_, Alloc_, Storage_> Base;
+                                Refs_, Storage_>  Self;
+    typedef Map<d_, Refs_, Items_, Alloc_, Storage_> Base;
 
-    typedef Traits_ Traits;
-    typedef Items_  Items;
-    typedef Alloc_  Alloc;
+    typedef Traits_  Traits;
+    typedef Items_   Items;
+    typedef Alloc_   Alloc;
     typedef Storage_ Storage;
+    typedef Refs_     Refs;
 
     static const unsigned int ambient_dimension = ambient_dim;
     static const unsigned int dimension = Base::dimension;
@@ -119,10 +113,11 @@ namespace CGAL {
     using Base::create_dart;
     using Base::attribute;
     using Base::null_handle;
+    using Base::null_dart_handle;
     using Base::point_of_vertex_attribute;
     using Base::other_extremity;
     using Base::darts;
-    
+
     using Base::are_attributes_automatically_managed;
     using Base::mark;
     using Base::is_marked;
@@ -134,7 +129,7 @@ namespace CGAL {
     using Base::opposite;
     using Base::is_next_exist;
     using Base::is_previous_exist;
-    
+
     using Base::make_segment;
     using Base::make_triangle;
     using Base::make_quadrangle;
@@ -156,26 +151,51 @@ namespace CGAL {
     Linear_cell_complex_base(const Self& alcc) : Base(alcc)
     {}
 
-    template < class LCC2 >
-    Linear_cell_complex_base(const LCC2& alcc) : Base(alcc)
+    Linear_cell_complex_base(Self&& alcc) : Base(alcc)
     {}
 
-    template < class LCC2, typename Converters >
-    Linear_cell_complex_base(const LCC2& alcc, Converters& converters) :
+    template <unsigned int d2,  unsigned int ambient_dim2, class Traits2,
+              class Items2, class Alloc2,
+              template<unsigned int,class,class,class,class> class CMap2,
+              class Refs2, class Storage2>
+    Linear_cell_complex_base
+    (const Linear_cell_complex_base<d2, ambient_dim2,
+     Traits2, Items2, Alloc2, CMap2, Refs2, Storage2>& alcc) : Base(alcc)
+    {}
+
+    template <unsigned int d2,  unsigned int ambient_dim2, class Traits2,
+              class Items2, class Alloc2,
+              template<unsigned int,class,class,class,class> class CMap2,
+              class Refs2,
+              class Storage2, typename Converters>
+    Linear_cell_complex_base
+    (const Linear_cell_complex_base<d2, ambient_dim2, Traits2, Items2,
+     Alloc2, CMap2, Refs2, Storage2>& alcc, Converters& converters) :
       Base(alcc, converters)
     {}
 
-    template < class LCC2, typename Converters, typename DartInfoConverter >
-    Linear_cell_complex_base(const LCC2& alcc, Converters& converters,
-                             const DartInfoConverter& dartinfoconverter) :
+    template <unsigned int d2,  unsigned int ambient_dim2, class Traits2,
+              class Items2, class Alloc2,
+              template<unsigned int,class,class,class,class> class CMap2,
+              class Refs2, class Storage2, typename Converters,
+              typename DartInfoConverter>
+    Linear_cell_complex_base
+    (const Linear_cell_complex_base<d2, ambient_dim2, Traits2, Items2,
+     Alloc2, CMap2, Refs2, Storage2>& alcc, Converters& converters,
+     const DartInfoConverter& dartinfoconverter) :
       Base(alcc, converters, dartinfoconverter)
     {}
 
-    template < class LCC2, typename Converters, typename DartInfoConverter,
-               typename Pointconverter >
-    Linear_cell_complex_base(const LCC2& alcc, Converters& converters,
-                             const DartInfoConverter& dartinfoconverter,
-                             const Pointconverter& pointconverter) :
+    template <unsigned int d2,  unsigned int ambient_dim2, class Traits2,
+              class Items2, class Alloc2,
+              template<unsigned int,class,class,class,class> class CMap2,
+              class Refs2, class Storage2, typename Converters,
+              typename DartInfoConverter, typename Pointconverter>
+    Linear_cell_complex_base
+    (const Linear_cell_complex_base<d2, ambient_dim2, Traits2, Items2,
+     Alloc2, CMap2, Refs2, Storage2>& alcc, Converters& converters,
+     const DartInfoConverter& dartinfoconverter,
+     const Pointconverter& pointconverter) :
       Base(alcc, converters, dartinfoconverter, pointconverter)
     {}
 
@@ -196,69 +216,9 @@ namespace CGAL {
     /** Create a vertex attribute.
      * @return an handle on the new attribute.
      */
-#ifndef CGAL_CFG_NO_CPP0X_VARIADIC_TEMPLATES
     template<typename ...Args>
     Vertex_attribute_handle create_vertex_attribute(const Args&... args)
     { return Base::template create_attribute<0>(args...); }
-#else
-    Vertex_attribute_handle create_vertex_attribute()
-    { return Base::template create_attribute<0>(); }
-
-    template<typename T1>
-    Vertex_attribute_handle create_vertex_attribute(const T1& t1)
-    { return Base::template create_attribute<0>(t1); }
-
-    template<typename T1, typename T2>
-    Vertex_attribute_handle create_vertex_attribute
-    (const T1& t1, const T2 &t2)
-    { return Base::template create_attribute<0>(t1, t2); }
-
-    template<typename T1, typename T2, typename T3>
-    Vertex_attribute_handle create_vertex_attribute
-    (const T1& t1, const T2 &t2, const T3 &t3)
-    { return Base::template create_attribute<0>(t1, t2, t3); }
-
-    template<typename T1, typename T2, typename T3, typename T4>
-    Vertex_attribute_handle create_vertex_attribute
-    (const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4)
-    { return Base::template create_attribute<0>(t1, t2, t3, t4); }
-
-    template<typename T1, typename T2, typename T3, typename T4, typename T5>
-    Vertex_attribute_handle create_vertex_attribute
-    (const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4,
-     const T5 &t5)
-    { return Base::template create_attribute<0>(t1, t2, t3, t4, t5); }
-
-    template<typename T1, typename T2, typename T3, typename T4, typename T5,
-             typename T6>
-    Vertex_attribute_handle create_vertex_attribute
-    (const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4,
-     const T5 &t5, const T6 &t6)
-    { return Base::template create_attribute<0>(t1, t2, t3, t4, t5, t6); }
-
-    template<typename T1, typename T2, typename T3, typename T4, typename T5,
-             typename T6, typename T7>
-    Vertex_attribute_handle create_vertex_attribute
-    (const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4,
-     const T5 &t5, const T6 &t6, const T7 &t7)
-    { return Base::template create_attribute<0>(t1, t2, t3, t4, t5, t6, t7); }
-
-    template<typename T1, typename T2, typename T3, typename T4, typename T5,
-             typename T6, typename T7, typename T8>
-    Vertex_attribute_handle create_vertex_attribute
-    (const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4,
-     const T5 &t5, const T6 &t6, const T7 &t7, const T8 &t8)
-    { return Base::template create_attribute<0>(t1, t2, t3, t4, t5, t6, t7,
-                                                t8); }
-
-    template<typename T1, typename T2, typename T3, typename T4, typename T5,
-             typename T6, typename T7, typename T8, typename T9>
-    Vertex_attribute_handle create_vertex_attribute
-    (const T1& t1, const T2 &t2, const T3 &t3, const T4 &t4,
-     const T5 &t5, const T6 &t6, const T7 &t7, const T8 &t8, const T9 &t9)
-    { return Base::template create_attribute<0>(t1, t2, t3, t4, t5, t6, t7,
-                                                t8, t9); }
-#endif // CGAL_CFG_NO_CPP0X_VARIADIC_TEMPLATES
 
     /**
      * Create a new dart associated with an handle through an attribute.
@@ -494,12 +454,16 @@ namespace CGAL {
     }
 
     /// Sew3 the marked facets having same geometry
-    /// (a facet is considered marked if one of its dart is marked).
+    /// (a facet is considered marked if ALL its darts are marked).
+    /// Only marked faces are proceed, but they can be 3-sewn with non
+    /// marked faces.
     unsigned int sew3_same_facets(size_type AMark)
     {
       unsigned int res = 0;
 
-      std::map<Point, std::vector<Dart_handle> > one_dart_per_facet;
+      // We store one dart per face, the face being accessed through its
+      // minimal and maximal points.
+      std::map<Point, std::map<Point, std::vector<Dart_handle>>> one_dart_per_facet;
       size_type mymark = get_new_mark();
 
       // First we fill the std::map by one dart per facet, and by using
@@ -507,59 +471,69 @@ namespace CGAL {
       for (typename Dart_range::iterator it(darts().begin()),
              itend(darts().end()); it!=itend; ++it )
       {
-        if ( !is_marked(it, mymark) && is_marked(it, AMark) )
+        if (!is_marked(it, mymark) && !this->template is_opposite_exist<3>(it))
         {
           Point min_point=point(it);
-          Dart_handle min_dart = it;
-          mark(it, mymark);
-          typename Base::template
-            Dart_of_cell_range<2>::iterator it2(*this,it);
+          Point max_point=min_point;
+          Dart_handle min_dart=it;
+          auto it2=this->template darts_of_cell_basic<2>(it, mymark).begin();
+          this->mark(it2, mymark);
           ++it2;
           for ( ; it2.cont(); ++it2 )
           {
-            Point cur_point=point(it2);
             this->mark(it2, mymark);
-            if ( cur_point < min_point )
+            Point& cur_point=point(it2);
+            if (cur_point<min_point)
             {
               min_point = cur_point;
               min_dart = it2;
             }
+            if (cur_point>max_point)
+            { max_point=cur_point; }
           }
-          one_dart_per_facet[min_point].push_back(min_dart);
+          one_dart_per_facet[min_point][max_point].push_back(min_dart);
         }
         else
-          this->mark(it, mymark);
+        { this->mark(it, mymark); }
       }
 
       // Second we run through the map: candidates for sew3 have necessary the
-      // same minimal point.
-      typename std::map<Point, std::vector<Dart_handle> >::iterator
-        itmap=one_dart_per_facet.begin(),
-        itmapend=one_dart_per_facet.end();
-
-      for (; itmap!=itmapend; ++itmap)
+      // same minimal and maximal points.
+      for (auto itmap=one_dart_per_facet.begin(),
+           itmapend=one_dart_per_facet.end(); itmap!=itmapend; ++itmap)
       {
-        for (typename std::vector<Dart_handle>::iterator
-               it1=(itmap->second).begin(),
-               it1end=(itmap->second).end(); it1!=it1end; ++it1)
+        for (auto itmap2=(itmap->second).begin(),
+             itmap2end=(itmap->second).end(); itmap2!=itmap2end; ++itmap2)
         {
-          typename std::vector<Dart_handle>::iterator it2=it1;
-          for (++it2; it2!=it1end; ++it2)
+          for (typename std::vector<Dart_handle>::iterator
+               it1=(itmap2->second).begin(),
+               it1end=(itmap2->second).end(); it1!=it1end; ++it1)
           {
-            if (*it1!=*it2 &&
-                !this->template is_opposite_exist<3>(*it1) &&
-                !this->template is_opposite_exist<3>(*it2) &&
-                are_facets_opposite_and_same_geometry
-                (*it1, this->previous(*it2)))
+            // We only proceed 3-free marked faces for it1
+            if (!this->template is_opposite_exist<3>(*it1) &&
+                is_marked(*it1, AMark))
             {
-              ++res;
-              this->template sew<3>(*it1,
-                                    this->other_orientation(previous(*it2)));
+              typename std::vector<Dart_handle>::iterator it2=it1;
+              {
+                for (++it2; it2!=it1end; )
+                {
+                  CGAL_assertion(*it1!=*it2);
+                  if (!this->template is_opposite_exist<3>(*it2) &&
+                      are_facets_opposite_and_same_geometry
+                      (*it1, this->previous(*it2)))
+                  {
+                    ++res;
+                    this->template sew<3>(*it1,
+                        this->other_orientation(previous(*it2)));
+                    it2=it1end; // to leave the "for loop" since it1 is no more 3-free
+                  }
+                  else { ++it2; }
+                }
+              }
             }
           }
         }
       }
-
       CGAL_assertion( this->is_whole_map_marked(mymark) );
       this->free_mark(mymark);
       return res;
@@ -807,7 +781,7 @@ namespace CGAL {
     }
 
     /** Insert a dangling edge in a given facet.
-     * @param dh a dart of the facet (!=NULL).
+     * @param dh a dart of the facet (!=nullptr).
      * @param p the coordinates of the new vertex.
      * @param update_attributes a boolean to update the enabled attributes
      * @return a dart of the new edge, incident to the new vertex.
@@ -832,8 +806,8 @@ namespace CGAL {
 
     /** Compute the dual of a Linear_cell_complex.
      * @param alcc the lcc in which we build the dual of this lcc.
-     * @param adart a dart of the initial lcc, NULL by default.
-     * @return adart of the dual lcc, the dual of adart if adart!=NULL,
+     * @param adart a dart of the initial lcc, nullptr by default.
+     * @return adart of the dual lcc, the dual of adart if adart!=nullptr,
      *         any dart otherwise.
      * As soon as we don't modify this lcc and alcc lcc, we can iterate
      * simultaneously through all the darts of the two lcc and we have

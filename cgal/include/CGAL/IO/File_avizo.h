@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/IO/File_avizo.h $
-// $Id: File_avizo.h ba3a59e %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/IO/File_avizo.h $
+// $Id: File_avizo.h 70058db 2021-05-03T15:30:52+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent Rineau
@@ -33,9 +24,14 @@
 
 namespace CGAL {
 
-namespace Mesh_3 {
+namespace IO {
 
-
+/**
+ * @brief outputs mesh to avizo format
+ * @param os the stream
+ * @param c3t3 the mesh
+ * \see \ref IOStreamAvizo
+ */
 template <class C3T3>
 void
 output_to_avizo(std::ostream& os,
@@ -146,23 +142,11 @@ output_to_avizo(std::ostream& os,
 
 } // end output_to_avizo(...)
 
-} // end namespace Mesh_3
+} // end namespace IO
 
-
-
-
-/**
- * @brief outputs mesh to avizo format
- * @param os the stream
- * @param c3t3 the mesh
- */
-template <class C3T3>
-void
-output_to_avizo(std::ostream& os,
-                 const C3T3& c3t3)
-{
-  Mesh_3::output_to_avizo(os,c3t3);
-}
+#ifndef CGAL_NO_DEPRECATED_CODE
+using IO::output_to_avizo;
+#endif
 
 } // end namespace CGAL
 

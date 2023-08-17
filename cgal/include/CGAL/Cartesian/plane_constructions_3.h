@@ -1,25 +1,16 @@
-// Copyright (c) 2000  
+// Copyright (c) 2000
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Cartesian_kernel/include/CGAL/Cartesian/plane_constructions_3.h $
+// $Id: plane_constructions_3.h a7fc2c9 2022-03-22T08:01:30+01:00 Andreas Fabri
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Cartesian_kernel/include/CGAL/Cartesian/plane_constructions_3.h $
-// $Id: plane_constructions_3.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Herve Bronnimann, Sylvain Pion
 
@@ -40,7 +31,7 @@ CGAL_KERNEL_LARGE_INLINE
 PlaneC3<R>
 plane_from_points(const typename R::Point_3 &p,
                   const typename R::Point_3 &q,
-		  const typename R::Point_3 &r)
+                  const typename R::Point_3 &r)
 {
   typename R::FT a, b, c, d;
   plane_from_pointsC3(p.x(), p.y(), p.z(),
@@ -60,6 +51,15 @@ plane_from_point_direction(const typename R::Point_3 &p,
   plane_from_point_directionC3(p.x(), p.y(), p.z(), d.dx(), d.dy(), d.dz(),
                                A, B, C, D);
   return PlaneC3<R>(A, B, C, D);
+}
+
+  template <class R>
+CGAL_KERNEL_LARGE_INLINE
+PlaneC3<R>
+plane_from_point_direction(Origin,
+                           const typename R::Direction_3 &d)
+{
+  return PlaneC3<R>(d.dx(), d.dy(), d.dz(), 0);
 }
 
 } //namespace CGAL

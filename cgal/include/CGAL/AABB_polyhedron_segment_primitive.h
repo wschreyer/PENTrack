@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/AABB_tree/include/CGAL/AABB_polyhedron_segment_primitive.h $
-// $Id: AABB_polyhedron_segment_primitive.h 3dd0aa1 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/AABB_tree/include/CGAL/AABB_polyhedron_segment_primitive.h $
+// $Id: AABB_polyhedron_segment_primitive.h 98e4718 2021-08-26T11:33:39+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Pierre Alliez, Stephane Tayeb
@@ -33,7 +24,7 @@
 
 #define CGAL_DEPRECATED_HEADER "<CGAL/AABB_polyhedron_segment_primitive.h>"
 #define CGAL_REPLACEMENT_HEADER "<CGAL/AABB_halfedge_graph_segment_primitive.h>"
-#include <CGAL/internal/deprecation_warning.h>
+#include <CGAL/Installation/internal/deprecation_warning.h>
 
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_same.hpp>

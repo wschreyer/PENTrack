@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Optimal_transportation_reconstruction_2/include/CGAL/OTR_2/Reconstruction_edge_2.h $
-// $Id: Reconstruction_edge_2.h 7843436 %aI Simon Giraudot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Optimal_transportation_reconstruction_2/include/CGAL/OTR_2/Reconstruction_edge_2.h $
+// $Id: Reconstruction_edge_2.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Fernando de Goes, Pierre Alliez, Ivo Vigan, Clément Jamin
 
@@ -39,14 +30,14 @@ protected:
   FT m_total_weight;
 
 public:
-  Reconstruction_edge_2() 
+  Reconstruction_edge_2()
   : m_edge(Face_handle(), 0),
     m_before_cost(0),
     m_after_cost(0),
     m_total_weight(0)
   {}
 
-  Reconstruction_edge_2(const Reconstruction_edge_2& pedge) 
+  Reconstruction_edge_2(const Reconstruction_edge_2& pedge)
   : m_edge(pedge.edge()),
     m_source(pedge.source()),
     m_target(pedge.target()),
@@ -70,7 +61,7 @@ public:
     m_after_cost(priority),
     m_total_weight (0)
   {
-    get_vertices(); 
+    get_vertices();
   }
 
   Reconstruction_edge_2(Vertex_handle source, Vertex_handle target)
@@ -100,7 +91,7 @@ public:
       && m_target->id() == pedge.target()->id());
   }
 
-  bool operator< (const Reconstruction_edge_2& pedge) const 
+  bool operator< (const Reconstruction_edge_2& pedge) const
   {
     if (m_source->id() < pedge.source()->id())
       return true;

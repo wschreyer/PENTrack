@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Arrangement_on_surface_2/include/CGAL/Arrangement_2/Arr_with_history_accessor.h $
+// $Id: Arr_with_history_accessor.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/Arrangement_2/Arr_with_history_accessor.h $
-// $Id: Arr_with_history_accessor.h 1e1025e %aI Laurent Rineau
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Ron Wein          <wein@post.tau.ac.il>
 
@@ -129,16 +120,12 @@ public:
   {
     // Allocate an extended curve (with an initially empty set of edges)
     // and store it in the curves' list.
-    typename Arrangement_with_history_2::Curve_halfedges  *p_cv = 
+    typename Arrangement_with_history_2::Curve_halfedges  *p_cv =
                                            p_arr->m_curves_alloc.allocate (1);
-#ifdef CGAL_CXX11
     typedef decltype(p_arr->m_curves_alloc) M_Curves_alloc;
     std::allocator_traits<M_Curves_alloc>::construct(p_arr->m_curves_alloc, p_cv, cv);
-#else
-    p_arr->m_curves_alloc.construct (p_cv, cv);
-#endif
     p_arr->m_curves.push_back (*p_cv);
-    
+
     // Return a handle to the inserted curve (the last in the list).
     Curve_handle       ch = p_arr->m_curves.end();
     return (--ch);
@@ -155,11 +142,14 @@ public:
     typename Arrangement_with_history_2::Curve_halfedges&  cv = *ch;
     cv._insert (he);
 
-    // Add the curve to the set of he's inducing curves. 
+    // Add the curve to the set of he's inducing curves.
     he->curve().data().insert (&cv);
-  
+
     return;
-  }  
+  }
+
+  //@}
+
 };
 
 } //namespace CGAL

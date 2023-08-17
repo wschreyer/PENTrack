@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Boolean_set_operations_2/include/CGAL/General_polygon_2.h $
+// $Id: General_polygon_2.h 420f37a 2021-09-23T16:28:23+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Boolean_set_operations_2/include/CGAL/General_polygon_2.h $
-// $Id: General_polygon_2.h fb262e4 %aI Andreas Fabri
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Baruch Zukerman <baruchzu@post.tau.ac.il>
 
@@ -29,7 +20,9 @@
 #include <list>
 #include <CGAL/Boolean_set_operations_2/Gps_traits_adaptor.h>
 #include <CGAL/Bbox_2.h>
+#include <CGAL/Object.h>
 
+#include <boost/iterator/function_output_iterator.hpp>
 
 namespace CGAL {
 
@@ -40,6 +33,7 @@ public:
 
   typedef Arr_traits                                 Traits_2;
   typedef typename Traits_2::Point_2                 Point_2;
+  typedef typename Traits_2::Curve_2                 Curve_2;
   typedef typename Traits_2::X_monotone_curve_2      X_monotone_curve_2;
   typedef std::list<X_monotone_curve_2>              Containter;
   typedef typename Containter::iterator              Curve_iterator;
@@ -49,12 +43,15 @@ protected:
   std::list<X_monotone_curve_2>    m_xcurves;
 
 public:
+  /*! Default constructor.
+   */
+  General_polygon_2() {}
 
-  General_polygon_2(){}
-
-  template <class CurveIterator>
-  General_polygon_2(CurveIterator begin,
-                    CurveIterator end) : m_xcurves (begin, end)
+  /*! Construct from a range of \f$X\f$-monotone curve.
+   */
+  template <typename CurveIterator>
+  General_polygon_2(CurveIterator begin, CurveIterator end) :
+    m_xcurves(begin, end)
   {}
 
   template <class CurveIterator>
@@ -120,7 +117,7 @@ public:
     Gps_traits_adaptor<Traits_2>  tr;
     return (tr.orientation_2_object()(m_xcurves.begin(), m_xcurves.end()));
   }
-  
+
   void reverse_orientation()
   {
     m_xcurves.reverse();
@@ -158,7 +155,7 @@ public:
     {
       result = result + first->bbox();
     }
-      
+
     return result;
   }
 };
@@ -174,7 +171,7 @@ std::istream &operator>>(std::istream &is, General_polygon_2<Traits>& p)
   int n; // number of edges
   is >> n;
   typename Traits::X_monotone_curve_2 cv;
- 
+
   if (is) {
       p.clear();
       for (int i=0; i<n; i++) {
@@ -182,7 +179,7 @@ std::istream &operator>>(std::istream &is, General_polygon_2<Traits>& p)
         p.push_back(cv);
       }
   }
- 
+
   return is;
 }
 
@@ -196,7 +193,7 @@ std::ostream
 {
   typename General_polygon_2<Traits>::Curve_const_iterator i;
 
-  switch(get_mode(os)) {
+  switch(IO::get_mode(os)) {
     case IO::ASCII :
       os << p.size() << ' ';
       for (i = p.curves_begin(); i != p.curves_end(); ++i) {

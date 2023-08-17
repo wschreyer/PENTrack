@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Periodic_2_triangulation_2/include/CGAL/Periodic_2_triangulation_2.h $
-// $Id: Periodic_2_triangulation_2.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Periodic_2_triangulation_2/include/CGAL/Periodic_2_triangulation_2.h $
+// $Id: Periodic_2_triangulation_2.h cdbf0d7 2022-03-09T11:34:12+00:00 Andreas Fabri
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Nico Kruithof <Nico@nghk.nl>
 
@@ -51,6 +42,7 @@
 #include <boost/random/variate_generator.hpp>
 
 #include <CGAL/utility.h>
+#include <array>
 
 namespace CGAL
 {
@@ -81,7 +73,7 @@ public:
   /// The iso rectangle type
   typedef typename Gt::Iso_rectangle_2 Iso_rectangle;
   /// Integer tuple to store the number of sheets in each direction of space.
-  typedef array<int, 2> Covering_sheets;
+  typedef std::array<int, 2> Covering_sheets;
 
   /// The point type
   typedef typename Gt::Point_2 Point;
@@ -95,9 +87,9 @@ public:
   /// Represents a point-offset pair. The point in the pair lies in the original domain.
   typedef std::pair<Point, Offset> Periodic_point;
   /// A pair of periodic points representing a segment in the periodic domain.
-  typedef array<std::pair<Point, Offset>, 2> Periodic_segment;
+  typedef std::array<std::pair<Point, Offset>, 2> Periodic_segment;
   /// A triple of periodic points representing a triangle in the periodic domain.
-  typedef array<std::pair<Point, Offset>, 3> Periodic_triangle;
+  typedef std::array<std::pair<Point, Offset>, 3> Periodic_triangle;
 
   /// The vertex type
   typedef typename Tds::Vertex Vertex;
@@ -300,12 +292,12 @@ public:
   {
     return _gt;
   }
-  /// Returns the datastructure storing the triangulation.
+  /// Returns the data structure storing the triangulation.
   const Triangulation_data_structure & tds() const
   {
     return _tds;
   }
-  /// Returns the datastructure storing the triangulation.
+  /// Returns the data structure storing the triangulation.
   Triangulation_data_structure & tds()
   {
     return _tds;
@@ -365,17 +357,17 @@ public:
     else
       return _tds.number_of_faces() / 9;
   }
-  /// Returns the number of vertices stored in the datastructure.
+  /// Returns the number of vertices stored in the data structure.
   size_type number_of_stored_vertices() const
   {
     return _tds.number_of_vertices();
   }
-  /// Returns the number of edges stored in the datastructure.
+  /// Returns the number of edges stored in the data structure.
   size_type number_of_stored_edges() const
   {
     return _tds.number_of_edges();
   }
-  /// Returns the number of faces stored in the datastructure.
+  /// Returns the number of faces stored in the data structure.
   size_type number_of_stored_faces() const
   {
     return _tds.number_of_faces();
@@ -673,7 +665,7 @@ public:
   /// begin iterator over the non-virtual vertices
   Unique_vertex_iterator unique_vertices_begin() const
   {
-    return CGAL::filter_iterator(vertices_end(), 
+    return CGAL::filter_iterator(vertices_end(),
                                  Periodic_2_triangulation_2_internal::Domain_tester<Self>(this),
                                  vertices_begin());
   }
@@ -1820,7 +1812,7 @@ bool Periodic_2_triangulation_2<Gt, Tds>::is_valid_too_long_edges(bool verbose, 
             {
               if (too_long)
                 {
-                  if (verbose) std::cout << "1. Too long edge not in the datastructure" << std::endl;
+                  if (verbose) std::cout << "1. Too long edge not in the data structure" << std::endl;
                   result = false;
                 }
               result &= !too_long;
@@ -1834,7 +1826,7 @@ bool Periodic_2_triangulation_2<Gt, Tds>::is_valid_too_long_edges(bool verbose, 
                   too_long_edges++;
                   if (it2 == it->second.end())
                     {
-                      if (verbose) std::cout << "2. Too long edge not in the datastructure" << std::endl;
+                      if (verbose) std::cout << "2. Too long edge not in the data structure" << std::endl;
                       result = false;
                     }
                   CGAL_triangulation_assertion(result);
@@ -1843,7 +1835,7 @@ bool Periodic_2_triangulation_2<Gt, Tds>::is_valid_too_long_edges(bool verbose, 
                 {
                   if (it2 != it->second.end())
                     {
-                      if (verbose) std::cout << "Edge is not too long, but contained in the datastructure" << std::endl;
+                      if (verbose) std::cout << "Edge is not too long, but contained in the data structure" << std::endl;
                       result = false;
                     }
                   CGAL_triangulation_assertion(result);
@@ -1968,10 +1960,10 @@ void Periodic_2_triangulation_2<Gt, Tds>::flip(Face_handle f, int i)
             vh2_copy = v2s[i2 - 1];
 
           bool found = is_edge(vh1_copy, vh2_copy, fh, index);
-	  CGAL_USE(found);
+          CGAL_USE(found);
           CGAL_assertion(found);
-	  if (found)
-	    flip_single_edge(fh, index);
+          if (found)
+            flip_single_edge(fh, index);
         }
     }
 
@@ -3281,11 +3273,11 @@ void Periodic_2_triangulation_2<Gt, Tds>::convert_to_9_sheeted_covering()
     }
 
   // Store neighboring offsets in a separate data structure
-  std::list<array<Offset, 3> > off_nb;
+  std::list<std::array<Offset, 3> > off_nb;
   for (typename std::list<Face_handle>::iterator fit = original_faces.begin(); fit
        != original_faces.end(); ++fit)
     {
-      array<Offset, 3> off_nb_f;
+      std::array<Offset, 3> off_nb_f;
       for (int i = 0; i < 3; i++)
         {
           Face_handle fff = *fit;
@@ -3354,7 +3346,7 @@ void Periodic_2_triangulation_2<Gt, Tds>::convert_to_9_sheeted_covering()
     }
 
   // Set neighboring relations of face copies
-  typename std::list<array<Offset, 3> >::iterator oit = off_nb.begin();
+  typename std::list<std::array<Offset, 3> >::iterator oit = off_nb.begin();
   for (typename std::list<Face_handle>::iterator fit = original_faces.begin(); fit
        != original_faces.end(); ++fit, ++oit)
     {
@@ -4153,7 +4145,7 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
   size_type n = number_of_vertices();
 
 
-  if (is_ascii(os))
+  if (IO::is_ascii(os))
     os << domain() << std::endl
        << cover[0] << " " << cover[1] << std::endl
        << n*cover[0]*cover[1] << std::endl;
@@ -4172,7 +4164,7 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
     return os;
 
   // write the vertices
-  Unique_hash_map<Vertex_handle, std::size_t > V;
+  Unique_hash_map<Vertex_handle, std::size_t > V(0, number_of_vertices());
   std::size_t i = 0;
   if (is_1_cover())
     {
@@ -4180,7 +4172,7 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
         {
           V[it] = i++;
           os << it->point();
-          if (is_ascii(os))
+          if (IO::is_ascii(os))
             os << std::endl;
         }
     }
@@ -4193,7 +4185,7 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
           vit = _virtual_vertices.find(it);
           if (vit != _virtual_vertices.end()) continue;
           V[it] = i++;
-          if (is_ascii(os))
+          if (IO::is_ascii(os))
             os << it->point() << std::endl
                << Offset(0, 0) << std::endl;
           else
@@ -4207,7 +4199,7 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
               vvit = _virtual_vertices.find(vv[j]);
               CGAL_triangulation_assertion(vvit != _virtual_vertices.end());
               V[vv[j]] = i++;
-              if (is_ascii(os))
+              if (IO::is_ascii(os))
                 os << vv[j]->point() << std::endl
                    << vvit->second.second << std::endl;
               else os << vv[j]->point() << vvit->second.second;
@@ -4216,12 +4208,12 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
     }
   CGAL_triangulation_postcondition(i == _cover[0]*_cover[1]*n);
 
-  Unique_hash_map<Face_handle, std::size_t> F;
+  Unique_hash_map<Face_handle, std::size_t> F(0,  _tds.number_of_faces());
   int inum = 0;
   // asks the tds for the combinatorial information
   // vertices of the faces
   size_type m = _tds.number_of_faces();
-  if (is_ascii(os)) os << std::endl << m << std::endl;
+  if (IO::is_ascii(os)) os << std::endl << m << std::endl;
   else write(os, m);
   std::cout << "save, #Faces: " << m << std::endl;
 
@@ -4231,13 +4223,13 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
       F[ib] = inum++;
       for(int j = 0; j < 3 ; ++j)
         {
-          if(is_ascii(os)) os << V[ib->vertex(j)] << " ";
+          if(IO::is_ascii(os)) os << V[ib->vertex(j)] << " ";
           else write(os, V[ib->vertex(j)]);
         }
       os << *ib ;
-      if(is_ascii(os)) os << "\n";
+      if(IO::is_ascii(os)) os << "\n";
     }
-  if(is_ascii(os)) os << "\n";
+  if(IO::is_ascii(os)) os << "\n";
 
   std::cout << "save, face check: " << inum << " == " << m << std::endl;
   CGAL_assertion(m == (size_type)inum);
@@ -4249,10 +4241,10 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
       for(int j = 0; j < 3; ++j)
         {
           CGAL_assertion(F.is_defined(it->neighbor(j)));
-          if(is_ascii(os))  os << F[it->neighbor(j)] << " ";
+          if(IO::is_ascii(os))  os << F[it->neighbor(j)] << " ";
           else write(os, F[it->neighbor(j)]);
         }
-      if(is_ascii(os)) os << "\n";
+      if(IO::is_ascii(os)) os << "\n";
     }
 
   // write offsets
@@ -4263,7 +4255,7 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
       Face_handle ch(it);
       for (int j = 0; j < 3; j++)
         {
-          if(is_ascii(os))
+          if(IO::is_ascii(os))
             {
               os << ch->offset(j);
               if ( j == 3 )
@@ -4284,7 +4276,7 @@ Periodic_2_triangulation_2<Gt, Tds>::save(std::ostream& os) const
       for(Face_iterator it = faces_begin(); it != faces_end(); ++it)
         {
           os << *it; // other information
-          if(is_ascii(os))
+          if(IO::is_ascii(os))
             os << std::endl;
         }
     }
@@ -4315,7 +4307,7 @@ Periodic_2_triangulation_2<Gt, Tds>::load(std::istream& is)
   int cx = 0, cy = 0;
   size_type n = 0;
 
-  if (is_ascii(is))
+  if (IO::is_ascii(is))
   {
     is >> domain;
     is >> cx >> cy >> n;
@@ -4380,7 +4372,7 @@ Periodic_2_triangulation_2<Gt, Tds>::load(std::istream& is)
   // Creation of the faces
   std::size_t index;
   size_type m;
-  if (is_ascii(is)) is >> m;
+  if (IO::is_ascii(is)) is >> m;
   else read(is, m);
   std::vector<Face_handle> F(m);
   std::cout << "load, #Faces: " << m << std::endl;
@@ -4390,7 +4382,7 @@ Periodic_2_triangulation_2<Gt, Tds>::load(std::istream& is)
         F[i] = _tds.create_face() ;
         for(int j = 0; j < 3 ; ++j)
           {
-            if (is_ascii(is)) is >> index;
+            if (IO::is_ascii(is)) is >> index;
             else read(is, index);
             CGAL_assertion(index < V.size());
             F[i]->set_vertex(j, V[index]);
@@ -4409,7 +4401,7 @@ Periodic_2_triangulation_2<Gt, Tds>::load(std::istream& is)
       {
         for(int j = 0; j < 3; ++j)
           {
-            if (is_ascii(is)) is >> index;
+            if (IO::is_ascii(is)) is >> index;
             else read(is, index);
             if (index >= F.size()) {
               std::cout << __FILE__ << ", " << __FUNCTION__ << ", l:" << __LINE__ << "  f="
@@ -4427,7 +4419,7 @@ Periodic_2_triangulation_2<Gt, Tds>::load(std::istream& is)
   int off[3] = {0, 0, 0};
   for (std::size_t j = 0 ; j < m; j++)
     {
-      if (is_ascii(is))
+      if (IO::is_ascii(is))
         is >> off[0] >> off[1] >> off[2];
       else
         {

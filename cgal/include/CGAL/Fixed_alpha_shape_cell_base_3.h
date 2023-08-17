@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Alpha_shapes_3/include/CGAL/Fixed_alpha_shape_cell_base_3.h $
+// $Id: Fixed_alpha_shape_cell_base_3.h 98e4718 2021-08-26T11:33:39+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Alpha_shapes_3/include/CGAL/Fixed_alpha_shape_cell_base_3.h $
-// $Id: Fixed_alpha_shape_cell_base_3.h a0427ec %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Sebastien Loriot
 //
@@ -29,7 +20,7 @@
 #include <vector>
 #include <CGAL/Compact_container.h>
 #include <CGAL/Delaunay_triangulation_cell_base_3.h>
-#include <CGAL/internal/Classification_type.h>
+#include <CGAL/Alpha_shapes_3/internal/Classification_type.h>
 
 namespace CGAL {
 
@@ -55,14 +46,14 @@ private:
   Classification_type status_;
 
 public:
-  
-  Fixed_alpha_shape_cell_base_3() 
+
+  Fixed_alpha_shape_cell_base_3()
     : Cb() {}
-  
+
   Fixed_alpha_shape_cell_base_3(Vertex_handle v0, Vertex_handle v1,
                           Vertex_handle v2, Vertex_handle v3)
     : Cb(v0, v1, v2, v3) {}
-  
+
   Fixed_alpha_shape_cell_base_3(Vertex_handle v0, Vertex_handle v1,
                           Vertex_handle v2, Vertex_handle v3,
                           Cell_handle n0, Cell_handle n1,
@@ -73,7 +64,7 @@ public:
   Classification_type get_facet_classification_type(int i) const {return facet_status[i];}
   void set_facet_classification_type(int i, Classification_type status) { facet_status[i]=status;  }
   Classification_type get_classification_type() { return status_;}
-  void set_classification_type(Classification_type status) {status_=status;}   
+  void set_classification_type(Classification_type status) {status_=status;}
 };
 
 } //namespace CGAL

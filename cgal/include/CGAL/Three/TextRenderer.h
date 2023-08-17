@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Three/include/CGAL/Three/TextRenderer.h $
-// $Id: TextRenderer.h 1184530 %aI Maxime Gimeno
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Three/include/CGAL/Three/TextRenderer.h $
+// $Id: TextRenderer.h 3b70343 2020-11-16T16:19:43+01:00 Maxime Gimeno
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent RINEAU, Maxime Gimeno
@@ -148,12 +139,12 @@ public:
     {
     }
     //!Draws all the `TextItem`s
-    void draw(CGAL::Three::Viewer_interface* viewer);
+    void draw(CGAL::Three::Viewer_interface* viewer, const QVector3D &scaler);
     //!\brief Adds a single TextItem to TextRenderer::local_textItems
     //!
     //! @see addText(float p_x, float p_y, float p_z, QString p_text, bool p_3D = true,  QFont font = QFont(), QColor p_color = Qt::black)
     void addText(TextItem*);
-    //!\brief Creates a new TextItem in TextRenderer::local_textItems
+    //!\brief creates a new TextItem in TextRenderer::local_textItems
     //!
     //!This is a version of addText(TextItem*) that creates the TextItem on the fly.
     //! @see addText(TextItem*)

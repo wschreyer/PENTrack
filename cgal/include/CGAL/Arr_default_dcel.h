@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Arrangement_on_surface_2/include/CGAL/Arr_default_dcel.h $
+// $Id: Arr_default_dcel.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/Arr_default_dcel.h $
-// $Id: Arr_default_dcel.h 18acb2e %aI Andreas Fabri
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Ron Wein        <wein@post.tau.ac.il>
 //                 Baruch Zukerman <baruchzu@post.tau.ac.il>
@@ -37,14 +28,14 @@ namespace CGAL {
 
 /*! \class
  * The default arrangement DCEL class.
- * The Traits parameters corresponds to a geometric traits class, which 
+ * The Traits parameters corresponds to a geometric traits class, which
  * defines the Point_2 and X_monotone_curve_2 types.
  */
 template <class Traits_>
 class Arr_default_dcel :
   public Arr_dcel_base<Arr_vertex_base<typename Traits_::Point_2>,
-		       Arr_halfedge_base<typename Traits_::X_monotone_curve_2>,
-		       Arr_face_base>
+                       Arr_halfedge_base<typename Traits_::X_monotone_curve_2>,
+                       Arr_face_base>
 {
 public:
 
@@ -70,4 +61,4 @@ public:
 
 #include <CGAL/enable_warnings.h>
 
-#endif 
+#endif

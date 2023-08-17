@@ -1,20 +1,11 @@
 // Copyright (c) 2013  INRIA Bordeaux Sud-Ouest (France), All rights reserved.
 // Copyright (c) 2013 GeometryFactory
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_deformation/include/CGAL/Deformation_Eigen_closest_rotation_traits_3.h $
-// $Id: Deformation_Eigen_closest_rotation_traits_3.h a2e8a1c %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Surface_mesh_deformation/include/CGAL/Deformation_Eigen_closest_rotation_traits_3.h $
+// $Id: Deformation_Eigen_closest_rotation_traits_3.h a98b548 2022-05-12T16:03:53+02:00 Sven Oesau
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Gael Guennebaud and Ilker O. Yaz
 
@@ -89,8 +80,13 @@ public:
   /// Computes the closest rotation to `m` and places it into `R`
   void compute_close_rotation(const Matrix& m, Matrix& R)
   {
+#if EIGEN_VERSION_AT_LEAST(3,4,90)
+    Eigen::JacobiSVD<Eigen::Matrix3d, Eigen::ComputeFullU | Eigen::ComputeFullV> solver;
+    solver.compute(m);
+#else
     Eigen::JacobiSVD<Eigen::Matrix3d> solver;
-    solver.compute( m, Eigen::ComputeFullU | Eigen::ComputeFullV );
+    solver.compute(m, Eigen::ComputeFullU | Eigen::ComputeFullV);
+#endif
 
     const Matrix& u = solver.matrixU(); const Matrix& v = solver.matrixV();
     R = v * u.transpose();

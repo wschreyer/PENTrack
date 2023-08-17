@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Bounding_volumes/include/CGAL/Min_sphere_d/Min_sphere_d_impl.h $
+// $Id: Min_sphere_d_impl.h 78ff918 2021-06-23T23:34:14+02:00 Mael Rouxel-Labbé
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Bounding_volumes/include/CGAL/Min_sphere_d/Min_sphere_d_impl.h $
-// $Id: Min_sphere_d_impl.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Sven Schoenherr <sven@inf.fu-berlin.de>
 //                 Bernd Gaertner
@@ -34,7 +25,7 @@ operator << ( std::ostream& os, const Min_sphere_d<Traits>& min_sphere)
 {
     typedef typename Min_sphere_d<Traits>::Point  Point;
 
-    switch ( get_mode( os)) {
+    switch ( IO::get_mode( os)) {
 
       case IO::PRETTY:
         os << std::endl;
@@ -72,7 +63,7 @@ operator << ( std::ostream& os, const Min_sphere_d<Traits>& min_sphere)
 
       default:
         CGAL_optimisation_assertion_msg
-            ( false, "get_mode( os) invalid!");
+            ( false, "IO::get_mode( os) invalid!");
         break; }
 
     return( os);
@@ -82,11 +73,11 @@ template < class Traits >
 std::istream&
 operator >> ( std::istream& is, Min_sphere_d<Traits>& min_sphere)
 {
-    switch ( get_mode( is)) {
+    switch ( IO::get_mode( is)) {
 
       case IO::PRETTY:
         std::cerr << std::endl;
-        std::cerr << "Stream must be in ascii or binary mode" << std::endl;
+        std::cerr << "Stream must be in ASCII or binary mode" << std::endl;
         break;
 
       case IO::ASCII:

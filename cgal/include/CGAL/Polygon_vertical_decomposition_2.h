@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Minkowski_sum_2/include/CGAL/Polygon_vertical_decomposition_2.h $
-// $Id: Polygon_vertical_decomposition_2.h 8cdfad0 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Minkowski_sum_2/include/CGAL/Polygon_vertical_decomposition_2.h $
+// $Id: Polygon_vertical_decomposition_2.h 414103f 2022-02-21T17:17:34+02:00 Efi Fogel
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s) : Efi Fogel   <efifogel@gmail.com>
 
@@ -109,11 +100,33 @@ private:
   Equal_2     f_equal;
 
 public:
+  // The pointer to the traits and the flag that indicate ownership should be
+  // replaced with a smart pointer. Meanwhile, the copy constructor and
+  // copy assignment prevent double delition. Notice that once a copy
+  // constructor (assignment) is present, the move constructor (assignment)
+  // is implicitly not generated anyway.
+
   /*! Default constructor. */
   Polygon_vertical_decomposition_2() :
-    m_traits(NULL),
+    m_traits(nullptr),
     m_own_traits(false)
   { init(); }
+
+  /*! Copy constructor. */
+  Polygon_vertical_decomposition_2
+  (const Polygon_vertical_decomposition_2& other) :
+    m_traits((other.m_own_traits) ? new Traits_2 : other.m_traits),
+    m_own_traits(other.m_own_traits)
+  { init(); }
+
+  /*! Copy assignment. */
+  Polygon_vertical_decomposition_2&
+  operator=(const Polygon_vertical_decomposition_2& other) {
+    m_traits = (other.m_own_traits) ? new Traits_2 : other.m_traits;
+    m_own_traits = other.m_own_traits;
+    init();
+    return *this;
+  }
 
   /*! Constructor */
   Polygon_vertical_decomposition_2(const Traits_2& traits) :
@@ -125,7 +138,7 @@ public:
   void init()
   {
     // Allocate the traits if not provided.
-    if (m_traits == NULL) {
+    if (m_traits == nullptr) {
       m_traits = new Traits_2;
       m_own_traits = true;
     }
@@ -143,7 +156,7 @@ public:
     if (m_own_traits) {
       if (m_traits) {
         delete m_traits;
-        m_traits = NULL;
+        m_traits = nullptr;
       }
       m_own_traits = false;
     }

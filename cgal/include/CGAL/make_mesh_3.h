@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/make_mesh_3.h $
-// $Id: make_mesh_3.h 89b4c98 %aI Laurent Rineau
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/make_mesh_3.h $
+// $Id: make_mesh_3.h 3e03d50 2021-05-05T15:32:22+02:00 Maxime Gimeno
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Stéphane Tayeb
@@ -40,6 +31,8 @@
 
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/parameter/preprocessor.hpp>
+
+#include <atomic>
 
 namespace CGAL {
 
@@ -201,7 +194,7 @@ void init_c3t3_with_features(C3T3& c3t3,
                              std::size_t maximal_number_of_vertices = 0,
                              Mesh_error_code* pointer_to_error_code = 0
 #ifndef CGAL_NO_ATOMIC
-                             , CGAL::cpp11::atomic<bool>* pointer_to_stop = 0
+                             , std::atomic<bool>* pointer_to_stop = 0
 #endif
                              )
 {
@@ -378,8 +371,6 @@ struct C3t3_initializer < C3T3, MD, MC, true, CGAL::Tag_false >
 
 // Manual redirections
 // boost::parameter can't handle make_mesh_3 return_type alone...
-#ifndef CGAL_CFG_NO_CPP0X_VARIADIC_TEMPLATES
-
 template <typename C3T3, typename MD, typename MC, typename ... T>
 C3T3 make_mesh_3(const MD& md, const MC& mc, const T& ...t)
 {
@@ -387,66 +378,6 @@ C3T3 make_mesh_3(const MD& md, const MC& mc, const T& ...t)
   make_mesh_3_bp(c3t3,md,mc,t...);
   return c3t3;
 }
-
-#else
-
-template <typename C3T3, typename MD, typename MC>
-C3T3 make_mesh_3(const MD& md, const MC& mc)
-{
-  C3T3 c3t3;
-  make_mesh_3_bp(c3t3,md,mc);
-  return c3t3;
-}
-
-template <typename C3T3, typename MD, typename MC,
-  typename Arg1>
-C3T3 make_mesh_3(const MD& md, const MC& mc, const Arg1& a1)
-{
-  C3T3 c3t3;
-  make_mesh_3_bp(c3t3,md,mc,a1);
-  return c3t3;
-}
-
-template <typename C3T3, typename MD, typename MC,
-  typename Arg1, typename Arg2>
-C3T3 make_mesh_3(const MD& md, const MC& mc, const Arg1& a1, const Arg2& a2)
-{
-  C3T3 c3t3;
-  make_mesh_3_bp(c3t3,md,mc,a1,a2);
-  return c3t3;
-}
-
-template <typename C3T3, typename MD, typename MC,
-  typename Arg1, typename Arg2, typename Arg3>
-C3T3 make_mesh_3(const MD& md, const MC& mc, const Arg1& a1, const Arg2& a2,
-                 const Arg3& a3)
-{
-  C3T3 c3t3;
-  make_mesh_3_bp(c3t3,md,mc,a1,a2,a3);
-  return c3t3;
-}
-
-template <typename C3T3, typename MD, typename MC,
-  typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-C3T3 make_mesh_3(const MD& md, const MC& mc, const Arg1& a1, const Arg2& a2,
-                 const Arg3& a3, const Arg4& a4)
-{
-  C3T3 c3t3;
-  make_mesh_3_bp(c3t3,md,mc,a1,a2,a3,a4);
-  return c3t3;
-}
-
-template <typename C3T3, typename MD, typename MC,
-  typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-C3T3 make_mesh_3(const MD& md, const MC& mc, const Arg1& a1, const Arg2& a2,
-                 const Arg3& a3, const Arg4& a4, const Arg5& a5)
-{
-  C3T3 c3t3;
-  make_mesh_3_bp(c3t3,md,mc,a1,a2,a3,a4,a5);
-  return c3t3;
-}
-
-#endif
 
 #if defined(BOOST_MSVC)
 #  pragma warning(push)

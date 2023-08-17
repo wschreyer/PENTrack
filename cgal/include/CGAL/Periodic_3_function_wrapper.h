@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Periodic_3_mesh_3/include/CGAL/Periodic_3_function_wrapper.h $
-// $Id: Periodic_3_function_wrapper.h d685751 %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Periodic_3_mesh_3/include/CGAL/Periodic_3_function_wrapper.h $
+// $Id: Periodic_3_function_wrapper.h 98e4718 2021-08-26T11:33:39+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Mael Rouxel-Labbé
 //
@@ -23,7 +14,7 @@
 
 #include <CGAL/license/Periodic_3_mesh_3.h>
 
-#include <CGAL/internal/canonicalize_helper.h>
+#include <CGAL/Periodic_3_triangulation_3/internal/canonicalize_helper.h>
 #include <CGAL/Periodic_3_mesh_triangulation_3.h>
 
 #include <boost/type_traits/is_function.hpp>

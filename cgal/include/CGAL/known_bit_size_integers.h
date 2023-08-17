@@ -1,24 +1,15 @@
-// Copyright (c) 1999-2005  
+// Copyright (c) 1999-2005
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Number_types/include/CGAL/known_bit_size_integers.h $
-// $Id: known_bit_size_integers.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Number_types/include/CGAL/known_bit_size_integers.h $
+// $Id: known_bit_size_integers.h 98e4718 2021-08-26T11:33:39+02:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Lutz Kettner, Sylvain Pion
@@ -34,7 +25,7 @@
 
 #define CGAL_DEPRECATED_HEADER "<CGAL/known_bit_size_integers.h>"
 #define CGAL_REPLACEMENT_HEADER "<boost/cstdint.hpp>"
-#include <CGAL/internal/deprecation_warning.h>
+#include <CGAL/Installation/internal/deprecation_warning.h>
 
 #include <CGAL/number_type_basic.h>
 #include <boost/cstdint.hpp>

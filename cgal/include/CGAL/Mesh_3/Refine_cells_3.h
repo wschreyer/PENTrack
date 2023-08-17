@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/Refine_cells_3.h $
-// $Id: Refine_cells_3.h 62a8391 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/Mesh_3/Refine_cells_3.h $
+// $Id: Refine_cells_3.h 59a0da4 2021-05-19T17:23:53+02:00 Laurent Rineau
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Laurent Rineau, Stéphane Tayeb
 
@@ -35,7 +26,6 @@
   #include <tbb/blocked_range.h>
   #include <tbb/parallel_for.h>
 #endif
-#include <CGAL/atomic.h>
 
 #include <CGAL/Meshes/Filtered_deque_container.h>
 #include <CGAL/Meshes/Filtered_multimap_container.h>
@@ -50,7 +40,7 @@
 #include <boost/mpl/if.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <sstream>
-
+#include <atomic>
 
 namespace CGAL {
 
@@ -328,7 +318,7 @@ public:
                  C3T3& c3t3,
                  std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-                , CGAL::cpp11::atomic<bool>* stop_ptr
+                , std::atomic<bool>* stop_ptr
 #endif
                 );
   // For parallel
@@ -341,7 +331,7 @@ public:
                  WorksharingDataStructureType *worksharing_ds,
                  std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-                , CGAL::cpp11::atomic<bool>* stop_ptr
+                , std::atomic<bool>* stop_ptr
 #endif
                 );
 
@@ -381,7 +371,7 @@ public:
   {
 #ifndef CGAL_NO_ATOMIC
     if(m_stop_ptr != 0 &&
-       m_stop_ptr->load(CGAL::cpp11::memory_order_acquire) == true)
+       m_stop_ptr->load(std::memory_order_acquire) == true)
     {
       return true;
     }
@@ -443,6 +433,7 @@ public:
    && !defined(CGAL_MESH_3_USE_LAZY_UNSORTED_REFINEMENT_QUEUE)
     this->remove_element(c);
   #endif
+    CGAL_USE(c);
   }
   // Parallel: it's always lazy, so do nothing
   void remove_element_from_refinement_queue(Cell_handle, Parallel_tag) {}
@@ -478,7 +469,7 @@ public:
   std::string debug_info_element_impl(const Cell_handle &ch) const
   {
     std::stringstream sstr;
-    sstr << "Cell { " << std::endl
+    sstr << "Cell " << (void*)(ch.operator->()) << " { " << std::endl
     << "  " << *ch->vertex(0) << std::endl
     << "  " << *ch->vertex(1) << std::endl
     << "  " << *ch->vertex(2) << std::endl
@@ -487,7 +478,7 @@ public:
 
     return sstr.str();
   }
-  
+
   /// Adds \c cell to the refinement queue if needed
   void treat_new_cell(const Cell_handle& cell);
 
@@ -529,7 +520,7 @@ private:
     }
   };
 #endif // CGAL_LINKED_WITH_TBB
-  
+
   // -----------------------------------
   // -----------------------------------
   // -----------------------------------
@@ -581,7 +572,7 @@ private:
 
 #ifndef CGAL_NO_ATOMIC
   /// Pointer to the atomic Boolean that can stop the process
-  CGAL::cpp11::atomic<bool>* const m_stop_ptr;
+  std::atomic<bool>* const m_stop_ptr;
 #endif
 private:
   // Disabled copy constructor
@@ -603,7 +594,7 @@ Refine_cells_3(Tr& triangulation,
                C3T3& c3t3,
                std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-               , CGAL::cpp11::atomic<bool>* stop_ptr
+               , std::atomic<bool>* stop_ptr
 #endif
                )
   : Mesher_level<Tr, Self, Cell_handle, P_,
@@ -636,7 +627,7 @@ Refine_cells_3(Tr& triangulation,
                WorksharingDataStructureType *worksharing_ds,
                std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-               , CGAL::cpp11::atomic<bool>* stop_ptr
+               , std::atomic<bool>* stop_ptr
 #endif
                )
   : Mesher_level<Tr, Self, Cell_handle, P_,
@@ -677,7 +668,7 @@ scan_triangulation_impl()
     std::cerr << "Scanning triangulation for bad cells (in parallel)";
 # endif
     add_to_TLS_lists(true);
-    
+
     typedef typename Tr::All_cells_iterator All_cells_iterator;
 
     // WITH PARALLEL_FOR
@@ -803,7 +794,7 @@ conflicts_zone_impl(const Weighted_point& point
 
   facet_is_in_its_cz = true; // Always true
 
-  CGAL_HISTOGRAM_PROFILER("Mesh_3::Refine_cells::conflict zone", 
+  CGAL_HISTOGRAM_PROFILER("Mesh_3::Refine_cells::conflict zone",
                           static_cast<unsigned int>(zone.cells.size()));
   return zone;
 }

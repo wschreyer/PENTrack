@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Heat_method_3/include/CGAL/Heat_method_3/internal/Intrinsic_Delaunay_triangulation_3.h $
-// $Id: Intrinsic_Delaunay_triangulation_3.h 5841a8b %aI Andreas Fabri
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Heat_method_3/include/CGAL/Heat_method_3/internal/Intrinsic_Delaunay_triangulation_3.h $
+// $Id: Intrinsic_Delaunay_triangulation_3.h 58d759b 2022-02-04T09:44:36+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s) : Christina Vaz, Keenan Crane, Andreas Fabri
@@ -33,24 +24,25 @@
 #include <CGAL/Dynamic_property_map.h>
 #include <CGAL/squared_distance_3.h>
 #include <CGAL/number_utils.h>
+#include <CGAL/Iterator_range.h>
+#include <CGAL/Iterator_range.h>
 #include <CGAL/boost/graph/helpers.h>
 #include <CGAL/boost/graph/copy_face_graph.h>
 #include <CGAL/Heat_method_3/internal/V2V.h>
 
-#include <boost/foreach.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/unordered_map.hpp>
 
+#include <boost/iterator/transform_iterator.hpp>
+
+#include <unordered_map>
 #include <set>
 #include <stack>
 #include <cmath>
+#include <list>
 
 #ifndef DOXYGEN_RUNNING
 
 namespace CGAL {
 namespace Heat_method_3 {
-
-
 
 // forward declaration
 template <typename IDT>
@@ -59,6 +51,35 @@ struct IDT_vertex_point_property_map;
 // forward declaration
 template <typename IDT, typename PM>
 struct IDT_vertex_distance_property_map;
+
+// forward declaration
+namespace internal {
+template<typename TriangleMesh, typename Traits>
+bool has_degenerate_faces(const TriangleMesh& tm, const Traits& traits)
+{
+  typedef typename Traits::Point_3  Point;
+  typedef typename Traits::Vector_3 Vector_3;
+  typename Traits::Construct_vector_3
+    construct_vector = traits.construct_vector_3_object();
+  typename Traits::Compute_scalar_product_3
+    scalar_product = traits.compute_scalar_product_3_object();
+  typename Traits::Construct_cross_product_vector_3
+    cross_product = traits.construct_cross_product_vector_3_object();
+
+  typename boost::property_map< TriangleMesh, boost::vertex_point_t>::const_type
+    vpm = get(boost::vertex_point, tm);
+  for (typename boost::graph_traits<TriangleMesh>::face_descriptor f : faces(tm))
+  {
+    const Point p1 = get(vpm, target(halfedge(f, tm), tm));
+    const Point p2 = get(vpm, target(next(halfedge(f, tm), tm), tm));
+    const Point p3 = get(vpm, target(next(next(halfedge(f, tm), tm), tm), tm));
+    Vector_3 v = cross_product(construct_vector(p1, p2), construct_vector(p1, p3));
+    if(scalar_product(v, v) == 0.)
+      return true;
+  }
+  return false;
+}
+}
 
 template <class TriangleMesh>
 struct Intrinsic_Delaunay_triangulation_3_vertex_descriptor {
@@ -292,6 +313,29 @@ private:
     return CGAL::sqrt(S*(S-a)*(S-b)*(S-c));
   }
 
+  // Mollification strategy to avoid degeneracies
+  void
+  mollify(const double delta)
+  {
+    // compute smallest length epsilon we can add to
+    // all edges to ensure that the strict triangle
+    // inequality holds with a tolerance of delta
+    double epsilon = 0;
+    for(halfedge_descriptor hd : halfedges(m_intrinsic_tm)) {
+      halfedge_descriptor hd2 = next(hd, m_intrinsic_tm);
+      halfedge_descriptor hd3 = next(hd2,m_intrinsic_tm);
+      Index i = get(edge_id_map, edge(hd,m_intrinsic_tm));
+      Index j = get(edge_id_map, edge(hd2,m_intrinsic_tm));
+      Index k = get(edge_id_map, edge(hd3,m_intrinsic_tm));
+      double ineq = edge_lengths[j] + edge_lengths[k] - edge_lengths[i];
+      epsilon = (std::max)(epsilon, (std::max)(0., delta-ineq));
+    }
+    // update edge lengths
+    for(edge_descriptor ed : edges(m_intrinsic_tm)) {
+        Index i = get(edge_id_map, ed);
+        edge_lengths[i] += epsilon;
+    }
+  }
 
   void
   loop_over_edges(edge_stack stack, std::vector<int>& marked_edges)
@@ -342,7 +386,6 @@ private:
         //then go back to top of the stack
       }
     }
-    std::cout<< a << " edges were flipped: " << std::endl;
   }
 
 
@@ -373,17 +416,23 @@ private:
     Index edge_i = 0;
     VertexPointMap vpm_intrinsic_tm = get(boost::vertex_point,m_intrinsic_tm);
 
-    BOOST_FOREACH(edge_descriptor ed, edges(m_intrinsic_tm)) {
+    double min_length = (std::numeric_limits<double>::max)();
+    for(edge_descriptor ed : edges(m_intrinsic_tm)) {
       edge_lengths[edge_i] = CGAL::sqrt(to_double(squared_distance(get(vpm_intrinsic_tm, source(ed,m_intrinsic_tm)),
                                                                    get(vpm_intrinsic_tm, target(ed,m_intrinsic_tm)))));
         //  Polygon_mesh_processing::edge_length(halfedge(ed,m_intrinsic_tm),m_intrinsic_tm);
+      if (edge_lengths[edge_i] != 0 && edge_lengths[edge_i] < min_length) min_length = edge_lengths[edge_i];
       put(edge_id_map, ed, edge_i++);
       stack.push(ed);
     }
+
+    if(CGAL::Heat_method_3::internal::has_degenerate_faces(m_intrinsic_tm, Traits()))
+      mollify(min_length*1e-4);
+
     loop_over_edges(stack, mark_edges);
     //now that edges are calculated, go through and for each face, calculate the vertex positions around it
 
-    BOOST_FOREACH(face_descriptor f, faces(m_intrinsic_tm)) {
+    for(face_descriptor f : faces(m_intrinsic_tm)) {
       CGAL::Vertex_around_face_iterator<TriangleMesh> vbegin, vend, vmiddle;
 
       boost::tie(vbegin, vend) = vertices_around_face(halfedge(f,m_intrinsic_tm),m_intrinsic_tm);
@@ -437,7 +486,7 @@ private:
   std::vector<int> mark_edges;
 public:
 
-  boost::unordered_map<vertex_descriptor,vertex_descriptor> v2v, vtov;
+  std::unordered_map<vertex_descriptor,vertex_descriptor> v2v, vtov;
 };
 
 } // namespace Heat_method_3
@@ -538,8 +587,7 @@ num_faces(const Intrinsic_Delaunay_triangulation_3<TM,T>& idt)
 
 template <typename TM,
           typename T>
-typename std::pair<typename boost::graph_traits<Intrinsic_Delaunay_triangulation_3<TM,T> >::vertex_iterator,
-                   typename boost::graph_traits<Intrinsic_Delaunay_triangulation_3<TM,T> >::vertex_iterator>
+Iterator_range<typename boost::graph_traits<Intrinsic_Delaunay_triangulation_3<TM,T> >::vertex_iterator>
 vertices(const Intrinsic_Delaunay_triangulation_3<TM,T>& idt)
  {
    std::pair<typename boost::graph_traits<TM>::vertex_iterator,
@@ -547,38 +595,35 @@ vertices(const Intrinsic_Delaunay_triangulation_3<TM,T>& idt)
 
   typedef typename Intrinsic_Delaunay_triangulation_3<TM,T>::Vertex_iterator_functor Fct;
   Fct fct(idt.triangle_mesh());
-  return std::make_pair(boost::make_transform_iterator(p.first, fct),
-                        boost::make_transform_iterator(p.second,fct));
+  return make_range(boost::make_transform_iterator(p.first, fct),
+                    boost::make_transform_iterator(p.second,fct));
  }
 
 
 template <typename TM,
           typename T>
-typename std::pair<typename boost::graph_traits<TM>::halfedge_iterator,
-                   typename boost::graph_traits<TM>::halfedge_iterator>
+Iterator_range<typename boost::graph_traits<TM>::halfedge_iterator>
 halfedges(const Intrinsic_Delaunay_triangulation_3<TM,T>& idt)
- {
-   return halfedges(idt.triangle_mesh());
- }
+{
+  return make_range( halfedges(idt.triangle_mesh()) );
+}
 
 
 template <typename TM,
           typename T>
-typename std::pair<typename boost::graph_traits<TM>::edge_iterator,
-                   typename boost::graph_traits<TM>::edge_iterator>
+Iterator_range<typename boost::graph_traits<TM>::edge_iterator>
 edges(const Intrinsic_Delaunay_triangulation_3<TM,T>& idt)
- {
-   return edges(idt.triangle_mesh());
- }
+{
+  return make_range( edges(idt.triangle_mesh()) );
+}
 
 
 template <typename TM,
           typename T>
-typename std::pair<typename boost::graph_traits<TM>::face_iterator,
-                   typename boost::graph_traits<TM>::face_iterator>
+Iterator_range<typename boost::graph_traits<TM>::face_iterator>
 faces(const Intrinsic_Delaunay_triangulation_3<TM,T>& idt)
  {
-   return faces(idt.triangle_mesh());
+   return make_range( faces(idt.triangle_mesh()) );
  }
 
 template <typename TM,
@@ -590,6 +635,15 @@ vertex(typename boost::graph_traits<Intrinsic_Delaunay_triangulation_3<TM,T> >::
   return typename boost::graph_traits<Intrinsic_Delaunay_triangulation_3<TM,T> >::vertex_descriptor(hd);
 }
 
+
+template <typename TM,
+          typename T>
+typename boost::graph_traits<Intrinsic_Delaunay_triangulation_3<TM,T> >::halfedge_descriptor
+halfedge(typename boost::graph_traits<Intrinsic_Delaunay_triangulation_3<TM,T> >::vertex_descriptor vd,
+         const Intrinsic_Delaunay_triangulation_3<TM,T>& /* idt */)
+{
+  return vd.hd;
+}
 
 template <typename TM,
           typename T>

@@ -1,24 +1,15 @@
-// Copyright (c) 1999,2001,2007  
+// Copyright (c) 1999,2001,2007
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Number_types/include/CGAL/long_long.h $
-// $Id: long_long.h 26c857a %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Number_types/include/CGAL/long_long.h $
+// $Id: long_long.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Stefan Schirra, Michael Hemmer
@@ -112,7 +103,7 @@ template <> class Real_embeddable_traits< boost::int128_type >
       : public CGAL::cpp98::unary_function< Type, std::pair< double, double > > {
       public:
         std::pair<double, double> operator()( const Type& x ) const {
-	  return (Interval_nt<>((double)x)+Interval_nt<>::smallest()).pair();
+          return (Interval_nt<>((double)x)+Interval_nt<>::smallest()).pair();
         }
     };
 };
@@ -126,7 +117,7 @@ template <> class Real_embeddable_traits< boost::uint128_type >
       : public CGAL::cpp98::unary_function< Type, std::pair< double, double > > {
       public:
         std::pair<double, double> operator()( const Type& x ) const {
-	  return (Interval_nt<>((double)x)+Interval_nt<>::smallest()).pair();
+          return (Interval_nt<>((double)x)+Interval_nt<>::smallest()).pair();
         }
     };
 };

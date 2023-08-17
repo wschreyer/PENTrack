@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Hyperbolic_triangulation_2/include/CGAL/Hyperbolic_Delaunay_triangulation_traits_2.h $
-// $Id: Hyperbolic_Delaunay_triangulation_traits_2.h 9792b24 %aI Iordan Iordanov
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Hyperbolic_triangulation_2/include/CGAL/Hyperbolic_Delaunay_triangulation_traits_2.h $
+// $Id: Hyperbolic_Delaunay_triangulation_traits_2.h 98e4718 2021-08-26T11:33:39+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Iordan Iordanov
 //                 Monique Teillaud
@@ -30,7 +21,7 @@
 #include <CGAL/Bbox_2.h>
 #include <CGAL/determinant.h>
 #include <CGAL/distance_predicates_2.h>
-#include <CGAL/internal/Exact_complex.h>
+#include <CGAL/Hyperbolic_triangulation_2/internal/Exact_complex.h>
 #include <CGAL/Origin.h>
 #include <CGAL/predicates_on_points_2.h>
 #include <CGAL/triangulation_assertions.h>
@@ -41,7 +32,7 @@
 
 #include <utility>
 
-#include <CGAL/internal/Hyperbolic_Delaunay_triangulation_traits_2_functions.h>
+#include <CGAL/Hyperbolic_triangulation_2/internal/Hyperbolic_Delaunay_triangulation_traits_2_functions.h>
 
 namespace CGAL {
 
@@ -463,7 +454,6 @@ private:
 
 } // end namespace internal
 
-//template<typename Kernel = CGAL::Cartesian<CORE::Expr> >
 
 template<typename Kernel = Exact_predicates_exact_constructions_kernel_with_sqrt>
 class Hyperbolic_Delaunay_triangulation_traits_2

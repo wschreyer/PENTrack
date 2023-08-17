@@ -2,31 +2,20 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Polyhedron/include/CGAL/IO/Polyhedron_VRML_1_ostream.h $
+// $Id: Polyhedron_VRML_1_ostream.h 580a1ef 2020-05-22T15:31:50+02:00 Mael Rouxel-Labbé
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polyhedron_IO/include/CGAL/IO/Polyhedron_VRML_1_ostream.h $
-// $Id: Polyhedron_VRML_1_ostream.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Lutz Kettner  <kettner@mpi-sb.mpg.de>
 
 #ifndef CGAL_IO_POLYHEDRON_VRML_1_OSTREAM_H
-#define CGAL_IO_POLYHEDRON_VRML_1_OSTREAM_H 1
+#define CGAL_IO_POLYHEDRON_VRML_1_OSTREAM_H
 
 #include <CGAL/license/Polyhedron.h>
 
-
-#include <CGAL/IO/VRML_1_ostream.h>
+// VRML_1 derives from inventor_ostream and will use that one
 #include <CGAL/IO/Polyhedron_inventor_ostream.h>
 
-#endif // CGAL_IO_POLYHEDRON_VRML_1_OSTREAM_H //
-// EOF //
+#endif // CGAL_IO_POLYHEDRON_VRML_1_OSTREAM_H

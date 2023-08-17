@@ -5,20 +5,11 @@
 // Max-Planck-Institute Saarbruecken (Germany),
 // and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Kernel_23/include/CGAL/Point_2.h $
-// $Id: Point_2.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Kernel_23/include/CGAL/Point_2.h $
+// $Id: Point_2.h 2884569 2022-04-27T16:32:06+02:00 Laurent Rineau
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Andreas Fabri, Stefan Schirra
@@ -33,7 +24,6 @@
 #include <CGAL/Kernel/Return_base_tag.h>
 #include <CGAL/representation_tags.h>
 #include <CGAL/Dimension.h>
-#include <CGAL/result_of.h>
 
 namespace CGAL {
 
@@ -57,12 +47,12 @@ public:
   typedef RPoint_2 Rep;
   typedef typename R_::Cartesian_const_iterator_2 Cartesian_const_iterator;
 
-  const Rep& rep() const
+  const Rep& rep() const noexcept
   {
     return *this;
   }
 
-  Rep& rep()
+  Rep& rep() noexcept
   {
     return *this;
   }
@@ -79,6 +69,10 @@ public:
     : RPoint_2(p)
   {}
 
+  Point_2(RPoint_2&& p)
+    : RPoint_2(std::move(p))
+  {}
+
   explicit
   Point_2(const Weighted_point_2& wp)
     : Rep(wp.point())
@@ -93,26 +87,35 @@ public:
     : RPoint_2(typename R::Construct_point_2()(Return_base_tag(), hx, hy, hw))
   {}
 
-  typename cpp11::result_of<typename R::Compute_x_2(Point_2)>::type
+  friend void swap(Self& a, Self& b)
+#if !defined(__INTEL_COMPILER) && defined(__cpp_lib_is_swappable)
+    noexcept(std::is_nothrow_swappable_v<Rep>)
+#endif
+  {
+    using std::swap;
+    swap(a.rep(), b.rep());
+  }
+
+  decltype(auto)
   x() const
   {
     return typename R::Compute_x_2()(*this);
   }
 
-  typename cpp11::result_of<typename R::Compute_y_2(Point_2)>::type
+  decltype(auto)
   y() const
   {
     return typename R::Compute_y_2()(*this);
   }
 
-  typename cpp11::result_of<typename R::Compute_x_2(Point_2)>::type
+  decltype(auto)
   cartesian(int i) const
   {
     CGAL_kernel_precondition( (i == 0) || (i == 1) );
     return (i==0) ?  x() : y();
   }
 
-  typename cpp11::result_of<typename R::Compute_x_2(Point_2)>::type
+  decltype(auto)
   operator[](int i) const
   {
       return cartesian(i);
@@ -129,19 +132,19 @@ public:
   }
 
 
-  typename cpp11::result_of<typename R::Compute_hx_2(Point_2)>::type
+  decltype(auto)
   hx() const
   {
     return typename R::Compute_hx_2()(*this);
   }
 
-  typename cpp11::result_of<typename R::Compute_hy_2(Point_2)>::type
+  decltype(auto)
   hy() const
   {
     return typename R::Compute_hy_2()(*this);
   }
 
-  typename cpp11::result_of<typename R::Compute_hw_2(Point_2)>::type
+  decltype(auto)
   hw() const
   {
     return typename R::Compute_hw_2()(*this);
@@ -152,7 +155,7 @@ public:
       return 2;
   }
 
-  typename cpp11::result_of<typename R::Compute_hx_2(Point_2)>::type
+  decltype(auto)
   homogeneous(int i) const
   {
     CGAL_kernel_precondition( (i >= 0) || (i <= 2) );
@@ -191,7 +194,7 @@ template <class R >
 std::ostream&
 insert(std::ostream& os, const Point_2<R>& p,const Cartesian_tag&)
 {
-    switch(get_mode(os)) {
+    switch(IO::get_mode(os)) {
     case IO::ASCII :
         return os << p.x() << ' ' << p.y();
     case IO::BINARY :
@@ -207,7 +210,7 @@ template <class R >
 std::ostream&
 insert(std::ostream& os, const Point_2<R>& p,const Homogeneous_tag&)
 {
-  switch(get_mode(os))
+  switch(IO::get_mode(os))
   {
     case IO::ASCII :
         return os << p.hx() << ' ' << p.hy() << ' ' << p.hw();
@@ -236,9 +239,9 @@ std::istream&
 extract(std::istream& is, Point_2<R>& p, const Cartesian_tag&)
 {
   typename R::FT x(0), y(0);
-    switch(get_mode(is)) {
+    switch(IO::get_mode(is)) {
     case IO::ASCII :
-        is >> iformat(x) >> iformat(y);
+        is >> IO::iformat(x) >> IO::iformat(y);
         break;
     case IO::BINARY :
         read(is, x);
@@ -247,7 +250,7 @@ extract(std::istream& is, Point_2<R>& p, const Cartesian_tag&)
     default:
         is.setstate(std::ios::failbit);
         std::cerr << "" << std::endl;
-        std::cerr << "Stream must be in ascii or binary mode" << std::endl;
+        std::cerr << "Stream must be in ASCII or binary mode" << std::endl;
         break;
     }
     if (is)
@@ -261,7 +264,7 @@ std::istream&
 extract(std::istream& is, Point_2<R>& p, const Homogeneous_tag&)
 {
   typename R::RT hx, hy, hw;
-  switch(get_mode(is))
+  switch(IO::get_mode(is))
   {
     case IO::ASCII :
         is >> hx >> hy >> hw;
@@ -274,7 +277,7 @@ extract(std::istream& is, Point_2<R>& p, const Homogeneous_tag&)
     default:
         is.setstate(std::ios::failbit);
         std::cerr << "" << std::endl;
-        std::cerr << "Stream must be in ascii or binary mode" << std::endl;
+        std::cerr << "Stream must be in ASCII or binary mode" << std::endl;
         break;
   }
   if (is)

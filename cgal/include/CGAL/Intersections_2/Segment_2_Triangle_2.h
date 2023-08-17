@@ -1,25 +1,16 @@
-// Copyright (c) 2000  
+// Copyright (c) 2000
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Intersections_2/include/CGAL/Intersections_2/Segment_2_Triangle_2.h $
+// $Id: Segment_2_Triangle_2.h fb37f69 2021-09-23T13:15:28+02:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_2/include/CGAL/Intersections_2/Segment_2_Triangle_2.h $
-// $Id: Segment_2_Triangle_2.h 43f8490 %aI Andreas Fabri
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Geert-Jan Giezeman
 
@@ -35,7 +26,7 @@
 #include <CGAL/Intersection_traits_2.h>
 
 namespace CGAL {
-  
+
 namespace Intersections {
 
 namespace internal {
@@ -43,10 +34,10 @@ namespace internal {
 template <class K>
 class Segment_2_Triangle_2_pair {
 public:
-    enum Intersection_results {NO_INTERSECTION, POINT, SEGMENT};
+    enum Intersection_results {NO_INTERSECTION, POINT, SEGMENT, UNKNOWN};
     Segment_2_Triangle_2_pair(typename K::Segment_2 const *seg,
                               typename K::Triangle_2 const *trian)
-      : _seg(seg), _trian(trian), _known(false) {}
+      : _seg(seg), _trian(trian) {}
 
     Intersection_results intersection_type() const;
 
@@ -55,8 +46,7 @@ public:
 protected:
     typename K::Segment_2 const *  _seg;
     typename K::Triangle_2 const * _trian;
-    mutable bool                       _known;
-    mutable Intersection_results       _result;
+    mutable Intersection_results       _result = UNKNOWN;
     mutable typename K::Point_2            _intersection_point;
     mutable typename K::Point_2            _other_point;
 };
@@ -80,10 +70,9 @@ template <class K>
 typename Segment_2_Triangle_2_pair<K>::Intersection_results
 Segment_2_Triangle_2_pair<K>::intersection_type() const
 {
-    if (_known)
+    if (_result!=UNKNOWN)
         return _result;
 // The non const this pointer is used to cast away const.
-    _known = true;
     Straight_2_<K> straight(*_seg);
     typedef typename K::Line_2 Line_2;
 
@@ -133,7 +122,7 @@ typename K::Point_2
 Segment_2_Triangle_2_pair<K>::
 intersection_point() const
 {
-    if (!_known)
+    if (_result==UNKNOWN)
         intersection_type();
     CGAL_kernel_assertion(_result == POINT);
     return _intersection_point;
@@ -144,8 +133,8 @@ typename K::Segment_2
 Segment_2_Triangle_2_pair<K>::
 intersection_segment() const
 {
-  typedef typename K::Segment_2 Segment_2; 
-    if (!_known)
+  typedef typename K::Segment_2 Segment_2;
+    if (_result==UNKNOWN)
         intersection_type();
     CGAL_kernel_assertion(_result == SEGMENT);
     return Segment_2(_intersection_point, _other_point);
@@ -157,9 +146,9 @@ intersection_segment() const
 template <class K>
 typename CGAL::Intersection_traits
 <K, typename K::Segment_2, typename K::Triangle_2>::result_type
-intersection(const typename K::Segment_2 &seg, 
-	     const typename K::Triangle_2&tr,
-	     const K&)
+intersection(const typename K::Segment_2 &seg,
+             const typename K::Triangle_2&tr,
+             const K&)
 {
     typedef Segment_2_Triangle_2_pair<K> is_t;
     is_t ispair(&seg, &tr);
@@ -179,8 +168,8 @@ template <class K>
 typename CGAL::Intersection_traits
 <K, typename K::Segment_2, typename K::Triangle_2>::result_type
 intersection(const typename K::Triangle_2&tr,
-	     const typename K::Segment_2 &seg, 
-	     const K& k)
+             const typename K::Segment_2 &seg,
+             const K& k)
 {
   return internal::intersection(seg, tr, k);
 }

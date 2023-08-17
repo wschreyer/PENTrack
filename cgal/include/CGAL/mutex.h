@@ -1,20 +1,11 @@
 // Copyright (c) 2016 GeometryFactory (France)
 //  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Installation/include/CGAL/mutex.h $
-// $Id: mutex.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Installation/include/CGAL/mutex.h $
+// $Id: mutex.h 6481cb2 2021-08-13T16:44:53+02:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 
 #ifndef CGAL_MUTEX_H
 #define CGAL_MUTEX_H
@@ -22,14 +13,8 @@
 #include <CGAL/config.h>
 
 #ifdef CGAL_HAS_THREADS
-#ifdef CGAL_CAN_USE_CXX11_MUTEX
 #include <mutex>
 #define CGAL_MUTEX std::mutex
 #define CGAL_SCOPED_LOCK(M) std::unique_lock<std::mutex> scoped_lock(M)
-#else
-#include <boost/thread/mutex.hpp>
-#define CGAL_MUTEX boost::mutex
-#define CGAL_SCOPED_LOCK(M) boost::mutex::scoped_lock scoped_lock(M)
-#endif
 #endif
 #endif // CGAL_MUTEX_H

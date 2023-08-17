@@ -3,20 +3,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Surface_mesher/include/CGAL/Surface_mesher/Vertices_on_the_same_psc_element_criterion.h $
+// $Id: Vertices_on_the_same_psc_element_criterion.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesher/include/CGAL/Surface_mesher/Vertices_on_the_same_psc_element_criterion.h $
-// $Id: Vertices_on_the_same_psc_element_criterion.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Laurent RINEAU
 
@@ -33,19 +24,19 @@ namespace CGAL {
 namespace Surface_mesher {
 
 template <typename Tr, typename Surface>
-class Vertices_on_the_same_psc_element_criterion : 
+class Vertices_on_the_same_psc_element_criterion :
     public Refine_criterion <Tr> {
 public:
   typedef Refine_criterion <Tr> Criterion;
   typedef typename Criterion::Quality Quality;
-  
+
 private:
   typedef typename Tr::Facet Facet;
   typedef typename Tr::Vertex_handle Vertex_handle;
   typedef typename Tr::Cell_handle Cell_handle;
 
   const Surface& surface;
-  
+
 public:
   Vertices_on_the_same_psc_element_criterion(const Surface& surface)
     : surface(surface)
@@ -59,7 +50,7 @@ public:
     const Vertex_handle& v2 = ch->vertex((i+2)&3);
     const Vertex_handle& v3 = ch->vertex((i+3)&3);
 
-    const bool is_bad = 
+    const bool is_bad =
       surface.vertices_not_on_same_surface_patch(v1, v2, v3);
 
     q = (is_bad ? Quality(0) : Quality(1));

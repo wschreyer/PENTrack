@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Voronoi_diagram_2/include/CGAL/Voronoi_diagram_2/Delaunay_triangulation_degeneracy_testers.h $
+// $Id: Delaunay_triangulation_degeneracy_testers.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Voronoi_diagram_2/include/CGAL/Voronoi_diagram_2/Delaunay_triangulation_degeneracy_testers.h $
-// $Id: Delaunay_triangulation_degeneracy_testers.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Menelaos Karavelas <mkaravel@iacm.forth.gr>
 
@@ -58,7 +49,7 @@ class Delaunay_triangulation_edge_tester_2
 
  public:
   bool operator()(const Delaunay_graph& dual,
-		  const Face_handle& f, int i) const
+                  const Face_handle& f, int i) const
   {
     if ( dual.dimension() == 1 ) { return false; }
 
@@ -88,17 +79,17 @@ class Delaunay_triangulation_edge_tester_2
   }
 
   bool operator()(const Delaunay_graph& dual,
-		  const All_edges_iterator& eit) const {
+                  const All_edges_iterator& eit) const {
     return operator()(dual, *eit);
   }
 
   bool operator()(const Delaunay_graph& dual,
-		  const Finite_edges_iterator& eit) const {
+                  const Finite_edges_iterator& eit) const {
     return operator()(dual, *eit);
   }
 
   bool operator()(const Delaunay_graph& dual,
-		  const Edge_circulator& ec) const {
+                  const Edge_circulator& ec) const {
     return operator()(dual, *ec);
   }
 };

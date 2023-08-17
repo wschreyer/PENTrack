@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/internal/orbifold_cone_helper.h $
-// $Id: orbifold_cone_helper.h dea2ce0 %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Surface_mesh_parameterization/include/CGAL/Surface_mesh_parameterization/internal/orbifold_cone_helper.h $
+// $Id: orbifold_cone_helper.h 4ffc949 2022-02-03T17:11:20+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Mael Rouxel-Labbé
 
@@ -29,10 +20,9 @@
 
 #include <CGAL/boost/graph/properties.h>
 
-#include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>
-#include <boost/unordered_set.hpp>
 
+#include <unordered_set>
 #include <fstream>
 #include <set>
 #include <sstream>
@@ -103,7 +93,7 @@ bool are_cones_unique(const Cone_container& cones)
   }
 
   typedef typename Cone_container::value_type   Cone;
-  boost::unordered_set<Cone> unique_cones;
+  std::unordered_set<Cone> unique_cones;
 
   unique_cones.insert(cones.begin(), cones.end());
 
@@ -231,15 +221,15 @@ bool check_cone_validity(const SeamMesh& mesh,
   CGAL_precondition(is_border(bhd, mesh));
 
   // count how many times vertices on a seam appear
-  boost::unordered_map<TM_vertex_descriptor, int> seam_vertices_counter;
+  std::unordered_map<TM_vertex_descriptor, int> seam_vertices_counter;
 
-  BOOST_FOREACH(halfedge_descriptor hdaf, halfedges_around_face(bhd, mesh)) {
+  for(halfedge_descriptor hdaf : halfedges_around_face(bhd, mesh)) {
     CGAL_precondition(mesh.has_on_seam(hdaf));
     TM_vertex_descriptor tm_vds = source(hdaf, mesh.mesh());
     TM_vertex_descriptor tm_vdt = target(hdaf, mesh.mesh());
 
     // insert vds
-    std::pair<typename boost::unordered_map<TM_vertex_descriptor, int>::iterator,
+    std::pair<typename std::unordered_map<TM_vertex_descriptor, int>::iterator,
               bool> is_insert_successful =
                       seam_vertices_counter.insert(std::make_pair(tm_vds, 1));
     if(!is_insert_successful.second)
@@ -258,8 +248,8 @@ bool check_cone_validity(const SeamMesh& mesh,
   }
 
   // check for self intersections in the seam
-  typename boost::unordered_map<TM_vertex_descriptor, int>::iterator sit = seam_vertices_counter.begin(),
-                                                                     send = seam_vertices_counter.end();
+  typename std::unordered_map<TM_vertex_descriptor, int>::iterator sit = seam_vertices_counter.begin(),
+                                                                   send = seam_vertices_counter.end();
   for(; sit!=send; ++sit) {
     if(sit->second != 2 && sit->second != 4) {
       std::cerr << sit->second << std::endl;

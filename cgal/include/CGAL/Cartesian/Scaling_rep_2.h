@@ -1,25 +1,16 @@
-// Copyright (c) 2000  
+// Copyright (c) 2000
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Cartesian_kernel/include/CGAL/Cartesian/Scaling_rep_2.h $
+// $Id: Scaling_rep_2.h e73b8de 2021-04-22T21:17:24+01:00 Andreas Fabri
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Cartesian_kernel/include/CGAL/Cartesian/Scaling_rep_2.h $
-// $Id: Scaling_rep_2.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Herve Bronnimann
 
@@ -34,6 +25,7 @@ class Scaling_repC2: public Aff_transformation_rep_baseC2<R>
 friend class Aff_transformation_repC2<R>;
 friend class Translation_repC2<R>;
 friend class Rotation_repC2<R>;
+friend class Reflection_repC2<R>;
 
 public:
   typedef Aff_transformation_rep_baseC2<R> Aff_t_base;
@@ -45,6 +37,7 @@ public:
   typedef Aff_transformation_repC2<R>      Transformation;
   typedef Translation_repC2<R>             Translation;
   typedef Rotation_repC2<R>                Rotation;
+  typedef Reflection_repC2<R>              Reflection;
   typedef Scaling_repC2<R>                 Scaling;
 
   Scaling_repC2()
@@ -96,6 +89,12 @@ public:
                                 scalefactor_ * t.cosinus_);
   }
 
+  Aff_transformation_2 compose(const Reflection &r) const
+  {
+    return Aff_transformation_2(scalefactor_*r.cosinus_, scalefactor_*r.sinus_,-r.cosinus_*r.t.x()-r.sinus_*r.t.y()+r.t.x(),
+                                scalefactor_*r.sinus_, -scalefactor_*r.cosinus_, -r.sinus_*r.t.x()+r.cosinus_*r.t.y()-r.t.y());
+  }
+
   Aff_transformation_2 compose(const Scaling &t) const
   {
     return Aff_transformation_2(SCALING, scalefactor_*t.scalefactor_);
@@ -117,6 +116,11 @@ public:
   }
 
   bool is_even() const
+  {
+    return true;
+  }
+
+  bool is_scaling() const
   {
     return true;
   }

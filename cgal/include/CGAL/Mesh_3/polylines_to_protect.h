@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/polylines_to_protect.h $
-// $Id: polylines_to_protect.h 40c2575 %aI Laurent Rineau
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/Mesh_3/polylines_to_protect.h $
+// $Id: polylines_to_protect.h 74540b0 2022-04-26T15:32:02+02:00 Jane Tournois
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent Rineau
@@ -28,14 +19,16 @@
 #include <vector>
 #include <map>
 #include <utility> // std::swap
+#include <algorithm> // std::min
+
 #include <CGAL/tuple.h>
 #include <CGAL/Image_3.h>
 #include <CGAL/boost/graph/split_graph_into_polylines.h>
-#include <CGAL/internal/Mesh_3/Graph_manipulations.h>
+#include <CGAL/Mesh_3/internal/Graph_manipulations.h>
 #include <boost/graph/adjacency_list.hpp>
 #include <CGAL/Labeled_mesh_domain_3.h> // for CGAL::Null_subdomain_index
+#include <CGAL/number_utils.h>
 #include <boost/utility.hpp> // for boost::prior
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include <CGAL/Search_traits_3.h>
@@ -218,7 +211,6 @@ private:
       v_int = g_manip.get_vertex(inter_p, false);
       g_manip.try_add_edge(old, v_int);
 
-#ifndef CGAL_CFG_NO_CPP0X_LAMBDAS
       CGAL_assertion_msg(max_squared_distance == 0 ||
                          CGAL::squared_distance(g_manip.g[old].point,
                                                 g_manip.g[v_int].point) <
@@ -230,19 +222,11 @@ private:
                            << this->g_manip.g[v_int].point << ")";
                          return s.str();
                        }().c_str()));
-#else // no C++ lamdbas
-      CGAL_assertion(max_squared_distance == 0 ||
-                     CGAL::squared_distance(g_manip.g[old].point,
-                                            g_manip.g[v_int].point) <
-                     max_squared_distance);
-#endif // no C++ lamdbas
-
       old = v_int;
     }
     if(null_vertex != v_int) {
       // v_int can be null if the curve is degenerated into one point.
       g_manip.try_add_edge(v_int, end_v);
-#ifndef CGAL_CFG_NO_CPP0X_LAMBDAS
       CGAL_assertion_msg(max_squared_distance == 0 ||
                          CGAL::squared_distance(g_manip.g[end_v].point,
                                                 g_manip.g[v_int].point) <
@@ -254,13 +238,6 @@ private:
                              << this->g_manip.g[v_int].point << ")";
                            return s.str();
                          }().c_str()));
-#else // no C++ lamdbas
-      CGAL_assertion(max_squared_distance == 0 ||
-                     CGAL::squared_distance(g_manip.g[end_v].point,
-                                            g_manip.g[v_int].point) <
-                     max_squared_distance);                   
-#endif // no C++ lamdbas
-
     }
   }
 };
@@ -275,6 +252,7 @@ struct Enriched_pixel {
   Domain_type domain;
   Image_word_type word;
   bool on_edge_of_the_cube;
+  bool on_corner_of_the_cube;
 }; // end struct template Enriched_pixel<Pix,P,D,C>
 
 } // end namespace internal
@@ -290,17 +268,17 @@ struct Polyline_visitor
 
   ~Polyline_visitor()
   {//DEBUG
-#if CGAL_MESH_3_PROTECTION_DEBUG > 1
+#if CGAL_MESH_3_PROTECTION_DEBUG & 2
     std::ofstream og("polylines_graph.polylines.txt");
     og.precision(17);
-    BOOST_FOREACH(const std::vector<P>& poly, polylines)
+    for(const std::vector<P>& poly : polylines)
     {
       og << poly.size() << " ";
-      BOOST_FOREACH(const P& p, poly)
+      for(const P& p : poly)
         og << p << " ";
       og << std::endl;
     }
-#endif // CGAL_MESH_3_PROTECTION_DEBUG > 1
+#endif // CGAL_MESH_3_PROTECTION_DEBUG & 2
   }
 
   void start_new_polyline()
@@ -326,6 +304,16 @@ struct Polyline_visitor
 template <typename Kernel>
 struct Angle_tester
 {
+  const double m_angle_sq_cosine;// squared cosine of `std:max(90, angle_deg)`
+
+  Angle_tester()
+    : m_angle_sq_cosine(0)
+  {}
+
+  Angle_tester(const double angle_deg)//angle given in degrees for readability
+    : m_angle_sq_cosine(CGAL::square(std::cos((std::max)(90.,angle_deg) * CGAL_PI / 180.)))
+  {}
+
   template <typename vertex_descriptor, typename Graph>
   bool operator()(vertex_descriptor& v, const Graph& g) const
   {
@@ -345,15 +333,22 @@ struct Angle_tester
       const typename Kernel::Point_3& p1 = g[v1].point;
       const typename Kernel::Point_3& p2 = g[v2].point;
 
-      if(CGAL::angle(p1, p, p2) == CGAL::ACUTE) {
-        // const typename Kernel::Vector_3 e1 = p1 - p;
-        // const typename Kernel::Vector_3 e2 = p2 - p;
-        // std::cerr << "At point " << p << ": the angle is "
-        //           << ( std::acos(e1 * e2
-        //                          / CGAL::sqrt(e1*e1)
-        //                          / CGAL::sqrt(e2*e2))
-        //                * 180 / CGAL_PI ) << std::endl;
+      //if angle at v is acute, v must be considered as a terminal vertex
+      // to ensure termination
+      if (CGAL::angle(p1, p, p2) == CGAL::ACUTE)
         return true;
+      else if (m_angle_sq_cosine > 0.)//check angle only if angle is > 90.
+      {
+        const typename Kernel::Vector_3 e1 = p1 - p;
+        const typename Kernel::Vector_3 e2 = p2 - p;
+
+        const auto scalar_product = e1 * e2;
+        if (CGAL::is_positive(scalar_product))
+          return true;
+
+        const auto sq_scalar_product = CGAL::square(scalar_product);
+        if (sq_scalar_product <= m_angle_sq_cosine * (e1 * e1) * (e2 * e2))
+          return true;
       }
     }
     return false;
@@ -394,8 +389,8 @@ void snap_graph_vertices(Graph& graph,
   }
   if(tree.size() == 0) return;
 
-  BOOST_FOREACH(typename boost::graph_traits<Graph>::vertex_descriptor v,
-                vertices(graph))
+  for(typename boost::graph_traits<Graph>::vertex_descriptor v :
+                make_range(vertices(graph)))
   {
     const typename K::Point_3 p = graph[v].point;
     NN_search nn(tree, p);
@@ -518,9 +513,9 @@ polylines_to_protect
         for(int k = 0; k < zdim; k+= (axis == 2 ? (std::max)(1, zdim-1) : 1 ) )
         {
 
-          using CGAL::cpp11::array;
-          using CGAL::cpp11::tuple;
-          using CGAL::cpp11::get;
+          using std::array;
+          using std::tuple;
+          using std::get;
 
           typedef array<int, 3> Pixel;
 
@@ -550,10 +545,10 @@ polylines_to_protect
                                  Image_word_type> Enriched_pixel;
 
           array<array<Enriched_pixel, 2>, 2> square =
-            {{ {{ { pix00, Point_3(), Domain_type(), 0, false },
-                  { pix01, Point_3(), Domain_type(), 0, false } }},
-               {{ { pix10, Point_3(), Domain_type(), 0, false },
-                  { pix11, Point_3(), Domain_type(), 0, false } }} }};
+            {{ {{ { pix00, Point_3(), Domain_type(), 0, false, false },
+                  { pix01, Point_3(), Domain_type(), 0, false, false } }},
+               {{ { pix10, Point_3(), Domain_type(), 0, false, false },
+                  { pix11, Point_3(), Domain_type(), 0, false, false } }} }};
 
           std::map<Domain_type, int> pixel_values_set;
           for(int ii = 0; ii < 2; ++ii) {
@@ -562,16 +557,20 @@ polylines_to_protect
               double x = pixel[0] * vx + tx;
               double y = pixel[1] * vy + ty;
               double z = pixel[2] * vz + tz;
-              square[ii][jj].on_edge_of_the_cube =
-                ( ( ( 0 == pixel[0] || (xdim - 1) == pixel[0] ) ? 1 : 0 )
-                  +
-                  ( ( 0 == pixel[1] || (ydim - 1) == pixel[1] ) ? 1 : 0 )
-                  +
-                  ( ( 0 == pixel[2] || (zdim - 1) == pixel[2] ) ? 1 : 0 ) > 1 );
+              short sum_faces = ((0 == pixel[0] || (xdim - 1) == pixel[0]) ? 1 : 0)
+                              + ((0 == pixel[1] || (ydim - 1) == pixel[1]) ? 1 : 0)
+                              + ((0 == pixel[2] || (zdim - 1) == pixel[2]) ? 1 : 0);
+              square[ii][jj].on_edge_of_the_cube = (sum_faces > 1);
+              square[ii][jj].on_corner_of_the_cube = (sum_faces > 2);
+
 #ifdef CGAL_MESH_3_DEBUG_POLYLINES_TO_PROTECT
               if(square[ii][jj].on_edge_of_the_cube) {
                 std::cerr << "  Pixel(" << pixel[0] << ", " << pixel[1] << ", "
                           << pixel[2] << ") is on edge\n";
+              }
+              if (square[ii][jj].on_corner_of_the_cube) {
+                std::cerr << "  Pixel(" << pixel[0] << ", " << pixel[1] << ", "
+                  << pixel[2] << ") is on corner\n";
               }
 #endif // CGAL_MESH_3_DEBUG_POLYLINES_TO_PROTECT
 
@@ -608,10 +607,10 @@ polylines_to_protect
             bool out01 = null(square[0][1].domain);
             bool out11 = null(square[1][1].domain);
 
-            bool on_edge00 = square[0][0].on_edge_of_the_cube;
-            bool on_edge10 = square[1][0].on_edge_of_the_cube;
-            bool on_edge01 = square[0][1].on_edge_of_the_cube;
-            bool on_edge11 = square[1][1].on_edge_of_the_cube;
+            bool is_corner00 = square[0][0].on_corner_of_the_cube;
+            bool is_corner10 = square[1][0].on_corner_of_the_cube;
+            bool is_corner01 = square[0][1].on_corner_of_the_cube;
+            bool is_corner11 = square[1][1].on_corner_of_the_cube;
 
             //
             // Protect the edges of the cube
@@ -619,26 +618,26 @@ polylines_to_protect
             if(pix00[axis_xx] == 0 &&
                ! ( out00 && out01 ) )
             {
-              g_manip.try_add_edge(g_manip.get_vertex(p00, on_edge00),
-                                   g_manip.get_vertex(p01, on_edge01));
+              g_manip.try_add_edge(g_manip.get_vertex(p00, is_corner00),
+                                   g_manip.get_vertex(p01, is_corner01));
             }
             if(pix11[axis_xx] == image_dims[axis_xx]-1 &&
                ! ( out10 && out11 ) )
             {
-              g_manip.try_add_edge(g_manip.get_vertex(p10, on_edge10),
-                                   g_manip.get_vertex(p11, on_edge11));
+              g_manip.try_add_edge(g_manip.get_vertex(p10, is_corner10),
+                                   g_manip.get_vertex(p11, is_corner11));
             }
             if(pix00[axis_yy] == 0 &&
                ! ( out00 && out10 ) )
             {
-              g_manip.try_add_edge(g_manip.get_vertex(p00, on_edge00),
-                                   g_manip.get_vertex(p10, on_edge10));
+              g_manip.try_add_edge(g_manip.get_vertex(p00, is_corner00),
+                                   g_manip.get_vertex(p10, is_corner10));
             }
             if(pix11[axis_yy] == image_dims[axis_yy]-1 &&
                ! ( out01 && out11 ) )
             {
-              g_manip.try_add_edge(g_manip.get_vertex(p01, on_edge01),
-                                   g_manip.get_vertex(p11, on_edge11));
+              g_manip.try_add_edge(g_manip.get_vertex(p01, is_corner01),
+                                   g_manip.get_vertex(p11, is_corner11));
             }
           } // end of scope for outIJ and on_edgeIJ
 
@@ -1018,7 +1017,8 @@ template <typename P,
 void
 polylines_to_protect(std::vector<std::vector<P> >& polylines,
                      PolylineInputIterator existing_polylines_begin,
-                     PolylineInputIterator existing_polylines_end)
+                     PolylineInputIterator existing_polylines_end,
+                     const double& angle = 90.)//when not provided, check only for acute angles
 {
   typedef P Point_3;
   typedef typename Kernel_traits<P>::Kernel K;
@@ -1056,8 +1056,9 @@ polylines_to_protect(std::vector<std::vector<P> >& polylines,
   Less_for_Graph_vertex_descriptors<Graph> less(graph);
   const Graph& const_graph = graph;
   typedef typename Kernel_traits<P>::Kernel K;
+  Mesh_3::Angle_tester<K> angle_tester(angle);
   split_graph_into_polylines(const_graph, visitor,
-                             Mesh_3::Angle_tester<K>(), less);
+                             angle_tester, less);
 }
 
 template <typename P, typename Image_word_type, typename Null_subdomain_index>

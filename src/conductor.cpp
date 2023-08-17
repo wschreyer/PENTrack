@@ -10,28 +10,10 @@
 TConductorField::TConductorField(const double SW1xx, const double SW1yy, const double SW1zz,
 		const double SW2xx, const double SW2yy, double SW2zz, double aI)
 			: I(aI), SW1x(SW1xx), SW1y(SW1yy), SW1z(SW1zz), SW2x(SW2xx), SW2y(SW2yy), SW2z(SW2zz){
-	if ((SW1x == SW2x) and (SW1y == SW2y) and (SW1z == SW2z)){
-		throw std::runtime_error("You have defined a conductor with length zero! Aborting...");
-	}
-	if (I == 0){
-		std::cerr << "Warning: you have defined a conductor with 0 current. Its magnetic field will always evalute to 0.\n";
-	}
+
 };
 
-void TConductorField::BField(const double x, const double y, const double z, const double t,
-		double B[3], double dBidxj[3][3]) const{
-	if (I == 0){
-		for (int i = 0; i < 3; ++i){
-			B[i] = 0;
-			if (dBidxj != nullptr){
-				for (int j = 0; j < 3; ++j){
-					dBidxj[i][j] = 0;
-				}
-			}
-		}
-		return;
-	}
-
+void TConductorField::BField(const double x, const double y, const double z, const double t, double B[3], double dBidxj[3][3]) const{
 	double vorfaktor = mu0 * I / (4 * pi);
 
 	double t1 = SW2z * SW2z;

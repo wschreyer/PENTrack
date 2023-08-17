@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/Arr_spherical_gaussian_map_3/Arr_polyhedral_sgm.h $
-// $Id: Arr_polyhedral_sgm.h ace0997 %aI Efi Fogel
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Arrangement_on_surface_2/include/CGAL/Arr_spherical_gaussian_map_3/Arr_polyhedral_sgm.h $
+// $Id: Arr_polyhedral_sgm.h 74a0e95 2021-03-03T11:01:18+02:00 Efi Fogel
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s): Efi Fogel         <efif@post.tau.ac.il>
 //            Naama mayer       <naamamay@post.tau.ac.il>
@@ -47,6 +38,7 @@
 #include <CGAL/aff_transformation_tags.h>
 #include <CGAL/intersections.h>
 #include <CGAL/Polygon_2_algorithms.h>
+#include <CGAL/Kernel/global_functions_3.h>
 
 #include <CGAL/Arr_overlay_2.h>
 #include <CGAL/Arr_spherical_gaussian_map_3/Arr_spherical_gaussian_map_3.h>
@@ -524,7 +516,7 @@ public:
   /*! Constructor */
   Arr_polyhedral_sgm_initializer(PolyhedralSgm& sgm) :
     Base(sgm),
-    m_visitor(NULL),
+    m_visitor(nullptr),
     m_marked_vertex_index(0),
     m_marked_edge_index(0),
     m_marked_facet_index(0)
@@ -538,7 +530,7 @@ public:
    * \param visitor
    * \pre The polyhedron polyhedron does not have coplanar facets.
    */
-  void operator()(Polyhedron& polyhedron, Visitor* visitor = NULL)
+  void operator()(Polyhedron& polyhedron, Visitor* visitor = nullptr)
   {
 #if 0
     std::copy(polyhedron.points_begin(), polyhedron.points_end(),
@@ -568,7 +560,7 @@ public:
                   const CoordIndexIter indices_begin,
                   const CoordIndexIter indices_end,
                   size_type num_facets,
-                  Visitor* visitor = NULL)
+                  Visitor* visitor = nullptr)
   {
     m_visitor = visitor;
 
@@ -717,7 +709,7 @@ public:
  // template <typename SgmIterator>
  // void minkowski_sum(SgmIterator begin, SgmIterator end)
  // {
-	//typename SgmIterator::value_type* sgm1 = *begin++;
+        //typename SgmIterator::value_type* sgm1 = *begin++;
  //   typename SgmIterator::value_type* sgm2 = *begin;
  //   minkowski_sum(sgm1, sgm2);
  // }

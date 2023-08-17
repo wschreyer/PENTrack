@@ -1,21 +1,12 @@
 // Copyright (c) 2004  INRIA Sophia-Antipolis (France).
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesher_level/include/CGAL/Meshes/Triangulation_mesher_level_traits_2.h $
+// $Id: Triangulation_mesher_level_traits_2.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesher_level/include/CGAL/Meshes/Triangulation_mesher_level_traits_2.h $
-// $Id: Triangulation_mesher_level_traits_2.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Laurent RINEAU
 
@@ -28,7 +19,7 @@
 namespace CGAL {
 
 template <typename Tr>
-struct Triangulation_mesher_level_traits_2 : 
+struct Triangulation_mesher_level_traits_2 :
     public Triangulation_ref_impl<Tr>
 {
   typedef Tr Triangulation;
@@ -64,17 +55,17 @@ struct Triangulation_mesher_level_traits_2 :
   Vertex_handle insert_impl(const Point& p, Zone& zone)
   {
 #ifdef CGAL_MESH_2_DEBUG_INSERTIONS
-    std::cerr << "insert(" << p << "): " 
+    std::cerr << "insert(" << p << "): "
               << zone.boundary_edges.size() << " edges." << std::endl;
 #endif
     if( zone.locate_type == Tr::VERTEX )
       return zone.fh->vertex(zone.i);
     return triangulation_ref_impl().
       star_hole(p,
-		zone.boundary_edges.begin(),
-		zone.boundary_edges.end(),
-		zone.faces.begin(),
-		zone.faces.end());
+                zone.boundary_edges.begin(),
+                zone.boundary_edges.end(),
+                zone.faces.begin(),
+                zone.faces.end());
   }
 }; // end Triangulation_mesher_level_traits_2
 

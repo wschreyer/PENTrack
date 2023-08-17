@@ -1,24 +1,15 @@
-// Copyright (c) 2014  
+// Copyright (c) 2014
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Number_types/include/CGAL/Exact_integer.h $
-// $Id: Exact_integer.h 469d63f %aI Marc Glisse
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Number_types/include/CGAL/Exact_integer.h $
+// $Id: Exact_integer.h 4bd7049 2022-05-03T12:14:50+02:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent Rineau
@@ -46,11 +37,11 @@ namespace CGAL {
 `Exact_integer` is an exact integer number type.
 
 It is a typedef of another number type. Its exact definition depends on
-the availability the third-party libraries %GMP, %CORE, and %LEDA. %CGAL must
+the availability the third-party libraries \gmp, \core, and \leda. \cgal must
 be configured with at least one of those libraries.
 
-\cgalModels `EuclideanRing` 
-\cgalModels `RealEmbeddable` 
+\cgalModels `EuclideanRing`
+\cgalModels `RealEmbeddable`
 
 */
 #if DOXYGEN_RUNNING
@@ -59,30 +50,30 @@ typedef unspecified_type Exact_integer;
 
 #else // not DOXYGEN_RUNNING
 
-#if CGAL_USE_GMPXX
-
+#if ( (defined(CGAL_TEST_SUITE) && CGAL_VERSION_NR == 1050500900) || defined(CGAL_FORCE_USE_BOOST_MP))\
+    && BOOST_VERSION > 107800 && defined(CGAL_USE_BOOST_MP)
+// use boost-mp by default in the testsuite until 5.5-beta is out
+typedef BOOST_cpp_arithmetic_kernel::Integer Exact_integer;
+#else // BOOST_VERSION > 107800
+#ifdef CGAL_USE_GMPXX
 typedef mpz_class Exact_integer;
-
-#elif CGAL_USE_GMP
-# ifdef CGAL_USE_BOOST_MP
-typedef boost::multiprecision::mpz_int Exact_integer;
-# else
+#elif defined(CGAL_USE_GMP)
+#if defined(CGAL_USE_BOOST_MP)
+typedef BOOST_gmp_arithmetic_kernel::Integer Exact_integer;
+#else
 typedef Gmpz Exact_integer;
-# endif
-
-#elif CGAL_USE_LEDA
-
+#endif
+#elif defined(CGAL_USE_LEDA)
 typedef leda_integer Exact_integer;
-
-#elif CGAL_USE_CORE
-
+#elif defined(CGAL_USE_BOOST_MP)
+typedef BOOST_cpp_arithmetic_kernel::Integer Exact_integer;
+#elif defined(CGAL_USE_CORE)
 typedef CORE::BigInt Exact_integer;
-
-#elif defined CGAL_USE_BOOST_MP
-
-typedef boost::multiprecision::cpp_int Exact_integer;
-
+#else
+#error "ERROR: Cannot determine a BigInt type!"
 #endif // CGAL_USE_CORE
+#endif // BOOST_VERSION > 107800
+
 #endif // not DOXYGEN_RUNNING
 
 } /* end namespace CGAL */

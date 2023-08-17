@@ -1,25 +1,16 @@
-// Copyright (c) 1997-2000  
+// Copyright (c) 1997-2000
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Kernel_d/include/CGAL/Kernel_d/Aff_transformation_d.h $
+// $Id: Aff_transformation_d.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Kernel_d/include/CGAL/Kernel_d/Aff_transformation_d.h $
-// $Id: Aff_transformation_d.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 // Author(s)     : Michael Seel <seel@mpi-sb.mpg.de>
 
 #ifndef CGAL_AFF_TRANSFORMATION_D_H
@@ -49,14 +40,14 @@ class Aff_transformation_d : public pR::Aff_transformation_d_base
   Aff_transformation_d(int d, Identity_transformation tag) : Base(d,tag) {}
   Aff_transformation_d(const typename LA::Matrix& M) : Base(M) {}
   Aff_transformation_d(Translation tag, const Vector_d<R>& v) : Base(tag,v) {}
-  Aff_transformation_d(int d, Scaling tag, const RT& num, const RT& den) 
+  Aff_transformation_d(int d, Scaling tag, const RT& num, const RT& den)
     : Base(d,tag,num,den) {}
-  Aff_transformation_d(int d, Rotation tag, 
-		       const RT& sin_num, const RT& cos_num, 
+  Aff_transformation_d(int d, Rotation tag,
+                       const RT& sin_num, const RT& cos_num,
                        const RT& den, int e1 = 0, int e2 = 1)
     : Base(d,tag,sin_num,cos_num,den,e1,e2) {}
-  Aff_transformation_d(int d, Rotation tag, const Direction_d<R>& dir, 
-                       const RT& num, const RT& den, 
+  Aff_transformation_d(int d, Rotation tag, const Direction_d<R>& dir,
+                       const RT& num, const RT& den,
                        int e1 = 0, int e2 = 1)
     : Base(d,tag,dir,num,den,e1,e2) {}
   Aff_transformation_d(const Base& a) : Base(a) {}
@@ -73,7 +64,7 @@ class Aff_transformation_d : public pR::Aff_transformation_d_base
   bool operator==(const Self& a) const
   { return Base::operator==(a); }
   bool operator!=(const Self& a) const
-  { return Base::operator!=(a); } 
+  { return Base::operator!=(a); }
 
 };
 

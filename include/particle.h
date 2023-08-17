@@ -378,6 +378,17 @@ public:
      * @param field TFieldManager containing all electromagnetic fields
      */
     void DoDecay(const double t, const state_type &y, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field);
+    
+	/**
+	 * Set polarization of particle
+	 * 
+	 * @param t Time
+	 * @param y Returns state (position, velocity, proper time, polarization, path length) after polarization was set
+	 * @param polarization Projection of spin onto polarization axis [-1..1]
+	 * @param flipspin Indicates if polarization should actually be able to flip
+	 * @param mc TMCGenerator random number generator
+	 */
+    void DoPolarization(const double t, state_type &y, const double polarization, const bool flipspin, TMCGenerator &mc);
 
 	/**
 	 * Randomly set polarization of particle

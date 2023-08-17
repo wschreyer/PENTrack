@@ -10,6 +10,7 @@
 
 #include <boost/filesystem.hpp>
 
+
 enum stopID {	ID_UNKNOWN = 0, ///< standard flag for particles
 				ID_NOT_FINISH = -1, ///< flag for particles which reached ::StorageTime
 				ID_HIT_BOUNDARIES = -2, ///< flag for particles which left bounding box of TParticle::geom
@@ -57,6 +58,9 @@ extern const long double gamma_xe; ///< from: http://nmrwiki.org/wiki/index.php?
 extern long long int jobnumber; ///< job number, read from command line paramters, used for parallel calculations
 extern boost::filesystem::path configpath; ///< path to configuration file, read from command line paramters
 extern boost::filesystem::path outpath; ///< path where the log file should be saved to, read from command line parameters
+
+// extern std::unique_ptr<TLogger> logger; ///< class to log particle states
+
 
 
 /**
@@ -206,6 +210,16 @@ double ElectronBetaSpectrum(const double E);
  * @return Returns probability between 0 and 1 that a gas molecule with energy E being created. 
  */
 double MaxwellBoltzSpectrum (const double T, const double E);
+
+//////////// Utkarsh
+
+/**
+ * Energy distribution of PSI beamport from fitting 15 gaussian sum
+  * @param E energy in eV
+ */
+double CustomSpectra(const double E);
+
+////////////
 
 /**
  * Find given formula name in list of formulas

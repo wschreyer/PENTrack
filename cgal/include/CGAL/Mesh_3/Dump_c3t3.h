@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/Dump_c3t3.h $
-// $Id: Dump_c3t3.h cdda597 %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/Mesh_3/Dump_c3t3.h $
+// $Id: Dump_c3t3.h 71e452a 2022-12-12T17:55:41+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent Rineau
@@ -49,12 +40,13 @@ template <typename C3t3,
              Output_rep<typename C3t3::Subdomain_index>::is_specialized)
           >
 struct Dump_c3t3 {
-  void dump_c3t3(const C3t3& c3t3, std::string prefix) const
+  void dump_c3t3(const C3t3& c3t3, std::string prefix, bool verbose) const
   {
-    std::clog<<"======dump c3t3===== to: " << prefix << std::endl;
+    if (verbose)
+      std::clog<<"======dump c3t3===== to: " << prefix << std::endl;
     std::ofstream medit_file((prefix+".mesh").c_str());
     medit_file.precision(17);
-    CGAL::output_to_medit(medit_file, c3t3, false /*rebind*/, true /*show_patches*/);
+    CGAL::IO::output_to_medit(medit_file, c3t3, false /*rebind*/, true /*show_patches*/);
     medit_file.close();
 
     std::string bin_filename = prefix;
@@ -64,7 +56,7 @@ struct Dump_c3t3 {
     std::string signature = CGAL::Get_io_signature<C3t3>()();
     CGAL_assertion(signature != std::string());
     bin_file << "binary CGAL c3t3 " << signature << "\n";
-    CGAL::set_binary_mode(bin_file);
+    CGAL::IO::set_binary_mode(bin_file);
     bin_file << c3t3;
   }
 }; // end struct template Dump_c3t3<C3t3, bool>
@@ -72,7 +64,7 @@ struct Dump_c3t3 {
 template <typename C3t3>
 struct Dump_c3t3<C3t3, false>
 {
-  void dump_c3t3(const C3t3&, std::string) {
+  void dump_c3t3(const C3t3&, std::string, bool) {
     std::cerr << "Warning " << __FILE__ << ":" << __LINE__ << "\n"
               << "  the c3t3 object of following type:\n"
               << typeid(C3t3).name() << std::endl
@@ -132,11 +124,16 @@ void dump_c3t3_edges(const C3t3& c3t3, std::string prefix)
   }
 }
 template <typename C3t3>
-void dump_c3t3(const C3t3& c3t3, std::string prefix)
+void dump_c3t3(const C3t3& c3t3, std::string prefix,
+#ifdef CGAL_MESH_3_VERBOSE
+               bool verbose = true)
+#else
+               bool verbose = false)
+#endif
 {
   if(!prefix.empty()) {
     Dump_c3t3<C3t3> dump;
-    dump.dump_c3t3(c3t3, prefix);
+    dump.dump_c3t3(c3t3, prefix, verbose);
   }
 }
 

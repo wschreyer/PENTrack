@@ -21,68 +21,68 @@
  */
 class TParticleSource{
 protected:
-	double fActiveTime; ///< Duration for which the source will be active
-	double pulseWidth; ///< [s] Duration of a source pulse (must be > 0)
-	double pulseGap;   ///< [s] Number of seconds between each pulse (must be > 0)
-	std::string fParticleName; ///< Name of particle that the source should create
+  double fActiveTime; ///< Duration for which the source will be active
+  double pulseWidth; ///< [s] Duration of a source pulse (must be > 0)
+  double pulseGap;   ///< [s] Number of seconds between each pulse (must be > 0)
+  std::string fParticleName; ///< Name of particle that the source should create
 
-	std::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
-	std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
-	std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
-	std::piecewise_constant_distribution<double> timedist; ///< Particle start time probability distribution
+  std::piecewise_linear_distribution<double> spectrum; ///< Parsed initial energy distribution given by user
+  std::piecewise_linear_distribution<double> phi_v; ///< Parsed initial azimuthal angle distribution of velocity given by user
+  std::piecewise_linear_distribution<double> theta_v; ///< Parsed initial polar angle distribution of velocity given by user
+  std::piecewise_constant_distribution<double> timedist; ///< Particle start time probability distribution
+  std::normal_distribution<double> normtimedist;  ///< Particle start time probability distribution (normal distribution for PSI // Utkarsh
 
-	double polarization; ///< Initial polarization of created particles
+  double polarization; ///< Initial polarization of created particles
 public:
-	int ParticleCounter; ///< Count number of particles created by source
-	/**
-	 * Constructor, should be called by every derived class
-	 *
-	 * @param sourceconf Map of source options
-	 */
-	TParticleSource(std::map<std::string, std::string> &sourceconf);
+  int ParticleCounter; ///< Count number of particles created by source
+  /**
+   * Constructor, should be called by every derived class
+   *
+   * @param sourceconf Map of source options
+   */
+  TParticleSource(std::map<std::string, std::string> &sourceconf);
 
-	/**
-	 * Destructor
-	 */
-	virtual ~TParticleSource(){
+  /**
+   * Destructor
+   */
+  virtual ~TParticleSource(){
 
-	}
+  }
 
-	/**
-	 * Return name of particle to be created
-	 */
-	 std::string GetParticleName() const{
-	     return fParticleName;
-	 }
+  /**
+   * Return name of particle to be created
+   */
+  std::string GetParticleName() const{
+    return fParticleName;
+  }
 
-	/**
-	 * Basic creation of a new particle. Maps particle name to the corresponding class
-	 *
-	 * @param t Starting time
-	 * @param x x coordinate of creation point
-	 * @param y y coordinate of creation point
-	 * @param z z coordinate of creation point
-	 * @param E Initial kinetic energy
-	 * @param phi Azimuthal angle of initial velocity vector
-	 * @param theta Polar angle of initial velocity vector
-	 * @param polarisation Initial polarisation of particle (-1/+1)
-	 * @param spinprojection component of semi-classical (Bloch) spin vector parallel to magnetic field
-	 * @param mc Random-number generator
-	 * @param geometry Geometry of the simulation
-	 * @param field TFieldManager containing all electromagnetic fields
-	 *
-	 * @return Returns newly created particle, memory has to be freed by user
-	 */
-	TParticle* CreateParticle(const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation, const double spinprojection,
-			TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
+  /**
+   * Basic creation of a new particle. Maps particle name to the corresponding class
+   *
+   * @param t Starting time
+   * @param x x coordinate of creation point
+   * @param y y coordinate of creation point
+   * @param z z coordinate of creation point
+   * @param E Initial kinetic energy
+   * @param phi Azimuthal angle of initial velocity vector
+   * @param theta Polar angle of initial velocity vector
+   * @param polarisation Initial polarisation of particle (-1/+1)
+   * @param spinprojection component of semi-classical (Bloch) spin vector parallel to magnetic field
+   * @param mc Random-number generator
+   * @param geometry Geometry of the simulation
+   * @param field TFieldManager containing all electromagnetic fields
+   *
+   * @return Returns newly created particle, memory has to be freed by user
+   */
+  TParticle* CreateParticle(const double t, const double x, const double y, const double z, const double E, const double phi, const double theta, const int polarisation, const double spinprojection, TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
 
 
-	/**
-	 * Virtual routine that has to be implemented by every derived source class
-	 *
-	 * @return Returns newly created particle, memory has to be freed by user
-	 */
-	virtual TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) = 0;
+  /**
+   * Virtual routine that has to be implemented by every derived source class
+   *
+   * @return Returns newly created particle, memory has to be freed by user
+   */
+  virtual TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) = 0;
 };
 
 
@@ -93,40 +93,40 @@ public:
  */
 class TSurfaceSource: public TParticleSource{
 protected:
-	double Enormal; ///< Boost given to particles starting from this surface
+  double Enormal; ///< Boost given to particles starting from this surface
 
-	/**
-	 * Return bounding box containing the source surface.
-	 * 
-	 * Virtual function, must be implemented by derived classes.
-	 * 
-	 * @return Bounding box
-	 */
-	virtual CCuboid GetSourceVolumeBoundingBox() const = 0;
+  /**
+   * Return bounding box containing the source surface.
+   * 
+   * Virtual function, must be implemented by derived classes.
+   * 
+   * @return Bounding box
+   */
+  virtual CCuboid GetSourceVolumeBoundingBox() const = 0;
 
-	/**
-	 * Check if point is inside the source volume.
-	 *
-	 * Abstract function, has to be implemented by every derived class.
-	 */
-	virtual bool InSourceVolume(const double x, const double y, const double z) const = 0;
+  /**
+   * Check if point is inside the source volume.
+   *
+   * Abstract function, has to be implemented by every derived class.
+   */
+  virtual bool InSourceVolume(const double x, const double y, const double z) const = 0;
 public:
-	/**
-	 * Constructor.
-	 *
-	 * @param sourceconf Map of source options
-	 */
-	TSurfaceSource(std::map<std::string, std::string> &sourceconf):
-		TParticleSource(sourceconf), Enormal(0){
-		std::istringstream(sourceconf["Enormal"]) >> Enormal;
-	}
+  /**
+   * Constructor.
+   *
+   * @param sourceconf Map of source options
+   */
+  TSurfaceSource(std::map<std::string, std::string> &sourceconf):
+    TParticleSource(sourceconf), Enormal(0){
+    std::istringstream(sourceconf["Enormal"]) >> Enormal;
+  }
 
-	/**
-	 * Create new particle on surface
-	 *
-	 * @return Returns newly created particle, memory has to be freed by user
-	 */
-	TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) final;
+  /**
+   * Create new particle on surface
+   *
+   * @return Returns newly created particle, memory has to be freed by user
+   */
+  TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) final;
 };
 
 
@@ -139,45 +139,45 @@ public:
  */
 class TVolumeSource: public TParticleSource{
 private:
-	/**
-	 * find potential minimum in source volume
-	 */
-	void FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
+  /**
+   * find potential minimum in source volume
+   */
+  void FindPotentialMinimum(TMCGenerator &mc, const TGeometry &geometry, const TFieldManager &field);
 protected:
-	double MinPot; ///< minimal potential energy in source volume
-	bool fPhaseSpaceWeighting; ///< Tells source to weight particle density according to available phase space.
+  double MinPot; ///< minimal potential energy in source volume
+  bool fPhaseSpaceWeighting; ///< Tells source to weight particle density according to available phase space.
 
-	/**
-	 * Produce random point in the source volume
-	 *
-	 * Has to be implemented by every derived class
-	 *
-	 * @param x Returns x coordinate
-	 * @param y Returns y coordinate
-	 * @param z Returns z coordinate
-	 * @param mc Random-number generator
-	 */
-	virtual void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const = 0;
+  /**
+   * Produce random point in the source volume
+   *
+   * Has to be implemented by every derived class
+   *
+   * @param x Returns x coordinate
+   * @param y Returns y coordinate
+   * @param z Returns z coordinate
+   * @param mc Random-number generator
+   */
+  virtual void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const = 0;
 public:
-	/**
-	 * Constructor
-	 *
-	 * Create generic volume source
-	 *
-	 * @param sourceconf Map of source options
-	 */
-	TVolumeSource(std::map<std::string, std::string> &sourceconf):
-			TParticleSource(sourceconf), MinPot(std::numeric_limits<double>::infinity()), fPhaseSpaceWeighting(false){
-		std::istringstream(sourceconf["PhaseSpaceWeighting"]) >> fPhaseSpaceWeighting;
-	}
+  /**
+   * Constructor
+   *
+   * Create generic volume source
+   *
+   * @param sourceconf Map of source options
+   */
+  TVolumeSource(std::map<std::string, std::string> &sourceconf):
+    TParticleSource(sourceconf), MinPot(std::numeric_limits<double>::infinity()), fPhaseSpaceWeighting(false){
+    std::istringstream(sourceconf["PhaseSpaceWeighting"]) >> fPhaseSpaceWeighting;
+  }
 
-	/**
-	 * Create particle in source volume
-	 *
-	 * Particle density distribution can be weighted by available phase space
-	 *
-	 */
-	TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) final;
+  /**
+   * Create particle in source volume
+   *
+   * Particle density distribution can be weighted by available phase space
+   *
+   */
+  TParticle* CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field) final;
 };
 
 /**
@@ -185,31 +185,31 @@ public:
  */
 class TCuboidVolumeSource: public TVolumeSource{
 private:
-	double xmin, xmax, ymin, ymax, zmin, zmax;
+  double xmin, xmax, ymin, ymax, zmin, zmax;
 
-	/**
-	 * Produce random point in the source volume
-	 *
-	 * @param x Returns x coordinate
-	 * @param y Returns y coordinate
-	 * @param z Returns z coordinate
-	 */
-	virtual void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
-		std::uniform_real_distribution<double> unidist(0, 1);
-		x = xmin + unidist(mc)*(xmax - xmin);
-		y = ymin + unidist(mc)*(ymax - ymin);
-		z = zmin + unidist(mc)*(zmax - zmin);
-	}
+  /**
+   * Produce random point in the source volume
+   *
+   * @param x Returns x coordinate
+   * @param y Returns y coordinate
+   * @param z Returns z coordinate
+   */
+  virtual void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
+    std::uniform_real_distribution<double> unidist(0, 1);
+    x = xmin + unidist(mc)*(xmax - xmin);
+    y = ymin + unidist(mc)*(ymax - ymin);
+    z = zmin + unidist(mc)*(zmax - zmin);
+  }
 public:
-	/**
-	 * Constructor.
-	 *
-	 * @param sourceconf Map of source options
-	 */
-	TCuboidVolumeSource(std::map<std::string, std::string> &sourceconf):
-			TVolumeSource(sourceconf), xmin(0), xmax(0), ymin(0), ymax(0), zmin(0), zmax(0){
-		std::istringstream(sourceconf["parameters"]) >> xmin >> xmax >> ymin >> ymax >> zmin >> zmax;
-	}
+  /**
+   * Constructor.
+   *
+   * @param sourceconf Map of source options
+   */
+  TCuboidVolumeSource(std::map<std::string, std::string> &sourceconf):
+    TVolumeSource(sourceconf), xmin(0), xmax(0), ymin(0), ymax(0), zmin(0), zmax(0){
+    std::istringstream(sourceconf["parameters"]) >> xmin >> xmax >> ymin >> ymax >> zmin >> zmax;
+  }
 };
 
 
@@ -218,81 +218,197 @@ public:
  */
 class TCylindricalVolumeSource: public TVolumeSource{
 private:
-	double rmin, rmax, phimin, phimax, zmin, zmax;
+  double rmin, rmax, phimin, phimax, zmin, zmax;
 
-	/**
-	 * Produce random point in the source volume
-	 *
-	 * @param x Returns x coordinate
-	 * @param y Returns y coordinate
-	 * @param z Returns z coordinate
-	 */
-	void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
-		linear_distribution<double> lindist(rmin, rmax);
-		double r = lindist(mc); // weighting because of the volume element and a r^2 probability outwards
-		std::uniform_real_distribution<double> unidist(0, 1);
-		double phi_r = phimin + unidist(mc)*(phimax - phimin);
-		x = r*cos(phi_r);
-		y = r*sin(phi_r);
-		z = zmin + unidist(mc)*(zmax - zmin);
-	}
+  /**
+   * Produce random point in the source volume
+   *
+   * @param x Returns x coordinate
+   * @param y Returns y coordinate
+   * @param z Returns z coordinate
+   */
+  void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
+    std::linear_distribution<double> lindist(rmin, rmax);
+    double r = lindist(mc); // weighting because of the volume element and a r^2 probability outwards
+    std::uniform_real_distribution<double> unidist(0, 1);
+    double phi_r = phimin + unidist(mc)*(phimax - phimin);
+    x = r*cos(phi_r);
+    y = r*sin(phi_r);
+    z = zmin + unidist(mc)*(zmax - zmin);
+  }
 public:
-	/**
-	 * Constructor.
-	 *
-	 * @param sourceconf Map of source options
-	 */
-	explicit TCylindricalVolumeSource(std::map<std::string, std::string> &sourceconf):
-			TVolumeSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
-		std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax;
-		phimin *= conv;
-		phimax *= conv;
-	}
+  /**
+   * Constructor.
+   *
+   * @param sourceconf Map of source options
+   */
+  explicit TCylindricalVolumeSource(std::map<std::string, std::string> &sourceconf):
+    TVolumeSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
+    std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax;
+    phimin *= conv;
+    phimax *= conv;
+  }
 };
+
+
+
+//////////////// utkarsh
+
+inline double customPDF1(double x) {
+  // Define your custom PDF logic here as a sum of Gaussians
+  // Range: 8 to 60
+  double C = 0.03459551343345807;
+  double X_mean = -0.009450635326076718;
+  double sigma = 1.7003977634379006;
+  double k = 0.13720477934750563;
+  return k + C * std::exp(-0.5 * std::pow((x - X_mean) / sigma, 2));
+}
+
+inline double customPDF2(double x) {
+  // Define your custom PDF logic here as a linear function
+  // Range: 8 to 60
+  double m =  -3683.56942;
+  double c = 140.69792;
+  return m*x + c ;
+}
+
+//New version
+class TCylindricalVolumeSourceExt: public TVolumeSource{
+private:
+  double rmin, rmax, phimin, phimax, zmin, zmax, x0, y0, z0;
+
+  /**
+   * Produce random point in the source volume
+   *
+   * @param x Returns x coordinate
+   * @param y Returns y coordinate
+   * @param z Returns z coordinate
+   */
+  void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
+    std::uniform_real_distribution<double> unidist(std::pow(rmin,2), std::pow(rmax,2));
+    std::uniform_real_distribution<double> unidist1(-1, 1);
+    std::piecewise_linear_distribution<double> distribution1(1000, std::pow(rmin,2), std::pow(rmax,2), customPDF2);
+    std::piecewise_linear_distribution<double> distribution(1000, -3.13, 3.13, customPDF1);
+    double r = std::sqrt(distribution1(mc)); // weighting because of the volume element and a r^2 probability outwards
+    double psi = distribution(mc);
+    z = z0 - r*std::cos(psi); 
+    y = y0 + r*std::sin(psi);
+    x = x0 + unidist1(mc)*(zmax - zmin)/2;  
+  }
+public:
+  /**
+   * Constructor.
+   *
+   * @param sourceconf Map of source options
+   */
+  explicit TCylindricalVolumeSourceExt(std::map<std::string, std::string> &sourceconf):
+    TVolumeSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){
+    std::istringstream(sourceconf["parameters"]) >> rmin >> rmax >> phimin >> phimax >> zmin >> zmax >> x0 >> y0 >> z0;
+    phimin *= conv;
+    phimax *= conv;
+  }
+};
+
+////////////////
+
 
 /**
  * Surface source using a surface inside a cylindrial coordinate range
  */
 class TCylindricalSurfaceSource: public TSurfaceSource{
 private:
-	double rmin; ///< inner radius of source cylinder
-	double rmax; ///< outer radius of source cylinder
-	double phimin; ///< minimum azimuth of source cylinder
-	double phimax; ///< maximum azimuth of source cylinder
-	double zmin; ///< bottom of source cylinder
-	double zmax; ///< top of source cylinder
+  double rmin; ///< inner radius of source cylinder
+  double rmax; ///< outer radius of source cylinder
+  double phimin; ///< minimum azimuth of source cylinder
+  double phimax; ///< maximum azimuth of source cylinder
+  double zmin; ///< bottom of source cylinder
+  double zmax; ///< top of source cylinder
 
-	/**
-	 * Return bounding box containing the source surface.
-	 * 
-	 * Returns bounding box of source cylinder
-	 * 
-	 * @return Bounding box
-	 */
-	CCuboid GetSourceVolumeBoundingBox() const final{
-	    return CCuboid(CPoint(-rmax, -rmax, zmin), CPoint(rmax, rmax, zmax));
-	}
+  /**
+   * Return bounding box containing the source surface.
+   * 
+   * Returns bounding box of source cylinder
+   * 
+   * @return Bounding box
+   */
+  CCuboid GetSourceVolumeBoundingBox() const final{
+    return CCuboid(CPoint(-rmax, -rmax, zmin), CPoint(rmax, rmax, zmax));
+  }
 
-	/**
-	 * Check if a point is inside the cylindrical coordinate range
-	 */
-	bool InSourceVolume(const double x, const double y, const double z) const final{
-		double r = sqrt(x*x + y*y);
-		double phi = atan2(y, x);
-		return r > rmin && r < rmax && phi > phimin && phi < phimax && z > zmin && z < zmax;
-	}
+  /**
+   * Check if a point is inside the cylindrical coordinate range
+   */
+  bool InSourceVolume(const double x, const double y, const double z) const final{
+    double r = sqrt(x*x + y*y);
+    double phi = atan2(y, x);
+    return r > rmin && r < rmax && phi > phimin && phi < phimax && z > zmin && z < zmax;
+  }
 
 public:
-	/**
-	 * Constructor.
-	 *
-	 * Selects all triangles from TGeometry whose vertices are inside the cylindrical coordinate range
-	 *
-	 * @param sourceconf Map of source options
-	 */
-	explicit TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf):
-			TSurfaceSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){}
+  /**
+   * Constructor.
+   *
+   * Selects all triangles from TGeometry whose vertices are inside the cylindrical coordinate range
+   *
+   * @param sourceconf Map of source options
+   */
+  explicit TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf):
+    TSurfaceSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){}
 };
+
+
+////////////////////// Sly ToDo draft adaptation to general cyl surface
+
+
+// /**
+//  * Surface source using a surface inside a cylindrial coordinate range
+//  */
+// class TCylindricalSurfaceSourceExt: public TSurfaceSource{
+// private:
+//   double rmin; ///< inner radius of source cylinder
+//   double rmax; ///< outer radius of source cylinder
+//   double phimin; ///< minimum azimuth of source cylinder
+//   double phimax; ///< maximum azimuth of source cylinder
+//   double zmin; ///< bottom of source cylinder
+//   double zmax; ///< top of source cylinder
+//   double xcenter;
+//   double ycenter;
+//   double zcenter;
+
+//   /**
+//    * Return bounding box containing the source surface.
+//    * 
+//    * Returns bounding box of source cylinder
+//    * 
+//    * @return Bounding box
+//    */
+//   CCuboid GetSourceVolumeBoundingBox() const final{
+//     return CCuboid(CPoint(xcenter-rmax, ycenter-rmax, zcenter-rmax), CPoint(xcenter+rmax, ycenter+rmax, zcenter+rmax));
+//   }
+
+//   /**
+//    * Check if a point is inside the cylindrical coordinate range
+//    */
+//   bool InSourceVolume(const double x, const double y, const double z) const final{
+//     double r = sqrt(x*x + y*y);
+//     double phi = atan2(y, x);
+//     return r > rmin && r < rmax && phi > phimin && phi < phimax && z > zmin && z < zmax;
+//   }
+
+// public:
+//   /**
+//    * Constructor.
+//    *
+//    * Selects all triangles from TGeometry whose vertices are inside the cylindrical coordinate range
+//    *
+//    * @param sourceconf Map of source options
+//    */
+//   explicit TCylindricalSurfaceSource(std::map<std::string, std::string> &sourceconf):
+//     TSurfaceSource(sourceconf), rmin(0), rmax(0), phimin(0), phimax(0), zmin(0), zmax(0){}
+// };
+
+
+///////////////////
 
 /**
  * Volume source.
@@ -301,33 +417,33 @@ public:
  */
 class TSTLVolumeSource: public TVolumeSource{
 private:
-	TTriangleMesh sourcevol; ///< internal AABB tree storing the STL solid
+  TTriangleMesh sourcevol; ///< internal AABB tree storing the STL solid
 
-	/**
-	 * Produce random point in the source volume
-	 *
-	 * @param x Returns x coordinate
-	 * @param y Returns y coordinate
-	 * @param z Returns z coordinate
-	 */
-	void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
-		std::array<double, 3> p = sourcevol.RandomPointInVolume(mc);
-		x = p[0];
-		y = p[1];
-		z = p[2];
-	}
+  /**
+   * Produce random point in the source volume
+   *
+   * @param x Returns x coordinate
+   * @param y Returns y coordinate
+   * @param z Returns z coordinate
+   */
+  void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
+    std::array<double, 3> p = sourcevol.RandomPointInVolume(mc);
+    x = p[0];
+    y = p[1];
+    z = p[2];
+  }
 public:
-	/**
-	 * Constructor.
-	 *
-	 * @param sourceconf Map of source options
-	 */
-	TSTLVolumeSource(std::map<std::string, std::string> &sourceconf):
-			TVolumeSource(sourceconf){
-		boost::filesystem::path STLfile;
-		std::istringstream(sourceconf["STLfile"]) >> STLfile;
-		sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
-	}
+  /**
+   * Constructor.
+   *
+   * @param sourceconf Map of source options
+   */
+  TSTLVolumeSource(std::map<std::string, std::string> &sourceconf):
+    TVolumeSource(sourceconf){
+    boost::filesystem::path STLfile;
+    std::istringstream(sourceconf["STLfile"]) >> STLfile;
+    sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
+  }
 };
 
 
@@ -338,53 +454,53 @@ public:
  */
 class TSTLSurfaceSource: public TSurfaceSource{
 private:
-	TTriangleMesh sourcevol; ///< Triangle mesh read from StL file
+  TTriangleMesh sourcevol; ///< Triangle mesh read from StL file
 
-	/**
-	 * Check if point is contained in source volume bounded by triangle mesh
-	 * 
-	 * @param x X coordinate of point
-	 * @param y Y coordinate of point
-	 * @param z Z coordinate of point
-	 * 
-	 * @return Returns true if point is contained in source volume.
-	 */
-	bool InSourceVolume(const double x, const double y, const double z) const final{
-		return sourcevol.InSolid(x, y, z);
+  /**
+   * Check if point is contained in source volume bounded by triangle mesh
+   * 
+   * @param x X coordinate of point
+   * @param y Y coordinate of point
+   * @param z Z coordinate of point
+   * 
+   * @return Returns true if point is contained in source volume.
+   */
+  bool InSourceVolume(const double x, const double y, const double z) const final{
+    return sourcevol.InSolid(x, y, z);
 
-	/**
-	 * Check if point is contained in source volume bounded by triangle mesh
-	 * 
-	 * @param p Point
-	 * 
-	 * @return Returns true if point is contained in source volume.
-	 */
-	}
-	bool InSourceVolume(const std::array<double, 3> &p) const{
-	    return sourcevol.InSolid(p[0], p[1], p[2]);
-	}
+    /**
+     * Check if point is contained in source volume bounded by triangle mesh
+     * 
+     * @param p Point
+     * 
+     * @return Returns true if point is contained in source volume.
+     */
+  }
+  bool InSourceVolume(const std::array<double, 3> &p) const{
+    return sourcevol.InSolid(p[0], p[1], p[2]);
+  }
 
-	/**
-	 * Return bounding box containing the source surface.
-	 * 
-	 * @return Returns bounding box of triangle mesh
-	 */
-    CCuboid GetSourceVolumeBoundingBox() const final{
-        return sourcevol.GetBoundingBox();
-    }
+  /**
+   * Return bounding box containing the source surface.
+   * 
+   * @return Returns bounding box of triangle mesh
+   */
+  CCuboid GetSourceVolumeBoundingBox() const final{
+    return sourcevol.GetBoundingBox();
+  }
 public:
-	/**
-	 * Constructor.
-	 *
-	 * Search for all triangles in geometry's mesh which are inside the STL solid given in sourcefile.
-	 *
-	 * @param sourceconf Map of source options
-	 */
-	explicit TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf): TSurfaceSource(sourceconf){
-	    boost::filesystem::path STLfile;
-	    std::istringstream(sourceconf["STLfile"]) >> STLfile;
-	    sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
-	}
+  /**
+   * Constructor.
+   *
+   * Search for all triangles in geometry's mesh which are inside the STL solid given in sourcefile.
+   *
+   * @param sourceconf Map of source options
+   */
+  explicit TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf): TSurfaceSource(sourceconf){
+    boost::filesystem::path STLfile;
+    std::istringstream(sourceconf["STLfile"]) >> STLfile;
+    sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
+  }
 };
 
 

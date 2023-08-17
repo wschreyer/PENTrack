@@ -1,21 +1,11 @@
 // Copyright (c) 2005-2008 ASCLEPIOS Project, INRIA Sophia-Antipolis (France)
 // All rights reserved.
 //
-// This file is part of the ImageIO Library, and as been adapted for
-// CGAL (www.cgal.org).
-// You can redistribute it and/or  modify it under the terms of the
-// GNU Lesser General Public License as published by the Free Software Foundation;
-// either version 3 of the License, or (at your option) any later version.
+// This file is part of the ImageIO Library, and as been adapted for CGAL (www.cgal.org).
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// These files are provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/CGAL_ImageIO/include/CGAL/ImageIO/bmp.h $
-// $Id: bmp.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/CGAL_ImageIO/include/CGAL/ImageIO/bmp.h $
+// $Id: bmp.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later
 //
 //
 // Author(s)     :  ASCLEPIOS Project (INRIA Sophia-Antipolis), Laurent Rineau
@@ -23,14 +13,14 @@
 /*************************************************************************
  * iobmp.h - I procedures for BMP raw images
  *
- * $Id: bmp.h 0698f79 %aI Sébastien Loriot
+ * $Id: bmp.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
  *
  * Copyright INRIA
  *
  * AUTHOR:
  * Gregoire Malandain (greg@sophia.inria.fr)
- * 
- * CREATION DATE: 
+ *
+ * CREATION DATE:
  * Wed Oct  6 17:03:48 MET DST 1999
  *
  * ADDITIONS, CHANGES

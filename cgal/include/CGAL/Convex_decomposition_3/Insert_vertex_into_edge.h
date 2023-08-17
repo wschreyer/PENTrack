@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Convex_decomposition_3/include/CGAL/Convex_decomposition_3/Insert_vertex_into_edge.h $
+// $Id: Insert_vertex_into_edge.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Convex_decomposition_3/include/CGAL/Convex_decomposition_3/Insert_vertex_into_edge.h $
-// $Id: Insert_vertex_into_edge.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     :  Peter Hachenberger <hachenberger@mpi-sb.mpg.de>
 
@@ -43,18 +34,18 @@ class Insert_vertex_into_edge {
 
  public:
   Insert_vertex_into_edge(SNC_structure& snc_,
-			  SNC_point_locator& pl_) 
+                          SNC_point_locator& pl_)
     : snc(snc_), pl(pl_) {}
 
-  SVertex_handle operator() 
-    (SVertex_handle e, const Point_3 ip) 
+  SVertex_handle operator()
+    (SVertex_handle e, const Point_3 ip)
   {
     CGAL::SNC_constructor<Items, SNC_structure> C(snc);
     Vertex_handle v;
     v = C.create_from_edge(e, ip);
-    
+
     pl.add_vertex(v);
-    
+
     SVertex_iterator svi = v->svertices_begin();
     SVertex_handle svf, svb;
     if(svi->point() == e->point()) {
@@ -64,12 +55,12 @@ class Insert_vertex_into_edge {
       svb = svi;
       svf = ++svi;
     }
-    
+
     svb->twin() = e;
     svf->twin() = e->twin();
     e->twin()->twin() = svf;
     e->twin() = svb;
-    
+
     pl.add_edge(svf);
     pl.add_edge(svb);
 

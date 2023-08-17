@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Stream_lines_2/include/CGAL/Runge_kutta_integrator_2.h $
+// $Id: Runge_kutta_integrator_2.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Stream_lines_2/include/CGAL/Runge_kutta_integrator_2.h $
-// $Id: Runge_kutta_integrator_2.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Abdelkrim Mebarki <Abdelkrim.Mebarki@sophia.inria.fr>
 
@@ -61,25 +52,25 @@ public:
   Point_2 operator()(const Point_2 & p, const Vector_field_2 & vector_field_2, const FT & integration_step, Vector_2 v, const bool & index) const;
 
   inline FT get_default_integration_step()
-    { 
-      return default_integration_step; 
+    {
+      return default_integration_step;
     }
-  Euler_integrator_2 * get_euler_integrator_2() 
-    { 
-      return &euler_integrator_2; 
+  Euler_integrator_2 * get_euler_integrator_2()
+    {
+      return &euler_integrator_2;
     }
   inline FT distance(const Point_2 & p, const Point_2 & q)
     {
       return sqrt(((p.x() - q.x())*(p.x() - q.x()))+((p.y()
-						      -
-						      q.y())*(p.y() - q.y())));
+                                                      -
+                                                      q.y())*(p.y() - q.y())));
     }
 };
 
 template <class VectorField_2>
 Runge_kutta_integrator_2<VectorField_2>::
 Runge_kutta_integrator_2()
-  : euler_integrator_2(), 
+  : euler_integrator_2(),
     default_integration_step(euler_integrator_2.get_default_integration_step())
 {}
 

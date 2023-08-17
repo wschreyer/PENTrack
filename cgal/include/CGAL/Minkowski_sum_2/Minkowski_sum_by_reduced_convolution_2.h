@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Minkowski_sum_2/include/CGAL/Minkowski_sum_2/Minkowski_sum_by_reduced_convolution_2.h $
-// $Id: Minkowski_sum_by_reduced_convolution_2.h dbc45fa %aI Efi Fogel
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Minkowski_sum_2/include/CGAL/Minkowski_sum_2/Minkowski_sum_by_reduced_convolution_2.h $
+// $Id: Minkowski_sum_by_reduced_convolution_2.h 4ffc949 2022-02-03T17:11:20+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s): Sebastian Morr    <sebastian@morr.cc>
 
@@ -29,10 +20,10 @@
 #include <CGAL/Arr_segment_traits_2.h>
 
 #include <CGAL/Minkowski_sum_2/AABB_collision_detector_2.h>
+#include <boost/functional/hash.hpp>
 
 #include <queue>
-#include <boost/unordered_set.hpp>
-#include <boost/unordered_map.hpp>
+#include <unordered_set>
 
 namespace CGAL {
 
@@ -249,7 +240,7 @@ private:
     std::vector<Direction_2> p2_dirs = directions_of_polygon(p2_vertices);
 
     // Contains states that were already visited
-    boost::unordered_set<State> visited_states;
+    std::unordered_set<State, boost::hash<State>> visited_states;
 
     // Init the queue with vertices from the first column
     std::queue<State> state_queue;

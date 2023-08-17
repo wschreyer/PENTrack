@@ -1,25 +1,16 @@
-// Copyright (c) 1999  
+// Copyright (c) 1999
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Kernel_23/include/CGAL/Line_3.h $
+// $Id: Line_3.h 8fa0f55 2021-05-27T10:27:38+02:00 Laurent Rineau
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Kernel_23/include/CGAL/Line_3.h $
-// $Id: Line_3.h 6c8a8f3 %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Andreas Fabri
 //                 Stefan Schirra
@@ -75,6 +66,9 @@ public:
   Line_3(const Rep& l)
       : Rep(l) {}
 
+  Line_3(Rep&& l)
+      : Rep(std::move(l)) {}
+
   Line_3(const Point_3 & p, const Point_3 & q)
       : Rep(typename R::Construct_line_3()(Return_base_tag(), p, q)) {}
 
@@ -105,19 +99,19 @@ public:
     return R().construct_direction_3_object()(*this);
   }
 
-  bool has_on(const Point_3 &p) const 
-  { 
+  bool has_on(const Point_3 &p) const
+  {
     return R().has_on_3_object()(*this, p);
-    //return has_on_boundary(p); 
+    //return has_on_boundary(p);
   }
 
   Point_3 point() const
-  { 
+  {
     return R().construct_point_on_3_object()(*this, 0);
   }
 
   Point_3 point(const FT i) const
-  { 
+  {
     return R().construct_point_on_3_object()(*this, i);
   }
 
@@ -140,14 +134,14 @@ public:
   {
     return R().is_degenerate_3_object()(*this);
   }
-  
+
 };
 
 template < class R >
 std::ostream &
 operator<<(std::ostream &os, const Line_3<R> &l)
 {
-    switch(get_mode(os)) {
+    switch(IO::get_mode(os)) {
     case IO::ASCII :
         return os << l.point(0) << ' ' << l.point(1);
     case IO::BINARY :
