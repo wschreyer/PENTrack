@@ -1,19 +1,10 @@
 // Copyright (c) 2017  GeometryFactory (France).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Property_map/include/CGAL/Dynamic_property_map.h $
-// $Id: Dynamic_property_map.h 1fe5100 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Property_map/include/CGAL/Dynamic_property_map.h $
+// $Id: Dynamic_property_map.h 4ffc949 2022-02-03T17:11:20+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Andreas Fabri
@@ -22,13 +13,16 @@
 #define CGAL_DYNAMIC_PROPERTY_MAP_H
 
 #include <boost/graph/graph_traits.hpp>
+#include <boost/graph/properties.hpp>
+
 #include <CGAL/boost/graph/properties.h>
 #include <CGAL/property_map.h>
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
 
+#include <memory>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/mpl/if.hpp>
+
+#include <unordered_map>
 
 namespace CGAL {
 
@@ -42,7 +36,7 @@ struct Dynamic_property_map {
   typedef const value_type& reference;
   typedef boost::read_write_property_map_tag  category;
 
-  Dynamic_property_map(const V& default_value = V())
+  Dynamic_property_map(const V default_value = V())
     : map_(new Map()), default_value_(default_value)
   {}
 
@@ -69,19 +63,19 @@ struct Dynamic_property_map {
     (*(m.map_))[k] = v;
   }
 
-  
+
   const V& default_value() const
   {
     return default_value_;
   }
 
 
-  typedef boost::unordered_map<K,V> Map;
-  boost::shared_ptr<Map> map_;
+  typedef std::unordered_map<K,V> Map;
+  std::shared_ptr<Map> map_;
   V default_value_;
 };
 
-  
+
 template <typename M, typename PM>
 struct Dynamic_property_map_deleter {
   M& mesh;
@@ -103,30 +97,30 @@ struct Dynamic {
   typedef typename PM::key_type key_type;
   typedef typename PM::value_type value_type;
   typedef typename PM::reference reference;
-  typedef typename PM::category category;
+  typedef boost::read_write_property_map_tag category;
 
   typedef Dynamic_property_map_deleter<Mesh,PM> Deleter;
 
   Dynamic()
     : map_()
   {}
-  
+
   Dynamic(const Mesh& mesh, PM* pm)
     : map_(pm, Deleter(mesh))
   {}
-             
+
   friend reference get(const Dynamic& m, const key_type& k)
   {
     return get(*(m.map_), k);
   }
-    
+
 
   friend void put(const Dynamic& m, const key_type& k, const value_type& v)
   {
     put(*(m.map_), k, v);
   }
-   
-  boost::shared_ptr<PM> map_;
+
+  std::shared_ptr<PM> map_;
 };
 
 template <typename Key, typename Value>
@@ -137,9 +131,7 @@ struct Dynamic_with_index
   typedef typename boost::mpl::if_<  boost::is_same<bool, Value>,
                                      value_type,
                                      value_type&>::type  reference;
-  typedef typename boost::mpl::if_<  boost::is_same<bool, Value>,
-                                     boost::read_write_property_map_tag,
-                                     boost::lvalue_property_map_tag>::type  category;
+  typedef boost::read_write_property_map_tag category;
 
   Dynamic_with_index()
     : m_values()
@@ -159,7 +151,7 @@ struct Dynamic_with_index
     (*m.m_values)[k.idx()]=v;
   }
 
-  boost::shared_ptr<std::vector<value_type> > m_values;
+  std::shared_ptr<std::vector<value_type> > m_values;
 };
 
 } // namespace internal

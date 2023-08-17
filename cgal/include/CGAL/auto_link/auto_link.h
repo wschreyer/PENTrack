@@ -1,19 +1,17 @@
-// This header file is a copy of "boost/config/auto_link.hpp" 
+// This header file is a copy of "boost/config/auto_link.hpp"
 // from boost version 1.44.0
-// but slightly modified to accomodate CGAL libraries.
-
+// but slightly modified to accommodate CGAL libraries.
+//
 // Before CGAL-4.7-beta1, it has been synchronized with
 // libs/config/ version boost-1.58.0-39-g15d56c9, file
 // include/boost/config/auto_link.hpp
-
-//  (C) Copyright John Maddock 2003.
-//  Use, modification and distribution are subject to the
-//  Boost Software License, Version 1.0. (See accompanying file
-//  LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
 //
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Installation/include/CGAL/auto_link/auto_link.h $
-// $Id: auto_link.h 0b66eb0 %aI Laurent Rineau
-//  SPDX-License-Identifier: BSL-1.0
+//  (C) Copyright John Maddock 2003.
+//
+//
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Installation/include/CGAL/auto_link/auto_link.h $
+// $Id: auto_link.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: BSL-1.0
 //
  /*
   *   LOCATION:    see https://www.boost.org for most recent version.
@@ -435,7 +433,7 @@ CGAL_VERSION:        Defined in <CGAL/version.h>
 #if defined(CGAL_LIB_NAME)
 #  undef CGAL_LIB_NAME
 #endif
-// Don't undef this one: it can be set by the user and should be the 
+// Don't undef this one: it can be set by the user and should be the
 // same for all libraries:
 //#if defined(CGAL_LIB_TOOLSET)
 //#  undef CGAL_LIB_TOOLSET

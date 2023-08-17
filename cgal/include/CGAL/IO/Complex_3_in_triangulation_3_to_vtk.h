@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/IO/Complex_3_in_triangulation_3_to_vtk.h $
-// $Id: Complex_3_in_triangulation_3_to_vtk.h 27ceec3 %aI Maxime Gimeno
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/IO/Complex_3_in_triangulation_3_to_vtk.h $
+// $Id: Complex_3_in_triangulation_3_to_vtk.h 70058db 2021-05-03T15:30:52+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent Rineau
@@ -24,7 +15,7 @@
 
 #include <CGAL/license/Mesh_3.h>
 
-#include <CGAL/Hash_handles_with_or_without_timestamps.h>
+#include <CGAL/Time_stamper.h>
 
 #include <vtkPoints.h>
 #include <vtkUnstructuredGrid.h>
@@ -35,10 +26,12 @@
 
 namespace CGAL {
 
+namespace IO {
+
 //if export_complex is false, there must be no far point.
 template <typename C3T3>
-vtkUnstructuredGrid* 
-output_c3t3_to_vtk_unstructured_grid(const C3T3& c3t3, 
+vtkUnstructuredGrid*
+output_c3t3_to_vtk_unstructured_grid(const C3T3& c3t3,
                                      vtkUnstructuredGrid* grid = 0,
                                      bool export_complex = true)
 {
@@ -59,7 +52,7 @@ output_c3t3_to_vtk_unstructured_grid(const C3T3& c3t3,
   boost::unordered_map<Vertex_handle, vtkIdType, Hash_fct> V;
   vtkIdType inum = 0;
 
-  for(typename Triangulation::Finite_vertices_iterator 
+  for(typename Triangulation::Finite_vertices_iterator
         vit = tr.finite_vertices_begin(),
         end = tr.finite_vertices_end();
       vit != end;
@@ -75,10 +68,10 @@ output_c3t3_to_vtk_unstructured_grid(const C3T3& c3t3,
       V[vit] = inum++;
     }
   }
-  for(typename C3T3::Facets_in_complex_iterator 
+  for(typename C3T3::Facets_in_complex_iterator
         fit = c3t3.facets_in_complex_begin(),
         end = c3t3.facets_in_complex_end();
-      fit != end; ++fit) 
+      fit != end; ++fit)
   {
     vtkIdType cell[3];
     int j=0;
@@ -90,10 +83,10 @@ output_c3t3_to_vtk_unstructured_grid(const C3T3& c3t3,
   }
   if(export_complex)
   {
-    for(typename C3T3::Cells_in_complex_iterator 
+    for(typename C3T3::Cells_in_complex_iterator
         cit = c3t3.cells_in_complex_begin(),
         end = c3t3.cells_in_complex_end();
-        cit != end; ++cit) 
+        cit != end; ++cit)
     {
       vtkIdType cell[4];
       for (int i = 0; i < 4; ++i)
@@ -105,7 +98,7 @@ output_c3t3_to_vtk_unstructured_grid(const C3T3& c3t3,
   {
     for(auto cit = tr.finite_cells_begin(),
         end = tr.finite_cells_end();
-        cit != end; ++cit) 
+        cit != end; ++cit)
     {
       if(!c3t3.is_in_complex(cit))
       {
@@ -129,6 +122,12 @@ output_c3t3_to_vtk_unstructured_grid(const C3T3& c3t3,
   vtk_cells->Delete();
   return grid;
 }
+
+} // namespace IO
+
+#ifndef CGAL_NO_DEPRECATED_CODE
+using IO::output_c3t3_to_vtk_unstructured_grid;
+#endif
 
 } // end namespace CGAL
 

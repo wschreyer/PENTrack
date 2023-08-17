@@ -1,19 +1,10 @@
 // Copyright (c) 2006-2008 Fernando Luis Cacciola Carballal. All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Straight_skeleton_2/include/CGAL/certified_numeric_predicates.h $
-// $Id: certified_numeric_predicates.h ff26773 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Straight_skeleton_2/include/CGAL/certified_numeric_predicates.h $
+// $Id: certified_numeric_predicates.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Fernando Cacciola <fernando_cacciola@ciudad.com.ar>
 //
@@ -35,13 +26,13 @@ inline Uncertain<bool> logical_and( Uncertain<bool> a, Uncertain<bool> b, Uncert
 template <class NT>
 inline Uncertain<bool> certified_is_zero(const NT& x)
 {
-  return CGAL_NTS is_valid(x) ? make_uncertain(CGAL_NTS is_zero(x)) : Uncertain<bool>::indeterminate() ; 
+  return CGAL_NTS is_valid(x) ? make_uncertain(CGAL_NTS is_zero(x)) : Uncertain<bool>::indeterminate() ;
 }
 
 template <class NT>
 inline Uncertain<bool> certified_is_not_zero(const NT& x)
 {
-  return CGAL_NTS is_valid(x) ? make_uncertain(!CGAL_NTS is_zero(x)) : Uncertain<bool>::indeterminate() ; 
+  return CGAL_NTS is_valid(x) ? make_uncertain(!CGAL_NTS is_zero(x)) : Uncertain<bool>::indeterminate() ;
 }
 
 template <class NT>
@@ -71,7 +62,7 @@ inline Uncertain<Sign> certified_sign(const NT& x)
 template <class NT1, class NT2>
 inline Uncertain<Comparison_result> certified_compare(const NT1& n1, const NT2& n2)
 {
-  return CGAL_NTS is_valid(n1) && CGAL_NTS is_valid(n2) ? make_uncertain(CGAL_NTS compare(n1,n2)) 
+  return CGAL_NTS is_valid(n1) && CGAL_NTS is_valid(n2) ? make_uncertain(CGAL_NTS compare(n1,n2))
                                                         : Uncertain<Comparison_result>::indeterminate()  ;
 }
 

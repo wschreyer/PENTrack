@@ -1,26 +1,14 @@
-// ======================================================================
-//
 // Copyright (c) 2005-2017 GeometryFactory (France).  All Rights Reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Subdivision_method_3/include/CGAL/Subdivision_method_3/subdivision_masks_3.h $
-// $Id: subdivision_masks_3.h e4cbae5 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Subdivision_method_3/include/CGAL/Subdivision_method_3/subdivision_masks_3.h $
+// $Id: subdivision_masks_3.h 45696cd 2021-10-30T13:35:17+03:00 Dimitris Papavasiliou
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s): Le-Jeng Shiue <Andy.Shiue@gmail.com>
 //
-// ======================================================================
 
 #ifndef CGAL_SUBDIVISION_MASKS_3_H
 #define CGAL_SUBDIVISION_MASKS_3_H
@@ -110,7 +98,7 @@ public:
   void face_node(face_descriptor facet, Point& pt) {
     int n = 0;
     Point p(0,0,0);
-    BOOST_FOREACH(vertex_descriptor vd,
+    for(vertex_descriptor vd :
                   vertices_around_face(halfedge(facet, *(this->pmesh)), *(this->pmesh)))
     {
       p = p + ( get(this->vpmap,vd) - ORIGIN);
@@ -343,13 +331,14 @@ public:
   void vertex_node(vertex_descriptor vertex, Point& pt) {
     Halfedge_around_vertex_circulator vcir(vertex, *(this->pmesh));
     size_t n = circulator_size(vcir);
+    CGAL_assume(n > 0);
 
     FT R[] = {0.0, 0.0, 0.0};
     Point_ref S = get(this->vpmap,vertex);
 
     for (size_t i = 0; i < n; i++, ++vcir) {
       Point_ref p = get(this->vpmap,target(opposite(*vcir, *(this->pmesh)), *(this->pmesh)));
-      R[0] += p[0]; 	R[1] += p[1]; 	R[2] += p[2];
+      R[0] += p[0];         R[1] += p[1];         R[2] += p[2];
     }
     if (n == 6) {
       pt = Point((10*S[0]+R[0])/16, (10*S[1]+R[1])/16, (10*S[2]+R[2])/16);
@@ -488,7 +477,7 @@ public:
 
   /// computes the Doo-Sabin point `pt` of the vertex pointed by the halfedge `he`.
   void corner_node(halfedge_descriptor he, Point& pt) {
-    size_t n = 0;
+    int n = 0;
     halfedge_descriptor hd = he;
     do{
       hd = next(hd, *(this->pmesh));
@@ -504,7 +493,7 @@ public:
       cv = cv/16;
     }  else {
       FT a;
-      for (size_t k = 0; k < n; ++k, he = next(he, *(this->pmesh))) {
+      for (int k = 0; k < n; ++k, he = next(he, *(this->pmesh))) {
         if (k == 0) a = (FT) ((5.0/n) + 1);
         else a = (FT) (3+2*std::cos(2*k*CGAL_PI/n))/n;
         cv = cv + (get(this->vpm, target(he, *(this->pmesh)))-CGAL::ORIGIN)*a;
@@ -513,6 +502,7 @@ public:
     }
     pt = CGAL::ORIGIN + cv;
   }
+/// @}
 };
 
 // ======================================================================
@@ -618,6 +608,7 @@ public:
     ept2 = CGAL::ORIGIN + denom * ( 10.*sv + 16.*tv + next_tv );
     vpt = CGAL::ORIGIN + 1./27. * ( 4*prev_sv + 19*sv + 4*tv );
   }
+/// @}
 };
 
 } // namespace CGAL

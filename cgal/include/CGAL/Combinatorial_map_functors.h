@@ -1,20 +1,11 @@
 // Copyright (c) 2010-2011 CNRS and LIRIS' Establishments (France).
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Combinatorial_map/include/CGAL/Combinatorial_map_functors.h $
-// $Id: Combinatorial_map_functors.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Combinatorial_map/include/CGAL/Combinatorial_map_functors.h $
+// $Id: Combinatorial_map_functors.h d909084 2022-01-18T14:30:21+01:00 Guillaume Damiand
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Guillaume Damiand <guillaume.damiand@liris.cnrs.fr>
 //
@@ -22,7 +13,7 @@
 #define CGAL_COMBINATORIAL_MAP_FUNCTORS_H
 
 #include <CGAL/Dart_const_iterators.h>
-#include <CGAL/internal/Combinatorial_map_internal_functors.h>
+#include <CGAL/Combinatorial_map/internal/Combinatorial_map_internal_functors.h>
 #include <vector>
 #include <boost/mpl/has_xxx.hpp>
 
@@ -81,8 +72,8 @@ struct Display_attribute_functor
   static void run(const CMap& amap,
                   typename CMap::Dart_const_handle adart)
   {
-    if ( amap.template attribute<i>(adart)==NULL )
-      std::cout<<"NULL";
+    if ( amap.template attribute<i>(adart)==nullptr )
+      std::cout<<"nullptr";
     else
       amap.template display_attribute<i>(amap.template attribute<i>(adart));
   }
@@ -101,7 +92,7 @@ struct Test_is_valid_attribute_functor
     size_type mark=amap.get_new_mark();
     bool res = true;
     CGAL::internal::Test_is_valid_attribute_functor<CMap>::
-        run<i>(amap, adart, mark, &res);
+        template run<i>(amap, adart, mark, &res);
 
     amap.negate_mark(mark);
     if ( !amap.is_whole_map_marked(mark) )

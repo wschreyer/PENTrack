@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Nef_2/include/CGAL/Nef_2/iterator_tools.h $
+// $Id: iterator_tools.h 9d16a42 2020-06-15T17:07:35+02:00 Laurent Rineau
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Nef_2/include/CGAL/Nef_2/iterator_tools.h $
-// $Id: iterator_tools.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Michael Seel <seel@mpi-sb.mpg.de>
 #ifndef CGAL_ITERATORTOOLS_H
@@ -29,7 +20,7 @@
 
 namespace CGAL {
 
-template <typename Iter, typename Move> 
+template <typename Iter, typename Move>
 class CircFromIt : public Iter {
     // Ptr  node;    // The internal node ptr inherited from It.
     typedef CircFromIt<Iter,Move> Self;
@@ -44,17 +35,23 @@ public:
 // OPERATIONS Forward Category
 // ---------------------------
 
-    bool operator==( Nullptr_t CGAL_assertion_code(p) ) const {
-      CGAL_assertion( p == NULL );
-      return Iter::operator==( Iter(NULL) );
+    bool operator==( std::nullptr_t CGAL_assertion_code(p) ) const {
+      CGAL_assertion( p == nullptr );
+      return Iter::operator==( Iter(nullptr) );
     }
-    bool operator!=( Nullptr_t p ) const {
+    bool operator!=( std::nullptr_t p ) const {
       return !(*this == p);
     }
     bool operator==( const Self& i ) const {
       return Iter::operator==(i);
     }
     bool operator!=( const Self& i) const {
+        return !(*this == i);
+    }
+    bool operator==( const Iter& i ) const {
+      return Iter::operator==(i);
+    }
+    bool operator!=( const Iter& i) const {
         return !(*this == i);
     }
 
@@ -85,7 +82,7 @@ public:
 
 };
 
-template <typename Iter, typename Pnt> 
+template <typename Iter, typename Pnt>
 class PntItFromVertIt : public Iter {
 public:
   typedef PntItFromVertIt<Iter,Pnt> Self;
@@ -98,9 +95,9 @@ public:
   PntItFromVertIt(Iter it) : Base(it) {}
   PntItFromVertIt(const Self& it) : Base(it) {}
 
-  reference operator*() const 
+  reference operator*() const
   { return Base::operator*().point(); }
-  pointer operator->() const 
+  pointer operator->() const
   { return &(operator*()); }
   Self& operator++() { return (Self&)Base::operator++(); }
   Self operator++(int) { Self tmp=*this; ++*this; return tmp; }

@@ -3,20 +3,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_2/include/CGAL/Mesh_2/Mesh_global_optimizer_2.h $
+// $Id: Mesh_global_optimizer_2.h 0ac4bf6 2021-09-10T11:28:13+02:00 Jane Tournois
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_2/include/CGAL/Mesh_2/Mesh_global_optimizer_2.h $
-// $Id: Mesh_global_optimizer_2.h fb51a69 %aI Andreas Fabri
-// SPDX-License-Identifier: GPL-3.0+
-// 
 // Author(s) : Jane Tournois, Raul Gallegos, Pierre Alliez, Stéphane Tayeb
 //
 
@@ -27,7 +18,7 @@
 
 
 #ifdef CGAL_MESH_2_VERBOSE
-  #define CGAL_MESH_2_OPTIMIZER_VERBOSE 
+  #define CGAL_MESH_2_OPTIMIZER_VERBOSE
 #endif
 
 #include <CGAL/Timer.h>
@@ -54,12 +45,12 @@ namespace Mesh_2 {
 template <typename CDT,
           typename MoveFunction>
 class Mesh_global_optimizer_2
-{  
+{
   // Types
   typedef CDT  Tr;
   typedef MoveFunction Mf;
   typedef typename Tr::Geom_traits      Gt;
-  
+
   typedef typename Tr::Point            Point_2;
   typedef typename Tr::Face_handle      Face_handle;
   typedef typename Tr::Vertex_handle    Vertex_handle;
@@ -69,7 +60,7 @@ class Mesh_global_optimizer_2
 
   typedef typename Gt::FT               FT;
   typedef typename Gt::Vector_2         Vector_2;
-  
+
   typedef typename std::vector<Face_handle>                 Face_vector;
   typedef typename std::set<Vertex_handle>                  Vertex_set;
   typedef typename std::list<FT>                            FT_list;
@@ -96,7 +87,7 @@ public:
     , seeds_mark_(false)
   {
   }
-  
+
   /// Time accessors
   void set_time_limit(double time) { time_limit_ = time; }
   double time_limit() const { return time_limit_; }
@@ -163,8 +154,8 @@ public:
       if(sq_freeze_ratio_ > 0.
         && nb_vertices_moved < 0.01 * initial_vertices_nb
         && nb_vertices_moved == moving_vertices.size())
-      { 
-        // we should stop because we are 
+      {
+        // we should stop because we are
         // probably entering an infinite instable loop
         convergence_stop = true;
         break;
@@ -179,7 +170,7 @@ public:
       nb_vertices_moved = moving_vertices.size();
 
       this->after_move();
- 
+
 #ifdef CGAL_MESH_2_OPTIMIZER_VERBOSE
       double time = running_time_.time();
       double moving_vertices_size = static_cast<double>(moving_vertices.size());
@@ -302,7 +293,7 @@ private:
     Face_circulator face = cdt_.incident_faces(v);
     Face_circulator end = face;
 
-    // Get first face sq_circumradius_length 
+    // Get first face sq_circumradius_length
     // Initialize min
     FT min_sqr = (std::numeric_limits<double>::max)();
     // Find the minimum value
@@ -361,7 +352,7 @@ private:
       sum += CGAL::sqrt(*it);
 
 #ifdef CGAL_MESH_2_OPTIMIZER_VERBOSE
-    sum_moves_ = sum/big_moves_.size();
+    sum_moves_ = sum/FT(big_moves_.size());
 #endif
 
     return ( sum/FT(big_moves_.size()) < convergence_ratio_ );
@@ -474,9 +465,9 @@ private:
 
   double time_limit_;
   CGAL::Timer running_time_;
-  
+
   std::list<FT> big_moves_;
-  
+
 #ifdef CGAL_MESH_2_OPTIMIZER_VERBOSE
   mutable FT sum_moves_;
 #endif

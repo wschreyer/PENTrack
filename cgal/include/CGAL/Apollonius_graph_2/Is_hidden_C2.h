@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Apollonius_graph_2/include/CGAL/Apollonius_graph_2/Is_hidden_C2.h $
+// $Id: Is_hidden_C2.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Apollonius_graph_2/include/CGAL/Apollonius_graph_2/Is_hidden_C2.h $
-// $Id: Is_hidden_C2.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Menelaos Karavelas <mkaravel@iacm.forth.gr>
 
@@ -50,23 +41,23 @@ public:
 
 private:
   bool is_hidden(const Site_2& p, const Site_2& q,
-		 const Integral_domain_without_division_tag&) const
+                 const Integral_domain_without_division_tag&) const
   {
     RT w1 = p.weight();
     RT w2 = q.weight();
     Sign s = CGAL::sign( CGAL::square(p.x() - q.x())
-			 + CGAL::square(p.y() - q.y())
-			 - CGAL::square(w1 - w2)
-			 );
+                         + CGAL::square(p.y() - q.y())
+                         - CGAL::square(w1 - w2)
+                         );
     if ( s == POSITIVE ) { return false; }
     return (CGAL::compare(w1, w2) != SMALLER);
   }
 
   bool is_hidden(const Site_2& p, const Site_2& q,
-		 const Field_with_sqrt_tag&) const
+                 const Field_with_sqrt_tag&) const
   {
     RT d = CGAL::sqrt(CGAL::square(p.x() - q.x())
-		      + CGAL::square(p.y() - q.y()));
+                      + CGAL::square(p.y() - q.y()));
     Sign s = CGAL::sign(d - p.weight() + q.weight());
 
     return ( s != POSITIVE );

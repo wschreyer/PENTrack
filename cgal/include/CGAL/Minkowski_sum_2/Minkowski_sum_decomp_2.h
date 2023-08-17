@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Minkowski_sum_2/include/CGAL/Minkowski_sum_2/Minkowski_sum_decomp_2.h $
-// $Id: Minkowski_sum_decomp_2.h 8cdfad0 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Minkowski_sum_2/include/CGAL/Minkowski_sum_2/Minkowski_sum_decomp_2.h $
+// $Id: Minkowski_sum_decomp_2.h 414103f 2022-02-21T17:17:34+02:00 Efi Fogel
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Ron Wein   <wein_r@yahoo.com>
 
@@ -99,15 +90,51 @@ private:
   Compare_xy_2            f_compare_xy;
 
 public:
+  // The pointers and the corresponding flags that indicate ownerships should
+  // be replaced with smart pointers. Meanwhile, the copy constructor and
+  // copy assignment prevent double delition. Notice that once a copy
+  // constructor (assignment) is present, the move constructor (assignment)
+  // is implicitly not generated anyway.
+
   //! Default constructor.
   Minkowski_sum_by_decomposition_2() :
-    m_decomposition_strategy1(NULL),
-    m_decomposition_strategy2(NULL),
+    m_decomposition_strategy1(nullptr),
+    m_decomposition_strategy2(nullptr),
     m_own_strategy1(false),
     m_own_strategy2(false),
-    m_traits(NULL),
+    m_traits(nullptr),
     m_own_traits(false)
   { init(); }
+
+  //! Copy constructor.
+  Minkowski_sum_by_decomposition_2
+  (const Minkowski_sum_by_decomposition_2& other) :
+    m_decomposition_strategy1((other.m_own_strategy1) ?
+                              new Decomposition_strategy1 :
+                              other.m_decomposition_strategy1),
+    m_decomposition_strategy2((other.m_own_strategy2) ?
+                              new Decomposition_strategy2 :
+                              other.m_decomposition_strategy2),
+    m_own_strategy1(other.m_own_strategy1),
+    m_own_strategy2(other.m_own_strategy2),
+    m_traits((other.m_own_traits) ? new Traits_2 : other.m_traits),
+    m_own_traits(other.m_own_traits)
+  { init(); }
+
+  //! Copy assignment.
+  Minkowski_sum_by_decomposition_2&
+  operator=(const Minkowski_sum_by_decomposition_2& other) {
+    m_decomposition_strategy1 = (other.m_own_strategy1) ?
+      new Decomposition_strategy1 : other.m_decomposition_strategy1;
+    m_decomposition_strategy2 = (other.m_own_strategy2) ?
+      new Decomposition_strategy2 : other.m_decomposition_strategy2;
+    m_own_strategy1 = other.m_own_strategy1;
+    m_own_strategy2 = other.m_own_strategy2;
+    m_traits = (other.m_own_traits) ? new Traits_2 : other.m_traits;
+    m_own_traits = other.m_own_traits;
+    init();
+    return *this;
+  }
 
   //! Constructor.
   Minkowski_sum_by_decomposition_2(const Decomposition_strategy1& strategy1,
@@ -128,14 +155,14 @@ public:
     m_decomposition_strategy2(&strategy2),
     m_own_strategy1(false),
     m_own_strategy2(false),
-    m_traits(NULL),
+    m_traits(nullptr),
     m_own_traits(false)
   { init(); }
 
   //! Constructor.
   Minkowski_sum_by_decomposition_2(const Traits_2& traits) :
-    m_decomposition_strategy1(NULL),
-    m_decomposition_strategy2(NULL),
+    m_decomposition_strategy1(nullptr),
+    m_decomposition_strategy2(nullptr),
     m_own_strategy1(false),
     m_own_strategy2(false),
     m_traits(&traits),
@@ -146,25 +173,25 @@ public:
   ~Minkowski_sum_by_decomposition_2()
   {
     if (m_own_traits) {
-      if (m_traits != NULL) {
+      if (m_traits != nullptr) {
         delete m_traits;
-        m_traits = NULL;
+        m_traits = nullptr;
       }
       m_own_traits = false;
     }
 
     if (m_own_strategy1) {
-      if (m_decomposition_strategy1 != NULL) {
+      if (m_decomposition_strategy1 != nullptr) {
         delete m_decomposition_strategy1;
-        m_decomposition_strategy1 = NULL;
+        m_decomposition_strategy1 = nullptr;
       }
       m_own_strategy1 = false;
     }
 
     if (m_own_strategy2) {
-      if (m_decomposition_strategy2 != NULL) {
+      if (m_decomposition_strategy2 != nullptr) {
         delete m_decomposition_strategy2;
-        m_decomposition_strategy2 = NULL;
+        m_decomposition_strategy2 = nullptr;
       }
       m_own_strategy2 = false;
     }
@@ -174,16 +201,16 @@ public:
   void init()
   {
     // Allocate the traits if not provided.
-    if (m_traits == NULL) {
+    if (m_traits == nullptr) {
       m_traits = new Traits_2;
       m_own_traits = true;
     }
     // Allocate the strategy if not provided.
-    if (m_decomposition_strategy1 == NULL) {
+    if (m_decomposition_strategy1 == nullptr) {
       m_decomposition_strategy1 = new Decomposition_strategy1;
       m_own_strategy1 = true;
     }
-    if (m_decomposition_strategy2 == NULL) {
+    if (m_decomposition_strategy2 == nullptr) {
       m_decomposition_strategy2 = new Decomposition_strategy2;
       m_own_strategy2 = true;
     }

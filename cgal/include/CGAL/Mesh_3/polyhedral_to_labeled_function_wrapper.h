@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/polyhedral_to_labeled_function_wrapper.h $
-// $Id: polyhedral_to_labeled_function_wrapper.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/Mesh_3/polyhedral_to_labeled_function_wrapper.h $
+// $Id: polyhedral_to_labeled_function_wrapper.h 0fa0c4f 2019-12-05T11:05:35+01:00 Laurent Rineau
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Stéphane Tayeb
@@ -99,7 +90,7 @@ public:
     , step_size_(step_size)
     , first_level_(first_level)
   {
-    tree_->accelerate_distance_queries();
+
   }
 
   // Default copy constructor and assignment operator are ok
@@ -216,7 +207,6 @@ public:
     , sq_tolerance_size_(tolerance_size*tolerance_size)
     , hint_(p.facets_begin()->halfedge()->vertex()->point())
   {
-    tree_->accelerate_distance_queries();
   }
 
   // Default copy constructor and assignment operator are ok
@@ -292,7 +282,6 @@ public:
     , sq_tolerance_size_(tolerance_size*tolerance_size)
     , hint_(p.facets_begin()->halfedge()->vertex()->point())
   {
-    tree_->accelerate_distance_queries();
   }
 
   // Default copy constructor and assignment operator are ok

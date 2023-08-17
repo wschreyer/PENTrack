@@ -3,19 +3,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_complex_3_in_triangulation_3.h $
-// $Id: Mesh_complex_3_in_triangulation_3.h c28e05b %aI Mael Rouxel-Labbé
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/Mesh_complex_3_in_triangulation_3.h $
+// $Id: Mesh_complex_3_in_triangulation_3.h 591141b 2021-09-27T14:57:10+02:00 Jane Tournois
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Stephane Tayeb, Clement Jamin
@@ -27,14 +18,15 @@
 #ifndef CGAL_MESH_COMPLEX_3_IN_TRIANGULATION_3_H
 #define CGAL_MESH_COMPLEX_3_IN_TRIANGULATION_3_H
 
-#include <CGAL/license/Mesh_3.h>
+#include <CGAL/license/Triangulation_3.h>
 
+#include <CGAL/Mesh_3/Mesh_complex_3_in_triangulation_3_fwd.h>
 #include <CGAL/disable_warnings.h>
 #include <CGAL/iterator.h>
-#include <CGAL/Hash_handles_with_or_without_timestamps.h>
 #include <CGAL/Mesh_3/utilities.h>
 #include <CGAL/Mesh_3/Mesh_complex_3_in_triangulation_3_base.h>
-#include <CGAL/internal/Mesh_3/Boundary_of_subdomain_of_complex_3_in_triangulation_3_to_off.h>
+#include <CGAL/Mesh_3/internal/Boundary_of_subdomain_of_complex_3_in_triangulation_3_to_off.h>
+#include <CGAL/Time_stamper.h>
 
 #include <boost/bimap/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
@@ -47,8 +39,8 @@ namespace CGAL {
 
 
 template <typename Tr,
-          typename CornerIndex = int,
-          typename CurveIndex = int>
+          typename CornerIndex,
+          typename CurveIndex>
 class Mesh_complex_3_in_triangulation_3 :
   public Mesh_3::Mesh_complex_3_in_triangulation_3_base<
     Tr, typename Tr::Concurrency_tag>
@@ -110,10 +102,7 @@ public:
   /**
    * Constructor
    */
-  Mesh_complex_3_in_triangulation_3()
-    : Base()
-    , edges_()
-    , corners_() {}
+  Mesh_complex_3_in_triangulation_3() = default;
 
   /**
    * Copy constructor
@@ -121,12 +110,17 @@ public:
   Mesh_complex_3_in_triangulation_3(const Self& rhs);
 
   /**
-   * Destructor
+   * Move constructor
    */
-  virtual ~Mesh_complex_3_in_triangulation_3() {}
+  Mesh_complex_3_in_triangulation_3(Self&& rhs)
+    : Base(std::move(rhs))
+    , edges_(std::move(rhs.edges_))
+    , corners_(std::move(rhs.corners_))
+    , far_vertices_(std::move(rhs.far_vertices_))
+  {}
 
   /**
-   * Assignement operator
+   * Assignement operator, also serves as move-assignement
    */
   Self& operator=(Self rhs)
   {
@@ -153,6 +147,7 @@ public:
     Base::clear();
     edges_.clear();
     corners_.clear();
+    far_vertices_.clear();
   }
 
   /// Import Base functions
@@ -234,47 +229,105 @@ public:
     far_vertices_.push_back(vh);
   }
 
+  void remove_isolated_vertex(Vertex_handle v)
+  {
+    Triangulation& tr = triangulation();
+
+    std::vector<Cell_handle> new_cells;
+    new_cells.reserve(32);
+    tr.remove_and_give_new_cells(v, std::back_inserter(new_cells));
+
+    typename std::vector<Cell_handle>::iterator nc_it = new_cells.begin();
+    typename std::vector<Cell_handle>::iterator nc_it_end = new_cells.end();
+    for (; nc_it != nc_it_end; ++nc_it)
+    {
+      Cell_handle c = *nc_it;
+      for (int i = 0; i < 4; ++i)
+      {
+        Facet mirror_facet = tr.mirror_facet(std::make_pair(c, i));
+        if (is_in_complex(mirror_facet))
+        {
+          set_surface_patch_index(c, i,
+            surface_patch_index(mirror_facet));
+          c->set_facet_surface_center(i,
+            mirror_facet.first->get_facet_surface_center(mirror_facet.second));
+        }
+      }
+      /*int i_inf;
+      if (c->has_vertex(tr.infinite_vertex(), i_inf))
+      {
+        Facet mirror_facet = tr.mirror_facet(std::make_pair(c, i_inf));
+        if (is_in_complex(mirror_facet))
+        {
+          set_surface_patch_index(c, i_inf,
+                                  surface_patch_index(mirror_facet));
+        }
+      }*/
+    }
+  }
+
   void remove_far_points()
   {
-    Triangulation &tr = triangulation();
     //triangulation().remove(far_vertices_.begin(), far_vertices_.end());
     typename Far_vertices_vec::const_iterator it = far_vertices_.begin();
     typename Far_vertices_vec::const_iterator it_end = far_vertices_.end();
     for ( ; it != it_end ; ++it)
     {
-      std::vector<Cell_handle> new_cells;
-      new_cells.reserve(32);
-      tr.remove_and_give_new_cells(*it, std::back_inserter(new_cells));
-
-      typename std::vector<Cell_handle>::iterator nc_it = new_cells.begin();
-      typename std::vector<Cell_handle>::iterator nc_it_end = new_cells.end();
-      for ( ; nc_it != nc_it_end ; ++nc_it)
-      {
-        Cell_handle c = *nc_it;
-        for (int i = 0 ; i < 4 ; ++i)
-        {
-          Facet mirror_facet = tr.mirror_facet(std::make_pair(c, i));
-          if (is_in_complex(mirror_facet))
-          {
-            set_surface_patch_index(c, i,
-                                    surface_patch_index(mirror_facet));
-            c->set_facet_surface_center(i,
-              mirror_facet.first->get_facet_surface_center(mirror_facet.second));
-          }
-        }
-        /*int i_inf;
-        if (c->has_vertex(tr.infinite_vertex(), i_inf))
-        {
-          Facet mirror_facet = tr.mirror_facet(std::make_pair(c, i_inf));
-          if (is_in_complex(mirror_facet))
-          {
-            set_surface_patch_index(c, i_inf,
-                                    surface_patch_index(mirror_facet));
-          }
-        }*/
-      }
+      remove_isolated_vertex(*it);
     }
     far_vertices_.clear();
+  }
+
+  void remove_isolated_vertices()
+  {
+    Triangulation& tr = triangulation();
+    for (Vertex_handle v : tr.finite_vertex_handles())
+      v->set_meshing_info(0);
+
+    for (typename Base::Cells_in_complex_iterator c = this->cells_in_complex_begin();
+         c != this->cells_in_complex_end();
+         ++c)
+    {
+      for (int i = 0; i < 4; ++i)
+      {
+        Vertex_handle vi = c->vertex(i);
+        vi->set_meshing_info(vi->meshing_info() + 1);
+      }
+    }
+
+    for (typename Base::Facets_in_complex_iterator fit = this->facets_in_complex_begin();
+         fit != this->facets_in_complex_end();
+         ++fit)
+    {
+      Facet f = *fit;
+      for (int i = 1; i < 4; ++i)
+      {
+        Vertex_handle vi = f.first->vertex((f.second + i) % 4);
+        vi->set_meshing_info(vi->meshing_info() + 1);
+      }
+    }
+
+    std::vector<Vertex_handle> isolated;
+    for (Vertex_handle v : tr.finite_vertex_handles())
+    {
+      if (v->meshing_info() == 0.)
+        isolated.push_back(v);
+    }
+
+#ifdef CGAL_MESH_3_VERBOSE
+    std::cout << "Remove " << isolated.size() << " isolated vertices...";
+    std::cout.flush();
+#endif
+
+    CGAL_assertion(far_vertices_.size() <= isolated.size());
+    far_vertices_.clear();
+
+    for (Vertex_handle v : isolated)
+      remove_isolated_vertex(v);
+
+#ifdef CGAL_MESH_3_VERBOSE
+    std::cout << "\nRemove " << isolated.size() << " isolated vertices done." << std::endl;
+#endif
   }
 
   /**

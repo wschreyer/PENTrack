@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Mesh_3/include/CGAL/Mesh_3/Refine_facets_3.h $
-// $Id: Refine_facets_3.h c06bf78 %aI Laurent Rineau
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Mesh_3/include/CGAL/Mesh_3/Refine_facets_3.h $
+// $Id: Refine_facets_3.h f8a2878 2021-07-13T11:38:43+02:00 Laurent Rineau
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Laurent Rineau, Stéphane Tayeb
@@ -35,7 +26,7 @@
 #include <CGAL/Mesh_3/Mesher_level_default_implementations.h>
 #ifdef CGAL_LINKED_WITH_TBB
   #include <tbb/enumerable_thread_specific.h>
-  #include <tbb/parallel_do.h>
+  #include <tbb/parallel_for_each.h>
 #endif
 
 #include <CGAL/Meshes/Filtered_deque_container.h>
@@ -47,9 +38,9 @@
 #ifdef CGAL_MESH_3_PROFILING
   #include <CGAL/Mesh_3/Profiling_tools.h>
 #endif
+#include <CGAL/Mesh_3/Dump_c3t3.h>
 
 #include <CGAL/Object.h>
-#include <CGAL/atomic.h>
 
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
@@ -59,6 +50,7 @@
 #include <CGAL/tuple.h>
 #include <boost/type_traits/is_convertible.hpp>
 #include <sstream>
+#include <atomic>
 
 namespace CGAL {
 
@@ -79,15 +71,15 @@ namespace Mesh_3 {
   public:
     Facet_to_refine_is_not_zombie() {}
 
-    bool operator()(const CGAL::cpp11::tuple<
+    bool operator()(const std::tuple<
       Facet, unsigned int, Facet, unsigned int> &f) const
     {
 #ifdef _DEBUG
       /*
-      int f1_current_erase_counter = CGAL::cpp11::get<0>(f).first->erase_counter();
-      int f1_saved_erase_counter = CGAL::cpp11::get<1>(f);
-      int f2_current_erase_counter = CGAL::cpp11::get<2>(f).first->erase_counter();
-      int f2_saved_erase_counter = CGAL::cpp11::get<3>(f);
+      int f1_current_erase_counter = std::get<0>(f).first->erase_counter();
+      int f1_saved_erase_counter = std::get<1>(f);
+      int f2_current_erase_counter = std::get<2>(f).first->erase_counter();
+      int f2_saved_erase_counter = std::get<3>(f);
       */
       //f1_current_erase_counter - f1_saved_erase_counter + f2_current_erase_counter - f2_saved_erase_counter == 1
 
@@ -99,7 +91,7 @@ namespace Mesh_3 {
 #endif
 
         std::stringstream sstr;
-        Facet facet = CGAL::cpp11::get<0>(f);
+        Facet facet = std::get<0>(f);
         sstr << "Facet 1 { " << std::endl
         << "  - " << *facet.first->vertex((facet.second+1)%4)  << std::endl
         << "  - " << *facet.first->vertex((facet.second+2)%4)  << std::endl
@@ -107,7 +99,7 @@ namespace Mesh_3 {
         << "  - 4th vertex in cell: " << *facet.first->vertex(facet.second)  << std::endl
         << "}" << std::endl;
 
-        facet = CGAL::cpp11::get<2>(f);
+        facet = std::get<2>(f);
         sstr << "Facet 2 { " << std::endl
         << "  - " << *facet.first->vertex((facet.second+1)%4)  << std::endl
         << "  - " << *facet.first->vertex((facet.second+2)%4)  << std::endl
@@ -119,8 +111,8 @@ namespace Mesh_3 {
         std::cerr << s << std::endl;
       }*/
 #endif
-      return (CGAL::cpp11::get<0>(f).first->erase_counter() == CGAL::cpp11::get<1>(f)
-        && CGAL::cpp11::get<2>(f).first->erase_counter() == CGAL::cpp11::get<3>(f) );
+      return (std::get<0>(f).first->erase_counter() == std::get<1>(f)
+        && std::get<2>(f).first->erase_counter() == std::get<3>(f) );
     }
   };
 
@@ -149,11 +141,11 @@ protected:
 #if defined(CGAL_MESH_3_USE_LAZY_SORTED_REFINEMENT_QUEUE) \
  || defined(CGAL_MESH_3_USE_LAZY_UNSORTED_REFINEMENT_QUEUE)
 
-  CGAL::cpp11::tuple<Facet, unsigned int, Facet, unsigned int>
+  std::tuple<Facet, unsigned int, Facet, unsigned int>
   from_facet_to_refinement_queue_element(const Facet &facet,
                                          const Facet &mirror) const
   {
-    return CGAL::cpp11::make_tuple(
+    return std::make_tuple(
       facet, facet.first->erase_counter(),
       mirror, mirror.first->erase_counter());
   }
@@ -163,7 +155,7 @@ public:
   Facet extract_element_from_container_value(const Container_element &e) const
   {
     // We get the first Facet inside the tuple
-    return CGAL::cpp11::get<0>(e);
+    return std::get<0>(e);
   }
 
 #else
@@ -208,11 +200,11 @@ protected:
     m_last_vertex_index.local() = i;
   }
 
-  CGAL::cpp11::tuple<Facet, unsigned int, Facet, unsigned int>
+  std::tuple<Facet, unsigned int, Facet, unsigned int>
   from_facet_to_refinement_queue_element(const Facet &facet,
                                          const Facet &mirror) const
   {
-    return CGAL::cpp11::make_tuple(
+    return std::make_tuple(
       facet, facet.first->erase_counter(),
       mirror, mirror.first->erase_counter());
   }
@@ -222,7 +214,7 @@ public:
   Facet extract_element_from_container_value(const Container_element &e) const
   {
     // We get the first Facet inside the tuple
-    return CGAL::cpp11::get<0>(e);
+    return std::get<0>(e);
   }
 
 protected:
@@ -263,7 +255,7 @@ public:
                        const Criteria& criteria,
                        std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-                       , CGAL::cpp11::atomic<bool>* stop_ptr
+                       , std::atomic<bool>* stop_ptr
 #endif
                        )
     : r_tr_(tr)
@@ -283,7 +275,7 @@ public:
   {
 #ifndef CGAL_NO_ATOMIC
     if(m_stop_ptr != 0 &&
-       m_stop_ptr->load(CGAL::cpp11::memory_order_acquire) == true)
+       m_stop_ptr->load(std::memory_order_acquire) == true)
     {
       return true;
     }
@@ -406,7 +398,7 @@ protected:
   typedef typename MeshDomain::Index Index;
 
   typedef typename boost::optional<
-    CGAL::cpp11::tuple<Surface_patch_index, Index, Bare_point> >
+    std::tuple<Surface_patch_index, Index, Bare_point> >
                                                       Facet_properties;
 
 
@@ -485,6 +477,12 @@ protected:
   /// Insert facet into refinement queue
   void insert_bad_facet(Facet facet, const Quality& quality)
   {
+#if CGAL_MESH_3_VERY_VERBOSE
+    std::stringstream s;
+    s << "insert_bad_facet(" << debug_info_element_impl(facet) << ", ...) by thread "
+      << std::this_thread::get_id() << '\n';
+    std::cerr << s.str();
+#endif
     // Insert the facet and its mirror
     this->add_bad_element(
       this->from_facet_to_refinement_queue_element(facet, mirror_facet(facet)),
@@ -579,6 +577,7 @@ protected:
     Facet canonical_facet = this->canonical_facet(facet);
     this->remove_element(canonical_facet);
 #endif
+    CGAL_USE(facet);
   }
 #ifdef CGAL_LINKED_WITH_TBB
   /// Removes facet from refinement queue
@@ -616,7 +615,7 @@ protected:
   std::size_t m_maximal_number_of_vertices_;
 #ifndef CGAL_NO_ATOMIC
   /// Pointer to the atomic Boolean that can stop the process
-  CGAL::cpp11::atomic<bool>* const m_stop_ptr;
+  std::atomic<bool>* const m_stop_ptr;
 #endif
 }; // end class template Refine_facets_3_base
 
@@ -651,7 +650,7 @@ template<class Tr,
           Meshes::Filtered_multimap_container
 # endif
           <
-            CGAL::cpp11::tuple<typename Tr::Facet, unsigned int,
+            std::tuple<typename Tr::Facet, unsigned int,
                                typename Tr::Facet, unsigned int>,
             typename Criteria::Facet_quality,
             Facet_to_refine_is_not_zombie<typename Tr::Facet>,
@@ -661,7 +660,7 @@ template<class Tr,
 # ifdef CGAL_MESH_3_USE_LAZY_UNSORTED_REFINEMENT_QUEUE
           Meshes::Filtered_deque_container
           <
-            CGAL::cpp11::tuple<typename Tr::Facet, unsigned int,
+            std::tuple<typename Tr::Facet, unsigned int,
                                typename Tr::Facet, unsigned int>,
             typename Criteria::Facet_quality,
             Facet_to_refine_is_not_zombie<typename Tr::Facet>,
@@ -670,7 +669,7 @@ template<class Tr,
 # elif defined(CGAL_MESH_3_USE_LAZY_SORTED_REFINEMENT_QUEUE)
           Meshes::Filtered_multimap_container
           <
-            CGAL::cpp11::tuple<typename Tr::Facet, unsigned int,
+            std::tuple<typename Tr::Facet, unsigned int,
                                typename Tr::Facet, unsigned int>,
             typename Criteria::Facet_quality,
             Facet_to_refine_is_not_zombie<typename Tr::Facet>,
@@ -689,7 +688,7 @@ template<class Tr,
 # ifdef CGAL_MESH_3_USE_LAZY_UNSORTED_REFINEMENT_QUEUE
           Meshes::Filtered_deque_container
           <
-            CGAL::cpp11::tuple<typename Tr::Facet, unsigned int,
+            std::tuple<typename Tr::Facet, unsigned int,
                                typename Tr::Facet, unsigned int>,
             typename Criteria::Facet_quality,
             Facet_to_refine_is_not_zombie<typename Tr::Facet>,
@@ -698,7 +697,7 @@ template<class Tr,
 # elif defined(CGAL_MESH_3_USE_LAZY_SORTED_REFINEMENT_QUEUE)
           Meshes::Filtered_multimap_container
           <
-            CGAL::cpp11::tuple<typename Tr::Facet, unsigned int,
+            std::tuple<typename Tr::Facet, unsigned int,
                                typename Tr::Facet, unsigned int>,
             typename Criteria::Facet_quality,
             Facet_to_refine_is_not_zombie<typename Tr::Facet>,
@@ -784,7 +783,7 @@ public:
                   int mesh_topology,
                   std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-                  , CGAL::cpp11::atomic<bool>* stop_ptr
+                  , std::atomic<bool>* stop_ptr
 #endif
                   );
   // For parallel
@@ -797,7 +796,7 @@ public:
                   WorksharingDataStructureType *worksharing_ds,
                   std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-                  , CGAL::cpp11::atomic<bool>* stop_ptr
+                  , std::atomic<bool>* stop_ptr
 #endif
                   );
 
@@ -855,8 +854,12 @@ public:
     if( zone.locate_type == Tr::VERTEX )
     {
       std::stringstream sstr;
+      sstr.precision(17);
       sstr << "(" << p << ") is already inserted on surface.\n";
-      CGAL_error_msg(sstr.str().c_str());
+      CGAL_error_msg(([this,str=sstr.str()] {
+        dump_c3t3(this->r_c3t3_, "dump-bug");
+        return str.c_str();
+      }()));
       return CONFLICT_AND_ELEMENT_SHOULD_BE_DROPPED;
     }
     else
@@ -913,7 +916,7 @@ Refine_facets_3(Tr& triangulation,
                 int mesh_topology,
                 std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-                , CGAL::cpp11::atomic<bool>* stop_ptr
+                , std::atomic<bool>* stop_ptr
 #endif
                 )
   : Rf_base(triangulation, c3t3, oracle, criteria, mesh_topology,
@@ -942,7 +945,7 @@ Refine_facets_3(Tr& triangulation,
                 WorksharingDataStructureType *worksharing_ds,
                 std::size_t maximal_number_of_vertices
 #ifndef CGAL_NO_ATOMIC
-                , CGAL::cpp11::atomic<bool>* stop_ptr
+                , std::atomic<bool>* stop_ptr
 #endif
                 )
   : Rf_base(triangulation, c3t3, oracle, criteria, maximal_number_of_vertices
@@ -990,8 +993,8 @@ scan_triangulation_impl()
 # endif
     add_to_TLS_lists(true);
 
-    // PARALLEL_DO
-    tbb::parallel_do(
+    // PARALLEL FOR_EACH
+    tbb::parallel_for_each(
       this->r_tr_.finite_facets_begin(), this->r_tr_.finite_facets_end(),
       typename Rf_base::template Scan_facet<Self>(*this)
     );
@@ -1155,9 +1158,9 @@ number_of_bad_elements_impl()
 
       }
 
-      //const Surface_patch_index& surface_index = CGAL::cpp11::get<0>(*properties);
-      //const Index& surface_center_index = CGAL::cpp11::get<1>(*properties);
-      //const Bare_point& surface_center = CGAL::cpp11::get<2>(*properties);
+      //const Surface_patch_index& surface_index = std::get<0>(*properties);
+      //const Index& surface_center_index = std::get<1>(*properties);
+      //const Bare_point& surface_center = std::get<2>(*properties);
 
       // Facet is on surface: set facet properties
       //set_facet_surface_center(facet, surface_center, surface_center_index);
@@ -1340,9 +1343,9 @@ conflicts_zone_impl(const Weighted_point& point
       this->compute_facet_properties(facet, properties, /*force_exact=*/true);
       if ( properties )
       {
-        const Surface_patch_index& surface_index = CGAL::cpp11::get<0>(*properties);
-        const Index& surface_center_index = CGAL::cpp11::get<1>(*properties);
-        const Bare_point& surface_center = CGAL::cpp11::get<2>(*properties);
+        const Surface_patch_index& surface_index = std::get<0>(*properties);
+        const Index& surface_center_index = std::get<1>(*properties);
+        const Bare_point& surface_center = std::get<2>(*properties);
 
         // Facet is on surface: set facet properties
         this->set_facet_surface_center(facet, surface_center, surface_center_index);
@@ -1402,9 +1405,9 @@ conflicts_zone_impl(const Weighted_point& point
       this->compute_facet_properties(facet, properties, /*force_exact=*/true);
       if ( properties )
       {
-        const Surface_patch_index& surface_index = CGAL::cpp11::get<0>(*properties);
-        const Index& surface_center_index = CGAL::cpp11::get<1>(*properties);
-        const Bare_point& surface_center = CGAL::cpp11::get<2>(*properties);
+        const Surface_patch_index& surface_index = std::get<0>(*properties);
+        const Index& surface_center_index = std::get<1>(*properties);
+        const Bare_point& surface_center = std::get<2>(*properties);
 
         // Facet is on surface: set facet properties
         this->set_facet_surface_center(facet, surface_center, surface_center_index);
@@ -1570,9 +1573,9 @@ treat_new_facet(Facet& facet)
   compute_facet_properties(facet, properties);
   if ( properties )
   {
-    const Surface_patch_index& surface_index = CGAL::cpp11::get<0>(*properties);
-    const Index& surface_center_index = CGAL::cpp11::get<1>(*properties);
-    const Bare_point& surface_center = CGAL::cpp11::get<2>(*properties);
+    const Surface_patch_index& surface_index = std::get<0>(*properties);
+    const Index& surface_center_index = std::get<1>(*properties);
+    const Bare_point& surface_center = std::get<2>(*properties);
 
     // Facet is on surface: set facet properties
     set_facet_surface_center(facet, surface_center, surface_center_index);
@@ -1666,18 +1669,18 @@ compute_facet_properties(const Facet& facet,
 
       Intersection intersect = construct_intersection(segment);
 #ifdef CGAL_MESH_3_NO_LONGER_CALLS_DO_INTERSECT_3
-      // In the following, CGAL::cpp11::get<2>(intersect) == 0 is a way to
+      // In the following, std::get<2>(intersect) == 0 is a way to
       // test "intersect == Intersection()" (aka empty intersection), but
       // the later does not work.
       Surface_patch surface =
-        (CGAL::cpp11::get<2>(intersect) == 0) ? Surface_patch() :
+        (std::get<2>(intersect) == 0) ? Surface_patch() :
         Surface_patch(
-          r_oracle_.surface_patch_index(CGAL::cpp11::get<1>(intersect)));
+          r_oracle_.surface_patch_index(std::get<1>(intersect)));
       if(surface)
 #endif // CGAL_MESH_3_NO_LONGER_CALLS_DO_INTERSECT_3
-      fp =  Facet_properties(CGAL::cpp11::make_tuple(*surface,
-                                    CGAL::cpp11::get<1>(intersect),
-                                    CGAL::cpp11::get<0>(intersect)));
+      fp =  Facet_properties(std::make_tuple(*surface,
+                                    std::get<1>(intersect),
+                                    std::get<0>(intersect)));
     }
   }
   // If the dual is a ray
@@ -1708,15 +1711,15 @@ compute_facet_properties(const Facet& facet,
       Intersection intersect = construct_intersection(ray);
 #ifdef CGAL_MESH_3_NO_LONGER_CALLS_DO_INTERSECT_3
       Surface_patch surface =
-        (CGAL::cpp11::get<2>(intersect) == 0) ? Surface_patch() :
+        (std::get<2>(intersect) == 0) ? Surface_patch() :
         Surface_patch(
-          r_oracle_.surface_patch_index(CGAL::cpp11::get<1>(intersect)));
+          r_oracle_.surface_patch_index(std::get<1>(intersect)));
       if(surface)
 #endif // CGAL_MESH_3_NO_LONGER_CALLS_DO_INTERSECT_3
       {
-        fp = Facet_properties(CGAL::cpp11::make_tuple(*surface,
-                                      CGAL::cpp11::get<1>(intersect),
-                                      CGAL::cpp11::get<0>(intersect)));
+        fp = Facet_properties(std::make_tuple(*surface,
+                                      std::get<1>(intersect),
+                                      std::get<0>(intersect)));
       }
     }
   }

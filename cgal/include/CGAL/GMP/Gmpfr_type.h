@@ -1,19 +1,10 @@
 // Copyright (c) 2007-2010 Inria Lorraine (France). All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Number_types/include/CGAL/GMP/Gmpfr_type.h $
-// $Id: Gmpfr_type.h a154aa1 %aI Laurent Rineau
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Number_types/include/CGAL/GMP/Gmpfr_type.h $
+// $Id: Gmpfr_type.h 4e519a3 2021-05-05T13:15:37+02:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author: Luis Peñaranda <luis.penaranda@gmx.com>
 
@@ -354,7 +345,7 @@ class Gmpfr:
 #  pragma warning(push)
 #  pragma warning(disable: 4244)
         CGAL_GMPFR_CONSTRUCTOR_FROM_TYPE(long double,mpfr_set_d);
-#  pragma warning(pop)  
+#  pragma warning(pop)
 #else
         CGAL_GMPFR_CONSTRUCTOR_FROM_TYPE(long double,mpfr_set_ld);
 #endif
@@ -1176,16 +1167,16 @@ std::ostream& operator<<(std::ostream& os,const Gmpfr &a){
         if(a.is_inf())
                 return os<<(a<0?"-inf":"+inf");
         // The rest of the function was written by George Tzoumas.
-        if (!is_pretty(os)) {
+        if (!IO::is_pretty(os)) {
                 std::pair<Gmpz,long> ie=a.to_integer_exp();
                 os << ie.first << 'e' << ie.second;
                 return os;
         } else {
                 // human-readable format
                 mpfr_exp_t expptr;
-                char *str = mpfr_get_str(NULL, &expptr, 10, 0, a.fr(),
+                char *str = mpfr_get_str(nullptr, &expptr, 10, 0, a.fr(),
                                 mpfr_get_default_rounding_mode());
-                if (str == NULL) return os << "@err@";
+                if (str == nullptr) return os << "@err@";
                 std::string s(str);
                 mpfr_free_str(str);
                 int i = 0;

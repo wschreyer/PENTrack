@@ -3,19 +3,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Periodic_3_mesh_3/include/CGAL/Periodic_3_mesh_3/Protect_edges_sizing_field.h $
-// $Id: Protect_edges_sizing_field.h 8e75d21 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Periodic_3_mesh_3/include/CGAL/Periodic_3_mesh_3/Protect_edges_sizing_field.h $
+// $Id: Protect_edges_sizing_field.h a93dda8 2021-09-10T17:43:47+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Stephane Tayeb, Laurent Rineau, Mael Rouxel-Labbé
 //
@@ -49,18 +40,16 @@
 #include <CGAL/Mesh_3/Triangulation_helpers.h>
 
 #include <CGAL/enum.h>
-#include <CGAL/Has_timestamp.h>
-#include <CGAL/Hash_handles_with_or_without_timestamps.h>
-#include <CGAL/internal/Has_member_visited.h>
+#include <CGAL/STL_Extension/internal/Has_member_visited.h>
 #include <CGAL/iterator.h>
 #include <CGAL/number_utils.h>
 #include <CGAL/Periodic_3_Delaunay_triangulation_traits_3.h>
 #include <CGAL/Periodic_3_Delaunay_triangulation_3.h>
+#include <CGAL/Time_stamper.h>
 
 #include <CGAL/boost/iterator/transform_iterator.hpp>
 
-#include <boost/bind.hpp>
-#include <boost/function_output_iterator.hpp>
+#include <boost/iterator/function_output_iterator.hpp>
 #ifndef CGAL_NO_ASSERTIONS
 #  include <boost/math/special_functions/next.hpp> // for float_prior
 #endif
@@ -319,7 +308,7 @@ private:
                       Curve_index curve_index) const;
 
   /// Walk along the edge from \c start, following the direction \c start to
-  /// \c next, and fills \c out with the vertices which do not fullfill
+  /// \c next, and fills \c out with the vertices which do not fulfill
   /// the sampling conditions.
   ///
   /// \param orientation Orientation of the curve segment between \c v1 and
@@ -486,7 +475,7 @@ private:
   void insert_in_correspondence_map(const Vertex_handle v,
                                     const Bare_point& p,
                                     const Curve_index_container& curve_indices,
-                                    typename Curve_index_container::const_iterator* /*sfinae*/ = NULL);
+                                    typename Curve_index_container::const_iterator* /*sfinae*/ = nullptr);
 
   void insert_in_correspondence_map(const Vertex_handle v,
                                     const Bare_point& p,
@@ -767,7 +756,7 @@ get_positions_with_vertex_at_extremity(const Bare_point& known_point,
 {
 #if CGAL_MESH_3_PROTECTION_DEBUG & 2
   std::cerr << "get_positions_with_vertex_at_extremity()" << std::endl
-            << "known_point: " << known_point << " on curve " << CGAL::oformat(curve_index)
+            << "known_point: " << known_point << " on curve " << CGAL::IO::oformat(curve_index)
             << " orientation: " << orientation
             << " inverted order ? " << std::boolalpha << inverted_return_order << std::endl;
 #endif
@@ -1402,7 +1391,7 @@ insert_corners()
     Index p_index = domain_.index_from_corner_index(corner_index);
 
 #if CGAL_MESH_3_PROTECTION_DEBUG & 1
-    std::cerr << "** treat corner #" << CGAL::oformat(p_index) << std::endl;
+    std::cerr << "** treat corner #" << CGAL::IO::oformat(p_index) << std::endl;
 #endif
 
     // Get weight (the ball radius is given by the 'query_size' function)
@@ -1487,7 +1476,7 @@ insert_point(const Bare_point& p, const Weight& w, int dim, const Index& index,
 #if CGAL_MESH_3_PROTECTION_DEBUG & 1
   std::cerr << "insert_point()" << std::endl;
   std::cerr << "pos: " << p << " weight: " << w
-            << " dim: " << dim << " index: " << CGAL::oformat(index) << std::endl;
+            << " dim: " << dim << " index: " << CGAL::IO::oformat(index) << std::endl;
 #endif
 
   using CGAL::Mesh_3::internal::weight_modifier;
@@ -1551,7 +1540,7 @@ insert_point(const Bare_point& p, const Weight& w, int dim, const Index& index,
     std::cerr << " ERROR dim=" << dim << " index=";
   }
 
-  std::cerr << CGAL::oformat(index) << std::endl;
+  std::cerr << CGAL::IO::oformat(index) << std::endl;
   if(v == Vertex_handle())
     std::cerr << "  HIDDEN!\n";
   std::cerr << "The weight was " << w << std::endl;
@@ -1580,7 +1569,7 @@ smart_insert_point(const Bare_point& p, Weight w, int dim, const Index& index,
   std::cerr << "smart_insert_point((" << p
             << "), w=" << w
             << ", dim=" << dim
-            << ", index=" << CGAL::oformat(index) << ")\n";
+            << ", index=" << CGAL::IO::oformat(index) << ")\n";
 #endif
   const Tr& tr = c3t3_.triangulation();
 
@@ -1887,7 +1876,7 @@ Protect_edges_sizing_field<C3T3, MD, Sf>::
 insert_balls_on_edges()
 {
   // Get features
-  typedef CGAL::cpp11::tuple<Curve_index,
+  typedef std::tuple<Curve_index,
                              std::pair<Bare_point,Index>,
                              std::pair<Bare_point,Index> >    Feature_tuple;
   typedef std::vector<Feature_tuple>                          Input_features;
@@ -1899,18 +1888,18 @@ insert_balls_on_edges()
   for(typename Input_features::iterator fit = input_features.begin(),
        end = input_features.end() ; fit != end ; ++fit)
   {
-    const Curve_index& curve_index = CGAL::cpp11::get<0>(*fit);
+    const Curve_index& curve_index = std::get<0>(*fit);
     if(! is_treated(curve_index))
     {
 #if CGAL_MESH_3_PROTECTION_DEBUG & 1
       std::cerr << "** treat curve #" << curve_index << std::endl;
       std::cerr << "is it a loop? " << domain_.is_loop(curve_index) << std::endl;
 #endif
-      const Bare_point& p = CGAL::cpp11::get<1>(*fit).first;
-      const Bare_point& q = CGAL::cpp11::get<2>(*fit).first;
+      const Bare_point& p = std::get<1>(*fit).first;
+      const Bare_point& q = std::get<2>(*fit).first;
 
-      const Index& p_index = CGAL::cpp11::get<1>(*fit).second;
-      const Index& q_index = CGAL::cpp11::get<2>(*fit).second;
+      const Index& p_index = std::get<1>(*fit).second;
+      const Index& q_index = std::get<2>(*fit).second;
 
       Vertex_handle vp,vq;
       if(! domain_.is_loop(curve_index))
@@ -2124,8 +2113,10 @@ insert_balls(const Vertex_handle& vp,
                                                 curve_index, d_sign)
                 << ")\n";
 #endif
+      const FT sgn = (d_sign == CGAL::POSITIVE) ? 1.
+                   : (d_sign == CGAL::NEGATIVE ? -1. : 0.);
       const Bare_point new_point =
-        domain_.construct_point_on_curve(vpp, curve_index, d_sign * d / 2);
+        domain_.construct_point_on_curve(vpp, curve_index, sgn * d / 2);
       const int dim = 1; // new_point is on edge
       const Index index = domain_.index_from_curve_index(curve_index);
       const FT point_weight = CGAL::square(size_(new_point, dim, index));
@@ -2278,7 +2269,7 @@ refine_balls()
     std::ostringstream oss;
     oss << "dump_protecting_balls_" << refine_balls_iteration_nb << ".cgal";
     std::ofstream outfile(oss.str().c_str(), std::ios_base::binary | std::ios_base::out);
-    CGAL::Mesh_3::save_binary_file(outfile, c3t3_, true);
+    CGAL::IO::save_binary_file(outfile, c3t3_, true);
     outfile.close();
 #endif //CGAL_MESH_3_DUMP_FEATURES_PROTECTION_ITERATIONS
 
@@ -2463,7 +2454,7 @@ change_ball_size(Vertex_handle& v, const FT squared_size, const bool special_bal
 #if CGAL_MESH_3_PROTECTION_DEBUG & 1
   std::cerr << "change_ball_size(v=" << disp_vert(v)
             << " dim=" << c3t3_.in_dimension(v)
-            << " index=" << CGAL::oformat(c3t3_.index(v))
+            << " index=" << CGAL::IO::oformat(c3t3_.index(v))
             << " ,\n"
             << "                 (squared) size=" << w
             << ", special_ball=" << std::boolalpha << special_ball << std::endl;
@@ -2633,7 +2624,7 @@ check_and_fix_vertex_along_edge(const Vertex_handle& v, ErasedVeOutIt out)
   std::cerr << "check_and_fix_vertex_along_edge("
             << disp_vert(v)
             << " dim=" << get_dimension(v)
-            << " index=" << CGAL::oformat(c3t3_.index(v))
+            << " index=" << CGAL::IO::oformat(c3t3_.index(v))
             << " special=" << std::boolalpha << is_special(v)
             << ")\n";
 #endif
@@ -2902,7 +2893,7 @@ next_vertex_along_curve(const Vertex_handle& start,
   adjacent_vertices.erase
     (std::remove_if(adjacent_vertices.begin(),
                     adjacent_vertices.end(),
-                    boost::bind(&Adjacent_vertices::value_type::second, _1) != curve_index),
+                    [curve_index](const auto& p){ return p.second != curve_index;}),
      adjacent_vertices.end());
 
 //  typename Adjacent_vertices::const_iterator iv = adjacent_vertices.begin();
@@ -2941,7 +2932,7 @@ repopulate(InputIterator begin, InputIterator last,
   std::cerr << "repopulate(begin=" << disp_vert(*begin) << "\n"
             << "           last=" << disp_vert(*last)  << "\n"
             << "           distance(begin, last)=" << std::distance(begin, last) << ",\n"
-            << "           curve_index=" << CGAL::oformat(curve_index) << ",\n"
+            << "           curve_index=" << CGAL::IO::oformat(curve_index) << ",\n"
             << "           orientation=" << orientation << ")\n";
 #endif
   CGAL_assertion(std::distance(begin,last) >= 0);
@@ -2983,7 +2974,7 @@ repopulate(InputIterator begin, InputIterator last,
     default:
       std::cerr << " ERROR dim=" << get_dimension(*current)  << " curve_index=";
     }
-    std::cerr  << CGAL::oformat(c3t3_.index(*current)) << std::endl;
+    std::cerr  << CGAL::IO::oformat(c3t3_.index(*current)) << std::endl;
 #endif // CGAL_MESH_3_PROTECTION_DEBUG
     *out++ = *current;
     remove_from_correspondence_map(*current, curve_index);
@@ -3008,7 +2999,7 @@ analyze_and_repopulate(InputIterator begin, InputIterator last,
   std::cerr << "analyze_and_repopulate(begin=" << disp_vert(*begin) << "\n"
             << "                       last=" << disp_vert(*last) << "\n"
             << "                       distance(begin, last)=" << std::distance(begin, last) << ",\n"
-            << "                       curve_index=" << CGAL::oformat(curve_index) << ",\n"
+            << "                       curve_index=" << CGAL::IO::oformat(curve_index) << ",\n"
             << "                       orientation=" << orientation << ")\n";
 #endif
   CGAL_assertion(std::distance(begin,last) >= 0);

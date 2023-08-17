@@ -1,25 +1,16 @@
-// Copyright (c) 1999  
+// Copyright (c) 1999
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Kernel_23/include/CGAL/Segment_3.h $
+// $Id: Segment_3.h d39c774 2022-03-17T12:14:43+01:00 Andreas Fabri
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Kernel_23/include/CGAL/Segment_3.h $
-// $Id: Segment_3.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Andreas Fabri, Stefan Schirra
 
@@ -74,47 +65,57 @@ public:
   Segment_3(const Rep& s)
       : Rep(s) {}
 
+  Segment_3(Rep&& s)
+      : Rep(std::move(s)) {}
+
   Segment_3(const Point_3& sp, const Point_3& ep)
     : Rep(typename R::Construct_segment_3()(Return_base_tag(), sp, ep)) {}
 
-  typename cpp11::result_of<typename R::Construct_source_3(Segment_3)>::type
+  decltype(auto)
   source() const
-  { 
+  {
     return R_().construct_source_3_object()(*this);
   }
 
-  typename cpp11::result_of<typename R::Construct_target_3(Segment_3)>::type
+  decltype(auto)
   target() const
   {
     return R_().construct_target_3_object()(*this);
   }
 
-  typename cpp11::result_of<typename R::Construct_source_3(Segment_3)>::type
+  decltype(auto)
   start() const
   {
     return source();
   }
 
-  typename cpp11::result_of<typename R::Construct_target_3(Segment_3)>::type
+  decltype(auto)
   end() const
   {
     return target();
   }
- 
-  typename cpp11::result_of<typename R_::Construct_min_vertex_3(Segment_3)>::type
-  min BOOST_PREVENT_MACRO_SUBSTITUTION () const;
 
-  typename cpp11::result_of<typename R_::Construct_max_vertex_3(Segment_3)>::type
-  max BOOST_PREVENT_MACRO_SUBSTITUTION () const;
+  decltype(auto)
+  min BOOST_PREVENT_MACRO_SUBSTITUTION() const {
+    typename R_::Less_xyz_3 less_xyz;
+    return less_xyz(source(), target()) ? source() : target();
+  }
 
-  typename cpp11::result_of<typename R_::Construct_vertex_3(Segment_3, int)>::type
-  vertex(int i) const;
+  decltype(auto)
+  max BOOST_PREVENT_MACRO_SUBSTITUTION() const {
+    typename R_::Less_xyz_3 less_xyz;
+    return less_xyz(source(), target()) ? target() : source();
+  }
 
-  typename cpp11::result_of<typename R::Construct_vertex_3(Segment_3, int)>::type
+  decltype(auto)
+  vertex(int i) const
+  { return (i%2 == 0) ? source() : target(); }
+
+  decltype(auto)
   point(int i) const
   { return vertex(i); }
 
-  typename cpp11::result_of<typename R::Construct_vertex_3(Segment_3, int)>::type
+  decltype(auto)
   operator[](int i) const
   { return vertex(i); }
 
@@ -135,10 +136,8 @@ public:
   }
 
   bool has_on(const Point_3 &p) const
-  { // TODO : use one predicate.
-    return R_().are_ordered_along_line_3_object()(source(), 
-					         p, 
-					         target());
+  {
+    return R().has_on_3_object()(*this, p);
   }
 
   Segment_3 opposite() const
@@ -148,8 +147,7 @@ public:
 
   Direction_3 direction() const
   {
-    typename R::Construct_vector_3 construct_vector;
-    return Direction_3( construct_vector( source(), target()));
+    return R().construct_direction_3_object()(*this);
   }
 
   bool is_degenerate() const
@@ -170,38 +168,12 @@ public:
 
 };
 
-template < class R_ >
-CGAL_KERNEL_INLINE
-typename cpp11::result_of<typename R_::Construct_min_vertex_3( Segment_3<R_> ) >::type
-Segment_3<R_>::min BOOST_PREVENT_MACRO_SUBSTITUTION () const
-{
-  typename R_::Less_xyz_3 less_xyz; 
-  return less_xyz(source(),target()) ? source() : target();
-}
-
-template < class R_ >
-CGAL_KERNEL_INLINE
-typename cpp11::result_of<typename R_::Construct_max_vertex_3( Segment_3<R_> ) >::type
-Segment_3<R_>::max BOOST_PREVENT_MACRO_SUBSTITUTION () const
-{
-  typename R_::Less_xyz_3 less_xyz; 
-  return less_xyz(source(),target()) ? target() : source();
-}
-
-template < class R_ >
-CGAL_KERNEL_INLINE
-typename cpp11::result_of<typename R_::Construct_vertex_3( Segment_3<R_>, int ) >::type
-Segment_3<R_>::vertex(int i) const
-{
-  return (i%2 == 0) ? source() : target();
-}
-
 
 template < class R >
 std::ostream &
 operator<<(std::ostream &os, const Segment_3<R> &s)
 {
-    switch(get_mode(os)) {
+    switch(IO::get_mode(os)) {
     case IO::ASCII :
         return os << s.source() << ' ' << s.target();
     case IO::BINARY :

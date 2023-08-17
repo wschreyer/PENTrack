@@ -1,21 +1,12 @@
 // Copyright (c) 2006-2009 Max-Planck-Institute Saarbruecken (Germany).
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Algebraic_kernel_d/include/CGAL/Algebraic_kernel_d/Bitstream_descartes_rndl_tree.h $
+// $Id: Bitstream_descartes_rndl_tree.h 6fd4c16 2022-11-22T17:47:19+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Algebraic_kernel_d/include/CGAL/Algebraic_kernel_d/Bitstream_descartes_rndl_tree.h $
-// $Id: Bitstream_descartes_rndl_tree.h 873416e %aI Andreas Fabri
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Arno Eigenwillig <arno@mpi-inf.mpg.de>
 //
@@ -236,7 +227,7 @@ polynomial_power_to_bernstein_approx(
 
 // min/max number of variations in epsilon-sign
 template <class InputIterator, class UnaryFunction>
-void var_eps( 
+void var_eps(
         InputIterator first, InputIterator beyond,
         int& min_var, int& max_var,
         const UnaryFunction& sign_eps
@@ -402,7 +393,7 @@ de_casteljau_generic(
         while (rit2 != right_end) {
             ++rit1; ++rit2;
             combine.into_first(*rit1, *rit2);
-        } 
+        }
         right_end = rit1;
     }
 
@@ -507,7 +498,7 @@ namespace internal {
   typedef internal::Abs_le_pow2<Ceil_log2_abs_Integer> Abs_le_pow2;     \
   typedef internal::Sign_eps_log2<Integer, Abs_le_pow2, Sign>           \
   Sign_eps_log2                                                         \
-  
+
 // end #define
 
 // typedefs for Bitstream_descartes_rndl_tree{,_rep}
@@ -533,6 +524,9 @@ public:
 
     friend class internal::Bitstream_descartes_rndl_tree<TRAITS>;
     friend class internal::Bitstream_descartes_rndl_tree_rep<TRAITS>;
+
+    Bitstream_descartes_rndl_node(const Self&) = default;
+    Self& operator= (const Self&) = delete;
 
 private:
     // "node data" (set individually in subdivision)
@@ -566,10 +560,6 @@ private:
         log_eps_       = n.log_eps_;
         log_C_eps_     = n.log_C_eps_;
     }
-  
-#ifndef CGAL_CFG_NO_CPP0X_DELETED_AND_DEFAULT_FUNCTIONS
-    Self& operator= (const Self&)=delete;
-#endif  
 }; // struct Bitstream_descartes_rndl_node
 
 
@@ -735,7 +725,7 @@ public:
     Node_iterator chld_first, chld_beyond;
     while (it != T.end()) {
         if (T.max_var(it) == 1) {
-            cout << "found [" << T.lower(it) << ", " << T.upper(it) << "]\n"; 
+            cout << "found [" << T.lower(it) << ", " << T.upper(it) << "]\n";
             ++it;
         } else {
             T.subdivide(it, chld_first, chld_beyond);
@@ -950,7 +940,7 @@ public:
             this->ptr()->node_list_.erase(n);
         }
     }
-        
+
 
     /*! \brief construct from initial interval and coefficients
      *
@@ -975,10 +965,10 @@ public:
     {
         CGAL_precondition(lower_num < upper_num);
         init_tree();
-        
+
     }
 
-    /*! 
+    /*!
      * This is needed for compatibility with other tree implementations
      * The initial interval is
      *  [-1, 1] / 2^(\c -log_bdry_den ).
@@ -991,7 +981,7 @@ public:
             const BitstreamDescartesRndlTreeTraits& traits
                                         = BitstreamDescartesRndlTreeTraits()
     )
-        : Base(Rep(Integer(-1), Integer(1), -log_bdry_den, 
+        : Base(Rep(Integer(-1), Integer(1), -log_bdry_den,
                    first, beyond, tag, traits))
     {
         init_tree();
@@ -1090,18 +1080,18 @@ public:
         this->ptr()->node_list_.erase(n);
     }
 
-    /*! \brief Replace traits class
+    /*! \brief replaces traits class
      */
     void set_traits(TRAITS& traits) {
 
-      this->ptr()->approximator_ 
+      this->ptr()->approximator_
         = traits.approximator_object();
-      this->ptr()->lower_bound_log2_abs_ 
+      this->ptr()->lower_bound_log2_abs_
         = traits.lower_bound_log2_abs_object();
 
     }
 
-    /*! \brief Returns a copy of this with its own representation
+    /*! \brief returns a copy of this with its own representation
      */
     Self make_unique() const {
       Self tmp = *this;
@@ -1278,7 +1268,7 @@ Bitstream_descartes_rndl_tree<BitstreamDescartesRndlTreeTraits>
         int children = 1;
         if (r_min_var > 0) {
             // create new node for right child
-            Node_iterator r = 
+            Node_iterator r =
                 this->ptr()->node_list_.insert(beyond, Node(degree(),
                             this->ptr()->splitpoint_num_,        // lower
                             n->upper_num_ << delta_log_bdry_den, // upper

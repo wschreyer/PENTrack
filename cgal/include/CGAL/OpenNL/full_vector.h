@@ -2,20 +2,8 @@
 /*
  * author:  Bruno Levy, INRIA, project ALICE
  * website: http://www.loria.fr/~levy/software
- * 
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation, either version 3
- * of the License, or (at your option) any later version.
- * 
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * This file is part of CGAL (www.cgal.org)
  *
  * Scientific work that use this software can reference the website and
  * the following publication:
@@ -33,9 +21,9 @@
  *      - FullVector is now a model of the SparseLinearAlgebraTraits_d::Vector concept
  *      - Coefficients are initialized with zeros
  *
- * $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/OpenNL/include/CGAL/OpenNL/full_vector.h $
- * $Id: full_vector.h 8cdfad0 %aI Sébastien Loriot
- * SPDX-License-Identifier: LGPL-3.0+
+ * $URL: https://github.com/CGAL/cgal/blob/v5.5.2/OpenNL/include/CGAL/OpenNL/full_vector.h $
+ * $Id: full_vector.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 
@@ -90,7 +78,7 @@ public:
 
     ~FullVector() {
         delete[] coeff_ ;
-        coeff_ = NULL ;
+        coeff_ = nullptr ;
     }
 
     // Return the vector's number of coefficients

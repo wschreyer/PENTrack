@@ -1,25 +1,16 @@
-// Copyright (c) 1999  
+// Copyright (c) 1999
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Kernel_23/include/CGAL/Segment_2.h $
+// $Id: Segment_2.h 8fa0f55 2021-05-27T10:27:38+02:00 Laurent Rineau
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Kernel_23/include/CGAL/Segment_2.h $
-// $Id: Segment_2.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Andreas Fabri
 
@@ -32,7 +23,6 @@
 #include <CGAL/Bbox_2.h>
 #include <CGAL/Dimension.h>
 #include <CGAL/kernel_config.h>
-#include <CGAL/result_of.h>
 
 namespace CGAL {
 
@@ -76,52 +66,63 @@ public:
   Segment_2(const RSegment_2& s)
     : RSegment_2(s) {}
 
+  Segment_2(RSegment_2&& s)
+    : RSegment_2(std::move(s)) {}
+
   Segment_2(const Point_2 &sp, const Point_2 &ep)
     :  RSegment_2(typename R::Construct_segment_2()(Return_base_tag(), sp,ep)) {}
 
-  typename cpp11::result_of<typename R::Construct_source_2( Segment_2)>::type
+  decltype(auto)
   source() const
-  { 
+  {
     return R_().construct_source_2_object()(*this);
   }
 
-  typename cpp11::result_of<typename R::Construct_target_2( Segment_2)>::type
+  decltype(auto)
   target() const
   {
     return R_().construct_target_2_object()(*this);
   }
 
-  typename cpp11::result_of<typename R::Construct_source_2( Segment_2)>::type
+  decltype(auto)
   start() const
   {
     return source();
   }
 
-  typename cpp11::result_of<typename R::Construct_target_2( Segment_2)>::type
+  decltype(auto)
   end() const
   {
     return target();
   }
 
-  
-  typename cpp11::result_of<typename R_::Construct_min_vertex_2(Segment_2)>::type
-  min BOOST_PREVENT_MACRO_SUBSTITUTION() const;
-  
-  typename cpp11::result_of<typename R_::Construct_max_vertex_2( Segment_2)>::type
-  max BOOST_PREVENT_MACRO_SUBSTITUTION () const;
+  decltype(auto)
+  min BOOST_PREVENT_MACRO_SUBSTITUTION() const {
+    typename R_::Less_xy_2 less_xy;
+    return less_xy(source(), target()) ? source() : target();
+  }
 
-  typename cpp11::result_of<typename R_::Construct_vertex_2( Segment_2, int)>::type
-  vertex(int i) const;
+  decltype(auto)
+  max BOOST_PREVENT_MACRO_SUBSTITUTION() const {
+    typename R_::Less_xy_2 less_xy;
+    return less_xy(source(), target()) ? target() : source();
+  }
 
-  typename cpp11::result_of<typename R_::Construct_vertex_2( Segment_2, int)>::type
-  point(int i) const;
+  decltype(auto)
+  vertex(int i) const
+  { return (i%2 == 0) ? source() : target(); }
 
-  typename cpp11::result_of<typename R_::Construct_vertex_2( Segment_2, int)>::type
-  operator[](int i) const;
+  decltype(auto)
+  point(int i) const
+  { return vertex(i); }
+
+  decltype(auto)
+  operator[](int i) const
+  { return vertex(i); }
 
   bool        is_horizontal() const;
   bool        is_vertical() const;
-  bool        has_on(const Point_2 &p) const;  
+  bool        has_on(const Point_2 &p) const;
   bool        collinear_has_on(const Point_2 &p) const;
   FT          squared_length() const;
 
@@ -162,7 +163,7 @@ public:
   Line_2
   supporting_line() const
   {
-    typename R::Construct_line_2 construct_line;  
+    typename R::Construct_line_2 construct_line;
     return construct_line(*this);
   }
 
@@ -179,47 +180,6 @@ public:
   }
 };
 
-template < class R_ >
-CGAL_KERNEL_INLINE
-typename cpp11::result_of<typename R_::Construct_min_vertex_2( Segment_2<R_> )>::type
-Segment_2<R_>::min BOOST_PREVENT_MACRO_SUBSTITUTION () const
-{
-  typename R_::Less_xy_2 less_xy; 
-  return less_xy(source(),target()) ? source() : target();
-}
-
-template < class R_ >
-CGAL_KERNEL_INLINE
-typename cpp11::result_of<typename R_::Construct_max_vertex_2( Segment_2<R_> )>::type
-Segment_2<R_>::max BOOST_PREVENT_MACRO_SUBSTITUTION () const
-{
-  typename R_::Less_xy_2 less_xy; 
-  return less_xy(source(),target()) ? target() : source();
-}
-
-template < class R_ >
-CGAL_KERNEL_INLINE
-typename cpp11::result_of<typename R_::Construct_vertex_2( Segment_2<R_>, int )>::type
-Segment_2<R_>::vertex(int i) const
-{
-  return (i%2 == 0) ? source() : target();
-}
-
-template < class R_ >
-inline
-typename cpp11::result_of<typename R_::Construct_vertex_2( Segment_2<R_>, int )>::type
-Segment_2<R_>::point(int i) const
-{
-  return vertex(i);
-}
-
-template < class R_ >
-inline
-typename cpp11::result_of<typename R_::Construct_vertex_2( Segment_2<R_>, int )>::type
-Segment_2<R_>::operator[](int i) const
-{
-  return vertex(i);
-}
 
 template < class R_ >
 CGAL_KERNEL_INLINE
@@ -245,9 +205,9 @@ bool
 Segment_2<R_>::
 has_on(const typename R_::Point_2 &p) const
 {
-  return R_().are_ordered_along_line_2_object()(source(), 
-					       p, 
-					       target());
+  return R_().are_ordered_along_line_2_object()(source(),
+                                               p,
+                                               target());
 }
 
 
@@ -285,7 +245,7 @@ template < class R >
 std::ostream &
 operator<<(std::ostream &os, const Segment_2<R> &s)
 {
-    switch(get_mode(os)) {
+    switch(IO::get_mode(os)) {
     case IO::ASCII :
         return os << s.source() << ' ' << s.target();
     case IO::BINARY :

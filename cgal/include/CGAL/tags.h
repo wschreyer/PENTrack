@@ -1,28 +1,19 @@
-// Copyright (c) 1999  
+// Copyright (c) 1999
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved. 
+// and Tel-Aviv University (Israel).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/STL_Extension/include/CGAL/tags.h $
+// $Id: tags.h 8bb22d5 2020-03-26T14:23:37+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/STL_Extension/include/CGAL/tags.h $
-// $Id: tags.h a472c24 %aI Andreas Fabri
-// SPDX-License-Identifier: LGPL-3.0+
-// 
 //
 // Author(s)     : Stefan Schirra
- 
+
 
 #ifndef CGAL_TAGS_H
 #define CGAL_TAGS_H
@@ -35,7 +26,7 @@ namespace CGAL {
 struct Void {};
 
 // Boolean_tag<bool> is a model of the Boost Integral Constant concept.
-//   https://www.boost.org/libs/mpl/doc/refmanual/integral-constant.html
+// https://www.boost.org/libs/mpl/doc/refmanual/integral-constant.html
 template <bool b>
 struct Boolean_tag {
   typedef boost::mpl::integral_c_tag tag;
@@ -50,7 +41,7 @@ using Boolean_tag = std::integral_constant<bool, b>;
 */
 
 typedef Boolean_tag<true>   Tag_true;
-typedef Boolean_tag<false>  Tag_false; 
+typedef Boolean_tag<false>  Tag_false;
 
 // the function check_tag is deprecated since CGAL 3.3
 inline bool check_tag( Tag_true)  {return true;}
@@ -60,12 +51,18 @@ struct Null_tag {};
 
 struct Null_functor {
   typedef Null_tag result_type;
-  typedef Null_tag second_argument_type; 
+  typedef Null_tag second_argument_type;
 };
 
 // For concurrency
 struct Sequential_tag {};
 struct Parallel_tag : public Sequential_tag {};
+
+#ifdef CGAL_LINKED_WITH_TBB
+typedef CGAL::Parallel_tag Parallel_if_available_tag;
+#else
+typedef CGAL::Sequential_tag Parallel_if_available_tag;
+#endif
 
 // A function that asserts a specific compile time tag
 // forcing its two arguments to have equal type.

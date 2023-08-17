@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Spatial_searching/include/CGAL/Search_traits.h $
+// $Id: Search_traits.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Spatial_searching/include/CGAL/Search_traits.h $
-// $Id: Search_traits.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Hans Tangelder (<hanst@cs.uu.nl>)
 
@@ -31,7 +22,7 @@
 namespace CGAL {
   template <class FT_, class Point, class CartesianCoordinateIterator, class ConstructCartesianCoordinateIterator, typename D = Dynamic_dimension_tag>
   class Search_traits {
-    
+
   public:
 
     typedef D Dimension;
@@ -40,13 +31,13 @@ namespace CGAL {
     typedef ConstructCartesianCoordinateIterator Construct_cartesian_const_iterator_d;
     typedef Point Point_d;
     typedef FT_ FT;
-    
+
     Construct_cartesian_const_iterator_d construct_cartesian_const_iterator_d_object() const {
        return Construct_cartesian_const_iterator_d();
     }
-  
+
   };
 
-  
+
 } // namespace CGAL
 #endif //  KD_TREE_TRAITS_POINT_H

@@ -1,25 +1,16 @@
 // Copyright (c) 2007  GeometryFactory (France).  All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/BGL/include/CGAL/boost/graph/graph_traits_OpenMesh.h $
-// $Id: graph_traits_OpenMesh.h 560c77f %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/BGL/include/CGAL/boost/graph/graph_traits_OpenMesh.h $
+// $Id: graph_traits_OpenMesh.h 7360250 2022-05-10T11:00:47+01:00 Andreas Fabri
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Andreas Fabri, Philipp Moeller
 
 // include this to avoid a VC15 warning
-#include <CGAL/boost/graph/Named_function_parameters.h>
+#include <CGAL/Named_function_parameters.h>
 
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
@@ -90,7 +81,8 @@ private:
 
   struct SM_graph_traversal_category : public virtual boost::bidirectional_graph_tag,
                                        public virtual boost::vertex_list_graph_tag,
-                                       public virtual boost::edge_list_graph_tag
+                                       public virtual boost::edge_list_graph_tag,
+                                       public virtual boost::adjacency_graph_tag
   {};
 
 public:
@@ -133,10 +125,12 @@ public:
 
   typedef CGAL::Out_edge_iterator<SM> out_edge_iterator;
 
+  typedef CGAL::Vertex_around_target_iterator<SM> adjacency_iterator;
+
   // nulls
   static vertex_descriptor   null_vertex() { return vertex_descriptor(); }
   static face_descriptor     null_face()   { return face_descriptor(); }
-  static halfedge_descriptor     null_halfedge()   { return halfedge_descriptor(); }
+  static halfedge_descriptor null_halfedge()   { return halfedge_descriptor(); }
 };
 
 template<typename K>
@@ -271,6 +265,17 @@ out_edges(typename boost::graph_traits<OPEN_MESH_CLASS >::vertex_descriptor v,
   typedef typename boost::graph_traits<OPEN_MESH_CLASS >::out_edge_iterator Iter;
   return CGAL::make_range(Iter(halfedge(v,sm),sm), Iter(halfedge(v,sm),sm,1));
 }
+
+
+template <typename K>
+CGAL::Iterator_range<typename boost::graph_traits<OPEN_MESH_CLASS >::adjacency_iterator>
+adjacent_vertices(typename boost::graph_traits<OPEN_MESH_CLASS >::vertex_descriptor v,
+                 const OPEN_MESH_CLASS& sm)
+{
+  return CGAL::vertices_around_target(v,sm);
+}
+
+
 
 
 template<typename K>
@@ -640,20 +645,19 @@ void clear(OPEN_MESH_CLASS& sm)
   CGAL_postcondition(num_faces(sm) == 0);
 }
 
+//doesn't seem to work. Use BGL default IO functions instead.
+//template<typename K>
+//bool read_OFF(std::istream& is, OPEN_MESH_CLASS& sm)
+//{
+//  OpenMesh::IO::Options ropt;
+//  return OpenMesh::IO::read_mesh(sm, is, ".OFF", ropt, false);
+//}
 
-template<typename K>
-bool read_off(std::istream& is, OPEN_MESH_CLASS& sm)
-{
-  OpenMesh::IO::Options ropt;
-  return OpenMesh::IO::read_mesh(sm, is, ".OFF", ropt, false);
-}
-
-
-template<typename K>
-bool write_off(std::ostream& os, OPEN_MESH_CLASS& sm)
-{
-  return OpenMesh::IO::write_mesh(sm, os, ".OFF");
-}
+//template<typename K>
+//bool write_OFF(std::ostream& os, OPEN_MESH_CLASS& sm)
+//{
+//  return OpenMesh::IO::write_mesh(sm, os, ".OFF");
+//}
 
 }
 #ifndef CGAL_NO_DEPRECATED_CODE

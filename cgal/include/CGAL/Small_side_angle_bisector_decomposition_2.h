@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Minkowski_sum_2/include/CGAL/Small_side_angle_bisector_decomposition_2.h $
-// $Id: Small_side_angle_bisector_decomposition_2.h 8cdfad0 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Minkowski_sum_2/include/CGAL/Small_side_angle_bisector_decomposition_2.h $
+// $Id: Small_side_angle_bisector_decomposition_2.h 414103f 2022-02-21T17:17:34+02:00 Efi Fogel
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s) : Ron Wein   <wein_r@yahoo.com>
 //             (based on an old version by Eyal Flato)
@@ -115,11 +106,33 @@ private:
   Ccw_in_between_2        f_ccw_in_between;
 
 public:
+  // The pointer to the kernel and the flag that indicate ownership should be
+  // replaced with a smart pointer. Meanwhile, the copy constructor and
+  // copy assignment prevent double delition. Notice that once a copy
+  // constructor (assignment) is present, the move constructor (assignment)
+  // is implicitly not generated anyway.
+
   /*! Default constructor. */
   Small_side_angle_bisector_decomposition_2() :
     m_kernel(new Kernel),
     m_own_kernel(true)
   { init(); }
+
+  /*! Copy constructor. */
+  Small_side_angle_bisector_decomposition_2
+  (const Small_side_angle_bisector_decomposition_2& other) :
+    m_kernel((other.m_own_kernel) ? new Kernel : other.m_kernel),
+    m_own_kernel(other.m_own_kernel)
+  { init(); }
+
+  /*! Copy assignment. */
+  Small_side_angle_bisector_decomposition_2&
+  operator=(const Small_side_angle_bisector_decomposition_2& other) {
+    m_kernel = (other.m_own_kernel) ? new Kernel : other.m_kernel;
+    m_own_kernel = other.m_own_kernel;
+    init();
+    return *this;
+  }
 
   /*! Constructor. */
   Small_side_angle_bisector_decomposition_2(const Kernel& kernel) :
@@ -131,9 +144,9 @@ public:
   ~Small_side_angle_bisector_decomposition_2()
   {
     if (m_own_kernel) {
-      if (m_kernel != NULL) {
+      if (m_kernel != nullptr) {
         delete m_kernel;
-        m_kernel = NULL;
+        m_kernel = nullptr;
       }
       m_own_kernel = false;
     }
@@ -740,7 +753,7 @@ private:
   }
 
   /*!
-   * Get the angle ratio created by the the bisection of the angle at the
+   * Get the angle ratio created by the bisection of the angle at the
    * reflex vertex v by the diagonal uv.
    * \param vec A vector defining counterclockwise-oriented polygon.
    * \param v_ind The index of the vertex v.

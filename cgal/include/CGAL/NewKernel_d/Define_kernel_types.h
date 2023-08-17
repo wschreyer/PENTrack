@@ -1,20 +1,11 @@
 // Copyright (c) 2014
 // INRIA Saclay-Ile de France (France)
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/NewKernel_d/include/CGAL/NewKernel_d/Define_kernel_types.h $
-// $Id: Define_kernel_types.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/NewKernel_d/include/CGAL/NewKernel_d/Define_kernel_types.h $
+// $Id: Define_kernel_types.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Marc Glisse
 
@@ -23,11 +14,6 @@
 #include <CGAL/config.h>
 #include <CGAL/NewKernel_d/functor_tags.h>
 #include <CGAL/typeset.h>
-#ifdef CGAL_CXX11
-#include <type_traits>
-#else
-#include <boost/type_traits.hpp>
-#endif
 
 namespace CGAL {
   namespace internal {
@@ -45,7 +31,7 @@ namespace CGAL {
     struct Define_kernel_types :
       Typedef_tag_type<typename List::head,
         typename internal::Type_or_iter<K,typename List::head>::type,
-	Define_kernel_types<K, Base, typename List::tail>
+        Define_kernel_types<K, Base, typename List::tail>
       > {};
 }
 #endif

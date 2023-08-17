@@ -1,20 +1,11 @@
 // Copyright (c) 2014
 // INRIA Saclay-Ile de France (France)
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/NewKernel_d/include/CGAL/NewKernel_d/functor_properties.h $
-// $Id: functor_properties.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/NewKernel_d/include/CGAL/NewKernel_d/functor_properties.h $
+// $Id: functor_properties.h 634fe39 2020-12-30T19:56:58+01:00 Marc Glisse
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Marc Glisse
 
@@ -33,7 +24,7 @@ namespace CGAL {
   template<class T> \
   struct Is_pretty<T,true> : T::Is_pretty {}
 
-CGAL_STRAWBERRY(Is_exact);
+CGAL_STRAWBERRY(Uses_no_arithmetic);
 CGAL_STRAWBERRY(Is_fast);
 CGAL_STRAWBERRY(Is_stored);
 #undef CGAL_STRAWBERRY

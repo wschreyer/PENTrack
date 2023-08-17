@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Nef_3/include/CGAL/Nef_3/SNC_SM_explorer.h $
+// $Id: SNC_SM_explorer.h 7322c79 2022-11-21T14:09:08+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Nef_3/include/CGAL/Nef_3/SNC_SM_explorer.h $
-// $Id: SNC_SM_explorer.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Peter Hachenberger <hachenberger@mpi-sb.mpg.de>
 
@@ -39,10 +30,8 @@ class SNC_SM_explorer : public SMCDEC {
 
  public:
   SNC_SM_explorer(const Base& E) : Base(E) {}
-  Self& operator=(const Self& E) {
-    Base::operator=(E); 
-    return *this;
-  }
+  SNC_SM_explorer(const Self& E) = default;
+  Self& operator=(const Self& E) = default;
 };
 
 } //namespace CGAL

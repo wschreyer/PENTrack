@@ -2,99 +2,65 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Polyhedron/include/CGAL/IO/print_OFF.h $
+// $Id: print_OFF.h 4e519a3 2021-05-05T13:15:37+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Polyhedron_IO/include/CGAL/IO/print_OFF.h $
-// $Id: print_OFF.h 1cba5df %aI Maxime Gimeno
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Lutz Kettner  <kettner@mpi-sb.mpg.de>
 
-#ifndef CGAL_IO_PRINT_OFF_H
-#define CGAL_IO_PRINT_OFF_H 1
+#ifndef CGAL_POLYHEDRON_IO_PRINT_OFF_H
+#define CGAL_POLYHEDRON_IO_PRINT_OFF_H
 
 #include <CGAL/license/Polyhedron.h>
 
-
-#include <CGAL/basic.h>
-#include <CGAL/IO/File_writer_OFF.h>
-#include <CGAL/IO/generic_print_polyhedron.h>
 #include <CGAL/Polyhedron_3.h>
-#include <iostream>
+
+#include <CGAL/IO/OFF.h>
+#include <CGAL/boost/graph/IO/Generic_facegraph_printer.h>
+
+#include <fstream>
 
 namespace CGAL {
 
-template <class Polyhedron, class Vpm>
-void print_polyhedron_with_header_OFF( std::ostream& out, 
-                                       const Polyhedron& P,
-                                       const File_header_OFF& header,
-                                       const Vpm& vpm) {
-    File_writer_OFF  writer( header);
-    writer.header().set_polyhedral_surface( true);
-    writer.header().set_halfedges( P.size_of_halfedges());
-    generic_print_polyhedron( out, P, writer, vpm);
-}
-
-template <class Polyhedron>
-void print_polyhedron_with_header_OFF( std::ostream& out, 
-                                       const Polyhedron& P,
-                                       const File_header_OFF& header) 
+template <class Polyhedron, class VPM>
+bool print_polyhedron_with_header_OFF(std::ostream& out,
+                                      const Polyhedron& P,
+                                      const File_header_OFF& header,
+                                      const VPM& vpm)
 {
-  print_polyhedron_with_header_OFF(out, P, header, get(CGAL::vertex_point, P));
+  File_writer_OFF writer(header);
+  writer.header().set_polyhedral_surface(true);
+  writer.header().set_halfedges(P.size_of_halfedges());
+
+  IO::internal::Generic_facegraph_printer<std::ostream,
+                                          Polyhedron,
+                                          File_writer_OFF> printer(out, writer);
+
+  return printer(P, parameters::vertex_point_map(vpm));
 }
 
 template <class Polyhedron>
-void print_polyhedron_OFF( std::ostream& out, 
-                           const Polyhedron& P,
-                           bool verbose = false) {
-    File_header_OFF header( verbose);
-    header.set_binary( is_binary( out));
-    header.set_no_comments( ! is_pretty( out));
-    print_polyhedron_with_header_OFF( out, P, header);
+bool print_polyhedron_with_header_OFF(std::ostream& out,
+                                      const Polyhedron& P,
+                                      const File_header_OFF& header)
+{
+  return print_polyhedron_with_header_OFF(out, P, header, get(CGAL::vertex_point, P));
 }
 
+template <class Polyhedron>
+bool print_polyhedron_OFF(std::ostream& out,
+                          const Polyhedron& P,
+                          bool verbose = false)
+{
+  File_header_OFF header(verbose);
+  header.set_binary(IO::is_binary(out));
+  header.set_no_comments(!IO::is_pretty(out));
 
-// Deprecated global functions, replaced with functions above
-
-template < class Traits,
-           class Items,
-           template < class T, class I, class A>
-           class HDS, class Alloc>
-void
-print_OFF( std::ostream& out,
-           const Polyhedron_3<Traits,Items,HDS,Alloc>& P,
-           bool verbose = false) {
-    File_writer_OFF  writer( verbose);
-    writer.header().set_binary( is_binary( out));
-    writer.header().set_no_comments( ! is_pretty( out));
-    writer.header().set_polyhedral_surface( true);
-    writer.header().set_halfedges( P.size_of_halfedges());
-    generic_print_polyhedron( out, P, writer);
+  return print_polyhedron_with_header_OFF(out, P, header);
 }
 
-template < class Traits,
-           class Items,
-           template < class T, class I, class A>
-           class HDS, class Alloc>
-void
-print_OFF( std::ostream& out,
-           const Polyhedron_3<Traits,Items,HDS,Alloc>& P,
-           const File_header_OFF& header) {
-    File_writer_OFF  writer( header);
-    writer.header().set_polyhedral_surface( true);
-    writer.header().set_halfedges( P.size_of_halfedges());
-    generic_print_polyhedron( out, P, writer);
-}
+} // namespace CGAL
 
-} //namespace CGAL
-#endif // CGAL_IO_PRINT_OFF_H //
-// EOF //
+#endif // CGAL_POLYHEDRON_IO_PRINT_OFF_H

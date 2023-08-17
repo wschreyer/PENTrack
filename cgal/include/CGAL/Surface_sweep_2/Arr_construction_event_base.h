@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/Surface_sweep_2/Arr_construction_event_base.h $
-// $Id: Arr_construction_event_base.h 0b5353c %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Arrangement_on_surface_2/include/CGAL/Surface_sweep_2/Arr_construction_event_base.h $
+// $Id: Arr_construction_event_base.h 5985db1 2021-07-28T16:17:10+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Tali Zvi <talizvi@post.tau.ac.il>
 //                 Baruch Zukerman <baruchzu@post.tau.ac.il>
@@ -143,7 +134,7 @@ public:
 
   /*! using the additional data that we store at the event, we compute
    *  how much we have to jump (he = he->next()->twin()) from the halfedge
-   *  that is stored in the event, to the halefge that is previous to 'curve'
+   *  that is stored in the event, to the halfedge that is previous to 'curve'
    *  that is about to be inserted into the arrangement.
    */
   int compute_halfedge_jump_count(Subcurve* curve)

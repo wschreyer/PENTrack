@@ -1,33 +1,22 @@
-// Copyright (c) 1997
+// Copyright (c) 1997-2021
 // Utrecht University (The Netherlands),
 // ETH Zurich (Switzerland),
 // INRIA Sophia-Antipolis (France),
 // Max-Planck-Institute Saarbruecken (Germany),
-// and Tel-Aviv University (Israel).  All rights reserved.
+// and Tel-Aviv University (Israel).
+// GeometryFactory (France)
+// All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_3/include/CGAL/intersection_3.h $
-// $Id: intersection_3.h e1eacea %aI Andreas Fabri
-// SPDX-License-Identifier: LGPL-3.0+
-//
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Intersections_3/include/CGAL/intersection_3.h $
+// $Id: intersection_3.h c2d1adf 2021-06-23T17:34:48+02:00 Mael Rouxel-Labbé
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Geert-Jan Giezeman <geert@cs.uu.nl>
 
-
 #ifndef CGAL_INTERSECTION_3_H
 #define CGAL_INTERSECTION_3_H
-
-#include <CGAL/disable_warnings.h>
 
 #include <CGAL/Intersections_3/Bbox_3_Bbox_3.h>
 #include <CGAL/Intersections_3/Bbox_3_Iso_cuboid_3.h>
@@ -61,6 +50,7 @@
 #include <CGAL/Intersections_3/Line_3_Triangle_3.h>
 
 #include <CGAL/Intersections_3/Plane_3_Plane_3.h>
+#include <CGAL/Intersections_3/Plane_3_Plane_3_Plane_3.h>
 #include <CGAL/Intersections_3/Plane_3_Point_3.h>
 #include <CGAL/Intersections_3/Plane_3_Ray_3.h>
 #include <CGAL/Intersections_3/Plane_3_Segment_3.h>
@@ -94,7 +84,5 @@
 #include <CGAL/Intersections_3/Tetrahedron_3_Triangle_3.h>
 
 #include <CGAL/Intersections_3/Triangle_3_Triangle_3.h>
-
-#include <CGAL/enable_warnings.h>
 
 #endif // CGAL_INTERSECTION_3_H

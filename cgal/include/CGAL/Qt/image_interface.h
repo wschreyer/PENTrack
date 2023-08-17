@@ -4,19 +4,11 @@
  Copyright (C) 2002-2014 Gilles Debunne. All rights reserved.
 
  This file is part of a fork of the QGLViewer library version 2.7.0.
- http://www.libqglviewer.com - contact@libqglviewer.com
-
- This file may be used under the terms of the GNU General Public License 
- version 3.0 as published by the Free Software Foundation and
- appearing in the LICENSE file included in the packaging of this file.
-
- This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
- WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 *****************************************************************************/
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/GraphicsView/include/CGAL/Qt/image_interface.h $
-// $Id: image_interface.h 1df3c3e %aI Laurent Rineau
-// SPDX-License-Identifier: GPL-3.0
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/GraphicsView/include/CGAL/Qt/image_interface.h $
+// $Id: image_interface.h 1ef976e 2019-10-19T16:09:56+02:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-only
 
 #ifndef CGAL_IMAGE_INTERFACE_H
 #define CGAL_IMAGE_INTERFACE_H
@@ -36,7 +28,7 @@ public:
   ImageInterface(QWidget *parent, qreal ratio)
     : QDialog(parent), ratio(ratio)
   {
-    currentlyFocused = NULL;
+    currentlyFocused = nullptr;
     setupUi(this);
     connect(imgHeight, SIGNAL(valueChanged(int)),
             this, SLOT(imgHeightValueChanged(int)));

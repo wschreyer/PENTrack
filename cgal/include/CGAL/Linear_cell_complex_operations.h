@@ -1,20 +1,11 @@
 // Copyright (c) 2011 CNRS and LIRIS' Establishments (France).
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Linear_cell_complex/include/CGAL/Linear_cell_complex_operations.h $
-// $Id: Linear_cell_complex_operations.h 0698f79 %aI Sébastien Loriot
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Linear_cell_complex/include/CGAL/Linear_cell_complex_operations.h $
+// $Id: Linear_cell_complex_operations.h 440a8df 2022-02-03T08:41:04+00:00 Andreas Fabri
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Guillaume Damiand <guillaume.damiand@liris.cnrs.fr>
 //
@@ -24,6 +15,7 @@
 #include <CGAL/Cell_iterators.h>
 #include <CGAL/Cell_const_iterators.h>
 #include <CGAL/Origin.h>
+#include <CGAL/assertions.h>
 
 namespace CGAL {
 
@@ -71,7 +63,7 @@ namespace CGAL {
     // Now we advance to process each edge
     unsigned int nb = 0;
     const Point* curr = &amap.point(start);
-    
+
     adart=start;
     do
     {
@@ -91,7 +83,7 @@ namespace CGAL {
     }
     while(adart!=start);
 
-    assert(nb>0);
+    CGAL_assertion(nb>0);
     return (typename LCC::Traits::Construct_scaled_vector()(normal, 1.0/nb));
     //  return normal / std::sqrt(normal * normal);
   }
@@ -210,7 +202,7 @@ namespace CGAL {
       }
       while(adart!=start);
 
-      assert(nb>1);
+      CGAL_assertion(nb>1);
       return typename LCC::Traits::Construct_translated_point()
         (CGAL::ORIGIN, typename LCC::Traits::Construct_scaled_vector()
          (vec, 1.0/nb));

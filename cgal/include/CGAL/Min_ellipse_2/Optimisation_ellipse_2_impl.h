@@ -1,21 +1,12 @@
-// Copyright (c) 1997-2001  
+// Copyright (c) 1997-2001
 // ETH Zurich (Switzerland).  All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Bounding_volumes/include/CGAL/Min_ellipse_2/Optimisation_ellipse_2_impl.h $
+// $Id: Optimisation_ellipse_2_impl.h 78ff918 2021-06-23T23:34:14+02:00 Mael Rouxel-Labbé
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Bounding_volumes/include/CGAL/Min_ellipse_2/Optimisation_ellipse_2_impl.h $
-// $Id: Optimisation_ellipse_2_impl.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Sven Schoenherr <sven@inf.ethz.ch>, Bernd Gaertner
 
@@ -40,7 +31,7 @@ operator << ( std::ostream& os, const CGAL::Optimisation_ellipse_2<K_>& e)
     const char*  sep  = empty;
     const char*  tail = empty;
 
-    switch ( CGAL::get_mode( os)) {
+    switch ( CGAL::IO::get_mode( os)) {
       case CGAL::IO::PRETTY:
         head = pretty_head;
         sep  = pretty_sep;
@@ -53,7 +44,7 @@ operator << ( std::ostream& os, const CGAL::Optimisation_ellipse_2<K_>& e)
         break;
       default:
         CGAL_optimisation_assertion_msg( false,
-                                         "CGAL::get_mode( os) invalid!");
+                                         "CGAL::IO::get_mode( os) invalid!");
         break; }
 
     os << head << e.n_boundary_points;
@@ -84,11 +75,11 @@ template < class K_ >
 std::istream&
 operator >> ( std::istream& is, CGAL::Optimisation_ellipse_2<K_>& e)
 {
-    switch ( CGAL::get_mode( is)) {
+    switch ( CGAL::IO::get_mode( is)) {
 
       case CGAL::IO::PRETTY:
         std::cerr << std::endl;
-        std::cerr << "Stream must be in ascii or binary mode" << std::endl;
+        std::cerr << "Stream must be in ASCII or binary mode" << std::endl;
         break;
 
       case CGAL::IO::ASCII:
@@ -116,7 +107,7 @@ operator >> ( std::istream& is, CGAL::Optimisation_ellipse_2<K_>& e)
 
       default:
         CGAL_optimisation_assertion_msg( false,
-                                         "CGAL::get_mode( is) invalid!");
+                                         "CGAL::IO::get_mode( is) invalid!");
         break; }
 
     return( is);

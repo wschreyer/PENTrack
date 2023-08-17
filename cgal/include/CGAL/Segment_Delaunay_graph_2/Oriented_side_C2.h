@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_2/Oriented_side_C2.h $
+// $Id: Oriented_side_C2.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Segment_Delaunay_graph_2/include/CGAL/Segment_Delaunay_graph_2/Oriented_side_C2.h $
-// $Id: Oriented_side_C2.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Menelaos Karavelas <mkaravel@iacm.forth.gr>
 
@@ -47,7 +38,7 @@ private:
 
   typedef Basic_predicates_C2<K>              Base;
   typedef Voronoi_vertex_C2<K,Method_tag>     Voronoi_vertex_2;
-  
+
   typedef typename Base::Point_2              Point_2;
   typedef typename Base::Segment_2            Segment_2;
   typedef typename Base::Line_2               Line_2;
@@ -69,7 +60,7 @@ public:
   // is the direction of the supporting line of s, rotated by 90
   // degrees counterclockwise.
   Oriented_side operator()(const Site_2& s1, const Site_2& s2,
-			   const Site_2& s, const Site_2& p) const
+                           const Site_2& s, const Site_2& p) const
   {
     CGAL_precondition(s1.is_point() || s2.is_point());
     CGAL_precondition(s1.is_segment() || s2.is_segment());
@@ -81,8 +72,8 @@ public:
   // wrt the line that is passes through the point p and its direction
   // is the direction of the supporting line of s, rotated by 90
   // degrees counterclockwise.
-  Oriented_side operator()(const Site_2& q, 
-			   const Site_2& s, const Site_2& p) const
+  Oriented_side operator()(const Site_2& q,
+                           const Site_2& s, const Site_2& p) const
   {
     CGAL_precondition( q.is_point() );
     CGAL_precondition( s.is_segment() && p.is_point() );
@@ -98,8 +89,8 @@ public:
   // is the direction of the supporting line of s, rotated by 90
   // degrees counterclockwise.
   Oriented_side operator()(const Site_2& s1, const Site_2& s2,
-			   const Site_2& s3,
-			   const Site_2& s, const Site_2& p) const
+                           const Site_2& s3,
+                           const Site_2& s, const Site_2& p) const
   {
     CGAL_precondition( s.is_segment() && p.is_point() );
 

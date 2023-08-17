@@ -1,20 +1,17 @@
-// Copyright (c) 2010 GeometryFactory (France).
+// Copyright (c) 1997-2021
+// Utrecht University (The Netherlands),
+// ETH Zurich (Switzerland),
+// INRIA Sophia-Antipolis (France),
+// Max-Planck-Institute Saarbruecken (Germany),
+// and Tel-Aviv University (Israel).
+// GeometryFactory (France)
 // All rights reserved.
 //
-// This file is part of CGAL (www.cgal.org); you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public License as
-// published by the Free Software Foundation; either version 3 of the License,
-// or (at your option) any later version.
+// This file is part of CGAL (www.cgal.org)
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Intersections_3/include/CGAL/Intersections_3/Bbox_3_Triangle_3.h $
-// $Id: Bbox_3_Triangle_3.h 1622410 %aI Andreas Fabri
-// SPDX-License-Identifier: LGPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Intersections_3/include/CGAL/Intersections_3/Bbox_3_Triangle_3.h $
+// $Id: Bbox_3_Triangle_3.h c2d1adf 2021-06-23T17:34:48+02:00 Mael Rouxel-Labbé
+// SPDX-License-Identifier: LGPL-3.0-or-later OR LicenseRef-Commercial
 //
 //
 // Author(s)     : Sebastien Loriot
@@ -27,21 +24,42 @@
 #include <CGAL/Triangle_3.h>
 
 #include <CGAL/Intersections_3/internal/Bbox_3_Triangle_3_do_intersect.h>
+#include <CGAL/Intersections_3/internal/Iso_cuboid_3_Triangle_3_intersection.h>
 
 namespace CGAL {
 
 template<typename K>
-bool do_intersect(const CGAL::Bbox_3& a,
-                  const Triangle_3<K>& b) {
-  return K().do_intersect_3_object()(a, b);
+bool do_intersect(const CGAL::Bbox_3& box,
+                  const Triangle_3<K>& tr)
+{
+  return K().do_intersect_3_object()(box, tr);
 }
 
 template<typename K>
-bool do_intersect(const Triangle_3<K>& a,
-                  const CGAL::Bbox_3& b) {
-  return K().do_intersect_3_object()(a, b);
+bool do_intersect(const Triangle_3<K>& tr,
+                  const CGAL::Bbox_3& box)
+{
+  return K().do_intersect_3_object()(tr, box);
 }
 
+template<typename K>
+typename Intersection_traits<K, typename K::Triangle_3, Bbox_3>::result_type
+intersection(const CGAL::Bbox_3& box,
+             const Triangle_3<K>& tr)
+{
+  // @fixme illegal for non-CGAL kernels
+  typename K::Iso_cuboid_3 cub(box.xmin(), box.ymin(), box.zmin(),
+                               box.xmax(), box.ymax(), box.zmax());
+  return typename K::Intersect_3()(cub, tr);
+}
+
+template<typename K>
+typename Intersection_traits<K, typename K::Triangle_3, Bbox_3>::result_type
+intersection(const Triangle_3<K>& tr,
+             const CGAL::Bbox_3& box)
+{
+  return intersection(box, tr);
+}
 
 } // namespace CGAL
 

@@ -2,20 +2,11 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Arrangement_on_surface_2/include/CGAL/Arr_geometry_traits/Curve_data_aux.h $
+// $Id: Curve_data_aux.h 0779373 2020-03-26T13:31:46+01:00 Sébastien Loriot
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Arrangement_on_surface_2/include/CGAL/Arr_geometry_traits/Curve_data_aux.h $
-// $Id: Curve_data_aux.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
-// 
 //
 // Author(s)     : Ron Wein          <wein@post.tau.ac.il>
 //                 Efi Fogel         <efif@post.tau.ac.il>
@@ -70,11 +61,11 @@ public:
   /*! Default constructor. */
   _Curve_data_ex ()
   {}
-    
+
   /*!
    * Construct an extended curve from a base curve.
    * \param cv The base curve.
-   */ 
+   */
   _Curve_data_ex (const BaseCurveType& cv) :
     BaseCurveType (cv)
   {}
@@ -83,7 +74,7 @@ public:
    * Construct an extended curve from a base curve and a data object.
    * \param cv The base curve.
    * \param data The data object.
-   */ 
+   */
   _Curve_data_ex (const BaseCurveType& cv, const Data& data) :
     BaseCurveType (cv),
     m_data (data)

@@ -2,19 +2,10 @@
 // All rights reserved.
 //
 // This file is part of CGAL (www.cgal.org).
-// You can redistribute it and/or modify it under the terms of the GNU
-// General Public License as published by the Free Software Foundation,
-// either version 3 of the License, or (at your option) any later version.
 //
-// Licensees holding a valid commercial license may use this file in
-// accordance with the commercial license agreement provided with the software.
-//
-// This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
-// WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// $URL: https://github.com/CGAL/cgal/blob/releases/CGAL-4.14.1/Poisson_surface_reconstruction_3/include/CGAL/poisson_refine_triangulation.h $
-// $Id: poisson_refine_triangulation.h ee57fc2 %aI Sébastien Loriot
-// SPDX-License-Identifier: GPL-3.0+
+// $URL: https://github.com/CGAL/cgal/blob/v5.5.2/Poisson_surface_reconstruction_3/include/CGAL/poisson_refine_triangulation.h $
+// $Id: poisson_refine_triangulation.h 3ad94a7 2022-05-17T12:04:52+01:00 Andreas Fabri
+// SPDX-License-Identifier: GPL-3.0-or-later OR LicenseRef-Commercial
 //
 // Author(s)     : Laurent RINEAU, Laurent Saboret
 
@@ -25,7 +16,7 @@
 
 
 // CGAL
-#include <CGAL/trace.h>
+#include <CGAL/IO/trace.h>
 #include <CGAL/Mesher_level.h>
 #include <CGAL/Mesh_3/Poisson_refine_cells_3.h>
 #include <CGAL/Poisson_mesh_cell_criteria_3.h>
@@ -189,17 +180,17 @@ public:
 /// bad means badly shaped or too big).
 /// @return the number of vertices inserted.
 ///
-/// @commentheading Preconditions:
+/// \pre
 /// - Tr must use a geometric traits with robust circumcenter computation.
 /// - convergence is guaranteed if radius_edge_ratio_bound >= 1.0.
 ///
-/// @commentheading Template Parameters:
-/// @param Tr 3D Delaunay triangulation.
-/// @param Surface Sphere_3 or Iso_cuboid_3.
-/// @param Sizing_field A sizing field functor type
-/// @param Second_sizing_field A sizing field functor type
+/// *Template Parameters*
+/// @tparam Tr 3D Delaunay triangulation.
+/// @tparam Surface Sphere_3 or Iso_cuboid_3.
+/// @tparam Sizing_field A sizing field functor type
+/// @tparam Second_sizing_field A sizing field functor type
 ///
-/// @commentheading Sizing fields 
+/// *Sizing fields*
 /// - The first sizing field is the real sizing field that is targeted by
 /// the refinement process. It may be costly to use.
 /// - The second sizing field is supposed to be a sizing field that is less
@@ -236,7 +227,7 @@ unsigned int poisson_refine_triangulation(
   std::size_t nb_vertices = tr.number_of_vertices(); // get former #vertices
 
   // Delaunay refinement
-  Tets_criteria tets_criteria(radius_edge_ratio_bound*radius_edge_ratio_bound, 
+  Tets_criteria tets_criteria(radius_edge_ratio_bound*radius_edge_ratio_bound,
                               sizing_field,
                               second_sizing_field);
   Oracle oracle;
