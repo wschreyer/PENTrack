@@ -67,6 +67,10 @@ public:
         _init(diffuseProbability, indexOfRefractionRatio, lossPerBounce);
     }
 
+    lambert_scattering_distribution(){
+        _init(static_cast<T>(0), std::complex<T>(1, 0), static_cast<T>(0));
+    }
+
     /**
      * Construct distribution for neutron scattering on Fermi potentials
      * 
@@ -262,6 +266,9 @@ public:
         _lossPerBounce = lossPerBounce;
     }
 
+    microroughness_scattering_distribution():
+        microroughness_scattering_distribution(static_cast<T>(0), std::complex<T>(0, 0), std::complex<T>(0, 0), static_cast<T>(0), static_cast<T>(0), static_cast<T>(0)){}
+
     /**
      * Sample scattering distribution for neutron incident from direction (sin(incidentPolarAngle), 0, cos(incidentPolarAngle))
      * 
@@ -331,7 +338,7 @@ template<typename T, class ScatterDistribution>
 class microfacet_scattering_distribution{
 private:
     T _beckmannWidth; ///< Width of microfacet (Beckmann) distribution
-    ScatterDistribution _scattering_distribution; ///< Diffuse scattering distribution
+    ScatterDistribution _scattering_distribution;
     beckmann_visible_x_slope_distribution<T> _beckmann_x_sampler; ///< Distribution of surface slope parallel to incident direction
     std::normal_distribution<T> _beckmann_y_sampler; ///< Distribution of surface slope orthogonal to incident direction
 
@@ -355,13 +362,16 @@ public:
     /**
      * Construct scattering distribution based on given diffuse scattering distribution and width of microfacet distribution
      * 
-     * @param scattering_distribution Distribution of polar and azimuth scattering angles for given incident polar angle
+     * @param scattering_distribution Distribution of diffuse scattering angles
      * @param beckmannWidth Width of microfacet (Beckmann) distribution
     */
-    microfacet_scattering_distribution(const ScatterDistribution &scattering_distribution, const T beckmannWidth){
+    microfacet_scattering_distribution(ScatterDistribution &scattering_distribution, const T beckmannWidth){
         _scattering_distribution = scattering_distribution;
-        _beckmann_x_sampler = beckmann_visible_x_slope_distribution(0., beckmannWidth);
-        _beckmann_y_sampler = std::normal_distribution<T>(0, M_SQRT1_2*beckmannWidth);
+        if (beckmannWidth < 0) throw std::runtime_error("Width parameter for microfacet scattering distribution must be equal or larger than 0!");
+        else if (beckmannWidth > 0){
+            _beckmann_x_sampler = beckmann_visible_x_slope_distribution(0., beckmannWidth);
+            _beckmann_y_sampler = std::normal_distribution<T>(0, M_SQRT1_2*beckmannWidth);
+        }
         _beckmannWidth = beckmannWidth;
     }
 
@@ -378,26 +388,40 @@ public:
     */
     template<class Random>
     std::tuple<T, T> operator()(const T incidentPolarAngle, Random &rng){
+        if (_beckmannWidth == 0){
+            return _scattering_distribution(incidentPolarAngle, rng);
+        }
         for(;;){
-            T slope_x = _beckmann_x_sampler(rng, incidentPolarAngle);
+            T slope_x = _beckmann_x_sampler(rng, incidentPolarAngle); // sample slope of microfacet
             T slope_y = _beckmann_y_sampler(rng);
-            auto [theta, phi] = _scattering_distribution(incidentPolarAngle, rng);
-            std::array<T, 3> o{std::sin(theta)*std::cos(phi),
-                               std::sin(theta)*std::sin(phi),
-                               std::cos(theta)};
-            std::array<T, 3> n{-slope_x, -slope_y, 1.};
+            std::array<T, 3> m{slope_x, slope_y, 1.}; // microfacet normal
+            boost::qvm::normalize(m);
             std::array<T, 3> i{std::sin(incidentPolarAngle), 0, -std::cos(incidentPolarAngle)};
-            RotateVector(o, n, i);
+            T incidentPolarAngle_m = std::acos(-boost::qvm::dot(i, m)); // incident polar angle with respect to microfacet normal
+//            std::cout << _beckmannWidth << " " << m[0] << " " << m[1] << " " << incidentPolarAngle << " " << incidentPolarAngle_m << std::endl;
+            auto [theta_m, phi_m] = _scattering_distribution(incidentPolarAngle_m, rng); // sample diffuse scattering angles with respect to microfacet normal
+            std::array<T, 3> o{std::sin(theta_m)*std::cos(phi_m),
+                               std::sin(theta_m)*std::sin(phi_m),
+                               std::cos(theta_m)}; // scattered direction with respect to microfacet normal
+            RotateVector(o, m, i); // rotate outgoing vector into coordinate system defined by microfacet normal, so it is now with respect to average surface normal
             T theta_o = std::acos(o[2]);
-            if (theta < M_PI/2 xor theta_o < M_PI/2){
+            if ((theta_o < M_PI/2) xor (theta_o < M_PI/2)){
                 continue; // don't allow scattering angle to be rotated into the other hemisphere
             }
             T G1 = smithShadowing(theta_o);
-            if (std::generate_canonical<T>(rng) < G1){ // if outgoing direction is not masked/shadowed return scattered angles
-                return std::make_tuple(theta, std::atan2(o[1], o[0]));
+            if (std::generate_canonical<T, std::numeric_limits<T>::digits>(rng) < G1){ // if outgoing direction is not masked/shadowed, return scattered angles
+                return std::make_tuple(theta_o, std::atan2(o[1], o[0]));
             }
         }
     }
+
+    /**
+     * Return ratio n1/n2 of complex indices of refraction for current medium n1 and new medium n2
+    */
+    std::complex<T> indexOfRefractionRatio() const{
+        return _scattering_distribution.indexOfRefractionRatio();
+    }
+
 };
 
 

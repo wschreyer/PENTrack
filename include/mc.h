@@ -108,20 +108,20 @@ public:
 			T G1 = static_cast<T>(2)/(1 + erf_a + exp_a2*M_2_SQRTPI/2/a);
 			T C = 1 - G1 * erf_a;
 			
-			if (std::generate_canonical<T>(rng) < C){
+			if (std::generate_canonical<T, std::numeric_limits<T>::digits>(rng) < C){
 				T p = exp_a2*M_2_SQRTPI/2 / (exp_a2*M_2_SQRTPI/2 + a*(1 - erf_a));
 
-				if (std::generate_canonical<T>(rng) < p){
-					slope_x = -std::sqrt(-std::log(std::generate_canonical<T>(rng)*exp_a2));
+				if (std::generate_canonical<T, std::numeric_limits<T>::digits>(rng) < p){
+					slope_x = -std::sqrt(-std::log(std::generate_canonical<T, std::numeric_limits<T>::digits>(rng)*exp_a2));
 				}
 				else{
-					slope_x = boost::math::erf_inv(std::generate_canonical<T>(rng)*(1 - erf_a) - 1);
+					slope_x = boost::math::erf_inv(std::generate_canonical<T, std::numeric_limits<T>::digits>(rng)*(1 - erf_a) - 1);
 				}
 			}
 			else{
-				slope_x = boost::math::erf_inv((2*std::generate_canonical<T>(rng) - 1)*erf_a);
+				slope_x = boost::math::erf_inv((2*std::generate_canonical<T, std::numeric_limits<T>::digits>(rng) - 1)*erf_a);
 				T p = (-slope_x/a + 1)/2;
-				if (std::generate_canonical<T>(rng) > p){
+				if (std::generate_canonical<T, std::numeric_limits<T>::digits>(rng) > p){
 					slope_x = -slope_x;
 				}
 			}

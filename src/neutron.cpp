@@ -38,12 +38,29 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 	std::complex<double> FermiPotential2(MaterialPotential(entering.mat, y2), -entering.mat.FermiImag*1e-9);
 	std::array<double, 3> v2;
 	if (mat.RMSRoughness != 0 and mat.CorrelLength != 0){
-		microroughness_scattering_distribution<double> MRdist(E, FermiPotential1, FermiPotential2, mat.RMSRoughness, mat.CorrelLength, mat.LossPerBounce);
-		v2 = scattered_vector(v1, n, MRdist, mc);
+		microroughness_scattering_distribution MRdist(E, FermiPotential1, FermiPotential2, mat.RMSRoughness, mat.CorrelLength, mat.LossPerBounce);
+		if (mat.microfacetDistributionWidth > 0){
+			double lambda_c = 2.*M_PI*hbar/GetMass()/ele_e/std::abs(v1normal);
+			double beckmannWidth = mat.microfacetDistributionWidth*std::pow(lambda_c*1e9, mat.microfacetDistributionWidthExponent);
+			microfacet_scattering_distribution mfDist(MRdist, beckmannWidth);
+			v2 = scattered_vector(v1, n, mfDist, mc);
+		}
+		else{
+			v2 = scattered_vector(v1, n, MRdist, mc);
+		}
 	}
 	else{
-		lambert_scattering_distribution<double> lambertDist(E, FermiPotential1, FermiPotential2, mat.DiffProb, mat.LossPerBounce);
-		v2 = scattered_vector(v1, n, lambertDist, mc);
+		lambert_scattering_distribution lambertDist(E, FermiPotential1, FermiPotential2, mat.DiffProb, mat.LossPerBounce);
+		if (mat.microfacetDistributionWidth > 0){
+			double lambda_c = 2.*M_PI*hbar/GetMass()/ele_e/std::abs(v1normal);
+			double beckmannWidth = mat.microfacetDistributionWidth*std::pow(lambda_c*1e9, mat.microfacetDistributionWidthExponent);
+//			std::cout << lambda_c << " " << beckmannWidth << "\n";
+			microfacet_scattering_distribution mfDist(lambertDist, beckmannWidth);
+			v2 = scattered_vector(v1, n, mfDist, mc);
+		}
+		else{
+			v2 = scattered_vector(v1, n, lambertDist, mc);
+		}
 	}
 
 	double v2normal = dot(v2, n);

@@ -28,6 +28,8 @@ struct material{
     double InternalBField; ///< Internal magnetic field, for magnetized materials
     double ModifiedLambertProb; ///< Probability of diffuse reflection according to Modified Lambert model
     double LossPerBounce; ///< Probability of loss when hitting the wall (independent of neutron energy)
+	double microfacetDistributionWidth; ///< Width of Beckmann microfacet distribution
+	double microfacetDistributionWidthExponent; ///< Exponent for wavelength-dependent microfacet distribution = microfacetDistributionWidth * (wavelength[nm]/cos(incident angle))^microfacetDistributionWidthExponent)
 };
 
 ///Read material properties, except name, from input stream

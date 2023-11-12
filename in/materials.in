@@ -1,40 +1,43 @@
 [MATERIALS]
 ############### Define material properties for UCN #############
-# imaginary Fermi potential, diffuse reflectivity, spin flip probability, micro-roughness parameters, enable micro-roughness reflection, internal magnetic field
+# imaginary Fermi potential, diffuse reflectivity, spin flip probability, micro-roughness parameters, internal magnetic field, microfacet distribution width
 # Diffuse reflection is either modeled with a Lambert model (scattering angle cosine-distributed around surface normal),
 #  a modified Lambert model (scattering angle cosine-distributed around specular-scattering vector), or the Micro Roughness model.
 # To activate either Lambert model, set the (modified) Lambert-reflection probability. To activate micro roughness, set RMSroughness and CorrelationLength.
 # See https://doi.org/10.1080/10448639208218770 and https://www.ncnr.nist.gov/resources/n-lengths/
 # For more information on diffuse reflection see https://doi.org/10.1007/BF01380066 and https://doi.org/10.1140/epja/i2010-10926-x
+# Additionally, a wavelength-dependent Beckmann distribution of surface microfacets can be included. The Beckmann distribution width is calculated with
+#  width = microfacetDistributionWidth*(neutron wavelength [nm]/cos(incident angle))^microfacetDistributionWidthExponent, see https://doi.org/10.1103/PhysRevC.108.034605
 #
 # When a neutron hits a surface, the code randomly chooses to flip its spin based on the given spin flip probability.
 # Then it calculates the potential difference between the previous and the new material, taking into account the spin polarization and internal magnetic fields.
 # Based on the potential difference and the diffuse-reflection parameters it chooses if the neutron should be transmitted or reflected specularly or diffusely.
 #
-#name		FermiReal [neV]		FermiImag [neV]		LambertProbability [0..1]	SpinflipProbability [0..1]	RMSroughness [m]	CorrelationLength [m]   InternalMagneticField [T]	ModifiedLambertProbability [0..1]   LossPerBounce [0..1]
-default		0			0			0				0	0	0	0	0   0
-PolishedSteel	183			0.0852			0				1e-5	2.6e-9	20e-9	0	0   0
-PE		-8.6553			0.492			0.5				0	0	0	0	0   0
-Ti		-51.1			0.0432			0.2				1e-5	0	0	0	0   0
-Cu		170.7470		0.0726			0.2				1e-5	0	0	0	0   0
-Al		54.1			0.00281			0.2				1e-5	0	0	0	0   0   # https://doi.org/10.1016/j.nima.2009.06.047
-AlLT		54.1			1.40e-3			0				1e-5	0	0	0	0   0
-DLC		269			0.0625			0  				2e-6	3E-9	25E-9	0	0   0
-UCNdet		0.1			1			0				0	0	0	0	0   0
-DLCLT		269			5.1116e-3		0  				2e-6    3E-9	25E-9	0	0   0	# cold DLC, imag part should be lower
-NiPLT       	212.9579		0.0311         		0.05				0	0	0	0	0   0	#NiPlt is at 1K
-NiLT		245.1117		0.04068			0.15				0	0	0	0	0   0	#Ni is at 1K
-NiMo		226.7135		0.136			0				0	2.4E-9	12E-9	0	0   0
-NiMoLT		226.7135		3.7e-2			0				0	2.4E-9	12E-9	0	0   0
-CuBe		178.8031		0.0726			0.16				0	0	0	0	0   0
-LHe		18.7854			2.63e-9			0.16				0	0	0	0	0	0   #Liquid He at 1K (125s)
-LHe0.85K	18.7854			8.44e-10		0.16				0	0	0	0	0   0	#Liquid He at 0.85K (390s)
-LHePerf		18.7854			0			0.16				0	0	0	0	0   0	#Perfect Liquid Helium, no absorbtion or upscattering
-BeO		256.6665		6.23e-2			0.16				0	0	0	0	0   0
-SS		183.0405		8.52e-2			0.16				0	0	0	0	0   0
-dPE    		 209              	0.06           		0.16            		1e-5	0	0	0	0   0
-dPS     	171             	0.047          		0.16             		1e-5	0	0	0	0   0
-GS20		103.4			1.237			0.16				0	0	0	0	0   0	# Li6-enriched glass scintillator https://doi.org/10.1140/epja/i2016-16326-4
-GS30		83.1			1.23e-4			0.16				0	0	0	0	0   0	# Li6-depleted glass scintillator
-SpinFlipper	0			0			0				0.99	0	0	0	0   0	# Whenever UCN cross surface with this material their spin is flipped with 99% probability
-FePolarizerOnAl	209			0.00281			0.16				0.05	0	0	2	0   0	# This mimicks a magnetized iron film coated onto an Al foil. Since iron film is too thin to be represented in StL files, we use a single material with iron's real potential (to correctly model energy-dependece of polarization) and Al's imagnary potential (to correctly model absorption in foil, assuming absorption in iron is negligible)
+#name           FermiReal    FermiImag   LambertProbability   SpinflipProbability  RMSroughness   CorrelationLength   InternalMagneticField   ModifiedLambertProbability   LossPerBounce   microfacetDistributionWidth   microfacetDistributionWidthExponent
+#               [neV]        [neV]       [0..1]               [0..1]               [m]            [m]                 [T]                     [0..1]                       [0..1]
+default            0         0           0                    0                    0               0                  0                       0                            0               0                              0
+PolishedSteel    183         0.0852      0                    1e-5                 2.6e-9         20e-9               0                       0                            0               0                              0
+PE                -8.6553    0.492       0.5                  0                    0               0                  0                       0                            0               0                              0
+Ti               -51.1       0.0432      0.2                  1e-5                 0               0                  0                       0                            0               0                              0
+Cu               170.7470    0.0726      0.2                  1e-5                 0               0                  0                       0                            0               0                              0
+Al                54.1       0.00281     0.2                  1e-5                 0               0                  0                       0                            0               0                              0    # https://doi.org/10.1016/j.nima.2009.06.047
+AlLT              54.1       1.40e-3     0                    1e-5                 0               0                  0                       0                            0               0                              0
+DLC              269         0.0625      0                    2e-6                 3E-9           25E-9               0                       0                            0               0                              0
+UCNdet             0.1       1           0                    0                    0               0                  0                       0                            0               0                              0
+DLCLT            269         5.1116e-3   0                    2e-6                 3E-9           25E-9               0                       0                            0               0                              0    # cold DLC, imag part should be lower
+NiPLT            212.9579    0.0311      0.039                0                    0               0                  0                       0                            0               0.74                          -0.46 #NiPlt at 1K https://doi.org/10.1103/PhysRevC.108.034605
+NiLT             245.1117    0.04068     0.15                 0                    0               0                  0                       0                            0               0                              0    #Ni at 1K
+NiMo             226.7135    0.136       0                    0                    2.4E-9         12E-9               0                       0                            0               0                              0
+NiMoLT           226.7135    3.7e-2      0                    0                    2.4E-9         12E-9               0                       0                            0               0                              0
+CuBe             178.8031    0.0726      0.16                 0                    0               0                  0                       0                            0               0                              0
+LHe               18.7854    2.63e-9     0.16                 0                    0               0                  0                       0                            0               0                              0    #Liquid He at 1K (125s)
+LHe0.85K          18.7854    8.44e-10    0.16                 0                    0               0                  0                       0                            0               0                              0    #Liquid He at 0.85K (390s)
+LHePerf           18.7854    0           0.16                 0                    0               0                  0                       0                            0               0                              0    #Perfect Liquid Helium, no absorbtion or upscattering
+BeO              256.6665    6.23e-2     0.16                 0                    0               0                  0                       0                            0               0                              0
+SS               183.0405    8.52e-2     0.16                 0                    0               0                  0                       0                            0               0                              0
+dPE              209         0.06        0.16                 1e-5                 0               0                  0                       0                            0               0                              0
+dPS              171         0.047       0.16                 1e-5                 0               0                  0                       0                            0               0                              0
+GS20             103.4       1.237       0.16                 0                    0               0                  0                       0                            0               0                              0    # Li6-enriched glass scintillator https://doi.org/10.1140/epja/i2016-16326-4
+GS30              83.1       1.23e-4     0.16                 0                    0               0                  0                       0                            0               0                              0    # Li6-depleted glass scintillator
+SpinFlipper       0          0           0                    0.99                 0               0                  0                       0                            0               0                              0    # Whenever UCN cross surface with this material their spin is flipped with 99% probability
+FePolarizerOnAl 209          0.00281     0.16                 0.05                 0               0                  2                       0                            0               0                              0    # This mimicks a magnetized iron film coated onto an Al foil. Since iron film is too thin to be represented in StL files, we use a single material with iron's real potential (to correctly model energy-dependece of polarization) and Al's imagnary potential (to correctly model absorption in foil, assuming absorption in iron is negligible)

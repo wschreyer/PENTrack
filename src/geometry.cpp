@@ -48,11 +48,24 @@ std::istream& operator>>(std::istream &str, material &mat){
     if (diffmodels == 0) {
         std::cout << "No diffuse reflection set for material " << mat.name << "\n";
     }
+
+	str >> mat.microfacetDistributionWidth;
+	if (not str){
+		std::cout << "No microfacet distribution width defined for material " << mat.name << ". Assuming 0\n";
+		mat.microfacetDistributionWidth = 0;
+	}
+	str >> mat.microfacetDistributionWidthExponent;
+	if (not str){
+		std::cout << "No microfacet distribution exponent defined for material " << mat.name << ". Assuming 0\n";
+		mat.microfacetDistributionWidthExponent = 0;
+	}
+
 	return str;
 }
 std::ostream& operator<<(std::ostream &str, const material &mat){
 	str << mat.name << " " << mat.FermiReal << " " << mat.FermiImag << " " << mat.DiffProb << " " << mat.SpinflipProb << " ";
-	str << mat.RMSRoughness << " " << mat.CorrelLength << " " << mat.InternalBField << " " << mat.ModifiedLambertProb << "\n";
+	str << mat.RMSRoughness << " " << mat.CorrelLength << " " << mat.InternalBField << " " << mat.ModifiedLambertProb << " ";
+	str << mat.LossPerBounce << " " << mat.microfacetDistributionWidth << " " << mat.microfacetDistributionWidthExponent << "\n";
 	if (!str)
 		throw std::runtime_error((boost::format("Could not write material %s!") % mat.name).str());
 	return str;

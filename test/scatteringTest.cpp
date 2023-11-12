@@ -170,3 +170,17 @@ BOOST_AUTO_TEST_CASE(microroughnessScatteringDistributionTest){
     nickelTransmission = MR::MRProb(true, &v[0], &normal[0], FermiNi, bNi, wNi);
 */
 }
+
+
+BOOST_AUTO_TEST_CASE(microfacetScatteringDistributionTest){
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    lambert_scattering_distribution lambert(0., {1., 0.}, 0.);
+    microfacet_scattering_distribution mfLambert(0., lambert);
+
+    auto [theta, phi] = mfLambert(M_PI/4, rng);
+    BOOST_TEST(theta == M_PI - M_PI/4);
+    BOOST_TEST(phi == 0);
+
+}
