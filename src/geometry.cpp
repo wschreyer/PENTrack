@@ -54,6 +54,9 @@ std::istream& operator>>(std::istream &str, material &mat){
 		std::cout << "No microfacet distribution width defined for material " << mat.name << ". Assuming 0\n";
 		mat.microfacetDistributionWidth = 0;
 	}
+	if (mat.microfacetDistributionWidth < 0){
+		throw std::runtime_error("You set a microfacet distribution width smaller than 0 for " + mat.name + "!");
+	}
 	str >> mat.microfacetDistributionWidthExponent;
 	if (not str){
 		std::cout << "No microfacet distribution exponent defined for material " << mat.name << ". Assuming 0\n";
