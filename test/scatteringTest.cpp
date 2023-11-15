@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(microfacetScatteringDistributionTest){
     std::mt19937 rng(rd());
 
     lambert_scattering_distribution lambert(0., {1., 0.}, 0.);
-    microfacet_scattering_distribution mfLambert(0., lambert);
+    microfacet_scattering_distribution mfLambert(lambert, 0.);
 
     auto [theta, phi] = mfLambert(M_PI/4, rng);
     BOOST_TEST(theta == M_PI - M_PI/4);
