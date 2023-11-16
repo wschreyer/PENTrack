@@ -86,7 +86,8 @@ endif()
 
 if (BUILD_TESTS)
 	enable_testing()
-	add_executable(runTests test/test.cpp test/fieldTests.cpp test/microroughnessTests.cpp test/scatteringTest.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
+	add_executable(runTests test/test.cpp test/fieldTests.cpp test/microroughnessTests.cpp test/scatteringTest.cpp test/geometryTest.cpp
+	               $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
 	target_link_libraries(runTests ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
 	if (ROOT_FOUND)
 		target_link_libraries(runTests ${ROOT_LIBRARIES})
