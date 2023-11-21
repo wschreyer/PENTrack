@@ -7,7 +7,8 @@
 
 /**
  * Class to describe the path of a rigid body in 3D.
- * It smoothly interpolates between 3D translations, velocities, orientations, and angular velocities at specified times
+ * It smoothly interpolates between 3D translations, velocities, orientations, and angular velocities at specified times.
+ * Rotations are applied in the local coordinate system (rotations are applied before translations).
 */
 template<class RandomAccessContainer, class VectorContainer>
 class TPath{
@@ -18,14 +19,23 @@ private:
     std::array<interpolator, 3> translationInterpolator; ///< twice-differentiable interpolators for 3D translation
     std::array<interpolator, 3> rotationInterpolator; ///< twice-differentiable interpolators for 3D orientation
 
-    std::array<interpolator, 3> initTranslationInterpolator(RandomAccessContainer times, VectorContainer translations, VectorContainer velocities){
+    /**
+     * Initialize interpolators for translation or orientation
+     * 
+     * @param times List of times
+     * @param translations List of translation or orientation (axis-angle) vectors for each time
+     * @param velocities List of velocity or angular velocity vectors for each time
+     * 
+     * @return List of twice-differentiable interpolators for each of the three translation or orientation vector components
+    */
+    std::array<interpolator, 3> initInterpolator(RandomAccessContainer times, VectorContainer translations, VectorContainer velocities){
         if (std::empty(times)){
             return {interpolator({0}, {0}, {0}),
                     interpolator({0}, {0}, {0}),
                     interpolator({0}, {0}, {0})};
         }
         std::array<RandomAccessContainer, 3> x, v;
-        for (int i = 0; i < 3; ++i){
+        for (int i = 0; i < 3; ++i){ // transform list of 3D vectors into 3 lists of vector components
             std::transform(translations.begin(), translations.end(), std::back_inserter(x[i]), [i](Vector ts){ return ts[i]; });
             std::transform(velocities.begin(), velocities.end(), std::back_inserter(v[i]), [i](Vector vs){ return vs[i]; });
         }
@@ -33,27 +43,12 @@ private:
                 interpolator(RandomAccessContainer(times), std::move(x[1]), std::move(v[1])),
                 interpolator(RandomAccessContainer(times), std::move(x[2]), std::move(v[2]))};
     }
-
-    std::array<interpolator, 3> initRotationInterpolator(RandomAccessContainer times, VectorContainer rotations, VectorContainer angularvelocities){
-        if (std::empty(times)){
-            return {interpolator({0}, {0}, {0}),
-                    interpolator({0}, {0}, {0}),
-                    interpolator({0}, {0}, {0})};
-        }
-        std::array<RandomAccessContainer, 3> r, a;
-        for (int i = 0; i < 3; ++i){
-            std::transform(rotations.begin(), rotations.end(), std::back_inserter(r[i]), [i](Vector rs){ return rs[i]; });
-            std::transform(angularvelocities.begin(), angularvelocities.end(), std::back_inserter(a[i]), [i](Vector as){ return as[i]; });
-        }
-        return {interpolator(RandomAccessContainer(times), std::move(r[0]), std::move(a[0])), // we need to pass a copy of times because the interpolator constructor expects moveable parameters
-                interpolator(RandomAccessContainer(times), std::move(r[1]), std::move(a[1])),
-                interpolator(RandomAccessContainer(times), std::move(r[2]), std::move(a[2]))};
-    }
 public:
     /**
      * Constructor
      * 
-     * Creates translation and orientation interpolator between given times
+     * Creates translation and orientation interpolator between given times.
+     * Rotations are applied in the local coordinate system (rotations applied first, then translation).
      * 
      * @param times List of times
      * @param translations List of translation vectors
@@ -62,7 +57,7 @@ public:
      * @param angularvelocities List of angular velocity vectors
     */
     TPath(RandomAccessContainer times, VectorContainer translations, VectorContainer velocities, VectorContainer rotations, VectorContainer angularvelocities):
-        translationInterpolator(initTranslationInterpolator(times, translations, velocities)), rotationInterpolator(initRotationInterpolator(times, rotations, angularvelocities)){
+        translationInterpolator(initInterpolator(times, translations, velocities)), rotationInterpolator(initInterpolator(times, rotations, angularvelocities)){
 
     }
 
@@ -85,7 +80,7 @@ public:
 
 
     /**
-     * Provide rotation at specified time
+     * Provide rotation in local coordinate system at specified time
      * 
      * @param time Time to interpolate
      * 
@@ -102,7 +97,7 @@ public:
     }
 
     /**
-     * Provide velocity relative at specified time
+     * Provide velocity at specified time
      * 
      * @param time Time to interpolate
      * 
@@ -114,11 +109,11 @@ public:
     }
 
     /**
-     * Provide velocity relative at specified time
+     * Provide angular velocity in local coordinate system at specified time
      * 
      * @param time Time to interpolate
      * 
-     * @return Velocity vector
+     * @return Angular velocity vector
     */
     Vector angularVelocity(Real time){
         auto t = std::clamp(time, rotationInterpolator[0].domain().first, rotationInterpolator[0].domain().second);        
