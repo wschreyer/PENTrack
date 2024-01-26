@@ -23,6 +23,9 @@ runTests
 *.root
 doc/
 
+# ignore CGAL library
+cgal/
+
 # ignore images
 *.png
 

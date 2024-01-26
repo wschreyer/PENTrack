@@ -3,7 +3,7 @@ PENTrack
 
 PENTrack - a simulation tool for ultracold neutrons, protons and electrons
 
-The stable releases are quite outdated. The new release described in [this paper](https://doi.org/10.1016/j.nima.2017.03.036) is coming up soon.
+This is the development branch with new experimental features. To rely on well-tested functionality use the main branch.
 
 
 Prerequisites
@@ -15,9 +15,9 @@ CMake 3.1 or newer is required to build PENTrack.
 
 ### Compiler
 
-A C++11-compatible compiler is required.
+A C++17-compatible compiler is required.
 
-GCC 4.7.2 and newer should work. GCC 4.8.2 seems to break the CGAL library on some machines and can cause particles flying through walls.
+GCC 7 and newer should work.
 
 ### Boost
 
@@ -29,14 +29,15 @@ Boost 1.53.0 - 1.69.0 have been tested. Boost 1.64.0 is unusable as it contains 
 
 GMP 4.2 and MPFR 2.2.1 (or newer) are required for the CGAL library. They should be available on almost all Linux distributions.
 
-Included libraries
-------------------
-
 ### CGAL
 
-The [Computational Geometry Algorithms Library](http://www.cgal.org/) provides axis-aligned bounding-box (AABB) trees to quickly detect collisions of particle tracks with the experiment geometry defined by triangle meshes. It also provides lots of routines to check those meshes for errors.
+The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to read the experiment geometry from mesh files and detect collisions of particle tracks with the triangle meshes using AABB trees.
+Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package. If yours does not, you can run the bash script `install_cgal.sh`, which will download CGAL for you. If you choose to manually download and compile it yourself, you will have to adjust the search path of cmake by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
 
-CGAL 4.14 is included in the repository.
+CGAL v5.3 or newer is required.
+
+Included libraries
+------------------
 
 ### ExprTk
 
