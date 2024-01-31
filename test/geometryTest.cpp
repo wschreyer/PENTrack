@@ -1,163 +1,136 @@
 #include <boost/test/unit_test.hpp>
 
+#include <random>
+
 #include "pathing.h"
+#include "mesh.h"
+#include "vectormath.h"
+
+using namespace std;
+
+template<class Vector1, class Vector2 = Vector1> void compareVector(Vector1 v1, Vector2 v2){
+    BOOST_TEST_CONTEXT("v1 = " << v1[0] << " " << v1[1] << " " << v1[2] << ", v2 = " << v2[0] << " " << v2[1] << " " << v2[2]){
+        BOOST_CHECK_SMALL(boost::qvm::mag(v2 - v1), 1e-13);
+    }
+}
 
 BOOST_AUTO_TEST_CASE(PathTest){
-    std::vector<double> times{0, 1, 2};
-    std::vector<std::array<double, 3> > translations{{0,0,0}, {0,0,1}, {0,0,2}};
-    std::vector<std::array<double, 3> > velocities{{0,0,1}, {0,0,0}, {0,0,1}};
-    std::vector<std::array<double, 3> > rotations{{0,0,0}, {0,0,1}, {0,0,2}};
-    std::vector<std::array<double, 3> > angularvelocities{{0,0,1}, {0,0,0}, {0,0,1}};
-    TPath path(times, translations, velocities, rotations, angularvelocities);
+    vector<double> times{0, 1, 2};
+    vector<array<double, 3> > translations{{0,0,0}, {1,0,0}, {2,0,0}};
+    vector<array<double, 3> > velocities{{1,0,0}, {0,0,0}, {1,0,0}};
+    vector<array<double, 3> > rotations{{0,0,0}, {0,0,1}, {0,0,2}};
+    vector<array<double, 3> > angularvelocities{{0,0,1}, {0,0,0}, {0,0,1}};
+    array<double, 3> position{1, 0, 0};
+    auto path = createPathInterpolator("0 (0 0 0) (1 0 0) (0 0 0) (0 0 57.295779513082320876798154814105) " 
+                                       "1 (1 0 0) (0 0 0) (0 0 57.295779513082320876798154814105) (0 0 0) "
+                                       "2 (2 0 0) (1 0 0) (0 0 114.59155902616464175359630962821) (0 0 57.295779513082320876798154814105)");
 
-    auto x0 = path.translation(0);
-    auto r0 = path.rotation(0);
-    auto v0 = path.velocity(0);
-    auto a0 = path.angularVelocity(0);
-    auto rv0 = path.relativeVelocity(0, {1,0,0});
-    auto p0 = path.passive_transform(0, {1,0,0});
-    BOOST_CHECK_EQUAL(x0[0], 0);
-    BOOST_CHECK_EQUAL(x0[1], 0);
-    BOOST_CHECK_EQUAL(x0[2], 0);
-    BOOST_CHECK_EQUAL(r0[0], 0);
-    BOOST_CHECK_EQUAL(r0[1], 0);
-    BOOST_CHECK_EQUAL(r0[2], 0);
-    BOOST_CHECK_EQUAL(v0[0], 0);
-    BOOST_CHECK_EQUAL(v0[1], 0);
-    BOOST_CHECK_EQUAL(v0[2], 1);
-    BOOST_CHECK_EQUAL(a0[0], 0);
-    BOOST_CHECK_EQUAL(a0[1], 0);
-    BOOST_CHECK_EQUAL(a0[2], 1);
-    BOOST_CHECK_EQUAL(rv0[0], 0);
-    BOOST_CHECK_EQUAL(rv0[1], 1);
-    BOOST_CHECK_EQUAL(rv0[2], 1);
-    BOOST_CHECK_EQUAL(p0[0], 1);
-    BOOST_CHECK_EQUAL(p0[1], 0);
-    BOOST_CHECK_EQUAL(p0[2], 0);
+    // we start at origin with velocity in x direction and angular velocity around z
+    compareVector(interpolateTranslation(path, 0.),                 {0,0,0});
+    compareVector(interpolateRotation(path, 0.),                    {0,0,0});
+    compareVector(interpolateVelocity(path, 0.),                    {1,0,0});
+    compareVector(interpolateAngularVelocity(path, 0.),             {0,0,1});
+    compareVector(interpolateRelativeVelocity(path, 0.,  position), {1,1,0});
+    compareVector(activeRotate(    position, interpolateRotation(path, 0.)),       {1,0,0});
+    compareVector(passiveRotate(   position, interpolateRotation(path, 0.)),       {1,0,0});
+    compareVector(activeTransform( position, interpolateTransformation(path, 0.)), {1,0,0});
+    compareVector(passiveTransform(position, interpolateTransformation(path, 0.)), {1,0,0});
 
-    auto x05 = path.translation(0.5);
-    auto r05 = path.rotation(0.5);
-    auto v05 = path.velocity(0.5);
-    auto a05 = path.angularVelocity(0.5);
-    auto rv05 = path.relativeVelocity(0.5, {1,0,0});
-    auto p05 = path.passive_transform(0.5, {1,0,0});
-    BOOST_CHECK_EQUAL(x05[0], 0);
-    BOOST_CHECK_EQUAL(x05[1], 0);
-    BOOST_CHECK_EQUAL(x05[2], 0.625);
-    BOOST_CHECK_EQUAL(r05[0], 0);
-    BOOST_CHECK_EQUAL(r05[1], 0);
-    BOOST_CHECK_EQUAL(r05[2], 0.625);
-    BOOST_CHECK_EQUAL(v05[0], 0);
-    BOOST_CHECK_EQUAL(v05[1], 0);
-    BOOST_CHECK_EQUAL(v05[2], 1.25);
-    BOOST_CHECK_EQUAL(a05[0], 0);
-    BOOST_CHECK_EQUAL(a05[1], 0);
-    BOOST_CHECK_EQUAL(a05[2], 1.25);
-    BOOST_CHECK_EQUAL(rv05[0], 0);
-    BOOST_CHECK_EQUAL(rv05[1], 1.25);
-    BOOST_CHECK_EQUAL(rv05[2], 1.25);
-    BOOST_CHECK_CLOSE(p05[0], std::cos(0.625), 1e-13);
-    BOOST_CHECK_CLOSE(p05[1], -std::sin(0.625), 1e-13);
-    BOOST_CHECK_EQUAL(p05[2], -0.625);
+    // velocities initially increase to reach new position at t = 1
+    compareVector(interpolateTranslation(path, 0.5),                {0.625,0,0});
+    compareVector(interpolateRotation(path, 0.5),                   {0,0,0.625});
+    compareVector(interpolateVelocity(path, 0.5),                   {1.25,0,0});
+    compareVector(interpolateAngularVelocity(path, 0.5),            {0,0,1.25});
+    compareVector(interpolateRelativeVelocity(path, 0.5, position), {1.25,0.375*1.25,0});
+    compareVector(activeRotate(    position,  interpolateRotation(path, 0.5)),       {std::cos(0.625),std::sin(0.625),0});
+    compareVector(passiveRotate(   position,  interpolateRotation(path, 0.5)),       {std::cos(-0.625),std::sin(-0.625),0});
+    compareVector(activeTransform( position,  interpolateTransformation(path, 0.5)), {std::cos(0.625) + 0.625,std::sin(0.625), 0}); // rotate, then translate
+    compareVector(passiveTransform(position,  interpolateTransformation(path, 0.5)), {0.375*std::cos(-0.625),0.375*std::sin(-0.625),0}); // translate (1,0,0) -> (0.375,0,0), then rotate
 
-    auto x1 = path.translation(1);
-    auto r1 = path.rotation(1);
-    auto v1 = path.velocity(1);
-    auto a1 = path.angularVelocity(1);
-    auto rv1 = path.relativeVelocity(1, {1,0,0});
-    auto p1 = path.passive_transform(1, {1,0,0});
-    BOOST_CHECK_EQUAL(x1[0], 0);
-    BOOST_CHECK_EQUAL(x1[1], 0);
-    BOOST_CHECK_EQUAL(x1[2], 1);
-    BOOST_CHECK_EQUAL(r1[0], 0);
-    BOOST_CHECK_EQUAL(r1[1], 0);
-    BOOST_CHECK_EQUAL(r1[2], 1);
-    BOOST_CHECK_EQUAL(v1[0], 0);
-    BOOST_CHECK_EQUAL(v1[1], 0);
-    BOOST_CHECK_EQUAL(v1[2], 0);
-    BOOST_CHECK_EQUAL(a1[0], 0);
-    BOOST_CHECK_EQUAL(a1[1], 0);
-    BOOST_CHECK_EQUAL(a1[2], 0);
-    BOOST_CHECK_EQUAL(rv1[0], 0);
-    BOOST_CHECK_EQUAL(rv1[1], 0);
-    BOOST_CHECK_EQUAL(rv1[2], 0);
-    BOOST_CHECK_CLOSE(p1[0], std::cos(1), 1e-13);
-    BOOST_CHECK_CLOSE(p1[1], -std::sin(1), 1e-13);
-    BOOST_CHECK_EQUAL(p1[2], -1);
+    // at t = 1 we reach position (1,0,0) and rotation (0,0,1) with 0 velocities
+    compareVector(interpolateTranslation(path, 1.),                 {1,0,0});
+    compareVector(interpolateRotation(path, 1.),                    {0,0,1});
+    compareVector(interpolateVelocity(path, 1.),                    {0,0,0});
+    compareVector(interpolateAngularVelocity(path, 1.),             {0,0,0});
+    compareVector(interpolateRelativeVelocity(path, 1.,  position), {0,0,0});
+    compareVector(activeRotate(    position,  interpolateRotation(path, 1.)),       {std::cos(1),std::sin(1),0});
+    compareVector(passiveRotate(   position,  interpolateRotation(path, 1.)),       {std::cos(-1),std::sin(-1),0});
+    compareVector(activeTransform( position,  interpolateTransformation(path, 1.)), {std::cos(1) + 1,std::sin(1),0}); // rotate, then translate
+    compareVector(passiveTransform(position,  interpolateTransformation(path, 1.)), {0,0,0}); // translate (1,0,0) -> (0,0,0), then rotate
 
-    auto x2 = path.translation(2);
-    auto r2 = path.rotation(2);
-    auto v2 = path.velocity(2);
-    auto a2 = path.angularVelocity(2);
-    auto rv2 = path.relativeVelocity(2, {1,0,0});
-    auto p2 = path.passive_transform(2, {1,0,0});
-    BOOST_CHECK_EQUAL(x2[0], 0);
-    BOOST_CHECK_EQUAL(x2[1], 0);
-    BOOST_CHECK_EQUAL(x2[2], 2);
-    BOOST_CHECK_EQUAL(r2[0], 0);
-    BOOST_CHECK_EQUAL(r2[1], 0);
-    BOOST_CHECK_EQUAL(r2[2], 2);
-    BOOST_CHECK_EQUAL(v2[0], 0);
-    BOOST_CHECK_EQUAL(v2[1], 0);
-    BOOST_CHECK_EQUAL(v2[2], 1);
-    BOOST_CHECK_EQUAL(a2[0], 0);
-    BOOST_CHECK_EQUAL(a2[1], 0);
-    BOOST_CHECK_EQUAL(a2[2], 1);
-    BOOST_CHECK_EQUAL(rv2[0], 0);
-    BOOST_CHECK_EQUAL(rv2[1], 1);
-    BOOST_CHECK_EQUAL(rv2[2], 1);
-    BOOST_CHECK_CLOSE(p2[0], std::cos(2), 1e-13);
-    BOOST_CHECK_CLOSE(p2[1], -std::sin(2), 1e-13);
-    BOOST_CHECK_EQUAL(p2[2], -2);
+    // at t = 2 we reach position (2,0,0) and rotation (0,0,2) with same velocity as in the beginning
+    compareVector(interpolateTranslation(path, 2.),                 {2,0,0});
+    compareVector(interpolateRotation(path, 2.),                    {0,0,2});
+    compareVector(interpolateVelocity(path, 2.),                    {1,0,0});
+    compareVector(interpolateAngularVelocity(path, 2.),             {0,0,1});
+    compareVector(interpolateRelativeVelocity(path, 2.,  position), {1,-1,0});
+    compareVector(activeRotate(    position,  interpolateRotation(path, 2.)),       {std::cos(2),std::sin(2),0});
+    compareVector(passiveRotate(   position,  interpolateRotation(path, 2.)),       {std::cos(-2),std::sin(-2),0});
+    compareVector(activeTransform( position,  interpolateTransformation(path, 2.)), {std::cos(2) + 2,std::sin(2),0}); // rotate, then translate
+    compareVector(passiveTransform(position,  interpolateTransformation(path, 2.)), {-1*std::cos(-2),-1*std::sin(-2),0}); // translate (1,0,0) -> (-1,0,0), then rotate
 
-    auto x3 = path.translation(3);
-    auto r3 = path.rotation(3);
-    auto v3 = path.velocity(3);
-    auto a3 = path.angularVelocity(3);
-    auto rv3 = path.relativeVelocity(3, {1,0,0});
-    auto p3 = path.passive_transform(3, {1,0,0});
-    BOOST_CHECK_EQUAL(x3[0], 0);
-    BOOST_CHECK_EQUAL(x3[1], 0);
-    BOOST_CHECK_EQUAL(x3[2], 3);
-    BOOST_CHECK_EQUAL(r3[0], 0);
-    BOOST_CHECK_EQUAL(r3[1], 0);
-    BOOST_CHECK_EQUAL(r3[2], 3);
-    BOOST_CHECK_EQUAL(v3[0], 0);
-    BOOST_CHECK_EQUAL(v3[1], 0);
-    BOOST_CHECK_EQUAL(v3[2], 1);
-    BOOST_CHECK_EQUAL(a3[0], 0);
-    BOOST_CHECK_EQUAL(a3[1], 0);
-    BOOST_CHECK_EQUAL(a3[2], 1);
-    BOOST_CHECK_EQUAL(rv3[0], 0);
-    BOOST_CHECK_EQUAL(rv3[1], 1);
-    BOOST_CHECK_EQUAL(rv3[2], 1);
-    BOOST_CHECK_CLOSE(p3[0], std::cos(3), 1e-13);
-    BOOST_CHECK_CLOSE(p3[1], -std::sin(3), 1e-13);
-    BOOST_CHECK_EQUAL(p3[2], -3);
+    // path should be extrapolated with constant velocities beyond the time range (0..2)
+    compareVector(interpolateTranslation(path, 3.),                 {3,0,0});
+    compareVector(interpolateRotation(path, 3.),                    {0,0,3});
+    compareVector(interpolateVelocity(path, 3.),                    {1,0,0});
+    compareVector(interpolateAngularVelocity(path, 3.),             {0,0,1});
+    compareVector(interpolateRelativeVelocity(path, 3.,  position), {1,-2,0});
+    compareVector(activeRotate(    position,  interpolateRotation(path, 3.)),       {std::cos(3),std::sin(3),0});
+    compareVector(passiveRotate(   position,  interpolateRotation(path, 3.)),       {std::cos(-3),std::sin(-3),0});
+    compareVector(activeTransform( position,  interpolateTransformation(path, 3.)), {std::cos(3) + 3,std::sin(3),0}); // rotate, then translate
+    compareVector(passiveTransform(position,  interpolateTransformation(path, 3.)), {-2*std::cos(-3),-2*std::sin(-3),0}); // translate (1,0,0) -> (-2,0,0), then rotate
 
-    auto xm1 = path.translation(-1);
-    auto rm1 = path.rotation(-1);
-    auto vm1 = path.velocity(-1);
-    auto am1 = path.angularVelocity(-1);
-    auto rvm1 = path.relativeVelocity(-1, {1,0,0});
-    auto pm1 = path.passive_transform(-1, {1,0,0});
-    BOOST_CHECK_EQUAL(xm1[0], 0);
-    BOOST_CHECK_EQUAL(xm1[1], 0);
-    BOOST_CHECK_EQUAL(xm1[2], -1);
-    BOOST_CHECK_EQUAL(rm1[0], 0);
-    BOOST_CHECK_EQUAL(rm1[1], 0);
-    BOOST_CHECK_EQUAL(rm1[2], -1);
-    BOOST_CHECK_EQUAL(vm1[0], 0);
-    BOOST_CHECK_EQUAL(vm1[1], 0);
-    BOOST_CHECK_EQUAL(vm1[2], 1);
-    BOOST_CHECK_EQUAL(am1[0], 0);
-    BOOST_CHECK_EQUAL(am1[1], 0);
-    BOOST_CHECK_EQUAL(am1[2], 1);
-    BOOST_CHECK_EQUAL(rvm1[0], 0);
-    BOOST_CHECK_EQUAL(rvm1[1], 1);
-    BOOST_CHECK_EQUAL(rvm1[2], 1);
-    BOOST_CHECK_CLOSE(pm1[0], std::cos(-1), 1e-13);
-    BOOST_CHECK_CLOSE(pm1[1], -std::sin(-1), 1e-13);
-    BOOST_CHECK_EQUAL(pm1[2], 1);
+    compareVector(interpolateTranslation(path, -1.),                 {-1,0,0});
+    compareVector(interpolateRotation(path, -1.),                    {0,0,-1});
+    compareVector(interpolateVelocity(path, -1.),                    {1,0,0});
+    compareVector(interpolateAngularVelocity(path, -1.),             {0,0,1});
+    compareVector(interpolateRelativeVelocity(path, -1.,  position), {1,2,0});
+    compareVector(activeRotate(    position,  interpolateRotation(path, -1.)),       {std::cos(-1),std::sin(-1),0});
+    compareVector(passiveRotate(   position,  interpolateRotation(path, -1.)),       {std::cos(1),std::sin(1),0});
+    compareVector(activeTransform( position,  interpolateTransformation(path, -1.)), {std::cos(-1) - 1,std::sin(-1),0}); // rotate, then translate
+    compareVector(passiveTransform(position,  interpolateTransformation(path, -1.)), {2*std::cos(1),2*std::sin(1),0}); // translate (1,0,0) -> (2,0,0), then rotate
+
+    compareVector(activeTransform(passiveTransform({1, 0, 0}, interpolateTransformation(path, 2.)), interpolateTransformation(path, 2.)), {1,0,0}); // doing both active and passive transformation should give back the inital vector
+}
+
+
+BOOST_AUTO_TEST_CASE(movingMeshTest){
+    random_device rd;
+    mt19937 rng(rd());
+    std::uniform_real_distribution<double> unidist(0, 1);
+    auto path = createPathInterpolator("0 (0 0 0) (0 0 0) (0 0 0) (0 0 0) 1 (1 0 0) (0 0 0) (0 0 90) (0 0 0)");
+    auto mesh = createMesh("test/UnitCubeCenteredOn(0,0,0).STL");
+    for (int i = 0; i < 10; ++i){
+        auto t = unidist(rng);
+        auto pIn = randomPointInMovingVolume(mesh, t, rng, path);
+        BOOST_CHECK(inMovingSolid(mesh, t, pIn, path));
+        auto pInLocal = passiveTransform(pIn, interpolateTransformation(path, t));
+        BOOST_CHECK(abs(pInLocal[0]) < 0.5 and abs(pInLocal[1]) < 0.5 and abs(pInLocal[2]) < 0.5);
+        auto [pOn, n] = randomPointOnMovingSurface(mesh, t, rng, path);
+        auto pOnLocal = passiveTransform(pOn, interpolateTransformation(path, t));
+        BOOST_CHECK(abs(abs(pOnLocal[0]) - 0.5) < 1e-13 or abs(abs(pOnLocal[1]) - 0.5) < 1e-13 or abs(abs(pOnLocal[2]) - 0.5) < 1e-13);
+        BOOST_CHECK(abs(pOnLocal[0]) <= 0.5 + 1e-13 and abs(pOnLocal[1]) <= 0.5 + 1e-13 and abs(pOnLocal[2]) <= 0.5 + 1e-13);
+        auto nLocal = passiveRotate(n, interpolateRotation(path, t));
+        BOOST_CHECK(abs(abs(nLocal[0]) - 1) < 1e-13 or abs(abs(nLocal[1]) - 1) < 1e-13 or abs(abs(nLocal[2]) - 1) < 1e-13);
+        BOOST_CHECK_SMALL(boost::qvm::mag(n) - 1, 1e-13);
+
+        for (int dim = 0; dim < 3; ++dim){
+            std::array<double, 3> point{0,0,0};
+            point[dim] += 1;
+            point = activeTransform(point, interpolateTransformation(path, t));
+            BOOST_CHECK(not inMovingSolid(mesh, t, point, path));
+            auto collisions = findCollisionsWithMovingMesh(mesh, t, pIn, t, point, path);
+            BOOST_CHECK_EQUAL(std::size(collisions), 1);
+            if (not std::empty(collisions)){
+                auto collpLocal = passiveTransform(collisions[0].collisionPoint, interpolateTransformation(path, t));
+                BOOST_CHECK_SMALL(collpLocal[dim] - 0.5, 1e-13);
+                BOOST_CHECK_SMALL(boost::qvm::mag(collisions[0].normal) - 1, 1e-13);
+                compareVector(passiveRotate(collisions[0].normal, interpolateRotation(path, t)), passiveTransform(point, interpolateTransformation(path, t)));
+                compareVector(collisions[0].velocity, interpolateRelativeVelocity(path, t, collisions[0].collisionPoint));
+            }
+        }
+
+    }
 
 }
+

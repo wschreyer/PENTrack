@@ -141,15 +141,101 @@ void RotateVector(Vector1 &v, const Vector2 z){
  */
 template<class Vector3, class Vector4>
 void BOOST(const Vector3 &beta, Vector4 &p){
-   //Boost this Lorentz vector (copy&paste from ROOT)
-   auto b2 = mag_sqr(beta);
-   auto gamma = 1.0 / std::sqrt(1.0 - b2);
-   auto bp = dot(beta, YZW(p));
-   auto gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
+    //Boost this Lorentz vector (copy&paste from ROOT)
+    auto b2 = mag_sqr(beta);
+    auto gamma = 1.0 / std::sqrt(1.0 - b2);
+    auto bp = dot(beta, YZW(p));
+    auto gamma2 = b2 > 0 ? (gamma - 1.0)/b2 : 0.0;
 
-   YZW(p) = YZW(p) + gamma2*bp*beta + gamma*beta*X(p);
-   X(p) = gamma*(X(p) + bp);
+    YZW(p) = YZW(p) + gamma2*bp*beta + gamma*beta*X(p);
+    X(p) = gamma*(X(p) + bp);
 }
+
+
+/**
+ * Express point in local coordinate system defined by translation and rotation (passive transformation).
+ * Position is first translated, then rotated.
+ * 
+ * @param position Position vector
+ * @param translation Translation vector
+ * @param rotation Rotation vector (axis-angle representation, angle = length of vector)
+*/
+template<class Vector>
+Vector passiveTransform(Vector point, Vector translation, Vector rotation){
+    auto angle = boost::qvm::mag(rotation);
+    if (angle == 0){
+        return point - translation;
+    }
+    else{
+        return boost::qvm::rot_quat(rotation/angle, -angle)*(point - translation);
+    }
+}
+
+template<class Vector>
+Vector passiveTransform(Vector point, std::pair<Vector, Vector> transformation){
+    return passiveTransform(point, transformation.first, transformation.second);
+}
+
+
+/**
+ * Transform point from local coordinate system defined by translation and rotation into global coordinates (active transformation).
+ * Point is first rotated, then translated.
+ * 
+ * @param position Position vector
+ * @param translation Translation vector
+ * @param rotation Rotation vector (axis-angle representation, angle = length of vector)
+*/
+template<class Vector>
+Vector activeTransform(Vector point, Vector translation, Vector rotation){
+    auto angle = boost::qvm::mag(rotation);
+    if (angle == 0){
+        return point + translation;
+    }
+    else{
+        return boost::qvm::rot_quat(rotation/angle, angle)*point + translation;
+    }
+}
+
+template<class Vector>
+Vector activeTransform(Vector point, std::pair<Vector, Vector> transformation){
+    return activeTransform(point, transformation.first, transformation.second);
+}
+
+
+/**
+ * Rotate vector around rotation axis (positive angle, active transformation).
+ * 
+ * @param direction Direction vector
+ * @param rotation Rotation vector (axis-angle representation, angle = length of vector)
+*/
+template<class Vector>
+Vector activeRotate(Vector direction, Vector rotation){
+    auto angle = boost::qvm::mag(rotation);
+    if (angle == 0){
+        return direction;
+    }
+    else{
+        return boost::qvm::rot_quat(rotation/angle, angle)*direction;
+    }
+}
+
+/**
+ * Rotate vector around rotation axis (negative angle, passive transformation).
+ * 
+ * @param direction Direction vector
+ * @param rotation Rotation vector (axis-angle representation, angle = length of vector)
+*/
+template<class Vector>
+Vector passiveRotate(Vector direction, Vector rotation){
+    auto angle = boost::qvm::mag(rotation);
+    if (angle == 0){
+        return direction;
+    }
+    else{
+        return boost::qvm::rot_quat(rotation/angle, -angle)*direction;
+    }
+}
+
 
 
 #endif /*VECTORMATH_H_*/

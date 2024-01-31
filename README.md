@@ -21,9 +21,9 @@ GCC 7 and newer should work.
 
 ### Boost
 
-The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses the [odeint integrator](http://headmyshoulder.github.io/odeint-v2/) included in Boost 1.53.0 and newer. Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the search path of cmake by calling cmake with `-DBOOST_ROOT=/path/to/boost`.
+The [Boost C++ libraries](https://www.boost.org/) are a prerequisite for the CGAL library. Additionally, the simulation uses various boost utilities and algorithms, including the [odeint integrator](http://headmyshoulder.github.io/odeint-v2/). Boost is included in most Linux OSs; should you need to download and compile it manually, you may have to adjust the search path of cmake by calling cmake with `-DBOOST_ROOT=/path/to/boost`.
 
-Boost 1.53.0 - 1.69.0 have been tested. Boost 1.64.0 is unusable as it contains [a bug](https://svn.boost.org/trac10/ticket/12516) that prevents compiling PENTrack.
+Boost 1.73.0 or newer is required.
 
 ### GMP and MPFR
 
@@ -135,6 +135,7 @@ Limitations
 -----------
 
 The description of geometry through triangle meshes incurs certain limitations:
+
 - STL files use single-precision floating-point numbers, limiting their relative precision to about 1e-7. So if your geometry has a typical size of 1m, features smaller than 1um will not be well represented.
 - Triangle meshes can only approximate curved surfaces. Curved surfaces that are supposed to be touching will in most cases not do so in the simulations and instead leave holes in your geometry. You should rather overlap such surfaces and make sure the tolerance during STL export is smaller than the overlap.
 - Collision points with the geometry are iterated by interpolating the particle trajectory between steps. For very fast particles the precision of this interpolation is limited by rounding errors and the iterated collision point can be offset by 10s of micrometers for highly relativstic particles.
