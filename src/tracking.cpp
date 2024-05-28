@@ -125,7 +125,17 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
         // take snapshots at certain times
         logger->PrintSnapshot(p, stepper.previous_time(), stepper.previous_state(), x, y, spin, stepper, geom, field);
 
-        IntegrateSpin(p, spin, stepper, x, y, SpinTimes, field, spininterpolatefields, SpinBmax, mc, flipspin); // calculate spin precession and spin-flip probability
+        double spinProjection = IntegrateSpin(p, spin, stepper, x, y, SpinTimes, field, spininterpolatefields, SpinBmax, mc); // calculate spin precession and spin-flip probability
+        bool spinHasFlipped = stepper.previous_state()[7] != y[7]; // check if spin has already been flipped during trajectory integration step (likely due to wall collision)
+        if (spinProjection != stepper.previous_state()[7]){
+            p->DoPolarize(x, y, spinProjection, flipspin, mc); // if spin integration returns a new spinProjection value we randomly select a new polarization state
+            if (flipspin and spinHasFlipped){ // reapply previous spin flip
+                y[7] *= -1;
+            }
+        }
+        else if (spinHasFlipped){
+            std::fill(spin.begin(), spin.end(), 0); // if spin has been flipped during trajectory integration step we reset the spin vector
+        }
 
         logger->PrintTrack(p, stepper.previous_time(), stepper.previous_state(), x, y, spin, GetCurrentsolid(), field);
 
@@ -360,115 +370,114 @@ const solid& TTracker::GetCurrentsolid() const{
 }
 
 
-void TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
-        const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
-        const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const{
+double TTracker::IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
+        const double x2, const state_type &y2, const std::vector<double> &times, const TFieldManager &field,
+        const bool interpolatefields, const double Bmax, TMCGenerator &mc) const{
     value_type x1 = stepper.previous_time();
-    if (p->GetGyromagneticRatio() == 0 || x1 == x2)
-        return;
-
     state_type y1 = stepper.previous_state();
-    double B1[3], B2[3], polarisation;
+    double B1[3], B2[3];
     field.BField(y1[0], y1[1], y1[2], x1, B1);
     field.BField(y2[0], y2[1], y2[2], x2, B2);
     double Babs1 = sqrt(B1[0]*B1[0] + B1[1]*B1[1] + B1[2]*B1[2]);
     double Babs2 = sqrt(B2[0]*B2[0] + B2[1]*B2[1] + B2[2]*B2[2]);
 
-    if (Babs2 == 0){ // if there's no magnetic field or particle is leaving magnetic field, do nothing
-        std::fill(spin.begin(), spin.end(), 0); // set all spin components to zero
-        return;
+    if (p->GetGyromagneticRatio() == 0 or Babs2 == 0){ // if there's no magnetic field or particle is leaving magnetic field, do nothing
+//        std::cout << x1 << ": No magnetic field\n";
+        std::fill(spin.begin(), spin.end(), 0); // reset spin vector
+        return y1[7];
     }
-    else if (Babs1 == 0 && Babs2 > 0){ // if particle enters magnetic field
-//		std::cout << "Entering magnetic field\n";
-        p->DoPolarize(x2, y2, 0., flipspin, mc); // if spin flips are allowed, choose random polarization
-        spin[0] = y2[7]*B2[0]/Babs2; // set spin (anti-)parallel to field
-        spin[1] = y2[7]*B2[1]/Babs2;
-        spin[2] = y2[7]*B2[2]/Babs2;
-        return;
-    }
-    else{ // if particle already is in magnetic field, calculate spin-projection on magnetic field
-        polarisation = (spin[0]*B1[0] + spin[1]*B1[1] + spin[2]*B1[2])/Babs1/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
-    }
+    else if (Babs1 == 0 && Babs2 > 0){ // if particle enters magnetic field we generate a random polarization
+//        std::cout << x1 << ": Entering magnetic field\n";
+        int spinProjection = uniform_int_distribution(0, 1)(mc)*2 - 1;
+        std::fill(spin.begin(), spin.end(), 0); // reset spin vector
+        return spinProjection;
+    }    
+    else if ((x2 > x1) && (Babs1 < Bmax || Babs2 < Bmax)){
+        bool integrate1 = false, integrate2 = false;;
+        for (unsigned int i = 0; i < times.size(); i += 2){
+            integrate1 |= (x1 >= times[i] && x1 < times[i+1]);
+            integrate2 |= (x2 >= times[i] && x2 < times[i+1]);
+        }
+        if (integrate1 || integrate2){ // do spin integration only, if time is in specified range and field is smaller than Bmax
+//            std::cout << x1 << ": Integrate\n";
+            vector<alglib::spline1dinterpolant> omega_int;
+            if (interpolatefields){
+                alglib::real_1d_array ts; // set up values for interpolation of precession axis
+                vector<alglib::real_1d_array> omega(3);
+                omega_int.resize(3);
+                const int int_points = 10;
+                ts.setlength(int_points + 1);
+                for (int i = 0; i < 3; i++)
+                    omega[i].setlength(int_points + 1);
 
-    bool integrate1 = false, integrate2 = false;;
-    for (unsigned int i = 0; i < times.size(); i += 2){
-        integrate1 |= (x1 >= times[i] && x1 < times[i+1]);
-        integrate2 |= (x2 >= times[i] && x2 < times[i+1]);
-    }
+                for (int i = 0; i <= int_points; i++){ // calculate precession axis at several points along trajectory step
+                    double t = x1 + i*(x2 - x1)/int_points;
+                    ts[i] = t;
+                    p->SpinPrecessionAxis(t, stepper, field, omega[0][i], omega[1][i], omega[2][i]);
+                }
 
-    if ((integrate1 || integrate2) && (Babs1 < Bmax || Babs2 < Bmax)){ // do spin integration only, if time is in specified range and field is smaller than Bmax
-//		if ((!integrate1 && integrate2) || (Babs1 > Bmax && Babs2 < Bmax))
-//			std::cout << x1 << "s " << y1[7] - polarisation << " ";
-
-        vector<alglib::spline1dinterpolant> omega_int;
-        if (interpolatefields){
-            alglib::real_1d_array ts; // set up values for interpolation of precession axis
-            vector<alglib::real_1d_array> omega(3);
-            omega_int.resize(3);
-            const int int_points = 10;
-            ts.setlength(int_points + 1);
-            for (int i = 0; i < 3; i++)
-                omega[i].setlength(int_points + 1);
-
-            for (int i = 0; i <= int_points; i++){ // calculate precession axis at several points along trajectory step
-                double t = x1 + i*(x2 - x1)/int_points;
-                ts[i] = t;
-                p->SpinPrecessionAxis(t, stepper, field, omega[0][i], omega[1][i], omega[2][i]);
+                for (int i = 0; i < 3; i++)
+                    alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
             }
 
-            for (int i = 0; i < 3; i++)
-                alglib::spline1dbuildcubic(ts, omega[i], omega_int[i]); // interpolate all three components of precession axis
-        }
 
+            dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(1e-12, 1e-12, stepper_type());
+            if ((spin[0] == 0) and (spin[1] == 0) and (spin[2] == 0)){ // if spin vector was reset in previous step we recalculate it from polarization state
+                spin[0] = B1[0]*y1[7]/Babs1;
+                spin[1] = B1[1]*y1[7]/Babs1;
+                spin[2] = B1[2]*y1[7]/Babs1;
+            }    
+            spinstepper.initialize(spin, x1, std::abs(pi/p->GetGyromagneticRatio()/Babs1)); // initialize integrator with step size = half rotation
+            logger->PrintSpin(p, x1, spinstepper, stepper, field);
+            unsigned int steps = 0;
+            while (true){
+                if (quit.load())
+                    return 0;
 
-        dense_stepper_type spinstepper = boost::numeric::odeint::make_dense_output(1e-12, 1e-12, stepper_type());
-        spinstepper.initialize(spin, x1, std::abs(pi/p->GetGyromagneticRatio()/Babs1)); // initialize integrator with step size = half rotation
-        logger->PrintSpin(p, x1, spinstepper, stepper, field);
-        unsigned int steps = 0;
-        while (true){
-            if (quit.load())
-                return;
+                // take an integration step, SpinDerivs contains right-hand side of equation of motion
+                spinstepper.do_step(std::bind(&TParticle::SpinDerivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, stepper, &field, omega_int));
+                steps++;
+                double t = spinstepper.current_time();
+                if (t > x2){ // if stepper overshot, calculate end point and stop
+                    t = x2;
+                    spinstepper.calc_state(t, spin);
+                }
+                else
+                    spin = spinstepper.current_state();
 
-            // take an integration step, SpinDerivs contains right-hand side of equation of motion
-            spinstepper.do_step(std::bind(&TParticle::SpinDerivs, p.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, stepper, &field, omega_int));
-            steps++;
-            double t = spinstepper.current_time();
-            if (t > x2){ // if stepper overshot, calculate end point and stop
-                t = x2;
-                spinstepper.calc_state(t, spin);
+                logger->PrintSpin(p, t, spinstepper, stepper, field);
+
+                if (t >= x2)
+                    break;
             }
-            else
-                spin = spinstepper.current_state();
 
-            logger->PrintSpin(p, t, spinstepper, stepper, field);
-
-            if (t >= x2)
-                break;
         }
+        else if (spin[0] != 0 or spin[1] != 0 or spin[2] != 0){ // if time outside selected ranges, parallel-transport spin along magnetic field
+//            std::cout << x1 << ": Don't integrate\n";
+            double spinProjection = (spin[0]*B1[0] + spin[1]*B1[1] + spin[2]*B1[2])/Babs1/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
+            if (spinProjection*spinProjection >= 1){ // catch rounding errors
+                spin[0] = 0;
+                spin[1] = 0;
+            }
+            else{
+                std::uniform_real_distribution<double> phidist(0, 2.*pi);
+                double spinaz = phidist(mc); // random azimuth
+                spin[0] = sqrt(1 - spinProjection*spinProjection)*sin(spinaz);
+                spin[1] = sqrt(1 - spinProjection*spinProjection)*cos(spinaz);
+            }
+            spin[2] = spinProjection;
+            RotateVector(&spin[0], B2); // rotate spin vector onto magnetic field vector
+        }
+    }
 
+    if (Babs2 > Bmax and (spin[0] != 0 or spin[1] != 0 or spin[2] != 0)){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
+//        std::cout << x1 << ": Collapse\n";
         // calculate new spin projection
-        polarisation = (spin[0]*B2[0] + spin[1]*B2[1] + spin[2]*B2[2])/Babs2/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
+        double spinProjection = (spin[0]*B2[0] + spin[1]*B2[1] + spin[2]*B2[2])/Babs2/sqrt(spin[0]*spin[0] + spin[1]*spin[1] + spin[2]*spin[2]);
+        std::fill(spin.begin(), spin.end(), 0); // reset spin vector
+        return spinProjection;
     }
-    else if ((Babs1 < Bmax || Babs2 < Bmax)){ // if time outside selected ranges, parallel-transport spin along magnetic field
-        if (polarisation*polarisation >= 1){ // catch rounding errors
-            spin[0] = 0;
-            spin[1] = 0;
-        }
-        else{
-            std::uniform_real_distribution<double> phidist(0, 2.*pi);
-            double spinaz = phidist(mc); // random azimuth
-            spin[0] = sqrt(1 - polarisation*polarisation)*sin(spinaz);
-            spin[1] = sqrt(1 - polarisation*polarisation)*cos(spinaz);
-        }
-        spin[2] = polarisation;
-        RotateVector(&spin[0], B2); // rotate spin vector onto magnetic field vector
-    }
-
-
-    if (Babs2 > Bmax){ // if magnetic field grows above Bmax, collapse spin state to one of the two polarisation states
-        p->DoPolarize(x2, y2, polarisation, flipspin, mc);
-        spin[0] = B2[0]*y2[7]/Babs2;
-        spin[1] = B2[1]*y2[7]/Babs2;
-        spin[2] = B2[2]*y2[7]/Babs2;
+    else{
+        return y1[7]; // If spin integration should just continue in next step we return the original polarisation
     }
 }

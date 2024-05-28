@@ -137,7 +137,6 @@ private:
      * @param spin Spin vector, returns new spin vector after step
      * @param stepper Trajectory integrator containing last step
      * @param x2 Time at end of step [s]
-     * @param y2 Particle state vector at end of step (position, velocity, proper time, and polarisation)
      * @param times Absolute time intervals in between spin integration should be carried out [s]
      * @param field TFieldManager to calculate electric and magnetic field
      * @param interpolatefields If this is set to true, the magnetic and electric fields will be interpolated between the trajectory-step points. This will speed up spin tracking in high, static fields, but might break spin tracking in small, quickly varying fields (e.g. spin-flip pulses)
@@ -145,11 +144,11 @@ private:
      * @param mc TMCGenerator random number generator
      * @param flipspin If set to true, polarisation in y2 will be randomly set when magnetic field rises above Bmax, weighted by spin projection onto the magnetic field
      *
-     * @return Return probability of spin flip
+     * @return Returns projection of spin vector on magnetic field at end of integration
      */
-    void IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
-            const double x2, state_type &y2, const std::vector<double> &times, const TFieldManager &field,
-            const bool interpolatefields, const double Bmax, TMCGenerator &mc, const bool flipspin) const;
+    double IntegrateSpin(const std::unique_ptr<TParticle>& p, state_type &spin, const dense_stepper_type &stepper,
+            const double x2, const state_type &y2, const std::vector<double> &times, const TFieldManager &field,
+            const bool interpolatefields, const double Bmax, TMCGenerator &mc) const;
 
 
 
