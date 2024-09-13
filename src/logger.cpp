@@ -56,7 +56,7 @@ void TLogger::Print(const std::unique_ptr<TParticle>& p, const value_type x, con
     field.EField(ystart[0], ystart[1], ystart[2], tstart, Vstart, Eistart);
 
     double H;
-    solid sld = geom.GetSolid(x, &y[0]);
+    solid sld = geom.GetSolid(x, {y[0], y[1], y[2]});
     H = E + p->GetPotentialEnergy(x, y, field, sld);
 
     double B[3], Ei[3], V;

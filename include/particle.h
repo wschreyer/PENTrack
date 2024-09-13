@@ -359,13 +359,14 @@ public:
 	 * @param normal Normal vector of the hit surface
 	 * @param leaving Material that particle is leaving
 	 * @param entering Material that particle is entering
+	 * @param surfaceVelocity Velocity of the hit surface
      * @param mc Random-number generator
 	 * 
      * @return Returns true if trajectory was altered
      */
     void DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-               const double normal[3], const solid &leaving, const solid &entering,
-               TMCGenerator &mc);
+               const std::array<double, 3> &normal, const solid &leaving, const solid &entering,
+               const std::array<double, 3> &surfaceVelocity, TMCGenerator &mc);
 
 
     /**
@@ -459,13 +460,15 @@ protected:
 	 * @param normal Normal vector of hit surface
 	 * @param leaving Solid that the particle is leaving
 	 * @param entering Solid that the particle is entering
+	 * @param surfaceVelocity Velocity vector of hit surface
 	 * @param mc Random-number generator
 	 * @param ID If particle is stopped, set this to the appropriate stopID
 	 * @param secondaries Add any secondary particles produced in this interaction
 	 */
 	virtual void OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-						const double normal[3], const solid &leaving, const solid &entering,
-						TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const = 0;
+						const std::array<double, 3> &normal, const solid &leaving, const solid &entering,
+						const std::array<double, 3> &surfaceVelocity, TMCGenerator &mc, stopID &ID,
+						std::vector<TParticle*> &secondaries) const = 0;
 
 
 	/**

@@ -52,8 +52,8 @@ endif()
 
 				
 add_library(PENTrack_src OBJECT src/globals.cpp src/trianglemesh.cpp src/geometry.cpp src/mc.cpp src/field.cpp src/edmfields.cpp src/tracking.cpp src/logger.cpp
-                        		src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/harmonicfields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
-                        		src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp src/analyticFields.cpp)
+                                src/field_2d.cpp src/field_3d.cpp src/fields.cpp src/harmonicfields.cpp src/conductor.cpp src/particle.cpp src/neutron.cpp src/microroughness.cpp
+                                src/electron.cpp src/proton.cpp src/mercury.cpp src/xenon.cpp src/source.cpp src/config.cpp src/analyticFields.cpp src/mesh.cpp)
 
 add_executable(PENTrack src/main.cpp $<TARGET_OBJECTS:PENTrack_src> $<TARGET_OBJECTS:alglib> $<TARGET_OBJECTS:libtricubic>)
 

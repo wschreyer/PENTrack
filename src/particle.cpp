@@ -17,12 +17,12 @@
 using namespace std;
 
 double TParticle::GetInitialTotalEnergy(const TGeometry &geom, const TFieldManager &field) const{
-	return GetKineticEnergy(&ystart[3]) + GetPotentialEnergy(tstart, ystart, field, geom.GetSolid(tstart, &ystart[0]));
+	return GetKineticEnergy(&ystart[3]) + GetPotentialEnergy(tstart, ystart, field, geom.GetSolid(tstart, {ystart[0], ystart[1], ystart[2]}));
 }
 
 
 double TParticle::GetFinalTotalEnergy(const TGeometry &geom, const TFieldManager &field) const{
-	return GetKineticEnergy(&yend[3]) + GetPotentialEnergy(tend, yend, field, geom.GetSolid(tend, &yend[0]));
+	return GetKineticEnergy(&yend[3]) + GetPotentialEnergy(tend, yend, field, geom.GetSolid(tend, {ystart[0], ystart[1], ystart[2]}));
 }
 
 
@@ -87,7 +87,7 @@ TParticle::TParticle(const char *aname, const  double qq, const long double mm, 
 
 	spinend = spinstart;
 
-	solidend = solidstart = geometry.GetSolid(t, &ystart[0]); // set to solid with highest priority
+	solidend = solidstart = geometry.GetSolid(t, {ystart[0], ystart[1], ystart[2]}); // set to solid with highest priority
 	Hmax = GetInitialTotalEnergy(geometry, afield);
 }
 
@@ -208,10 +208,11 @@ void TParticle::DoStep(const value_type x1, const state_type &y1, value_type &x2
 }
 
 void TParticle::DoHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
-                      const double normal[3], const solid &leaving, const solid &entering, TMCGenerator &mc){
+                      const std::array<double, 3> &normal, const solid &leaving, const solid &entering,
+					  const std::array<double, 3> &surfaceVelocity, TMCGenerator &mc){
     state_type y2temp = y2;
     vector<TParticle*> secs;
-    OnHit(x1, y1, x2, y2, normal, leaving, entering, mc, ID, secs); // do particle specific things
+    OnHit(x1, y1, x2, y2, normal, leaving, entering, surfaceVelocity, mc, ID, secs); // do particle specific things
     for (auto s: secs) secondaries.push_back(unique_ptr<TParticle>(s));
     if (y2temp[7] != y2[7])
         Nspinflip++;

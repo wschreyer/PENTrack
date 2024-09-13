@@ -22,18 +22,18 @@ TNeutron::TNeutron(const int number, const double t, const double x, const doubl
 }
 
 
-void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-		const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
+void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const std::array<double, 3> &normal,
+		const solid &leaving, const solid &entering, const std::array<double, 3> &surfaceVelocity, TMCGenerator &mc,
+		stopID &ID, std::vector<TParticle*> &secondaries) const{
 	std::array<double, 3> v1{y1[3], y1[4], y1[5]};
-	std::array<double, 3> n{normal[0], normal[1], normal[2]};
-    double v1normal = dot(v1, n); // velocity normal to reflection plane
+    double v1normal = dot(v1 - surfaceVelocity, normal); // velocity normal to reflection plane
     material mat = v1normal < 0 ? entering.mat : leaving.mat; // use material properties of the solid whose surface was hit
 
     if (std::generate_canonical<double, std::numeric_limits<double>::digits>(mc) < mat.SpinflipProb){ // should spin be flipped?
         y2[7] *= -1;
     }
 
-	double E = 0.5*m_n*mag_sqr(v1);
+	double E = 0.5*m_n*mag_sqr(v1 - surfaceVelocity);
 	std::complex<double> FermiPotential1(MaterialPotential(leaving.mat, y1), -leaving.mat.FermiImag*1e-9);
 	std::complex<double> FermiPotential2(MaterialPotential(entering.mat, y2), -entering.mat.FermiImag*1e-9);
 	std::array<double, 3> v2;
@@ -43,10 +43,10 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 			double lambda_c = 2.*M_PI*hbar/GetMass()/ele_e/std::abs(v1normal);
 			double beckmannWidth = mat.microfacetDistributionWidth*std::pow(lambda_c*1e9, mat.microfacetDistributionWidthExponent);
 			microfacet_scattering_distribution mfDist(MRdist, beckmannWidth);
-			v2 = scattered_vector(v1, n, mfDist, mc);
+			v2 = scattered_vector(v1 - surfaceVelocity, normal, mfDist, mc) + surfaceVelocity;
 		}
 		else{
-			v2 = scattered_vector(v1, n, MRdist, mc);
+			v2 = scattered_vector(v1 - surfaceVelocity, normal, MRdist, mc) + surfaceVelocity;
 		}
 	}
 	else{
@@ -56,14 +56,14 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 			double beckmannWidth = mat.microfacetDistributionWidth*std::pow(lambda_c*1e9, mat.microfacetDistributionWidthExponent);
 //			std::cout << lambda_c << " " << beckmannWidth << "\n";
 			microfacet_scattering_distribution mfDist(lambertDist, beckmannWidth);
-			v2 = scattered_vector(v1, n, mfDist, mc);
+			v2 = scattered_vector(v1 - surfaceVelocity, normal, mfDist, mc) + surfaceVelocity;
 		}
 		else{
-			v2 = scattered_vector(v1, n, lambertDist, mc);
+			v2 = scattered_vector(v1 - surfaceVelocity, normal, lambertDist, mc) + surfaceVelocity;
 		}
 	}
 
-	double v2normal = dot(v2, n);
+	double v2normal = dot(v2 - surfaceVelocity, normal);
 	if (v1normal*v2normal <= 0){
 		x2 = x1;
 		y2[0] = y1[0];

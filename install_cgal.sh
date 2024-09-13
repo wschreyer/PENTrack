@@ -2,7 +2,7 @@
 
 CGAL_VERSION=5.6
 
-echo "I'm going to download and compile ${CGAL_VERSION} for you."
+echo "I'm going to download and compile CGAL ${CGAL_VERSION} for you."
 echo "This will take about 50MB of disk space."
 echo "Press ENTER to continue, Ctrl+C to cancel."
 read -p "" key

@@ -32,7 +32,7 @@ MRSolidAngleDRP 220 200 1E-9 25E-9 0.1
 MRThetaIEnergy 54 2.5E-9 20E-9 0 1.570796327 0 1000
 
 #Format used for logging output, can be "txt" for raw text, "ROOT" for ROOT trees and files, and "HDF5" for HDF5 files
-logtype txt
+logtype ROOT
 
 
 [GEOMETRY]
@@ -52,18 +52,18 @@ logtype txt
 6	guide_source.STL		PolishedSteel
 7	guide_detector.STL		PolishedSteel
 8	switch.STL			PolishedSteel
-9	valve.STL			PolishedSteel		0-200 500-1000
-10	switch_flap_source.STL	PolishedSteel		200-1000
-11	switch_flap_middle.STL	PolishedSteel		0-200 500-1000
-12	switch_flap_detector.STL	PolishedSteel		0-500
+9	valve.STL			PolishedSteel
+10	switch_flap_source.STL		PolishedSteel
+#11	switch_flap_middle.STL		PolishedSteel
+#12	switch_flap_detector.STL	PolishedSteel
 13	foil_detector.STL		Al
 14	UCNdet.STL			UCNdet
 15	protdet.STL			Al
-16	absorber_up.STL		PE			500-560
-17	absorber_middle.STL		PE			0-500 520-540 560-1000
-18	absorber_down.STL		PE			0-520 540-1000
-19	source.STL			UCNdet			200-1000
-20	source.STL			PolishedSteel		0-200
+16	absorber_up.STL			PE	movingAbsorber
+#17	absorber_middle.STL		PE
+#18	absorber_down.STL		PE
+#19	source.STL			UCNdet
+20	source.STL			PolishedSteel
 
 
 
@@ -329,3 +329,6 @@ detected    solidend == 14                              # for example, you could
 Bx 1e-7*x                                               # These are the field components used for the CustomBField defined in the FIELDS section
 By 0.
 Bz 1e-6*x
+
+[TRANSFORMATIONS]
+movingAbsorber  500 (0 0 0) (0 0 0) (0 0 0) (0 0 0)  520 (0 0 -0.6) (0 0 0) (0 0 0) (0 0 0)  540 (0 0 -0.6) (0 0 0) (0 0 0) (0 0 0)  560 (0 0 0) (0 0 0) (0 0 0) (0 0 0)

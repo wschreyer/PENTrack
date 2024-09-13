@@ -16,8 +16,9 @@ TProton::TProton(const int number, const double t, const double x, const double 
 }
 
 
-void TProton::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-		const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
+void TProton::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const std::array<double, 3> &normal,
+		const solid &leaving, const solid &entering, const std::array<double, 3> &surfaceVelocity, TMCGenerator &mc,
+		stopID &ID, std::vector<TParticle*> &secondaries) const{
 
 }
 

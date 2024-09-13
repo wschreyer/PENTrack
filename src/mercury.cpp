@@ -17,21 +17,21 @@ TMercury::TMercury(const int number, const double t, const double x, const doubl
 }
 
 
-void TMercury::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const double normal[3],
-		const solid &leaving, const solid &entering, TMCGenerator &mc, stopID &ID, std::vector<TParticle*> &secondaries) const{
-	double v1normal = y1[3]*normal[0] + y1[4]*normal[1] + y1[5]*normal[2]; // velocity normal to reflection plane
+void TMercury::OnHit(const value_type x1, const state_type &y1, value_type &x2, state_type &y2, const std::array<double, 3> &normal,
+		const solid &leaving, const solid &entering, const std::array<double, 3> &surfaceVelocity, TMCGenerator &mc,
+		stopID &ID, std::vector<TParticle*> &secondaries) const{
+	std::array<double, 3> v1{y1[3], y1[4], y1[5]};
+	double v1normal = boost::qvm::dot(v1 - surfaceVelocity, normal); // velocity normal to reflection plane
 	material mat = v1normal < 0 ? entering.mat : leaving.mat;
 
 	if (std::generate_canonical<double, std::numeric_limits<double>::digits>(mc) < mat.SpinflipProb){
 		y2[7] *= -1;
 	}
 
-	std::array<double, 3> v1{y1[3], y1[4], y1[5]};
-	std::array<double, 3> n{normal[0], normal[1], normal[2]};
 	lambert_scattering_distribution<double> scatteringDist(mat.DiffProb, 0, mat.LossPerBounce);
-	std::array<double, 3> v2 = scattered_vector(v1, n, scatteringDist, mc);
+	std::array<double, 3> v2 = scattered_vector(v1 - surfaceVelocity, normal, scatteringDist, mc) + surfaceVelocity;
 
-	double v2normal = n[0]*v2[0] + n[1]*v2[1] + n[2]*v2[2];
+	double v2normal = boost::qvm::dot(v2 - surfaceVelocity, normal);
 	if (v1normal * v2normal <= 0){
 		x2 = x1;
 		y2[0] = y1[0];

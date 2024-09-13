@@ -67,7 +67,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
 
 //	progress_display progress(100, cout, ' ' + to_string(particlenumber) + ' ');
 
-    currentsolids = geom.GetSolids(x, &y[0]);
+    currentsolids = geom.GetSolids(x, {y[0], y[1], y[2]});
     p->SetStopID(ID_UNKNOWN);
 
     while (p->GetStopID() == ID_UNKNOWN){ // integrate as long as nothing happened to particle
@@ -167,7 +167,7 @@ void TTracker::IntegrateParticle(std::unique_ptr<TParticle>& p, const double tma
 
 bool TTracker::CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1, const state_type &y1, value_type &x2, state_type &y2,
         const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom, const TFieldManager &field){
-    if (!geom.CheckSegment(&y1[0], &y2[0])){ // check if start point is inside bounding box of the simulation geometry
+    if (!geom.CheckSegment(x1, {y1[0], y1[1], y1[2]}, x2, {y2[0], y2[1], y2[2]})){ // check if start point is inside bounding box of the simulation geometry
 //    printf("\nParticle has hit outer boundaries: Stopping it! t=%g x=%g y=%g z=%g\n",x2,y2[0],y2[1],y2[2]);
         p->SetStopID(ID_HIT_BOUNDARIES);
         return true;
@@ -180,7 +180,7 @@ bool TTracker::CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1
     multimap<TCollision, bool> colls;
     bool collfound = false;
     try{
-        collfound = geom.GetCollisions(x1, &y1[0], x2, &y2[0], colls);
+        collfound = geom.GetCollisions(x1, {y1[0], y1[1], y1[2]}, x2, {y2[0], y2[1], y2[2]}, colls);
     }
     catch(...){
         p->SetStopID(ID_CGAL_ERROR);
@@ -227,7 +227,7 @@ bool TTracker::iterate_collision(value_type &x1, state_type &y1, value_type &x2,
         return true;
     }
     if (iteration >= 100){
-        cout << "Collision point iteration reached max. iterations. " << x1 << " " << x2 - x1 << " " << coll.distnormal << " " << coll.s << "\n";
+        cout << "Collision point iteration reached max. iterations. " << x1 << " " << x2 - x1 << " " << coll.s << "\n";
         return true;
     }
 
@@ -237,7 +237,7 @@ bool TTracker::iterate_collision(value_type &x1, state_type &y1, value_type &x2,
     state_type yc(STATE_VARIABLES);
     stepper.calc_state(xc, yc);
     multimap<TCollision, bool> colls;
-    if (geom.GetCollisions(x1, &y1[0], xc, &yc[0], colls)){ // if collision in first segment, further iterate
+    if (geom.GetCollisions(x1, {y1[0], y1[1], y1[2]}, xc, {yc[0], yc[1], yc[2]}, colls)){ // if collision in first segment, further iterate
 //    cout << "1 " << x1 << " " << xc1 - x1 << endl;
         if (iterate_collision(x1, y1, xc, yc, colls.begin()->first, stepper, geom, iteration + 1)){
             x2 = xc;
@@ -245,7 +245,7 @@ bool TTracker::iterate_collision(value_type &x1, state_type &y1, value_type &x2,
             return true; // if successfully iterated
         }
     }
-    if (geom.GetCollisions(xc, &yc[0], x2, &y2[0], colls)){ // if collision in second segment, further iterate
+    if (geom.GetCollisions(xc, {yc[0], yc[1], yc[2]}, x2, {y2[0], y2[1], y2[2]}, colls)){ // if collision in second segment, further iterate
 //    cout << "2 " << xc1 << " " << xc2 - xc1 << endl;
         if (iterate_collision(xc, yc, x2, y2, colls.begin()->first, stepper, geom, iteration + 1)){
             x1 = xc;
@@ -274,7 +274,7 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
     bool trajectoryaltered = false, traversed = true;
 
     multimap<TCollision, bool> colls;
-    if (!geom.GetCollisions(x1, &y1[0], x2, &y2[0], colls))
+    if (!geom.GetCollisions(x1, {y1[0], y1[1], y1[2]}, x2, {y2[0], y2[1], y2[2]}, colls))
         throw std::runtime_error("Called DoHit for a trajectory segment that does not contain a collision!");
 
     vector<pair<solid, bool> > newsolids = currentsolids;
@@ -282,7 +282,8 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
 //    cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << coll.first.ID << endl;
         solid sld = geom.GetSolid(coll.first.ID);
         auto foundsld = find_if(newsolids.begin(), newsolids.end(), [&sld](const std::pair<solid, bool> s){ return s.first.ID == sld.ID; });
-        if (coll.first.distnormal < 0){ // if entering solid
+        double vnormal = (y1[3] - coll.first.surfaceVelocity[0])*coll.first.normal[0] + (y1[4] - coll.first.surfaceVelocity[1])*coll.first.normal[1] + (y1[5] - coll.first.surfaceVelocity[2])*coll.first.normal[2];
+        if (vnormal < 0){ // if entering solid
             if (foundsld != newsolids.end()){ // if solid has been entered before (self-intersecting surface)
 //	cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
                 if (coll.first.s > 0) // if collision happened right at the start of the step it is likely that the hit solid was already added to the list in the previous step and we will ignore this one
@@ -291,12 +292,12 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
             else
                 newsolids.push_back(make_pair(sld, coll.second)); // add solid to list
         }
-        else if (coll.first.distnormal > 0){ // if leaving solid
+        else if (vnormal > 0){ // if leaving solid
             if (foundsld == newsolids.end()){ // if solid was not entered before something went wrong
                 if (coll.first.s > 0){ // if collision happened right at the start of the step it is likely that the hit solid was already removed from the list in the previous step and this is not an error
 //	  cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
 //          throw runtime_error((boost::format("Particle inside '%1%' which it did not enter before!") % sld.name).str());
-                    cout << "Particle inside solid " << sld.name << " which it did not enter before. Stopping it!\n";
+                    cout << "Particle inside solid " << sld.ID << " which it did not enter before. Stopping it!\n";
                     p->SetStopID(ID_GEOMETRY_ERROR);
                     return true;
                 }
@@ -313,7 +314,7 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
     }
 
     solid leaving = GetCurrentsolid(); // particle can only leave highest-priority solid
-    solid entering = geom.defaultsolid;
+    solid entering{1, geom.defaultMaterial};
     for (auto sld: newsolids){
         if (!sld.second && sld.first.ID > entering.ID)
             entering = sld.first;
@@ -325,7 +326,7 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
             throw std::runtime_error((boost::format("Did not find collision going from %5% to %6%! t=%1%s, x=%2%, y=%3%, z=%4%") % x1 % y1[0] % y1[1] % y1[2] % leaving.ID % entering.ID).str());
         value_type x2temp = x2;
         state_type y2temp = y2;
-        p->DoHit(x1, y1, x2, y2, coll->first.normal, leaving, entering, mc); // do particle specific things
+        p->DoHit(x1, y1, x2, y2, coll->first.normal, leaving, entering, coll->first.surfaceVelocity, mc); // do particle specific things
         if (x2temp == x2 && y2temp == y2){ // if end point of step was not modified
             trajectoryaltered = false;
             traversed = true;
@@ -343,7 +344,7 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
             }
         }
 
-        logger->PrintHit(p, x1, y1, y2, coll->first.normal, leaving, entering); // print collision to file if requested
+        logger->PrintHit(p, x1, y1, y2, &coll->first.normal[0], leaving, entering); // print collision to file if requested
     }
 
     if (traversed){

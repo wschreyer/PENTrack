@@ -21,9 +21,9 @@ BOOST_AUTO_TEST_CASE(PathTest){
     vector<array<double, 3> > rotations{{0,0,0}, {0,0,1}, {0,0,2}};
     vector<array<double, 3> > angularvelocities{{0,0,1}, {0,0,0}, {0,0,1}};
     array<double, 3> position{1, 0, 0};
-    auto path = createPathInterpolator("0 (0 0 0) (1 0 0) (0 0 0) (0 0 57.295779513082320876798154814105) " 
-                                       "1 (1 0 0) (0 0 0) (0 0 57.295779513082320876798154814105) (0 0 0) "
-                                       "2 (2 0 0) (1 0 0) (0 0 114.59155902616464175359630962821) (0 0 57.295779513082320876798154814105)");
+    auto path = constructPathInterpolator("0 (0 0 0) (1 0 0) (0 0 0) (0 0 57.295779513082320876798154814105) " 
+                                          "1 (1 0 0) (0 0 0) (0 0 57.295779513082320876798154814105) (0 0 0) "
+                                          "2 (2 0 0) (1 0 0) (0 0 114.59155902616464175359630962821) (0 0 57.295779513082320876798154814105)");
 
     // we start at origin with velocity in x direction and angular velocity around z
     compareVector(interpolateTranslation(path, 0.),                 {0,0,0});
@@ -98,8 +98,8 @@ BOOST_AUTO_TEST_CASE(movingMeshTest){
     random_device rd;
     mt19937 rng(rd());
     std::uniform_real_distribution<double> unidist(0, 1);
-    auto path = createPathInterpolator("0 (0 0 0) (0 0 0) (0 0 0) (0 0 0) 1 (1 0 0) (0 0 0) (0 0 90) (0 0 0)");
-    auto mesh = createMesh("test/UnitCubeCenteredOn(0,0,0).STL");
+    auto path = constructPathInterpolator("0 (0 0 0) (0 0 0) (0 0 0) (0 0 0) 1 (1 0 0) (0 0 0) (0 0 90) (0 0 0)");
+    auto mesh = constructMesh("test/UnitCubeCenteredOn(0,0,0).STL");
     for (int i = 0; i < 10; ++i){
         auto t = unidist(rng);
         auto pIn = randomPointInMovingVolume(mesh, t, rng, path);
@@ -124,9 +124,9 @@ BOOST_AUTO_TEST_CASE(movingMeshTest){
             if (not std::empty(collisions)){
                 auto collpLocal = passiveTransform(collisions[0].collisionPoint, interpolateTransformation(path, t));
                 BOOST_CHECK_SMALL(collpLocal[dim] - 0.5, 1e-13);
-                BOOST_CHECK_SMALL(boost::qvm::mag(collisions[0].normal) - 1, 1e-13);
-                compareVector(passiveRotate(collisions[0].normal, interpolateRotation(path, t)), passiveTransform(point, interpolateTransformation(path, t)));
-                compareVector(collisions[0].velocity, interpolateRelativeVelocity(path, t, collisions[0].collisionPoint));
+                BOOST_CHECK_SMALL(boost::qvm::mag(collisions[0].surfaceNormal) - 1, 1e-13);
+                compareVector(passiveRotate(collisions[0].surfaceNormal, interpolateRotation(path, t)), passiveTransform(point, interpolateTransformation(path, t)));
+                compareVector(collisions[0].surfaceVelocity, interpolateRelativeVelocity(path, t, collisions[0].collisionPoint));
             }
         }
 

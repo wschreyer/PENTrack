@@ -6,19 +6,6 @@
 #include "vectormath.h"
 
 /**
- * Class to describe the path of a rigid body in 3D.
- * It smoothly interpolates between 3D translations, velocities, orientations, and angular velocities at specified times.
- * Rotations are applied in the local coordinate system (rotations are applied before translations).
-*/
-template<class RandomAccessContainer>
-struct TPathInterpolator{
-    using Interpolator = typename boost::math::interpolators::cubic_hermite<RandomAccessContainer>;
-    std::array<Interpolator, 3> translationInterpolator; ///< twice-differentiable interpolators for 3D translation
-    std::array<Interpolator, 3> rotationInterpolator; ///< twice-differentiable interpolators for 3D orientation
-};
-
-
-/**
  * Initialize interpolators for a set of times, vectors, and the vectors' time derivatives
  * 
  * @param times List of times
@@ -28,7 +15,7 @@ struct TPathInterpolator{
  * @return List of twice-differentiable interpolators for each of the three translation or orientation vector components
 */
 template<class RandomAccessContainer, class VectorContainer>
-std::array<boost::math::interpolators::cubic_hermite<RandomAccessContainer>, 3> createVectorInterpolator(RandomAccessContainer times, VectorContainer vectors, VectorContainer vectorDerivatives){
+std::array<boost::math::interpolators::cubic_hermite<RandomAccessContainer>, 3> constructVectorInterpolator(RandomAccessContainer times, VectorContainer vectors, VectorContainer vectorDerivatives){
     std::array<RandomAccessContainer, 3> x, v;
     if (std::empty(times)){
         times.push_back(0);
@@ -55,22 +42,39 @@ std::array<boost::math::interpolators::cubic_hermite<RandomAccessContainer>, 3> 
 
 
 /**
- * Creates translation and orientation interpolator between given times.
- * Rotations are applied in the local coordinate system (rotations applied first, then translation).
- * 
- * @param times List of times
- * @param translations List of translation vectors
- * @param velocities List of velocity vectors
- * @param rotations List of rotation (axis-angle) vectors
- * @param angularvelocities List of angular velocity vectors
+ * Class to describe the path of a rigid body in 3D.
+ * It smoothly interpolates between 3D translations, velocities, orientations, and angular velocities at specified times.
+ * Rotations are applied in the local coordinate system (rotations are applied before translations).
 */
-template<class RandomAccessContainer, class VectorContainer>
-TPathInterpolator<RandomAccessContainer> createPathInterpolator(RandomAccessContainer times, VectorContainer translations, VectorContainer velocities, VectorContainer rotations, VectorContainer angularvelocities){
-    return {createVectorInterpolator(times, translations, velocities), createVectorInterpolator(times, rotations, angularvelocities)};
-}
+template<class RandomAccessContainer>
+struct TPathInterpolator{
+    using Interpolator = typename boost::math::interpolators::cubic_hermite<RandomAccessContainer>;
+    std::array<Interpolator, 3> translationInterpolator; ///< twice-differentiable interpolators for 3D translation
+    std::array<Interpolator, 3> rotationInterpolator; ///< twice-differentiable interpolators for 3D orientation
+
+    /**
+     * Creates translation and orientation interpolator between given times.
+     * Rotations are applied in the local coordinate system (rotations applied first, then translation).
+     * 
+     * @param times List of times
+     * @param translations List of translation vectors
+     * @param velocities List of velocity vectors
+     * @param rotations List of rotation (axis-angle) vectors
+     * @param angularvelocities List of angular velocity vectors
+    */
+    template<class VectorContainer>
+    TPathInterpolator(RandomAccessContainer times, VectorContainer translations, VectorContainer velocities, VectorContainer rotations, VectorContainer angularvelocities):
+        translationInterpolator(constructVectorInterpolator(times, translations, velocities)),
+        rotationInterpolator(constructVectorInterpolator(times, rotations, angularvelocities)){
+
+    };
 
 
-TPathInterpolator<std::vector<double> > createPathInterpolator(const std::string &pathParameters){
+
+};
+
+inline
+TPathInterpolator<std::vector<double> > constructPathInterpolator(const std::string &pathParameters){
     std::istringstream str(pathParameters);
     std::vector<double> times;
     std::array<std::vector<std::array<double, 3> >, 4> vectors;
@@ -98,7 +102,7 @@ TPathInterpolator<std::vector<double> > createPathInterpolator(const std::string
         str >> std::ws;
         
     }
-    return createPathInterpolator(times, vectors[0], vectors[1], vectors[2], vectors[3]);
+    return TPathInterpolator(times, vectors[0], vectors[1], vectors[2], vectors[3]);
 }
 
 
@@ -117,7 +121,6 @@ std::array<Real, 3> interpolateVector(const VectorInterpolator &interpolator, Re
     std::array<Real, 3> x;
     std::transform(std::begin(interpolator), std::end(interpolator), std::begin(x), [t](auto interp){ return interp(t); });
     if (t != time){
-        std::array<Real, 3> v;
         for (int i = 0; i < 3; ++i){
             x[i] += interpolator[i].prime(t)*(time - t);
         }

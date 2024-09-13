@@ -15,6 +15,7 @@
 
 #include "particle.h"
 #include "mc.h"
+#include "mesh.h"
 
 /**
  * Virtual base class for all particle sources
@@ -102,7 +103,7 @@ protected:
 	 * 
 	 * @return Bounding box
 	 */
-	virtual CCuboid GetSourceVolumeBoundingBox() const = 0;
+	virtual std::pair<std::array<double, 3>, std::array<double, 3> > GetSourceVolumeBoundingBox() const = 0;
 
 	/**
 	 * Check if point is inside the source volume.
@@ -269,8 +270,8 @@ private:
 	 * 
 	 * @return Bounding box
 	 */
-	CCuboid GetSourceVolumeBoundingBox() const final{
-	    return CCuboid(CPoint(-rmax, -rmax, zmin), CPoint(rmax, rmax, zmax));
+	std::pair<std::array<double, 3>, std::array<double, 3> > GetSourceVolumeBoundingBox() const final{
+	    return {{-rmax, -rmax, zmin}, {rmax, rmax, zmax}};
 	}
 
 	/**
@@ -301,7 +302,7 @@ public:
  */
 class TSTLVolumeSource: public TVolumeSource{
 private:
-	TTriangleMesh sourcevol; ///< internal AABB tree storing the STL solid
+	TMesh<double> sourcevol; ///< internal AABB tree storing the STL solid
 
 	/**
 	 * Produce random point in the source volume
@@ -311,7 +312,7 @@ private:
 	 * @param z Returns z coordinate
 	 */
 	void RandomPointInSourceVolume(double &x, double &y, double &z, TMCGenerator &mc) const final{
-		std::array<double, 3> p = sourcevol.RandomPointInVolume(mc);
+		std::array<double, 3> p = randomPointInVolume(sourcevol, mc);
 		x = p[0];
 		y = p[1];
 		z = p[2];
@@ -326,7 +327,7 @@ public:
 			TVolumeSource(sourceconf){
 		boost::filesystem::path STLfile;
 		std::istringstream(sourceconf["STLfile"]) >> STLfile;
-		sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
+		sourcevol = constructMesh(boost::filesystem::absolute(STLfile, configpath.parent_path()).native());
 	}
 };
 
@@ -338,7 +339,7 @@ public:
  */
 class TSTLSurfaceSource: public TSurfaceSource{
 private:
-	TTriangleMesh sourcevol; ///< Triangle mesh read from StL file
+	TMesh<double> sourcevol; ///< Triangle mesh read from StL file
 
 	/**
 	 * Check if point is contained in source volume bounded by triangle mesh
@@ -350,7 +351,7 @@ private:
 	 * @return Returns true if point is contained in source volume.
 	 */
 	bool InSourceVolume(const double x, const double y, const double z) const final{
-		return sourcevol.InSolid(x, y, z);
+		return inSolid(sourcevol, std::array<double, 3>{x, y, z});
 
 	/**
 	 * Check if point is contained in source volume bounded by triangle mesh
@@ -361,7 +362,7 @@ private:
 	 */
 	}
 	bool InSourceVolume(const std::array<double, 3> &p) const{
-	    return sourcevol.InSolid(p[0], p[1], p[2]);
+	    return inSolid(sourcevol, p);
 	}
 
 	/**
@@ -369,8 +370,9 @@ private:
 	 * 
 	 * @return Returns bounding box of triangle mesh
 	 */
-    CCuboid GetSourceVolumeBoundingBox() const final{
-        return sourcevol.GetBoundingBox();
+    std::pair<std::array<double, 3>, std::array<double, 3> > GetSourceVolumeBoundingBox() const final{
+		auto bbox = sourcevol.tree->bbox();
+        return {{bbox.xmin(), bbox.ymin(), bbox.zmin()}, {bbox.xmax(), bbox.ymax(), bbox.zmax()}};
     }
 public:
 	/**
@@ -383,7 +385,7 @@ public:
 	explicit TSTLSurfaceSource(std::map<std::string, std::string> &sourceconf): TSurfaceSource(sourceconf){
 	    boost::filesystem::path STLfile;
 	    std::istringstream(sourceconf["STLfile"]) >> STLfile;
-	    sourcevol.ReadFile(boost::filesystem::absolute(STLfile, configpath.parent_path()).native(), 0);
+	    sourcevol = constructMesh(boost::filesystem::absolute(STLfile, configpath.parent_path()).native());
 	}
 };
 

@@ -6,22 +6,23 @@ simtime 10
 
 secondaries 0
 
+logtype ROOT
 
 [MATERIALS]
 #name		FermiReal [neV]		FermiImag [neV]		DiffuseReflectionProbability	SpinflipProbability	RMSroughness [m]	CorrelationLength [m]
 default		0			0			0				0	0	0
-Steel		183			0.1			0.03				0	0	0
+Steel		183			0.1			0.0				0	0	0
 UCNdet		0			0.1			0				0	0	0
 
 
 [GEOMETRY]
 #ID	STLfile				material_name		ignore_times
 1	ignored				default
-2	../UnitCubeCenteredOn(0,0,0).STL	default		5-10
-3	../UnitCubeCenteredOn(1,0,0).STL	default		5-10
-4	../HollowUnitCube.STL		Steel
-5	../UnitCubeCenteredOn(0,0,0).STL	UCNdet		0-5
-6	../UnitCubeCenteredOn(1,0,0).STL	UCNdet		0-5
+#2	../UnitCubeCenteredOn(0,0,0).STL	default		5-10
+#3	../UnitCubeCenteredOn(1,0,0).STL	default		5-10
+4	../HollowUnitCube.STL		Steel	move
+#5	../UnitCubeCenteredOn(0,0,0).STL	UCNdet		0-5
+#6	../UnitCubeCenteredOn(1,0,0).STL	UCNdet		0-5
 
 
 
@@ -59,10 +60,10 @@ tau 0
 tmax 9e99
 lmax 9e99
 
-endlog 0
+endlog 1
 tracklog 0
-hitlog 0
-hitlogvars v1x v1y v1z v2x v2y v2z nx ny nz
+hitlog 1
+hitlogvars jobnumber particle t x y z v1x v1y v1z pol1 v2x v2y v2z pol2 nx ny nz solid1 solid2
 hitlogfilter
 snapshotlog 0
 spinlog 0
@@ -89,3 +90,6 @@ tmax 1e-5
 [xenon]
 
 [FORMULAS]
+
+[TRANSFORMATIONS]
+move 0 (0 0 0) (0 0 0) (0 0 0) (0 0 0)  1 (0 0 -0.1) (0 0 0) (0 0 0) (0 0 0)  2 (0 0 0.1) (0 0 0) (0 0 0) (0 0 0)  3 (0 0 0) (0 0 0) (0 0 0) (0 0 0)
