@@ -104,12 +104,10 @@ TParticle* TParticleSource::CreateParticle(const double t, const double x, const
 TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry, const TFieldManager &field){
     std::array<double, 3> p;
     std::array<double, 3> nv;
-	unsigned int ID;
     do{
         auto tuple = geometry.RandomPointOnSurface(mc, std::make_optional(GetSourceVolumeBoundingBox()));
 		p = std::get<0>(tuple);
 		nv = std::get<1>(tuple);
-		ID = std::get<2>(tuple);
     } while(!InSourceVolume(p[0], p[1], p[2]));
 	p = p + nv*REFLECT_TOLERANCE; // move point slightly away from surface
 

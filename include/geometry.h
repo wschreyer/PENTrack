@@ -53,7 +53,7 @@ struct solid{
 };
 
 /**
- * Structure returned by TTriangleMesh::Collision.
+ * Structure returned by TGeometry::GetCollisions.
  */
 struct TCollision{
 	double s; ///< parametric coordinate of intersection point (P = p1 + s*(p2 - p1))
@@ -75,15 +75,27 @@ struct TCollision{
 };
 
 
+/**
+ * Rigid body described by a surface mesh, with material properties and an optional path along which it is moving
+ */
 template<class Material, class Path, class Mesh>
 struct TBody{
-	unsigned ID;
-	boost::filesystem::path filename;
-	Material material;
-	std::optional<Path> path;
-	Mesh mesh;
+	unsigned ID; ///< Unique ID number
+	boost::filesystem::path filename; ///< File the surface mesh is read from
+	Material material; ///< Material properties
+	std::optional<Path> path; ///< Optional path along which the mesh is moving
+	Mesh mesh; ///< Class describing the surface mesh
 };
 
+
+/**
+ * Construct a TBody class from a parameter string, a list of materials, and a list of path descriptions.
+ * 
+ * @param ID Unique ID number
+ * @param parameters Parameter string containing filename to read surface mesh from, material name, and path name
+ * @param materials List of materials
+ * @param paths List of path descriptions
+ */
 template<class Material, class Path>
 TBody<Material, Path, TMesh<double> > constructBody(const unsigned ID, const std::string &parameters, const std::map<std::string, Material> &materials, const std::map<std::string, Path> &paths){
 	boost::filesystem::path filename;
@@ -103,18 +115,18 @@ TBody<Material, Path, TMesh<double> > constructBody(const unsigned ID, const std
 }
 
 /**
- * Class to include experiment geometry.
+ * Class describing experiment geometry.
  *
- * Loads solids and materials from geometry.in, maintains solids list, checks for collisions.
+ * Contains a list of bodies, provides intersection tests and random point generators
  */
 struct TGeometry{
-	std::vector<TBody<material, TPathInterpolator<std::vector<double> >, TMesh<double> > > solids; ///< solids list
-	material defaultMaterial; ///< "vacuum", this solid's properties are used when the particle is not inside any other solid
+	std::vector<TBody<material, TPathInterpolator<std::vector<double> >, TMesh<double> > > solids; ///< List of bodies
+	material defaultMaterial; ///< "vacuum", these material properties are provided if a point is not inside any other solid
 		
 	/**
-	 * Constructor, reads geometry configuration file, loads triangle meshes.
+	 * Constructor, reads geometry configuration parameters to generate list of TBody classes.
 	 *
-	 * @param geometryin TConfig struct containing MATERIALS and GEOMETRY config section
+	 * @param geometryin TConfig struct containing geometry configuration paramters in [GEOMETRY], [MATERIALS], and [TRANSFORMATIONS] sections
 	 */
 	TGeometry(TConfig &geometryin);
 
@@ -122,12 +134,14 @@ struct TGeometry{
 	/**
 	 * Check if segment is intersecting with geometry bounding box.
 	 *
-	 * @param y1 Position vector of segment start
-	 * @param y2 Position vector of segment end
+	 * @param tstart Time of segment start
+	 * @param start Position vector of segment start
+	 * @param tend Time of segment end
+	 * @param end Position vector of segment end
 	 *
 	 * @return Returns true if segment is intersecting bounding box
 	 */
-	bool CheckSegment(const double t1, const std::array<double, 3> &y1, const double t2, const std::array<double, 3> &y2) const;
+	bool CheckSegment(const double tstart, const std::array<double, 3> &start, const double tend, const std::array<double, 3> &end) const;
 	
 
 	/**
@@ -136,15 +150,15 @@ struct TGeometry{
 	 * Calls KDTree::Collision to check for collisions and removes all collisions
 	 * which should be ignored (given by ignore times in geometry configuration file).
 	 *
-	 * @param x1 Start time of line segment
-	 * @param p1 Start point of line segment
-	 * @param x2 End time of line segment
-	 * @param p2 End point of line segment
+	 * @param tstart Start time of line segment
+	 * @param start Start point of line segment
+	 * @param tend End time of line segment
+	 * @param end End point of line segment
 	 * @param colls List of collisions, paired with bool indicator it it should be ignored
 	 *
 	 * @return Returns true if line segment collides with a surface
 	 */
-	bool GetCollisions(const double x1, const std::array<double, 3> &p1, const double x2, const std::array<double, 3> &p2, std::multimap<TCollision, bool> &colls) const;
+	bool GetCollisions(const double tstart, const std::array<double, 3> &start, const double tend, const std::array<double, 3> &end, std::multimap<TCollision, bool> &colls) const;
 	
 		
 	/**
@@ -188,6 +202,15 @@ struct TGeometry{
 		throw std::runtime_error((boost::format("Could not find solid with ID %s") % ID).str());
 	}
 
+
+	/**
+	 * Generate random points homogeneously distributed on all surfaces of the geometry, optionally within a bounding box
+	 * 
+	 * @param rand Random number generator class
+	 * @param boundingBox Optional bounding box the point should be contained in
+	 * 
+	 * @returns Tuple of two vectors (point on a surface and surface normal at that point) and ID number of the surface
+	 */
 	template <class RandomGenerator>
 	std::tuple<std::array<double, 3>, std::array<double, 3>, unsigned int> RandomPointOnSurface(RandomGenerator &rand, const std::optional<std::pair<std::array<double, 3>, std::array<double, 3>>> &boundingBox = std::nullopt){
 		std::vector<double> weights;

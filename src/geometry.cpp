@@ -118,9 +118,9 @@ TGeometry::TGeometry(TConfig &geometryin){
 
 }
 
-bool TGeometry::CheckSegment(const double t1, const std::array<double, 3> &start, const double t2, const std::array<double, 3> &end) const{
+bool TGeometry::CheckSegment(const double tstart, const std::array<double, 3> &start, const double tend, const std::array<double, 3> &end) const{
 	for (auto &body: solids){
-		if (body.path and inMovingBoundingBox(body.mesh, t1, start, t2, end, *body.path))
+		if (body.path and inMovingBoundingBox(body.mesh, tstart, start, tend, end, *body.path))
 			return true;
 		else if (not body.path and inBoundingBox(body.mesh, start, end))
 			return true;
@@ -129,19 +129,19 @@ bool TGeometry::CheckSegment(const double t1, const std::array<double, 3> &start
 }
 
 
-bool TGeometry::GetCollisions(const double x1, const std::array<double, 3> &start, const double x2, const std::array<double, 3> &end, std::multimap<TCollision, bool> &colls) const{
+bool TGeometry::GetCollisions(const double tstart, const std::array<double, 3> &start, const double tend, const std::array<double, 3> &end, std::multimap<TCollision, bool> &colls) const{
 	for (auto &body: solids){
 		if (body.path){
-			auto collisions = findCollisionsWithMovingMesh(body.mesh, x1, start, x2, end, *body.path);
+			auto collisions = findCollisionsWithMovingMesh(body.mesh, tstart, start, tend, end, *body.path);
 			for (auto &coll: collisions){
-				colls.emplace(TCollision{(coll.collisionTime - x1)/(x2 - x1), coll.surfaceNormal, coll.surfaceVelocity, body.ID}, false);
+				colls.emplace(TCollision{(coll.collisionTime - tstart)/(tend - tstart), coll.surfaceNormal, coll.surfaceVelocity, body.ID}, false);
 			}
 		}
 		else{
 			auto collisions = findCollisionsWithMesh(body.mesh, start, end);
 			for (auto &coll: collisions){
 				auto s = boost::qvm::mag(coll.first - start)/boost::qvm::mag(end - start);
-				colls.emplace(TCollision{x1 * s*(x2 - x1), coll.second, {0, 0, 0}, body.ID}, false);
+				colls.emplace(TCollision{tstart * s*(tend - tstart), coll.second, {0, 0, 0}, body.ID}, false);
 			}
 		}
 	}
