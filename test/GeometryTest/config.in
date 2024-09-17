@@ -20,7 +20,8 @@ UCNdet		0			0.1			0				0	0	0
 1	ignored				default
 #2	../UnitCubeCenteredOn(0,0,0).STL	default		5-10
 #3	../UnitCubeCenteredOn(1,0,0).STL	default		5-10
-4	../HollowUnitCube.STL		Steel	move
+3	../HollowUnitCube.STL		Steel	slide
+4	../HollowUnitCube.STL		Steel
 #5	../UnitCubeCenteredOn(0,0,0).STL	UCNdet		0-5
 #6	../UnitCubeCenteredOn(1,0,0).STL	UCNdet		0-5
 
@@ -92,4 +93,5 @@ tmax 1e-5
 [FORMULAS]
 
 [TRANSFORMATIONS]
-move 0 (0 0 0) (0 0 0) (0 0 0) (0 0 0)  1 (0 0 -0.1) (0 0 0) (0 0 0) (0 0 0)  2 (0 0 0.1) (0 0 0) (0 0 0) (0 0 0)  3 (0 0 0) (0 0 0) (0 0 0) (0 0 0)
+oscillate 0 (0 0 0) (0 0 0) (0 0 0) (0 0 0)  1 (0 0 -0.1) (0 0 0) (0 0 0) (0 0 0)  2 (0 0 0.1) (0 0 0) (0 0 0) (0 0 0)  3 (0 0 0) (0 0 0) (0 0 0) (0 0 0)
+slide 0 (-2 0 0) (1 0 0) (0 0 0) (0 0 0)

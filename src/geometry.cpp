@@ -129,32 +129,42 @@ bool TGeometry::CheckSegment(const double tstart, const std::array<double, 3> &s
 }
 
 
-bool TGeometry::GetCollisions(const double tstart, const std::array<double, 3> &start, const double tend, const std::array<double, 3> &end, std::multimap<TCollision, bool> &colls) const{
+bool TGeometry::GetCollisions(const double tstart, const std::array<double, 3> &start, const double tend, const std::array<double, 3> &end, std::vector<TCollision> &colls) const{
 	for (auto &body: solids){
 		if (body.path){
 			auto collisions = findCollisionsWithMovingMesh(body.mesh, tstart, start, tend, end, *body.path);
 			for (auto &coll: collisions){
-				colls.emplace(TCollision{(coll.collisionTime - tstart)/(tend - tstart), coll.surfaceNormal, coll.surfaceVelocity, body.ID}, false);
+				TCollision c;
+				c.s = (coll.collisionTime - tstart)/(tend - tstart);
+				c.normal = coll.surfaceNormal;
+				c.surfaceVelocity = coll.surfaceVelocity;
+				c.ID = body.ID;
+				colls.push_back(c);
 			}
 		}
 		else{
 			auto collisions = findCollisionsWithMesh(body.mesh, start, end);
 			for (auto &coll: collisions){
-				auto s = boost::qvm::mag(coll.first - start)/boost::qvm::mag(end - start);
-				colls.emplace(TCollision{tstart * s*(tend - tstart), coll.second, {0, 0, 0}, body.ID}, false);
+				TCollision c;
+				c.s = boost::qvm::mag(coll.first - start)/boost::qvm::mag(end - start);
+				c.normal = coll.second;
+				c.surfaceVelocity = {0, 0, 0};
+				c.ID = body.ID;
+				colls.push_back(c);
 			}
 		}
 	}
+	sort(colls.begin(), colls.end());
 	return !colls.empty();
 }
 
 
-std::vector<std::pair<solid, bool> > TGeometry::GetSolids(const double t, const std::array<double, 3> &p) const{
-	std::vector<std::pair<solid, bool> > solidList{{{1, defaultMaterial}, false}};
+std::vector<solid> TGeometry::GetSolids(const double t, const std::array<double, 3> &p) const{
+	std::vector<solid> solidList{solid{1, defaultMaterial}};
 	std::array<double, 3> pv{p[0], p[1], p[2]};
 	for (auto &body: solids){
 		if ((body.path and inMovingSolid(body.mesh, t, pv, *body.path)) or (not body.path and inSolid(body.mesh, pv))){
-			solidList.push_back({{body.ID, body.material}, false});
+			solidList.emplace_back(solid{body.ID, body.material});
 		}
 	}
 	return solidList;

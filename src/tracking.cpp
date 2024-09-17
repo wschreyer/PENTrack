@@ -177,7 +177,7 @@ bool TTracker::CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1
 
     solid currentsolid = GetCurrentsolid();
 
-    multimap<TCollision, bool> colls;
+    vector<TCollision> colls;
     bool collfound = false;
     try{
         collfound = geom.GetCollisions(x1, {y1[0], y1[1], y1[2]}, x2, {y2[0], y2[1], y2[2]}, colls);
@@ -192,7 +192,7 @@ bool TTracker::CheckHit(const std::unique_ptr<TParticle>& p, const value_type x1
 //    for (auto c: colls)
 //      cout << x1 << " " << x2 - x1 << " " << c.first.distnormal << " " << c.first.s << " " << c.first.ID << endl;
         state_type yc1 = y1, yc2 = y2;
-        if (iterate_collision(xc1, yc1, xc2, yc2, colls.begin()->first, stepper, geom)){
+        if (iterate_collision(xc1, yc1, xc2, yc2, colls.front(), stepper, geom)){
             if (xc1 > x1 && DoStep(p, x1, y1, xc1, yc1, stepper, currentsolid, mc, field)){
                 x2 = xc1;
                 y2 = yc1;
@@ -236,10 +236,10 @@ bool TTracker::iterate_collision(value_type &x1, state_type &y1, value_type &x2,
     value_type xc = x1 + (x2 - x1)*0.5;
     state_type yc(STATE_VARIABLES);
     stepper.calc_state(xc, yc);
-    multimap<TCollision, bool> colls;
+    vector<TCollision> colls;
     if (geom.GetCollisions(x1, {y1[0], y1[1], y1[2]}, xc, {yc[0], yc[1], yc[2]}, colls)){ // if collision in first segment, further iterate
 //    cout << "1 " << x1 << " " << xc1 - x1 << endl;
-        if (iterate_collision(x1, y1, xc, yc, colls.begin()->first, stepper, geom, iteration + 1)){
+        if (iterate_collision(x1, y1, xc, yc, colls.front(), stepper, geom, iteration + 1)){
             x2 = xc;
             y2 = yc;
             return true; // if successfully iterated
@@ -247,7 +247,7 @@ bool TTracker::iterate_collision(value_type &x1, state_type &y1, value_type &x2,
     }
     if (geom.GetCollisions(xc, {yc[0], yc[1], yc[2]}, x2, {y2[0], y2[1], y2[2]}, colls)){ // if collision in second segment, further iterate
 //    cout << "2 " << xc1 << " " << xc2 - xc1 << endl;
-        if (iterate_collision(xc, yc, x2, y2, colls.begin()->first, stepper, geom, iteration + 1)){
+        if (iterate_collision(xc, yc, x2, y2, colls.front(), stepper, geom, iteration + 1)){
             x1 = xc;
             y1 = yc;
             return true; // if successfully iterated
@@ -273,28 +273,31 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
         const dense_stepper_type &stepper, TMCGenerator &mc, const TGeometry &geom) {
     bool trajectoryaltered = false, traversed = true;
 
-    multimap<TCollision, bool> colls;
+    vector<TCollision> colls;
     if (!geom.GetCollisions(x1, {y1[0], y1[1], y1[2]}, x2, {y2[0], y2[1], y2[2]}, colls))
         throw std::runtime_error("Called DoHit for a trajectory segment that does not contain a collision!");
 
-    vector<pair<solid, bool> > newsolids = currentsolids;
+    vector<solid> newsolids = currentsolids;
     for (auto coll: colls){
 //    cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << coll.first.ID << endl;
-        solid sld = geom.GetSolid(coll.first.ID);
-        auto foundsld = find_if(newsolids.begin(), newsolids.end(), [&sld](const std::pair<solid, bool> s){ return s.first.ID == sld.ID; });
-        double vnormal = (y1[3] - coll.first.surfaceVelocity[0])*coll.first.normal[0] + (y1[4] - coll.first.surfaceVelocity[1])*coll.first.normal[1] + (y1[5] - coll.first.surfaceVelocity[2])*coll.first.normal[2];
+        solid sld = geom.GetSolid(coll.ID);
+        auto foundsld = find_if(newsolids.begin(), newsolids.end(), [&sld](const solid s){ return s.ID == sld.ID; });
+        double vnormal = (y1[3] - coll.surfaceVelocity[0])*coll.normal[0] + (y1[4] - coll.surfaceVelocity[1])*coll.normal[1] + (y1[5] - coll.surfaceVelocity[2])*coll.normal[2];
         if (vnormal < 0){ // if entering solid
             if (foundsld != newsolids.end()){ // if solid has been entered before (self-intersecting surface)
 //	cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
-                if (coll.first.s > 0) // if collision happened right at the start of the step it is likely that the hit solid was already added to the list in the previous step and we will ignore this one
-                    newsolids.push_back(make_pair(sld, foundsld->second)); // add additional entry to list, with ignore state as on first entry
+                if (coll.s > 0){ // if collision happened right at the start of the step it is likely that the hit solid was already added to the list in the previous step and we will ignore this one
+                    cout << "Particle entering solid " << sld.ID << " which it has entered before. Stopping it!\n";
+                    p->SetStopID(ID_GEOMETRY_ERROR);
+                    return true;
+                }
             }
             else
-                newsolids.push_back(make_pair(sld, coll.second)); // add solid to list
+                newsolids.push_back(sld); // add solid to list
         }
         else if (vnormal > 0){ // if leaving solid
             if (foundsld == newsolids.end()){ // if solid was not entered before something went wrong
-                if (coll.first.s > 0){ // if collision happened right at the start of the step it is likely that the hit solid was already removed from the list in the previous step and this is not an error
+                if (coll.s > 0){ // if collision happened right at the start of the step it is likely that the hit solid was already removed from the list in the previous step and this is not an error
 //	  cout << x1 << " " << x2 - x1 << " " << coll.first.distnormal << " " << coll.first.s << " " << sld.name << endl;
 //          throw runtime_error((boost::format("Particle inside '%1%' which it did not enter before!") % sld.name).str());
                     cout << "Particle inside solid " << sld.ID << " which it did not enter before. Stopping it!\n";
@@ -316,17 +319,17 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
     solid leaving = GetCurrentsolid(); // particle can only leave highest-priority solid
     solid entering{1, geom.defaultMaterial};
     for (auto sld: newsolids){
-        if (!sld.second && sld.first.ID > entering.ID)
-            entering = sld.first;
+        if (sld.ID > entering.ID)
+            entering = sld;
     }
 //  cout << "Leaving " << leaving.name << ", entering " << entering.name << '\n';
     if (leaving.ID != entering.ID){ // if the particle actually traversed a material interface
-        auto coll = find_if(colls.begin(), colls.end(), [&leaving, &entering](const pair<TCollision, bool> &c){ return c.first.ID == leaving.ID or (c.first.ID == entering.ID and not c.second); });
+        auto coll = find_if(colls.begin(), colls.end(), [&leaving, &entering](const TCollision &c){ return (c.ID == leaving.ID) or (c.ID == entering.ID); });
         if (coll == colls.end())
             throw std::runtime_error((boost::format("Did not find collision going from %5% to %6%! t=%1%s, x=%2%, y=%3%, z=%4%") % x1 % y1[0] % y1[1] % y1[2] % leaving.ID % entering.ID).str());
         value_type x2temp = x2;
         state_type y2temp = y2;
-        p->DoHit(x1, y1, x2, y2, coll->first.normal, leaving, entering, coll->first.surfaceVelocity, mc); // do particle specific things
+        p->DoHit(x1, y1, x2, y2, coll->normal, leaving, entering, coll->surfaceVelocity, mc); // do particle specific things
         if (x2temp == x2 && y2temp == y2){ // if end point of step was not modified
             trajectoryaltered = false;
             traversed = true;
@@ -344,7 +347,7 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
             }
         }
 
-        logger->PrintHit(p, x1, y1, y2, &coll->first.normal[0], leaving, entering); // print collision to file if requested
+        logger->PrintHit(p, x1, y1, y2, &coll->normal[0], leaving, entering); // print collision to file if requested
     }
 
     if (traversed){
@@ -358,8 +361,8 @@ bool TTracker::DoHit(const std::unique_ptr<TParticle>& p, const value_type x1, c
 }
 
 const solid& TTracker::GetCurrentsolid() const{
-    auto sld = max_element(currentsolids.begin(), currentsolids.end(), [](const pair<solid, bool> &s1, const pair<solid, bool> &s2){ return s1.second || (!s2.second && s1.first.ID < s2.first.ID); });
-    return sld->first;
+    auto sld = max_element(currentsolids.begin(), currentsolids.end(), [](const solid &s1, const solid &s2){ return s1.ID < s2.ID; });
+    return *sld;
 }
 
 

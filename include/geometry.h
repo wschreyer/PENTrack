@@ -154,11 +154,11 @@ struct TGeometry{
 	 * @param start Start point of line segment
 	 * @param tend End time of line segment
 	 * @param end End point of line segment
-	 * @param colls List of collisions, paired with bool indicator it it should be ignored
+	 * @param colls List of collisions
 	 *
 	 * @return Returns true if line segment collides with a surface
 	 */
-	bool GetCollisions(const double tstart, const std::array<double, 3> &start, const double tend, const std::array<double, 3> &end, std::multimap<TCollision, bool> &colls) const;
+	bool GetCollisions(const double tstart, const std::array<double, 3> &start, const double tend, const std::array<double, 3> &end, std::vector<TCollision> &colls) const;
 	
 		
 	/**
@@ -167,9 +167,9 @@ struct TGeometry{
 	 * @param t Time
 	 * @param p Point to test
 	 *
-	 * @return Map of solids in which the point is inside paired with information if it was ignored or not
+	 * @return List of solids in which the point is inside
 	 */
-	std::vector<std::pair<solid, bool> > GetSolids(const double t, const std::array<double, 3> &p) const;
+	std::vector<solid> GetSolids(const double t, const std::array<double, 3> &p) const;
 
 
 	/**
@@ -178,11 +178,11 @@ struct TGeometry{
 	 * @param t Time
 	 * @param p Point to test
 	 *
-	 * @return Returns solid with highest priority, that was not ignored at time t
+	 * @return Returns solid with highest priority
 	 */
 	solid GetSolid(const double t, const std::array<double, 3> &p) const{
 		auto solids = GetSolids(t, p);
-		return solids.back().first;
+		return solids.back();
 	}
 
 
