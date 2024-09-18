@@ -42,28 +42,24 @@ logtype ROOT
 # Particles absorbed in a solid will be flagged with the ID of the solid.
 # The ID also defines the order in which overlapping solids are handled (highest ID will be considered first).
 # If paths to StL files are relative they have to be defined relative to this config file.
-# Ignore times are pairs of times [s] in between the solid will be ignored, e.g. 100-200 500-1000.
-#ID	STLfile    material_name    ignore_times
-1	ignored				default
-2	spinflip_volume.STL		SpinFlipper
-3	polarizer.STL			FePolarizerOnAl
-4	storagevolume_60degfeeder_bellow.STL		PolishedSteel
-5	guide_experiment.STL		PolishedSteel
-6	guide_source.STL		PolishedSteel
-7	guide_detector.STL		PolishedSteel
-8	switch.STL			PolishedSteel
-9	valve.STL			PolishedSteel
-10	switch_flap_source.STL		PolishedSteel
-#11	switch_flap_middle.STL		PolishedSteel
-#12	switch_flap_detector.STL	PolishedSteel
-13	foil_detector.STL		Al
-14	UCNdet.STL			UCNdet
-15	protdet.STL			Al
-16	absorber_up.STL			PE	movingAbsorber
-#17	absorber_middle.STL		PE
-#18	absorber_down.STL		PE
-#19	source.STL			UCNdet
-20	source.STL			PolishedSteel
+# Each solid can be rotated and translated with a time-dependent transformation defined in the [TRANSFORMATIONS] section
+#ID	STLfile                                 material_name   transformation
+1	ignored				                    default
+2	spinflip_volume.STL                     SpinFlipper
+3	polarizer.STL                           FePolarizerOnAl
+4	storagevolume_60degfeeder_bellow.STL    PolishedSteel
+5	guide_experiment.STL                    PolishedSteel
+6	guide_source.STL                        PolishedSteel
+7	guide_detector.STL                      PolishedSteel
+8	switch.STL                              PolishedSteel
+9	valve.STL                               PolishedSteel   storageValve
+10	switch_flap.STL                         PolishedSteel   switchFlap
+13	foil_detector.STL                       Al
+14	UCNdet.STL                              UCNdet
+15	protdet.STL                             Al
+16	absorber_up.STL                         PE              movingAbsorber
+19	source.STL                              UCNdet
+20	sourcevolume.STL                        PolishedSteel   sourceValve
 
 
 
@@ -330,5 +326,25 @@ Bx 1e-7*x                                               # These are the field co
 By 0.
 Bz 1e-6*x
 
+
+### Define geometric transformations.
+# To describe a path in 3 dimensions provide a list of one or more transformations defined by
+# time t, translation vector (x y z), velocity vector (vx vy vz),
+# rotation vector in axis-angle representation (rx ry rz), and angular velocity vector (wx wy wz):
+# "t (x y z) (vx vy vz) (rx ry rz) (wx wy wz)"
+# Each transformation component is interpolated smoothly in between the given times.
+# At times before the first or beyond the last entry, the transformation components are extrapolated assuming a constant (angular) velocity
+# When a transformation is applied the object is first rotated and then translated!
 [TRANSFORMATIONS]
-movingAbsorber  500 (0 0 0) (0 0 0) (0 0 0) (0 0 0)  520 (0 0 -0.6) (0 0 0) (0 0 0) (0 0 0)  540 (0 0 -0.6) (0 0 0) (0 0 0) (0 0 0)  560 (0 0 0) (0 0 0) (0 0 0) (0 0 0)
+
+# The source valve plate moves down into the guide at 200s
+sourceValve  200 (0 0 0.12) (0 0 0) (0 0 0) (0 0 0)  201 (0 0 0) (0 0 0) (0 0 0) (0 0 0)
+
+# The storage valve plate moves into the guide at 200s and moves out at 500s
+storageValve  200 (0.12 0 0) (0 0 0) (0 0 0) (0 0 0)  201 (0 0 0) (0 0 0) (0 0 0) (0 0 0)  500 (0 0 0) (0 0 0) (0 0 0) (0 0 0)  501 (0.12 0 0) (0 0 0) (0 0 0) (0 0 0)
+
+# The switch flap connects the source to the storage volume for 200s (-23.3 degrees), then rotates into middle position (0 degrees) in 1s, then connects the storage volume to the detector (23.3 degrees) at 500s and stays there
+switchFlap  200 (0.90262 0 -0.94265) (0 0 0) (0 -23.3 0) (0 0 0)  201 (0.90262 0 -0.94265) (0 0 0) (0 0 0) (0 0 0)  500 (0.90262 0 -0.94265) (0 0 0) (0 0 0) (0 0 0)  501 (0.90262 0 -0.94265) (0 0 0) (0 23.3 0) (0 0 0)
+
+# Absorber is in high position for 500s, moves down to the bottom in 20s, stays there for 20s, and then moves back up in 20s
+movingAbsorber  500 (0 0 0) (0 0 0) (0 0 0) (0 0 0)  520 (0 0 -0.68) (0 0 0) (0 0 0) (0 0 0)  540 (0 0 -0.68) (0 0 0) (0 0 0) (0 0 0)  560 (0 0 0) (0 0 0) (0 0 0) (0 0 0)
