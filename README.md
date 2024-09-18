@@ -32,9 +32,10 @@ GMP 4.2 and MPFR 2.2.1 (or newer) are required for the CGAL library. They should
 ### CGAL
 
 The [Computational Geometry Algorithms Library](http://www.cgal.org/) is used to read the experiment geometry from mesh files and detect collisions of particle tracks with the triangle meshes using AABB trees.
-Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package. If yours does not, you can run the bash script `install_cgal.sh`, which will download CGAL for you. If you choose to manually download and compile it yourself, you will have to adjust the search path of cmake by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
+Some Linux distributions (e.g. Ubuntu, Debian) include the libcgal-dev package. If yours does not, you can run the bash script `install_cgal.sh`, which will download CGAL for you. If you choose to manually download it yourself, you will have to adjust the search path of cmake by calling cmake with `-DCGAL_DIR=/path/to/CGAL`.
 
 CGAL v5.3 or newer is required.
+
 
 Included libraries
 ------------------
@@ -43,18 +44,28 @@ Included libraries
 
 The [C++ Mathematical Expression Toolkit Library](http://partow.net/programming/exprtk/index.html) is a fast formula parser and is used to interpret user-defined formulas in configuration files.
 
-It is included in the repository.
-
 ### ALGLIB
 
 [ALGLIB](http://www.alglib.net) is used to do 1D and 2D interpolation for field calculations.
 It also provides numerical optimization and integration routines required for the MicroRoughness model for UCN interaction with matter.
 
-It is included in the repository.
-
 ### libtricubic
 
-[Lekien and Marsden](http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions. It is included in the repository.
+[Lekien and Marsden](http://dx.doi.org/10.1002/nme.1296) developed a tricubic interpolation method in three dimensions.
+
+
+Physics
+-------
+
+PENTrack can simulate neutrons, protons, electrons, and some comagnetometer atoms (mercury, xenon). All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment.
+
+Interaction of neutrons with matter (reflection or transmission at surfaces and absorption in bulk material) is described with the Fermi-potential formalism with an optional constant loss-per-bounce probability. Diffuse scattering on surfaces is described with the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) (scattering angle cosine-distributed around surface normal), a modified Lambert model (scattering angle cosine-distributed around specular scattering vector), or the MicroRoughness model (see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)). Additionally, a wavelength-dependent Beckmann distribution of surface microfacets can be defined (see [Phys Rev. C 108, 034605 (2023)](https://doi.org/10.1103/PhysRevC.108.034605)). A constant spin-flip probability can also be included.
+
+Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall. Interactions of comagnetometer atoms with surfaces take into account loss-per-bounce, Lambert diffuse-reflection, and spin-flip probabilities.
+
+If a particle hits a moving surface (see Moving geometry) the velocity of the surface is taken into account during the scattering process.
+
+A particle's spin can be tracked by integrating the [Bargmann-Michel-Telegdi](https://doi.org/10.1007/s10701-011-9579-7) equation along a particle's trajectory. To reduce computation time a magnetic-field threshold can be defined to limit spin tracking to regions where the adiabatic condition is not fulfilled.
 
 
 Defining your experiment
@@ -64,7 +75,7 @@ Defining your experiment
 
 Simulation parameters are defined the configuration file config.in. By default, it is located in the `in` directory. The config files are separated into sections with their headers indicated in square brackets. Each line consists of a variable name followed by an arbitrary number of values separated by whitespace characters.
 
-General simulation parameters are defined in the GLOBAL section. Materials and geometry are defined in the MATERIALS and GEOMETRY sections. The former can optionally be moved into a different file, e.g. a central materials database. Electromagnetic fields and particle sources are defined in the FIELDS, and SOURCE sections. Particle-specific parameters - lifetime, output options, etc. - are either defined for all particle types in the PARTICLES section or in the specific particle sections. Some parameters require user-defined formulas that can be defined in the FORMULAS section.
+General simulation parameters are defined in the GLOBAL section. Materials and geometry are defined in the MATERIALS and GEOMETRY sections. The former can optionally be moved into a different file, e.g. a central materials database. Electromagnetic fields and particle sources are defined in the FIELDS, and SOURCE sections. Particle-specific parameters - lifetime, output options, etc. - are either defined for all particle types in the PARTICLES section or in the specific particle sections. Some parameters require user-defined formulas that can be defined in the FORMULAS section. Geometric transformations are defined in the TRANSFORMATIONS section.
 
 More information can be found in the provided default configuration file `in/config.in`.
 
@@ -89,6 +100,10 @@ If you want to export parts of a Solidworks assembly you can do the following:
 2. Select "Invert selection" and hide all other parts.
 3. Now you can save the remaining parts in either a single STL file or each part in a separate file. Make sure the option "Do not translate STL output data to positive space" is checked and to use the same coordinate system for every part, else they will not fit together. For resolution, the "Fine" preset is usually a good choice.
 4. You can check the positioning of the parts with e.g. [MeshLab](http://meshlab.sourceforge.net/), SolidView, Minimagics, Solidworks...
+
+#### Moving geometry
+
+Each individual part of the geometry can move along a path in three dimension, defined by a set of transformations in the TRANSFORMATIONS section. Each transformation is defined by a translation vector, a velocity vector, a rotation vector (axis-angle representation), and an angular-velocity vector. Rotations are always applied before translations. Multiple transformations can be defined at different times, which are then smoothly interpolated to approximate a 3D path.
 
 ### Fields
 
@@ -140,22 +155,13 @@ The description of geometry through triangle meshes incurs certain limitations:
 - Triangle meshes can only approximate curved surfaces. Curved surfaces that are supposed to be touching will in most cases not do so in the simulations and instead leave holes in your geometry. You should rather overlap such surfaces and make sure the tolerance during STL export is smaller than the overlap.
 - Collision points with the geometry are iterated by interpolating the particle trajectory between steps. For very fast particles the precision of this interpolation is limited by rounding errors and the iterated collision point can be offset by 10s of micrometers for highly relativstic particles.
 
+
 Run the simulation
 ------------------
 
 Type `cmake .` to create a Makefile, execute `make` to compile the code, then run the executable `PENTrack`. Some information will be shown during runtime. Log files (start- and end-values, tracks and snapshots of the particles) will be written to the /out/ directory, depending on the options chosen in the configuration file.
 
 Four optional command-line parameters can be passed to the executable: a job number (default: 0) which is prepended to all log-file names, a path from where the configuration file should be read (default: in/), a path where the output files will be written (default: out/), and a fixed random seed (default: 0 - random seed is determined from high-resolution clock at program start).
-
-
-Physics
--------
-
-All particles use the same relativistic equation of motion, including gravity, Lorentz force and magnetic force on their magnetic moment.
-
-Interaction of UCN with matter is described with the Fermi-potential formalism. Diffuse scattering is described with the [Lambert model](https://en.wikipedia.org/wiki/Lambert%27s_cosine_law) (scattering angle cosine-distributed around surface normal), a modified Lambert model (scattering angle cosine-distributed around specular scattering vector), or the MicroRoughness model (see [Z. Physik 254, 169--188 (1972)](http://link.springer.com/article/10.1007%2FBF01380066) and [Eur. Phys. J. A 44, 23-29 (2010)](http://ucn.web.psi.ch/papers/EPJA_44_2010_23.pdf)). Additionally, a wavelength-dependent Beckmann distribution of surface microfacets can be defined (see [Phys Rev. C 108, 034605 (2023)](https://doi.org/10.1103/PhysRevC.108.034605). Spin flips on wall bounce can also be included. Protons and electrons do not have any interaction so far, they are just stopped when hitting a wall.
-
-A particle's spin can be tracked by integrating the [Bargmann-Michel-Telegdi](https://doi.org/10.1007/s10701-011-9579-7) equation along a particle's trajectory. To reduce computation time a magnetic-field threshold can be defined to limit spin tracking to regions where the adiabatic condition is not fulfilled.
 
 
 Writing your own simulation
@@ -281,6 +287,7 @@ If the spinlog parameter is enabled in the configuration file and the particle s
 - Sx, Sy, Sz: components of the spin vector [dimensionless]
 - Wx, Wy, Wz: components of precession-axis vector [1/s]
 - Bx, By, Bz: field experienced by the neutron at time t [Tesla]
+
 
 Helper Scripts 
 --------------
