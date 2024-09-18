@@ -28,14 +28,14 @@ void TXenon::OnHit(const value_type x1, const state_type &y1, value_type &x2, st
 	}
 
 	lambert_scattering_distribution<double> scatteringDist(mat.DiffProb, 0, mat.LossPerBounce);
-	std::array<double, 3> v2 = scattered_vector(v1 - surfaceVelocity, normal, scatteringDist, mc) + surfaceVelocity;
+	std::array<double, 3> v2 = scattered_vector(v1, normal, surfaceVelocity, scatteringDist, mc);
 
 	double v2normal = boost::qvm::dot(v2 - surfaceVelocity, normal);
 	if (v1normal * v2normal <= 0){
 		x2 = x1;
 		y2[0] = y1[0];
 		y2[1] = y1[1];
-		y2[2] = y2[2];
+		y2[2] = y1[2];
 		y2[3] = v2[0];
 		y2[4] = v2[1];
 		y2[5] = v2[2];

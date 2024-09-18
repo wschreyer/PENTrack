@@ -167,6 +167,25 @@ Vector scattered_vector(const Vector &incidentVelocity, const Vector &surfaceNor
 
 
 /**
+ * Calculate scattered velocity vector from velocity vector incident on a surface moving with given velocity, and a given scattering distribution.
+ * 
+ * Subtracts surface velocity from incident velocity, then adds surface velocity onto scattered velocity vector
+ * 
+ * @param incidentVelocity Velocity incident on surface
+ * @param surfaceNormal Normal vector of surface
+ * @param surfaceVelocity Velocity of surface
+ * @param scatteringDistribution Distribution of polar and azimuth scattering angles for given incident polar angle
+ * @param rng Random number generator
+ * 
+ * @return Scattered velocity vector
+*/
+template<class Vector, class ScatterDistribution, class Random>
+Vector scattered_vector(const Vector &incidentVelocity, const Vector &surfaceNormal, const Vector &surfaceVelocity, ScatterDistribution &scatteringDistribution, Random &rng){
+    return scattered_vector(incidentVelocity - surfaceVelocity, surfaceNormal, scatteringDistribution, rng) + surfaceVelocity;
+}
+
+
+/**
  * Neutron scattering distribution from a surface based on the microroughness model 
  * See A. Steyerl, Effect of surface roughness on the total reflexion and transmission of slow neutrons, Z. Phys. A 254, 169–188 (1972)
  * https://doi.org/10.1007/BF01380066

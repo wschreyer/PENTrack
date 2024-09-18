@@ -43,10 +43,10 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 			double lambda_c = 2.*M_PI*hbar/GetMass()/ele_e/std::abs(v1normal);
 			double beckmannWidth = mat.microfacetDistributionWidth*std::pow(lambda_c*1e9, mat.microfacetDistributionWidthExponent);
 			microfacet_scattering_distribution mfDist(MRdist, beckmannWidth);
-			v2 = scattered_vector(v1 - surfaceVelocity, normal, mfDist, mc) + surfaceVelocity;
+			v2 = scattered_vector(v1, normal, surfaceVelocity, mfDist, mc);
 		}
 		else{
-			v2 = scattered_vector(v1 - surfaceVelocity, normal, MRdist, mc) + surfaceVelocity;
+			v2 = scattered_vector(v1, normal, surfaceVelocity, MRdist, mc);
 		}
 	}
 	else{
@@ -56,10 +56,10 @@ void TNeutron::OnHit(const value_type x1, const state_type &y1, value_type &x2, 
 			double beckmannWidth = mat.microfacetDistributionWidth*std::pow(lambda_c*1e9, mat.microfacetDistributionWidthExponent);
 //			std::cout << lambda_c << " " << beckmannWidth << "\n";
 			microfacet_scattering_distribution mfDist(lambertDist, beckmannWidth);
-			v2 = scattered_vector(v1 - surfaceVelocity, normal, mfDist, mc) + surfaceVelocity;
+			v2 = scattered_vector(v1, normal, surfaceVelocity, mfDist, mc);
 		}
 		else{
-			v2 = scattered_vector(v1 - surfaceVelocity, normal, lambertDist, mc) + surfaceVelocity;
+			v2 = scattered_vector(v1, normal, surfaceVelocity, lambertDist, mc);
 		}
 	}
 
