@@ -14,8 +14,6 @@
 #include <CGAL/Polygon_mesh_processing/orientation.h>
 #include <CGAL/Polygon_mesh_processing/locate.h>
 
-#include <boost/iterator/function_output_iterator.hpp>
-
 /**
  * Structure returned by TMovingMesh::findCollisions.
  */
@@ -33,6 +31,7 @@ struct collision{
  */
 template<typename Real>
 struct TMesh{
+    typedef Real RealType;
     typedef typename CGAL::Simple_cartesian<Real> CKernel; ///< Geometric Kernel used for CGAL types
     typedef typename CKernel::Point_3 CPoint; ///< CGAL point type
     typedef typename CKernel::Vector_3 CVector; ///< CGAL vector type
@@ -162,11 +161,15 @@ bool inSolid(const Mesh &mesh, const Vector &position){
  * 
  * @returns A pair of vectors (random position on mesh surface and surface normal at this point)
  */
-template<class Mesh, class RandomGenerator, typename Real = double>
+template<class Mesh, class RandomGenerator, typename Real = typename Mesh::RealType>
 std::pair<std::array<Real, 3>, std::array<Real, 3> > randomPointOnSurface(Mesh &mesh, RandomGenerator &rand){
     auto faceidx = *(mesh.mesh->faces_begin() + mesh.triangle_sampler(rand));
     Real u(std::generate_canonical<Real, std::numeric_limits<Real>::digits>(rand));
-    Real v(std::generate_canonical<Real, std::numeric_limits<Real>::digits>(rand)*(1 - u));
+    Real v(std::generate_canonical<Real, std::numeric_limits<Real>::digits>(rand));
+    if (u + v >= 1){
+        u = 1 - u;
+        v = 1 - v;
+    }
     auto pp = CGAL::Polygon_mesh_processing::construct_point(std::make_pair(faceidx, std::array<Real, 3>{u, v, 1 - u - v}), *mesh.mesh);
     auto nv = mesh.normalmap[faceidx]; //CGAL::Polygon_mesh_processing::compute_face_normal(faceidx, *mesh.mesh);
     return {{pp.x(), pp.y(), pp.z()}, {nv.x(), nv.y(), nv.z()}};
@@ -183,7 +186,7 @@ std::pair<std::array<Real, 3>, std::array<Real, 3> > randomPointOnSurface(Mesh &
  * 
  * @returns A pair of vectors (random position on mesh surface and surface normal at this point)
  */
-template<class Mesh, typename Real = typename Mesh::Real, class Path, class RandomGenerator>
+template<class Mesh, typename Real = typename Mesh::RealType, class Path, class RandomGenerator>
 std::pair<std::array<Real, 3>, std::array<Real, 3> > randomPointOnMovingSurface(Mesh &mesh, const Real time, RandomGenerator &rand, const Path &path){
     auto [position, normal] = randomPointOnSurface(mesh, rand);
     position = activeTransform(position, interpolateTransformation(path, time));
@@ -238,7 +241,7 @@ std::array<double, 3> randomPointInBoundingBox(const Mesh &mesh, RandomGenerator
  * 
  * @returns Random point contained within the mesh
  */
-template<class Mesh, typename Real = typename Mesh::Real, class RandomGenerator, class Path> 
+template<class Mesh, typename Real = typename Mesh::RealType, class RandomGenerator, class Path> 
 std::array<Real, 3> randomPointInMovingVolume(const Mesh &mesh, const Real time, RandomGenerator &rand, const Path &path){
     auto bbox = mesh.tree->bbox();
     std::array<Real, 3> p;
@@ -259,7 +262,7 @@ std::array<Real, 3> randomPointInMovingVolume(const Mesh &mesh, const Real time,
  * 
  * @returns Random point contained within the ounding box of the mesh
  */
-template<class Mesh, typename Real = typename Mesh::Real, class RandomGenerator, class Path>
+template<class Mesh, typename Real = typename Mesh::RealType, class RandomGenerator, class Path>
 std::array<Real, 3> randomPointInMovingBoundingBox(const Mesh &mesh, const Real time, RandomGenerator &rand, const Path &path){
     auto p = randomPointInLocalBoundingBox(mesh, rand);
     return activeTransform(p, interpolateTransformation(path, time));
@@ -294,7 +297,7 @@ bool inBoundingBox(const Mesh &mesh, const Vector &segmentStart, const Vector &s
  * 
  * @returns True if segment is (partially) contained in the bounding box of the mesh
  */
-template<class Mesh, typename Real = typename Mesh::Real, class Vector, class Path>
+template<class Mesh, typename Real = typename Mesh::RealType, class Vector, class Path>
 bool inMovingBoundingBox(const Mesh &mesh, const Real timeStart, const Vector &segmentStart, const Real timeEnd, const Vector &segmentEnd, const Path &path){
     return inBoundingBox(mesh, passiveTransform(segmentStart, interpolateTransformation(path, timeStart)), passiveTransform(segmentEnd, interpolateTransformation(path, timeEnd)));
 }

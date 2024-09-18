@@ -212,21 +212,52 @@ struct TGeometry{
 	 * @returns Tuple of two vectors (point on a surface and surface normal at that point) and ID number of the surface
 	 */
 	template <class RandomGenerator>
-	std::tuple<std::array<double, 3>, std::array<double, 3>, unsigned int> RandomPointOnSurface(RandomGenerator &rand, const std::optional<std::pair<std::array<double, 3>, std::array<double, 3>>> &boundingBox = std::nullopt){
+	std::tuple<std::array<double, 3>, std::array<double, 3>, unsigned int> RandomPointOnSurface(RandomGenerator &rand, const std::pair<std::array<double, 3>, std::array<double, 3>> &boundingBox){
 		std::vector<double> weights;
 		for (auto &body: solids){
-			if (not body.path and (not boundingBox or overlappingBoundingBoxes(body.mesh, *boundingBox))){
-				weights.push_back(body.mesh.area);
+			if (overlappingBoundingBoxes(body.mesh, boundingBox)){
+				if (not body.path){
+					weights.push_back(body.mesh.area);
+				}
+				else{
+					//std::cout << "Generating points on moving surfaces is not implemented!\n";
+					weights.push_back(0.);
+				}
 			}
 			else{
 				weights.push_back(0.);
 			}
 		}
 		std::discrete_distribution<size_t> d(weights.begin(), weights.end());
+		while (true){
+			auto i = d(rand);
+			auto [p, n] = randomPointOnSurface(solids[i].mesh, rand);
+			if (p[0] > boundingBox.first[0] and p[1] > boundingBox.first[1] and p[2] > boundingBox.first[2] and p[0] < boundingBox.second[0] and p[1] < boundingBox.second[1] and p[2] < boundingBox.second[2]){
+				return std::make_tuple(p, n, solids[i].ID);
+			}
+		}
+	}
+
+
+	/**
+	 * Generate random points homogeneously distributed on all surfaces of the geometry
+	 * 
+	 * @param rand Random number generator class
+	 * 
+	 * @returns Tuple of two vectors (point on a surface and surface normal at that point) and ID number of the surface
+	 */
+	template <class RandomGenerator>
+	std::tuple<std::array<double, 3>, std::array<double, 3>, unsigned int> RandomPointOnSurface(double time, RandomGenerator &rand){
+		std::vector<double> weights;
+		for (auto &body: solids){
+			weights.push_back(body.mesh.area);
+		}
+		std::discrete_distribution<size_t> d(weights.begin(), weights.end());
 		auto i = d(rand);
-		auto [p, n] = randomPointOnSurface(solids[i].mesh, rand);
+		auto [p, n] = solids[i].path ? randomPointOnMovingSurface(solids[i].mesh, time, rand, *solids[i].path) : randomPointOnSurface(solids[i].mesh, rand);
 		return std::make_tuple(p, n, solids[i].ID);
 	}
+
 };
 
 

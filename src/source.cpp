@@ -105,7 +105,7 @@ TParticle* TSurfaceSource::CreateParticle(TMCGenerator &mc, TGeometry &geometry,
     std::array<double, 3> p;
     std::array<double, 3> nv;
     do{
-        auto tuple = geometry.RandomPointOnSurface(mc, std::make_optional(GetSourceVolumeBoundingBox()));
+        auto tuple = geometry.RandomPointOnSurface(mc, GetSourceVolumeBoundingBox());
 		p = std::get<0>(tuple);
 		nv = std::get<1>(tuple);
     } while(!InSourceVolume(p[0], p[1], p[2]));

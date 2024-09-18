@@ -520,13 +520,16 @@ void PrintGeometry(const boost::filesystem::path &outfile, TGeometry &geom){
     unsigned count = 1000000;
 
     ofstream f(outfile.c_str());
-    f << "x y z ID" << '\n'; // print file header
+    f << "t x y z ID" << '\n'; // print file header
+
+	std::uniform_real_distribution d(0., SimTime);
 
 	chrono::time_point<chrono::steady_clock> collstart = chrono::steady_clock::now();
 	std::mt19937_64 r(std::chrono::duration_cast<std::chrono::nanoseconds>(collstart.time_since_epoch()).count());
 	for (unsigned i = 0; i < count; i++){
-        auto [p, n, ID] = geom.RandomPointOnSurface(r);
-		f << p[0] << " " << p[1] << " " << p[2] << " " << ID << '\n'; // print all intersection points into file
+		auto t = d(r);
+        auto [p, n, ID] = geom.RandomPointOnSurface(t, r);
+		f << t << " " << p[0] << " " << p[1] << " " << p[2] << " " << ID << '\n'; // print all intersection points into file
     }
 	chrono::time_point<chrono::steady_clock> collend = chrono::steady_clock::now();
 	float colltimer = chrono::duration_cast<chrono::nanoseconds>(collend - collstart).count();
