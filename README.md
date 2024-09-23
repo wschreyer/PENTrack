@@ -3,7 +3,7 @@ PENTrack
 
 PENTrack - a simulation tool for ultracold neutrons, protons and electrons
 
-The stable releases are quite outdated. The master branch is now considered the stable version with well-tested funcitonality, see:
+The stable releases are quite outdated. The master branch is now considered the stable version with well-tested functionality, see:
 - [W. Schreyer et al, PENTrack—a simulation tool for ultracold neutrons, protons, and electrons in complex electromagnetic fields and geometries, Nucl. Instrum. Methods Phys. Res. A 858, 123-129 (2017)](https://doi.org/10.1016/j.nima.2017.03.036)
 - [S. Ahmed et al, First ultracold neutrons produced at TRIUMF, Phys. Rev. C 99, 025503 (2019)](https://doi.org/10.1103/PhysRevC.99.025503)
 - [H. Akatsuka et al, Characterization of electroless nickel-phosphorus plating for ultracold-neutron storage, Nucl. Instrum. Methods Phys. Res. A 1049, 0168-9002 (2023)](https://doi.org/10.1016/j.nima.2023.168106)
