@@ -140,10 +140,10 @@ TFieldContainer ReadComsolField(const std::string &params, const std::map<std::s
 
   std::ifstream FINstream(ft.string(), std::ifstream::in);
   boost::iostreams::filtering_istream FIN;
-  if (boost::filesystem::extension(ft) == ".bz2"){
+  if (ft.extension() == ".bz2"){
   	FIN.push(boost::iostreams::bzip2_decompressor());
   }
-  else if (boost::filesystem::extension(ft) == ".gz"){
+  else if (ft.extension() == ".gz"){
   	FIN.push(boost::iostreams::gzip_decompressor());
   }
   FIN.push(FINstream);
