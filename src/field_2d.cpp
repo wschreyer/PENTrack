@@ -68,10 +68,10 @@ void TabField::ReadTabFile(const std::string &tabfile, const double lengthconv, 
 	boost::filesystem::path filepath = boost::filesystem::absolute(tabfile, configpath.parent_path());
 	std::ifstream FINstream(filepath.string(), std::ifstream::in | std::ifstream::binary);
 	boost::iostreams::filtering_istream FIN;
-	if (boost::filesystem::extension(filepath) == ".bz2"){
+	if (filepath.extension() == ".bz2"){
 		FIN.push(boost::iostreams::bzip2_decompressor());
 	}
-	else if (boost::filesystem::extension(filepath) == ".gz"){
+	else if (filepath.extension() == ".gz"){
 		FIN.push(boost::iostreams::gzip_decompressor());
 	}
 	FIN.push(FINstream);

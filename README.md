@@ -11,7 +11,7 @@ Prerequisites
 
 ### CMake
 
-CMake 3.1 or newer is required to build PENTrack.
+CMake 3.15 or newer is required to build PENTrack.
 
 ### Compiler
 

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <array>
+#include <stdexcept>
 
 #include <boost/qvm/all.hpp>
 

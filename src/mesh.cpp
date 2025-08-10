@@ -9,7 +9,7 @@ TMesh<double> constructMesh(const std::string &filename){
     TMesh<double> mesh;
     mesh.name = filename;
     mesh.mesh = std::unique_ptr<TMesh<double>::CMesh>(new TMesh<double>::CMesh());
-    if (not PMP::IO::read_polygon_mesh(filename, *mesh.mesh, PMP::parameters::verbose(true))){
+    if (not PMP::IO::read_polygon_mesh(filename, *mesh.mesh, PMP::parameters::verbose(false))){
         throw std::runtime_error("Could not read polygon mesh from " + filename);
     }
     PMP::merge_reversible_connected_components(*mesh.mesh);

@@ -5,7 +5,13 @@
 
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/AABB_tree.h>
+
+#if CGAL_VERSION_NR >= CGAL_VERSION_NUMBER(6,0,0)
+#include <CGAL/AABB_traits_3.h>
+#else
 #include <CGAL/AABB_traits.h>
+#endif
+
 #include <CGAL/AABB_face_graph_triangle_primitive.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Polygon_mesh_processing/IO/polygon_mesh_io.h>
@@ -39,9 +45,15 @@ struct TMesh{
     typedef typename CKernel::Ray_3 CRay; ///< CGAL ray type
     typedef typename CGAL::Surface_mesh<CPoint> CMesh; ///< CGAL triangle mesh type
     typedef typename CGAL::AABB_face_graph_triangle_primitive<CMesh> CPrimitive; ///< CGAL triangle type contained in AABB tree
+#if CGAL_VERSION_NR >= CGAL_VERSION_NUMBER(6,0,0)
+    typedef typename CGAL::AABB_traits_3<CKernel, CPrimitive> CTraits; ///< CGAL triangle traits type
+    typedef typename CGAL::AABB_tree<CTraits> CTree; ///< CGAL AABB tree type containing CPrimitives
+    typedef typename std::optional<typename CTree::Intersection_and_primitive_id<CSegment>::Type > CIntersection; ///< CGAL type returned by intersection test between mesh and a segment
+#else
     typedef typename CGAL::AABB_traits<CKernel, CPrimitive> CTraits; ///< CGAL triangle traits type
     typedef typename CGAL::AABB_tree<CTraits> CTree; ///< CGAL AABB tree type containing CPrimitives
     typedef typename boost::optional<typename CTree::Intersection_and_primitive_id<CSegment>::Type > CIntersection; ///< CGAL type returned by intersection test between mesh and a segment
+#endif
     typedef typename boost::graph_traits<CMesh>::face_descriptor CFace; ///< CGAL mesh face type
 
     std::unique_ptr<CMesh> mesh; ///< Triangle mesh
@@ -83,13 +95,13 @@ std::vector<std::pair<Vector, Vector> > findCollisionsWithMesh(const Mesh &mesh,
     std::vector<typename Mesh::CIntersection> out;
     mesh.tree->all_intersections(segment, std::back_inserter(out)); // search intersections of segment with mesh
     for (auto i: out){
-        auto collisionPoint = boost::get<typename Mesh::CPoint>(&(i->first));
-        if (collisionPoint) { // if intersection is a point
-            auto normal = mesh.normalmap[i->second];//CGAL::Polygon_mesh_processing::compute_face_normal(i->second, *mesh.mesh);
-            colls.push_back(std::make_pair(Vector{collisionPoint->x(), collisionPoint->y(), collisionPoint->z()}, Vector{normal.x(), normal.y(), normal.z()})); // add collision to list
-        }
-        else
-            throw std::runtime_error("Segment-triangle intersection happened to not be a point");
+#if CGAL_VERSION_NR >= CGAL_VERSION_NUMBER(6,0,0)
+        auto collisionPoint = std::get<typename Mesh::CPoint>(i->first);
+#else
+        auto collisionPoint = boost::get<typename Mesh::CPoint>(i->first);
+#endif
+        auto normal = mesh.normalmap[i->second];//CGAL::Polygon_mesh_processing::compute_face_normal(i->second, *mesh.mesh);
+        colls.push_back(std::make_pair(Vector{collisionPoint.x(), collisionPoint.y(), collisionPoint.z()}, Vector{normal.x(), normal.y(), normal.z()})); // add collision to list
     }
     return colls;
 }
@@ -243,7 +255,6 @@ std::array<double, 3> randomPointInBoundingBox(const Mesh &mesh, RandomGenerator
  */
 template<class Mesh, typename Real = typename Mesh::RealType, class RandomGenerator, class Path> 
 std::array<Real, 3> randomPointInMovingVolume(const Mesh &mesh, const Real time, RandomGenerator &rand, const Path &path){
-    auto bbox = mesh.tree->bbox();
     std::array<Real, 3> p;
     do{
         p = randomPointInBoundingBox(mesh, rand);

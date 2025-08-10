@@ -14,10 +14,13 @@ install_manifest.txt
 Testing
 CTestTestfile.cmake
 .cmake/
+build
 
 # ignore binaries
 PENTrack
 runTests
+*.so
+*.a
 
 # ignore output files
 *.out

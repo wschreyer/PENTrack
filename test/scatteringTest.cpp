@@ -92,14 +92,14 @@ BOOST_AUTO_TEST_CASE(microroughnessScatteringDistributionTest){
     double FermiCu = static_cast<double>(hbar*hbar*kCu*kCu/2./m_n/ele_e/ele_e);
     double bCu = 35e-10;
     double wCu = 250e-10;
-    std::array<double, 3> normal = {0., 0., -1.};
+//    std::array<double, 3> normal = {0., 0., -1.};
 
     // parameters for incident neutron
     double wavelength = 300e-10;
     double theta_i = 73.5/180.*M_PI;
     double vabs = 2.*M_PI*hbar/m_n/ele_e/wavelength;
     double E = 0.5*m_n*vabs*vabs;
-    std::array<double, 3> v = {vabs*sin(theta_i), 0., vabs*cos(theta_i)};
+//    std::array<double, 3> v = {vabs*sin(theta_i), 0., vabs*cos(theta_i)};
 
     // lines of constant diffuse reflection probabilities on copper in theta-phi plane,
     // extracted from Fig. 2 in Steyerl's microroughness paper (DOI:10.1007/BF01380066) using WebPlotDigitizer
