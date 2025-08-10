@@ -181,7 +181,8 @@ Vector scattered_vector(const Vector &incidentVelocity, const Vector &surfaceNor
 */
 template<class Vector, class ScatterDistribution, class Random>
 Vector scattered_vector(const Vector &incidentVelocity, const Vector &surfaceNormal, const Vector &surfaceVelocity, ScatterDistribution &scatteringDistribution, Random &rng){
-    return scattered_vector(incidentVelocity - surfaceVelocity, surfaceNormal, scatteringDistribution, rng) + surfaceVelocity;
+    Vector localIncidentVelocity = incidentVelocity - surfaceVelocity;
+    return scattered_vector(localIncidentVelocity, surfaceNormal, scatteringDistribution, rng) + surfaceVelocity;
 }
 
 
